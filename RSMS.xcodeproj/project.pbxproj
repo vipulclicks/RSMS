@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		92C535A52FBCA17400E4AE68 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 92C535A32FBCA16B00E4AE68 /* .gitignore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		92C535952FBCA15F00E4AE68 /* RSMS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RSMS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		92C535A32FBCA16B00E4AE68 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		92C5358C2FBCA15F00E4AE68 = {
 			isa = PBXGroup;
 			children = (
+				92C535A32FBCA16B00E4AE68 /* .gitignore */,
 				92C535972FBCA15F00E4AE68 /* RSMS */,
 				92C535962FBCA15F00E4AE68 /* Products */,
 			);
@@ -109,6 +115,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				92C535A52FBCA17400E4AE68 /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
