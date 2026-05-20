@@ -46,11 +46,11 @@ struct ClientelingView: View {
             VStack(spacing: 20) {
                 ZStack {
                     Circle()
-                        .fill(RSMSTheme.gold.opacity(0.1))
+                        .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 80, height: 80)
                     Text(String(client.fullName.prefix(2)))
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(RSMSTheme.gold)
+                        .foregroundStyle(RSMSTheme.primary)
                 }
 
                 VStack(spacing: 6) {
@@ -95,7 +95,7 @@ struct ClientelingView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "gift.fill")
                         .font(.title3)
-                        .foregroundStyle(RSMSTheme.gold)
+                        .foregroundStyle(RSMSTheme.primary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(anniversary.title)
                             .font(.subheadline.weight(.semibold))
@@ -108,7 +108,7 @@ struct ClientelingView: View {
                     if anniversary.reminderEnabled {
                         Image(systemName: "bell.fill")
                             .font(.caption)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                     }
                 }
                 if let notes = anniversary.notes {
@@ -119,7 +119,7 @@ struct ClientelingView: View {
             }
             .rsmsCard()
         }
-        .frame(maxWidth: 340)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Detail Column
@@ -128,7 +128,19 @@ struct ClientelingView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Preferences
             VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(title: "Preferences & Sizes")
+                HStack {
+                    SectionHeader(title: "Preferences & Sizes")
+                    Spacer()
+                    NavigationLink(destination: ClientSizePreferencesView()) {
+                        Text("Edit")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 6)
+                            .background(RSMSTheme.primary.opacity(0.1))
+                            .foregroundStyle(RSMSTheme.primary)
+                            .clipShape(Capsule())
+                    }
+                }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     if let ring = preference.ringSize {
@@ -147,7 +159,7 @@ struct ClientelingView: View {
 
                 Divider().overlay(RSMSTheme.divider)
 
-                tagSection(title: "Favorite Categories", tags: preference.favoriteCategories, color: RSMSTheme.gold)
+                tagSection(title: "Favorite Categories", tags: preference.favoriteCategories, color: RSMSTheme.primary)
 
                 if let metals = preference.favoriteMetals {
                     tagSection(title: "Preferred Metals", tags: metals, color: RSMSTheme.info)
@@ -156,6 +168,7 @@ struct ClientelingView: View {
                     tagSection(title: "Gemstones", tags: gems, color: RSMSTheme.success)
                 }
             }
+            .frame(maxWidth: .infinity)
             .rsmsCard()
 
             // Wishlist
@@ -170,7 +183,7 @@ struct ClientelingView: View {
                             .frame(width: 64, height: 64)
                         Image(systemName: "sparkles")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -180,7 +193,7 @@ struct ClientelingView: View {
                         if let product {
                             Text("€\(String(format: "%,.0f", product.price))")
                                 .font(.caption.weight(.medium))
-                                .foregroundStyle(RSMSTheme.gold)
+                                .foregroundStyle(RSMSTheme.primary)
                         }
                     }
 
@@ -206,8 +219,10 @@ struct ClientelingView: View {
                         .italic()
                 }
             }
+            .frame(maxWidth: .infinity)
             .rsmsCard()
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Sub-components
@@ -216,7 +231,7 @@ struct ClientelingView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.gold)
+                .foregroundStyle(RSMSTheme.primary)
                 .frame(width: 20)
             Text(value)
                 .font(.subheadline)
@@ -229,7 +244,7 @@ struct ClientelingView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.gold)
+                .foregroundStyle(RSMSTheme.primary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.caption2)
@@ -266,7 +281,7 @@ struct ClientelingView: View {
         switch tier {
         case .standard: return RSMSTheme.textSecondary
         case .silver:   return Color(hex: "C0C0C0")
-        case .gold:     return RSMSTheme.gold
+        case .gold:     return RSMSTheme.primary
         case .platinum: return Color(hex: "B0C4DE")
         case .prive:    return RSMSTheme.danger
         }

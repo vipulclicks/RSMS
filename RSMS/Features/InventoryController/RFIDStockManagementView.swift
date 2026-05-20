@@ -66,7 +66,7 @@ struct RFIDStockManagementView: View {
                 icon: "shippingbox.fill",
                 value: "\(scanRecord.itemsScanned)",
                 label: "Items Scanned",
-                iconColor: RSMSTheme.gold
+                iconColor: RSMSTheme.primary
             )
             KPICard(
                 icon: "checkmark.circle.fill",
@@ -101,7 +101,7 @@ struct RFIDStockManagementView: View {
                     HStack {
                         Image(systemName: "sensor.tag.radiowaves.forward.fill")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Store-wide Scan")
                                 .font(.headline)
@@ -152,7 +152,7 @@ struct RFIDStockManagementView: View {
                             .frame(width: 56, height: 56)
                         Image(systemName: "watch.analog")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {

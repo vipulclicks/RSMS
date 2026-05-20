@@ -1,8 +1,8 @@
 //
 //  SalesAssociateMockData.swift
-//  RSMS_Mock_Data
+//  RSMS
 //
-//  Created by Prem Kumar on 18/05/26.
+//  RSMS_Mock_Data
 //
 
 import Foundation

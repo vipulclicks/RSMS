@@ -48,7 +48,7 @@ struct StoreDashboardView: View {
             Spacer()
             HStack(spacing: 6) {
                 Image(systemName: "mappin.circle.fill")
-                    .foregroundStyle(RSMSTheme.gold)
+                    .foregroundStyle(RSMSTheme.primary)
                 Text(store.name)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textSecondary)
@@ -103,7 +103,7 @@ struct StoreDashboardView: View {
                     )
                     VStack(alignment: .leading, spacing: 16) {
                         metricRow(label: "Target", value: formatCurrency(summary.salesTarget), color: RSMSTheme.textSecondary)
-                        metricRow(label: "Actual", value: formatCurrency(summary.salesActual), color: RSMSTheme.gold)
+                        metricRow(label: "Actual", value: formatCurrency(summary.salesActual), color: RSMSTheme.primary)
                         metricRow(label: "Remaining", value: formatCurrency(summary.salesTarget - summary.salesActual), color: RSMSTheme.warning)
                     }
                 }
@@ -116,7 +116,7 @@ struct StoreDashboardView: View {
                 SectionHeader(title: "Highlights")
 
                 if let topCategory = summary.topSellingCategory {
-                    highlightRow(icon: "crown.fill", title: "Top Selling", value: topCategory, color: RSMSTheme.gold)
+                    highlightRow(icon: "crown.fill", title: "Top Selling", value: topCategory, color: RSMSTheme.primary)
                 }
                 highlightRow(icon: "calendar", title: "Appointments", value: "\(summary.appointmentCount) scheduled today", color: RSMSTheme.info)
                 highlightRow(icon: "exclamationmark.shield.fill", title: "Stock Alerts", value: "\(summary.lowStockAlertCount) items low", color: RSMSTheme.warning)
@@ -145,11 +145,11 @@ struct StoreDashboardView: View {
         return HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(RSMSTheme.gold.opacity(0.1))
+                    .fill(RSMSTheme.primary.opacity(0.1))
                     .frame(width: 44, height: 44)
                 Text(String(name.prefix(1)))
                     .font(.headline)
-                    .foregroundStyle(RSMSTheme.gold)
+                    .foregroundStyle(RSMSTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -166,7 +166,7 @@ struct StoreDashboardView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Text("\(shift.startTime) – \(shift.endTime)")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.gold)
+                    .foregroundStyle(RSMSTheme.primary)
                 if let notes = shift.notes {
                     Text(notes)
                         .font(.caption2)

@@ -73,15 +73,15 @@ struct LoginView: View {
             // Diamond icon
             Image(systemName: "diamond.fill")
                 .font(.system(size: 32))
-                .foregroundStyle(RSMSTheme.goldGradient)
+                .foregroundStyle(RSMSTheme.primaryGradient)
 
             Text("MAISON LUMIÈRE")
                 .font(.system(size: 36, weight: .light, design: .serif))
                 .tracking(8)
-                .foregroundStyle(RSMSTheme.goldGradient)
+                .foregroundStyle(RSMSTheme.primaryGradient)
 
             Rectangle()
-                .fill(RSMSTheme.goldGradient)
+                .fill(RSMSTheme.primaryGradient)
                 .frame(width: 60, height: 1)
 
             Text("RETAIL STORE MANAGEMENT")
@@ -105,11 +105,11 @@ struct LoginView: View {
                 // Icon
                 ZStack {
                     Circle()
-                        .fill(RSMSTheme.gold.opacity(0.1))
+                        .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 72, height: 72)
                     Image(systemName: info.icon)
                         .font(.system(size: 28))
-                        .foregroundStyle(RSMSTheme.gold)
+                        .foregroundStyle(RSMSTheme.primary)
                 }
 
                 // Role name
@@ -120,7 +120,7 @@ struct LoginView: View {
                 // User name
                 Text(info.userName)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(RSMSTheme.gold)
+                    .foregroundStyle(RSMSTheme.primary)
 
                 // Description
                 Text(info.description)
@@ -133,31 +133,35 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 32)
             .padding(.horizontal, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(RSMSTheme.surfacePrimary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(RSMSTheme.gold.opacity(0.15), lineWidth: 1)
-                    )
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 0.5)
             )
-            .shadow(color: RSMSTheme.gold.opacity(0.05), radius: 20, y: 8)
+            .shadow(color: .black.opacity(0.2), radius: 30, y: 15)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ScaleButtonStyle())
     }
 
     // MARK: - Background Decoration
 
     private var backgroundDecoration: some View {
         ZStack {
+            // Subtle animated glows for a premium feel
             Circle()
-                .fill(RSMSTheme.gold.opacity(0.03))
+                .fill(RSMSTheme.primary.opacity(0.05))
+                .blur(radius: 120)
                 .frame(width: 600, height: 600)
-                .offset(x: -200, y: -300)
+                .offset(x: appeared ? -200 : -250, y: appeared ? -300 : -350)
+                .animation(.easeInOut(duration: 10).repeatForever(autoreverses: true), value: appeared)
+
             Circle()
-                .fill(RSMSTheme.gold.opacity(0.02))
-                .frame(width: 400, height: 400)
-                .offset(x: 300, y: 200)
+                .fill(RSMSTheme.surfaceTertiary.opacity(0.4))
+                .blur(radius: 100)
+                .frame(width: 500, height: 500)
+                .offset(x: appeared ? 300 : 350, y: appeared ? 200 : 250)
+                .animation(.easeInOut(duration: 12).repeatForever(autoreverses: true), value: appeared)
         }
     }
 
@@ -180,6 +184,7 @@ struct LoginView: View {
         }
     }
 }
+
 
 #Preview {
     LoginView()

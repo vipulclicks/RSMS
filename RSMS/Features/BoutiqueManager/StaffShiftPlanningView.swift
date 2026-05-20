@@ -46,11 +46,11 @@ struct StaffShiftPlanningView: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(RSMSTheme.gold.opacity(0.1))
+                        .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 40, height: 40)
                     Text(String(name.prefix(1)))
                         .font(.headline)
-                        .foregroundStyle(RSMSTheme.gold)
+                        .foregroundStyle(RSMSTheme.primary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name)
@@ -65,7 +65,7 @@ struct StaffShiftPlanningView: View {
             HStack {
                 Image(systemName: "clock.fill")
                     .font(.caption)
-                    .foregroundStyle(RSMSTheme.gold)
+                    .foregroundStyle(RSMSTheme.primary)
                 Text("\(shift.startTime) – \(shift.endTime)")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
@@ -106,7 +106,7 @@ struct StaffShiftPlanningView: View {
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(RSMSTheme.surfaceTertiary)
                                 RoundedRectangle(cornerRadius: 6)
-                                    .fill(RSMSTheme.goldGradient)
+                                    .fill(RSMSTheme.primaryGradient)
                                     .frame(width: geo.size.width * (goal.achievedAmount / goal.targetAmount))
                             }
                         }
@@ -115,7 +115,7 @@ struct StaffShiftPlanningView: View {
                         HStack {
                             Text("€\(String(format: "%,.0f", goal.achievedAmount))")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.gold)
+                                .foregroundStyle(RSMSTheme.primary)
                             Spacer()
                             Text("€\(String(format: "%,.0f", goal.targetAmount))")
                                 .font(.caption)
@@ -172,7 +172,7 @@ struct StaffShiftPlanningView: View {
                     icon: "banknote.fill",
                     value: "€\(String(format: "%,.0f", metric.totalSales))",
                     label: "Total Sales",
-                    iconColor: RSMSTheme.gold
+                    iconColor: RSMSTheme.primary
                 )
                 KPICard(
                     icon: "bag.fill",

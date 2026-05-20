@@ -49,18 +49,18 @@ struct AppointmentRemoteSellingView: View {
                 HStack {
                     ZStack {
                         Circle()
-                            .fill(RSMSTheme.gold.opacity(0.1))
+                            .fill(RSMSTheme.primary.opacity(0.1))
                             .frame(width: 48, height: 48)
                         Text(String(client.fullName.prefix(1)))
                             .font(.headline)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(client.fullName)
                             .font(.headline)
                             .foregroundStyle(RSMSTheme.textPrimary)
-                        StatusBadge(text: client.vipTier.rawValue, color: RSMSTheme.gold)
+                        StatusBadge(text: client.vipTier.rawValue, color: RSMSTheme.primary)
                     }
 
                     Spacer()
@@ -84,7 +84,7 @@ struct AppointmentRemoteSellingView: View {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "text.quote")
                             .font(.caption)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                         Text(notes)
                             .font(.subheadline)
                             .foregroundStyle(RSMSTheme.textSecondary)
@@ -113,7 +113,7 @@ struct AppointmentRemoteSellingView: View {
             HStack(spacing: 12) {
                 miniStat(icon: "checkmark.circle.fill", value: "1", label: "Confirmed", color: RSMSTheme.success)
                 miniStat(icon: "clock.fill", value: "60m", label: "Duration", color: RSMSTheme.info)
-                miniStat(icon: "person.fill", value: "VIP", label: "Priority", color: RSMSTheme.gold)
+                miniStat(icon: "person.fill", value: "VIP", label: "Priority", color: RSMSTheme.primary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -160,7 +160,7 @@ struct AppointmentRemoteSellingView: View {
                             .frame(width: 60, height: 60)
                         Image(systemName: "watch.analog")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(RSMSTheme.primary)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -196,7 +196,7 @@ struct AppointmentRemoteSellingView: View {
                 SectionHeader(title: "Remote Selling Tools")
 
                 toolRow(icon: "video.fill", title: "Video Consultation", subtitle: "Start a live session", color: RSMSTheme.info)
-                toolRow(icon: "envelope.fill", title: "Share Cart", subtitle: "Send curated selection", color: RSMSTheme.gold)
+                toolRow(icon: "envelope.fill", title: "Share Cart", subtitle: "Send curated selection", color: RSMSTheme.primary)
                 toolRow(icon: "message.fill", title: "Follow Up", subtitle: "Send appointment reminder", color: RSMSTheme.success)
             }
             .rsmsCard()
@@ -210,7 +210,7 @@ struct AppointmentRemoteSellingView: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.gold)
+                .foregroundStyle(RSMSTheme.primary)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)

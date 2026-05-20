@@ -27,40 +27,40 @@ extension Color {
 // MARK: - Design Tokens
 
 enum RSMSTheme {
-    // Backgrounds — deep emerald tones
-    static let background       = Color(hex: "0A1F1A")
-    static let surfacePrimary   = Color(hex: "122C24")
-    static let surfaceSecondary = Color(hex: "1A3D32")
-    static let surfaceTertiary  = Color(hex: "234A3E")
+    // Backgrounds — Luxury Ivory & Beige
+    static let background       = Color(hex: "F1E2D1")
+    static let surfacePrimary   = Color(hex: "DCC3AA")
+    static let surfaceSecondary = Color(hex: "D3B69C")
+    static let surfaceTertiary  = Color(hex: "C9A98E")
 
-    // Gold palette
-    static let gold      = Color(hex: "D4A843")
-    static let goldLight = Color(hex: "E8C96E")
-    static let goldDark  = Color(hex: "9A7A2E")
+    // Primary palette — Luxury Burgundy
+    static let primary      = Color(hex: "810B38")
+    static let primaryLight = Color(hex: "A32D5A")
+    static let primaryDark  = Color(hex: "540623")
 
-    // Text — ivory & sage
-    static let cream         = Color(hex: "F2EDE4")
-    static let textPrimary   = Color(hex: "F2EDE4")
-    static let textSecondary = Color(hex: "8FA99C")
-    static let textTertiary  = Color(hex: "5E7A6E")
+    // Text — Deep Maroon
+    static let cream         = Color(hex: "FFFFFF")
+    static let textPrimary   = Color(hex: "541A1A")
+    static let textSecondary = Color(hex: "7A3A3A")
+    static let textTertiary  = Color(hex: "9C6060")
 
-    // Semantic
-    static let success = Color(hex: "5CB88A")
-    static let warning = Color(hex: "DEBB4C")
-    static let danger  = Color(hex: "D45B5B")
-    static let info    = Color(hex: "4DA8B0")
+    // Semantic (Adjusted for light theme)
+    static let success = Color(hex: "2D7A5D")
+    static let warning = Color(hex: "B37D2A")
+    static let danger  = Color(hex: "B33A3A")
+    static let info    = Color(hex: "2B738A")
 
     // Divider / Border
-    static let divider = Color.white.opacity(0.08)
-    static let border  = Color.white.opacity(0.06)
+    static let divider = Color.black.opacity(0.08)
+    static let border  = Color.black.opacity(0.06)
 
     // Gradients
     static let backgroundGradient = LinearGradient(
-        colors: [Color(hex: "0A1F1A"), Color(hex: "0E2920"), Color(hex: "0A1F1A")],
+        colors: [Color(hex: "F1E2D1"), Color(hex: "EBD9C5"), Color(hex: "F1E2D1")],
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
-    static let goldGradient = LinearGradient(
-        colors: [Color(hex: "D4A843"), Color(hex: "E8C96E"), Color(hex: "D4A843")],
+    static let primaryGradient = LinearGradient(
+        colors: [Color(hex: "810B38"), Color(hex: "A32D5A"), Color(hex: "810B38")],
         startPoint: .leading, endPoint: .trailing
     )
 }
@@ -73,14 +73,14 @@ struct RSMSCardModifier: ViewModifier {
         content
             .padding(padding)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(RSMSTheme.surfacePrimary)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 20)
                             .stroke(RSMSTheme.border, lineWidth: 1)
                     )
             )
-            .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
     }
 }
 
@@ -116,7 +116,7 @@ struct KPICard: View {
     let label: String
     var trend: String? = nil
     var trendColor: Color = RSMSTheme.success
-    var iconColor: Color = RSMSTheme.gold
+    var iconColor: Color = RSMSTheme.primary
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -177,7 +177,7 @@ struct CircularProgressView: View {
                     .stroke(RSMSTheme.surfaceTertiary, lineWidth: 10)
                 Circle()
                     .trim(from: 0, to: progress)
-                    .stroke(RSMSTheme.gold, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .stroke(RSMSTheme.primary, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 2) {
                     Text(value)
@@ -190,5 +190,16 @@ struct CircularProgressView: View {
             }
             .frame(width: size, height: size)
         }
+    }
+}
+
+// MARK: - Custom Button Style
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .opacity(configuration.isPressed ? 0.9 : 1)
+            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
     }
 }
