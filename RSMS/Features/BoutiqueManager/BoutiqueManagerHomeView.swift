@@ -31,7 +31,7 @@ struct BoutiqueManagerHomeView: View {
         } detail: {
             detailView
         }
-        .tint(RSMSTheme.gold)
+        .tint(RSMSTheme.primary)
     }
 
     // MARK: - Sidebar

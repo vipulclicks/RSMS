@@ -1,29 +1,27 @@
 //
-//  SalesAssociateHomeView.swift
+//  InventoryControllerHomeView.swift
 //  RSMS
 //
-//  iPad sidebar navigation for Sales Associate role.
+//  iPad sidebar navigation for Inventory Controller role.
 //
 
 import SwiftUI
 
-enum SalesSection: String, CaseIterable, Identifiable {
-    case clienteling  = "Clienteling"
-    case appointments = "Appointments & Remote Selling"
+enum InventorySection: String, CaseIterable, Identifiable {
+    case rfidStock = "RFID Stock Management"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .clienteling:  return "person.text.rectangle.fill"
-        case .appointments: return "calendar.badge.clock"
+        case .rfidStock: return "sensor.tag.radiowaves.forward.fill"
         }
     }
 }
 
-struct SalesAssociateHomeView: View {
+struct InventoryControllerHomeView: View {
     @Environment(AppViewModel.self) private var viewModel
-    @State private var selectedSection: SalesSection? = .clienteling
+    @State private var selectedSection: InventorySection? = .rfidStock
 
     var body: some View {
         NavigationSplitView {
@@ -31,18 +29,18 @@ struct SalesAssociateHomeView: View {
         } detail: {
             detailView
         }
-        .tint(RSMSTheme.gold)
+        .tint(RSMSTheme.primary)
     }
 
     private var sidebar: some View {
         List(selection: $selectedSection) {
-            ForEach(SalesSection.allCases) { section in
+            ForEach(InventorySection.allCases) { section in
                 Label(section.rawValue, systemImage: section.icon)
                     .tag(section)
             }
         }
         .listStyle(.sidebar)
-        .navigationTitle("Sales Associate")
+        .navigationTitle("Inventory")
         .toolbar {
             ToolbarItem(placement: .bottomBar) {
                 Button {
@@ -58,17 +56,15 @@ struct SalesAssociateHomeView: View {
     @ViewBuilder
     private var detailView: some View {
         switch selectedSection {
-        case .clienteling:
-            ClientelingView()
-        case .appointments:
-            AppointmentRemoteSellingView()
+        case .rfidStock:
+            RFIDStockManagementView()
         case .none:
-            ClientelingView()
+            RFIDStockManagementView()
         }
     }
 }
 
 #Preview {
-    SalesAssociateHomeView()
+    InventoryControllerHomeView()
         .environment(AppViewModel())
 }
