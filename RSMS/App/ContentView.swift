@@ -33,3 +33,17 @@ struct ContentView: View {
     ContentView()
         .environment(AppViewModel())
 }
+
+// MARK: - Temporary Stubs
+
+struct BoutiqueManagerHomeView: View {
+    var body: some View {
+        Text("Boutique Manager Home")
+    }
+}
+
+struct InventoryControllerHomeView: View {
+    var body: some View {
+        Text("Inventory Controller Home")
+    }
+}
