@@ -265,9 +265,9 @@ struct ClientelingView: View {
     private func tierColor(_ tier: VIPTier) -> Color {
         switch tier {
         case .standard: return RSMSTheme.textSecondary
-        case .silver:   return Color(hex: "C0C0C0")
+        case .silver:   return RSMSTheme.textTertiary
         case .gold:     return RSMSTheme.gold
-        case .platinum: return Color(hex: "B0C4DE")
+        case .platinum: return RSMSTheme.info
         case .prive:    return RSMSTheme.danger
         }
     }

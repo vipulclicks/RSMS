@@ -105,7 +105,7 @@ struct LowStockNotificationView: View {
                 Button {
                     placeReorder(for: alert)
                 } label: {
-                    Text("Reorder").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                    Text("Reorder").font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.cream)
                         .frame(maxWidth: .infinity).padding(.vertical, 14)
                         .background(RSMSTheme.gold).clipShape(Capsule())
                 }
@@ -159,7 +159,7 @@ struct LowStockNotificationView: View {
         .padding(.vertical, 14)
         .background(RSMSTheme.surfaceSecondary)
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.15), radius: 15, y: 8)
+        .shadow(color: RSMSTheme.textPrimary.opacity(0.15), radius: 15, y: 8)
         .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
         .padding(.bottom, 24)
     }

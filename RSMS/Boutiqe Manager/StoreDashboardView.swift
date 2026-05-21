@@ -47,25 +47,25 @@ struct StoreDashboardView: View {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: "bell")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(RSMSTheme.textPrimary)
                     
 
                 if !dashboardVM.lowStockAlerts.isEmpty {
                     let count = dashboardVM.lowStockAlerts.count
                     let displayText = count > 99 ? "99+" : "\(count)"
 
-                    Text(displayText)
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, count >= 10 ? 4 : 0)
-                        .frame(
-                            minWidth: count >= 10 ? 10 : 14,
-                            minHeight: 14
-                        )
-                        .background(.red)
-                        .clipShape(Capsule())
-                        .offset(x: 2, y: -6)
-                        .transition(.scale)
+                        Text(displayText)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(RSMSTheme.cream)
+                            .padding(.horizontal, count >= 10 ? 4 : 0)
+                            .frame(
+                                minWidth: count >= 10 ? 10 : 14,
+                                minHeight: 14
+                            )
+                            .background(RSMSTheme.danger)
+                            .clipShape(Capsule())
+                            .offset(x: 2, y: -6)
+                            .transition(.scale)
                 }
             }
             .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
