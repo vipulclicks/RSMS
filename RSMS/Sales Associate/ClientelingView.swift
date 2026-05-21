@@ -9,8 +9,7 @@ import SwiftUI
 
 struct ClientelingView: View {
     private let client = ClientProfile.preview
-    private let preference = ClientPreference.preview
-    private let anniversary = ClientAnniversary.previewBirthday
+    private let anniversary = ClientAnniversary.preview
     private let wishlist = WishlistItem.preview
     private let products = Product.all
 
@@ -131,28 +130,30 @@ struct ClientelingView: View {
                 SectionHeader(title: "Preferences & Sizes")
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    if let ring = preference.ringSize {
+                    if let ring = client.ringSize {
                         preferenceChip(label: "Ring Size", value: ring, icon: "circle.circle.fill")
                     }
-                    if let bracelet = preference.braceletSize {
+                    if let bracelet = client.braceletSize {
                         preferenceChip(label: "Bracelet", value: bracelet, icon: "link.circle.fill")
                     }
-                    if let necklace = preference.necklaceLength {
+                    if let necklace = client.necklaceLength {
                         preferenceChip(label: "Necklace", value: necklace, icon: "oval.portrait.fill")
                     }
-                    if let wrist = preference.wristSize {
+                    if let wrist = client.wristSize {
                         preferenceChip(label: "Wrist", value: wrist, icon: "applewatch")
                     }
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
-                tagSection(title: "Favorite Categories", tags: preference.favoriteCategories, color: RSMSTheme.gold)
+                if let categories = client.favoriteCategories {
+                    tagSection(title: "Favorite Categories", tags: categories, color: RSMSTheme.gold)
+                }
 
-                if let metals = preference.favoriteMetals {
+                if let metals = client.favoriteMetals {
                     tagSection(title: "Preferred Metals", tags: metals, color: RSMSTheme.info)
                 }
-                if let gems = preference.favoriteGemstones {
+                if let gems = client.favoriteGemstones {
                     tagSection(title: "Gemstones", tags: gems, color: RSMSTheme.success)
                 }
             }
@@ -269,27 +270,6 @@ struct ClientelingView: View {
         case .gold:     return RSMSTheme.gold
         case .platinum: return RSMSTheme.info
         case .prive:    return RSMSTheme.danger
-        }
-    }
-}
-
-// MARK: - Flow Layout for Tags
-
-struct FlowLayout: View {
-    let tags: [String]
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(tags, id: \.self) { tag in
-                Text(tag)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(color.opacity(0.12))
-                    .foregroundStyle(color)
-                    .clipShape(Capsule())
-            }
         }
     }
 }

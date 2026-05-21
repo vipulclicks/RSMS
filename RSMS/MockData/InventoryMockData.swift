@@ -79,116 +79,90 @@ extension RFIDScanRecord {
     )
 }
 
-// MARK: - StockDiscrepancy
+// MARK: - InventoryVariance
 
-extension StockDiscrepancy {
-    static let preview = StockDiscrepancy(
+extension InventoryVariance {
+    static let preview = InventoryVariance(
         id: UUID(uuidString: "30000000-0000-0000-0000-000000000030")!,
         storeId: Store.preview.id,
         productId: Product.previewRing.id,
         expectedQty: 2,
         actualQty: 1,
+        variance: -1,
         reportedBy: UserProfile.previewInventory.id,
         status: .investigating,
+        cycleCountId: nil,
         resolution: nil,
         reportedAt: .now,
         resolvedAt: nil
     )
 }
 
-// MARK: - StockTransfer
+// MARK: - InventoryMovement (replaces StockTransfer, ReplenishmentShipment, VendorReturn)
 
-extension StockTransfer {
-    static let preview = StockTransfer(
+extension InventoryMovement {
+    static let previewTransfer = InventoryMovement(
         id: UUID(uuidString: "30000000-0000-0000-0000-000000000040")!,
-        fromStoreId: Store.preview.id,
-        toStoreId: Store.previewMumbai.id, // Ensure Store.previewMumbai is accessible or replace with random UUID
+        type: .storeTransfer,
+        sourceId: Store.preview.id.uuidString,
+        destinationId: Store.previewMumbai.id.uuidString,
         status: .inTransit,
         requestedBy: UserProfile.previewManager.id,
-        approvedBy: UserProfile.previewManager.id, // Assuming same manager for simplicity in mock
+        approvedBy: UserProfile.previewManager.id,
         requestedAt: .now.addingTimeInterval(-2 * 86400),
         shippedAt: .now.addingTimeInterval(-1 * 86400),
         receivedAt: nil,
-        notes: "Customer request transfer."
+        asnNumber: nil,
+        itemsExpected: 1,
+        itemsReceived: nil,
+        reason: "Customer request transfer.",
+        notes: nil
     )
-}
 
-extension TransferItem {
-    static let preview = TransferItem(
-        id: UUID(uuidString: "30000000-0000-0000-0000-000000000045")!,
-        transferId: StockTransfer.preview.id,
-        productId: Product.previewWatch.id,
-        quantity: 1
-    )
-}
-
-// MARK: - ReplenishmentShipment
-
-extension ReplenishmentShipment {
-    static let preview = ReplenishmentShipment(
+    static let previewReplenishment = InventoryMovement(
         id: UUID(uuidString: "30000000-0000-0000-0000-000000000050")!,
-        storeId: Store.preview.id,
-        dcId: "DC-EUROPE-01",
-        asnNumber: "ASN-987654321",
-        expectedDate: .now.addingTimeInterval(1 * 86400),
+        type: .dcReplenishment,
+        sourceId: "DC-EUROPE-01",
+        destinationId: Store.preview.id.uuidString,
         status: .inTransit,
+        requestedBy: nil,
+        approvedBy: nil,
+        requestedAt: nil,
+        shippedAt: .now.addingTimeInterval(-1 * 86400),
         receivedAt: nil,
-        receivedBy: nil,
+        asnNumber: "ASN-987654321",
         itemsExpected: 15,
         itemsReceived: nil,
+        reason: nil,
         notes: "Weekly replenishment."
     )
-}
 
-// MARK: - VendorReturn
-
-extension VendorReturn {
-    static let preview = VendorReturn(
+    static let previewVendorReturn = InventoryMovement(
         id: UUID(uuidString: "30000000-0000-0000-0000-000000000060")!,
-        storeId: Store.preview.id,
-        vendorId: "VEND-001",
-        vendorName: "Atelier Suisse SA",
+        type: .vendorReturn,
+        sourceId: Store.preview.id.uuidString,
+        destinationId: "VEND-001",
+        status: .requested,
+        requestedBy: UserProfile.previewInventory.id,
+        approvedBy: nil,
+        requestedAt: .now,
+        shippedAt: nil,
+        receivedAt: nil,
+        asnNumber: nil,
+        itemsExpected: 1,
+        itemsReceived: nil,
         reason: "Defective clasp",
-        status: .pending,
-        createdBy: UserProfile.previewInventory.id,
-        createdAt: .now,
-        shippedAt: nil
+        notes: nil
     )
 }
 
-extension VendorReturnItem {
-    static let preview = VendorReturnItem(
-        id: UUID(uuidString: "30000000-0000-0000-0000-000000000065")!,
-        vendorReturnId: VendorReturn.preview.id,
+extension MovementItem {
+    static let preview = MovementItem(
+        id: UUID(uuidString: "30000000-0000-0000-0000-000000000045")!,
+        movementId: InventoryMovement.previewTransfer.id,
         productId: Product.previewWatch.id,
         quantity: 1,
-        reason: "Clasp does not close properly."
-    )
-}
-
-// MARK: - CycleCount
-
-extension CycleCount {
-    static let preview = CycleCount(
-        id: UUID(uuidString: "30000000-0000-0000-0000-000000000070")!,
-        storeId: Store.preview.id,
-        scheduledDate: .now,
-        status: .inProgress,
-        conductedBy: UserProfile.previewInventory.id,
-        completedAt: nil,
-        notes: "Quarterly full store count.",
-        createdAt: .now.addingTimeInterval(-1 * 86400)
-    )
-}
-
-extension CycleCountItem {
-    static let preview = CycleCountItem(
-        id: UUID(uuidString: "30000000-0000-0000-0000-000000000075")!,
-        cycleCountId: CycleCount.preview.id,
-        productId: Product.previewRing.id,
-        systemQty: 5,
-        countedQty: 5,
-        variance: 0
+        reason: nil
     )
 }
 

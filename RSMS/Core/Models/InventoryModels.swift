@@ -37,6 +37,17 @@ struct Product: Codable, Identifiable, Hashable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+
+    // MARK: - Preview Helpers
+
+    static let preview = Product(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        sku: "JWL-NKL-001", name: "Diamond Necklace", category: "Jewelry",
+        subcategory: "Necklaces", brand: "Maison RSMS", collection: "Éternité",
+        material: "18K White Gold", price: 12500.00, currency: "EUR",
+        imageURL: nil, description: "A stunning diamond necklace",
+        isActive: true, createdAt: .now, updatedAt: .now
+    )
 }
 
 // MARK: - Stock Item
@@ -316,40 +327,6 @@ struct InventoryDashboardSnapshot {
     let recentActivity: [AuditTrail]
 }
 
-// MARK: - Inventory Variance
-
-enum VarianceStatus: String, Codable {
-    case open, investigating, resolved, closed
-}
-
-struct InventoryVariance: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let productId: UUID
-    let reportedQuantity: Int
-    let expectedQuantity: Int
-    let status: VarianceStatus
-    let createdAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, status
-        case storeId          = "store_id"
-        case productId        = "product_id"
-        case reportedQuantity = "reported_quantity"
-        case expectedQuantity = "expected_quantity"
-        case createdAt        = "created_at"
-    }
-    
-    static let preview = InventoryVariance(
-        id: UUID(),
-        storeId: UUID(),
-        productId: UUID(),
-        reportedQuantity: 40,
-        expectedQuantity: 42,
-        status: .open,
-        createdAt: .now
-    )
-}
 
 // MARK: - Shrinkage Analytics
 
