@@ -2,23 +2,36 @@
 //  ContentView.swift
 //  RSMS
 //
-//  Created by Yashika Sharma on 19/05/26.
+//  Main Application Router
 //
 
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(AppViewModel.self) private var appVM
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if let user = appVM.currentUser {
+                // Route to the appropriate dashboard based on Role
+                switch user.role {
+                case .boutiqueManager:
+                    BoutiqueManagerHomeView()
+                case .salesAssociate:
+                    SalesAssociateHomeView()
+                case .inventoryController:
+                    InventoryControllerHomeView()
+                }
+            } else {
+                // Not logged in -> Show Login
+                LoginView()
+            }
         }
-        .padding()
+        .animation(.default, value: appVM.currentUser != nil)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppViewModel())
 }
