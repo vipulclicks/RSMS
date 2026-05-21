@@ -1,0 +1,48 @@
+{
+  "source": "/Users/shiva/Desktop/RSMS/RSMS/Sales Associate/AppointmentRemoteSellingView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Appointments & Remote Selling",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "\"%@\"",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 148
+        }
+      },
+      {
+        "comment": "",
+        "key": "Selection for %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 131
+        }
+      },
+      {
+        "comment": "",
+        "key": "Prepared by Lucas Dubois",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 134
+        }
+      },
+      {
+        "comment": "",
+        "key": "€%@ · %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 171
+        }
+      }
+    ]
+  },
+  "version": 1
+}
