@@ -1,9 +1,3 @@
-//
-//  ContentView.swift
-//  RSMS
-//
-//  Created by Yashika Sharma on 19/05/26.
-//
 
 import SwiftUI
 
@@ -46,7 +40,6 @@ struct ContentView: View {
 >>>>>>> develop:RSMS/App/ContentView.swift
     }
 }
-
 #Preview {
     ContentView()
         .environment(AppViewModel())
