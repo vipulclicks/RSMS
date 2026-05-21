@@ -59,7 +59,7 @@ struct AssignGoalFormView: View {
                             }
                         }
                         .pickerStyle(.segmented)
-                        .colorMultiply(RSMSTheme.gold)
+                        .colorMultiply(RSMSTheme.surfaceTertiary)
                         .onChange(of: viewModel.draftPeriod) { _, _ in
                             viewModel.loadPreviousGoal()
                         }

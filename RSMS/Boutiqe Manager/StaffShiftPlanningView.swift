@@ -99,7 +99,15 @@ struct StaffShiftPlanningView: View {
 
             // MARK: Commissions Column
             VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(title: "Recent Commissions")
+                HStack {
+                    SectionHeader(title: "Recent Commissions")
+                    Spacer()
+                    // Invisible spacer matching the "New Goal" button height
+                    Text("New Goal")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.vertical, 6)
+                        .opacity(0)
+                }
                 let staffName = UserProfile.all.first(where: { $0.id == commission.staffId })?.fullName ?? "Staff"
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {

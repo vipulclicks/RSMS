@@ -4,14 +4,16 @@ struct StoreDashboardView: View {
     // MARK: - View Models & State
     @State private var dashboardVM = StoreDashboardViewModel()
     @State private var showingNotifications = false
-    
+
     private let summary = DashboardSummary.preview
     private let shifts = StaffShift.all
     private let store = Store.preview
 
     private let columns = [
-        GridItem(.flexible()), GridItem(.flexible()),
-        GridItem(.flexible()), GridItem(.flexible())
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
     ]
 
     var body: some View {
@@ -26,20 +28,17 @@ struct StoreDashboardView: View {
         }
         .background(RSMSTheme.background)
         .navigationTitle("Store Dashboard")
-
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 notificationBell
             }
         }
-
         .sheet(isPresented: $showingNotifications) {
-                // Pass the entire ViewModel instead of just the array!
-                LowStockNotificationView(dashboardVM: dashboardVM)
-            }
+            LowStockNotificationView(dashboardVM: dashboardVM)
+        }
     }
 
-    // MARK: - Native iOS Notification Bell
+    // MARK: - Notification Bell
     private var notificationBell: some View {
         Button {
             showingNotifications = true
@@ -48,24 +47,23 @@ struct StoreDashboardView: View {
                 Image(systemName: "bell")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
-                    
 
                 if !dashboardVM.lowStockAlerts.isEmpty {
                     let count = dashboardVM.lowStockAlerts.count
                     let displayText = count > 99 ? "99+" : "\(count)"
 
-                        Text(displayText)
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(RSMSTheme.cream)
-                            .padding(.horizontal, count >= 10 ? 4 : 0)
-                            .frame(
-                                minWidth: count >= 10 ? 10 : 14,
-                                minHeight: 14
-                            )
-                            .background(RSMSTheme.danger)
-                            .clipShape(Capsule())
-                            .offset(x: 2, y: -6)
-                            .transition(.scale)
+                    Text(displayText)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                        .padding(.horizontal, count >= 10 ? 4 : 0)
+                        .frame(
+                            minWidth: count >= 10 ? 10 : 14,
+                            minHeight: 14
+                        )
+                        .background(RSMSTheme.danger)
+                        .clipShape(Capsule())
+                        .offset(x: 2, y: -6)
+                        .transition(.scale)
                 }
             }
             .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
@@ -108,7 +106,12 @@ struct StoreDashboardView: View {
 
     // MARK: - KPI Cards
     private var kpiCardsRow: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
+        LazyVGrid(
+            columns: columns,
+            alignment: .leading,
+            spacing: 16
+        ) {
+
             KPICard(
                 icon: "indianrupeesign.square.fill",
                 value: summary.salesActual.formatted(
@@ -141,6 +144,7 @@ struct StoreDashboardView: View {
                 )
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             KPICard(
                 icon: "figure.walk.arrival",
@@ -153,8 +157,9 @@ struct StoreDashboardView: View {
 
     // MARK: - Main Content
     private var mainContentRow: some View {
-        HStack(spacing: 16) {
-            VStack(spacing: 16) {
+        HStack(alignment: .top, spacing: 16) {
+
+            VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Sales Progress")
 
                 HStack(spacing: 32) {
@@ -190,8 +195,10 @@ struct StoreDashboardView: View {
                         )
                     }
                 }
+
+                Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 220)
             .rsmsCard()
 
             VStack(alignment: .leading, spacing: 20) {
@@ -219,8 +226,10 @@ struct StoreDashboardView: View {
                     value: "\(dashboardVM.lowStockAlerts.count) items low",
                     color: RSMSTheme.warning
                 )
+
+                Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 220)
             .rsmsCard()
         }
     }
@@ -234,7 +243,10 @@ struct StoreDashboardView: View {
             )
 
             LazyVGrid(
-                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ],
                 spacing: 12
             ) {
                 ForEach(shifts) { shift in
@@ -285,7 +297,6 @@ struct StoreDashboardView: View {
         .rsmsCard(padding: 16)
     }
 
-    // MARK: - Helpers
     private func metricRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
@@ -327,9 +338,9 @@ struct StoreDashboardView: View {
     }
 
     private var formattedDate: String {
-        let f = DateFormatter()
-        f.dateFormat = "EEEE, d MMMM yyyy"
-        return f.string(from: .now)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, d MMMM yyyy"
+        return formatter.string(from: .now)
     }
 }
 

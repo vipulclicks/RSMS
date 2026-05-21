@@ -82,8 +82,10 @@ struct KPICard: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(trendColor)
             }
+            
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .rsmsCard(padding: 16)
     }
 }
