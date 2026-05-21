@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var viewModel = AppViewModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Group {
+            if let user = viewModel.currentUser {
+                switch user.role {
+                case .inventoryController:
+                    InventoryControllerHomeView()
+                case .boutiqueManager:
+                    Text("Boutique Manager Dashboard") // Placeholder for future views
+                case .salesAssociate:
+                    Text("Sales Associate Dashboard") // Placeholder for future views
+                }
+            } else {
+                LoginView()
+            }
         }
-        .padding()
+        .environment(viewModel)
     }
 }
 
