@@ -232,12 +232,6 @@ extension AuthCertificate {
     )
 }
 
-<<<<<<< Updated upstream
-// MARK: - ShrinkageAnalytics
-=======
-
-// MARK: - Shrinkage Analytics Mock Data
->>>>>>> Stashed changes
 
 extension ShrinkageAnalytics {
     static let preview = ShrinkageAnalytics(
