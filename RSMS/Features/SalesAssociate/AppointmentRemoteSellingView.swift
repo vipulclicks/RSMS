@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct AppointmentRemoteSellingView: View {
-    @State private var viewModel = AppointmentRemoteSellingViewModel()
+    private let appointment = Appointment.preview
+    private let curatedCart = UniversalCart.previewCurated
+    private let curatedItem = UniversalCartItem.previewCuratedItem
+    private let client = ClientProfile.preview
+    private let products = Product.all
 
     var body: some View {
         ScrollView {
@@ -45,42 +49,42 @@ struct AppointmentRemoteSellingView: View {
                 HStack {
                     ZStack {
                         Circle()
-                            .fill(RSMSTheme.primary.opacity(0.1))
+                            .fill(RSMSTheme.gold.opacity(0.1))
                             .frame(width: 48, height: 48)
-                        Text(String(viewModel.client.fullName.prefix(1)))
+                        Text(String(client.fullName.prefix(1)))
                             .font(.headline)
-                            .foregroundStyle(RSMSTheme.primary)
+                            .foregroundStyle(RSMSTheme.gold)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(viewModel.client.fullName)
+                        Text(client.fullName)
                             .font(.headline)
                             .foregroundStyle(RSMSTheme.textPrimary)
-                        StatusBadge(text: viewModel.client.vipTier.rawValue, color: RSMSTheme.primary)
+                        StatusBadge(text: client.vipTier.rawValue, color: RSMSTheme.gold)
                     }
 
                     Spacer()
 
                     StatusBadge(
-                        text: viewModel.appointment.status.rawValue.replacingOccurrences(of: "_", with: " "),
-                        color: viewModel.appointmentStatusColor(viewModel.appointment.status)
+                        text: appointment.status.rawValue.replacingOccurrences(of: "_", with: " "),
+                        color: appointmentStatusColor(appointment.status)
                     )
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    infoChip(icon: "calendar", label: "Date", value: viewModel.formattedDate(viewModel.appointment.dateTime))
-                    infoChip(icon: "clock.fill", label: "Duration", value: "\(viewModel.appointment.durationMinutes) min")
-                    infoChip(icon: "building.2.fill", label: "Type", value: viewModel.appointment.type.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                    infoChip(icon: "calendar", label: "Date", value: formattedDate(appointment.dateTime))
+                    infoChip(icon: "clock.fill", label: "Duration", value: "\(appointment.durationMinutes) min")
+                    infoChip(icon: "building.2.fill", label: "Type", value: appointment.type.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
                     infoChip(icon: "mappin.circle.fill", label: "Location", value: "Paris Vendôme")
                 }
 
-                if let notes = viewModel.appointment.notes {
+                if let notes = appointment.notes {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "text.quote")
                             .font(.caption)
-                            .foregroundStyle(RSMSTheme.primary)
+                            .foregroundStyle(RSMSTheme.gold)
                         Text(notes)
                             .font(.subheadline)
                             .foregroundStyle(RSMSTheme.textSecondary)
@@ -93,7 +97,7 @@ struct AppointmentRemoteSellingView: View {
                     )
                 }
 
-                if let videoLink = viewModel.appointment.videoLink {
+                if let videoLink = appointment.videoLink {
                     HStack {
                         Image(systemName: "video.fill")
                             .foregroundStyle(RSMSTheme.info)
@@ -109,7 +113,7 @@ struct AppointmentRemoteSellingView: View {
             HStack(spacing: 12) {
                 miniStat(icon: "checkmark.circle.fill", value: "1", label: "Confirmed", color: RSMSTheme.success)
                 miniStat(icon: "clock.fill", value: "60m", label: "Duration", color: RSMSTheme.info)
-                miniStat(icon: "person.fill", value: "VIP", label: "Priority", color: RSMSTheme.primary)
+                miniStat(icon: "person.fill", value: "VIP", label: "Priority", color: RSMSTheme.gold)
             }
         }
         .frame(maxWidth: .infinity)
@@ -124,7 +128,7 @@ struct AppointmentRemoteSellingView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Selection for \(viewModel.client.fullName)")
+                        Text("Selection for \(client.fullName)")
                             .font(.headline)
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Text("Prepared by Lucas Dubois")
@@ -133,14 +137,14 @@ struct AppointmentRemoteSellingView: View {
                     }
                     Spacer()
                     StatusBadge(
-                        text: viewModel.curatedCart.status.rawValue,
-                        color: viewModel.cartStatusColor(viewModel.curatedCart.status)
+                        text: curatedCart.status.rawValue,
+                        color: cartStatusColor(curatedCart.status)
                     )
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
-                if let note = viewModel.curatedCart.note {
+                if let note = curatedCart.note {
                     Text("\"\(note)\"")
                         .font(.subheadline)
                         .foregroundStyle(RSMSTheme.textSecondary)
@@ -148,7 +152,7 @@ struct AppointmentRemoteSellingView: View {
                 }
 
                 // Cart items
-                let product = viewModel.cartProduct
+                let product = products.first(where: { $0.id == curatedItem.productId })
                 HStack(spacing: 14) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
@@ -156,7 +160,7 @@ struct AppointmentRemoteSellingView: View {
                             .frame(width: 60, height: 60)
                         Image(systemName: "watch.analog")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.primary)
+                            .foregroundStyle(RSMSTheme.gold)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -172,7 +176,7 @@ struct AppointmentRemoteSellingView: View {
 
                     Spacer()
 
-                    if let itemNote = viewModel.curatedItem.note {
+                    if let itemNote = curatedItem.note {
                         Text(itemNote)
                             .font(.caption2)
                             .foregroundStyle(RSMSTheme.textTertiary)
@@ -192,7 +196,7 @@ struct AppointmentRemoteSellingView: View {
                 SectionHeader(title: "Remote Selling Tools")
 
                 toolRow(icon: "video.fill", title: "Video Consultation", subtitle: "Start a live session", color: RSMSTheme.info)
-                toolRow(icon: "envelope.fill", title: "Share Cart", subtitle: "Send curated selection", color: RSMSTheme.primary)
+                toolRow(icon: "envelope.fill", title: "Share Cart", subtitle: "Send curated selection", color: RSMSTheme.gold)
                 toolRow(icon: "message.fill", title: "Follow Up", subtitle: "Send appointment reminder", color: RSMSTheme.success)
             }
             .rsmsCard()
@@ -206,7 +210,7 @@ struct AppointmentRemoteSellingView: View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.primary)
+                .foregroundStyle(RSMSTheme.gold)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(label)
@@ -259,6 +263,36 @@ struct AppointmentRemoteSellingView: View {
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(RSMSTheme.textTertiary)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM, HH:mm"
+        return f.string(from: date)
+    }
+
+    private func appointmentStatusColor(_ status: AppointmentStatus) -> Color {
+        switch status {
+        case .scheduled:  return RSMSTheme.info
+        case .confirmed:  return RSMSTheme.success
+        case .inProgress: return RSMSTheme.warning
+        case .completed:  return RSMSTheme.textSecondary
+        case .cancelled:  return RSMSTheme.danger
+        case .noShow:     return RSMSTheme.danger
+        }
+    }
+
+    private func cartStatusColor(_ status: CartStatus) -> Color {
+        switch status {
+        case .draft:     return RSMSTheme.textSecondary
+        case .shared:    return RSMSTheme.info
+        case .viewed:    return RSMSTheme.warning
+        case .converted: return RSMSTheme.success
+        case .expired:   return RSMSTheme.danger
+        case .active, .completed, .abandoned: return RSMSTheme.textSecondary
         }
     }
 }

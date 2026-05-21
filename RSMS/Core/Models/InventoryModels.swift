@@ -2,14 +2,16 @@
 //  InventoryModels.swift
 //  RSMS
 //
-//  RSMS_Mock_Data
+//  Inventory, RFID, movements, cycle counts, auditing, serialization, and shrinkage
+//  — aligned with Supabase public schema.
 //
 
 import Foundation
 
 // MARK: - Product
 
-/// The main record for a product. Every unique item variation (like color or size) has its own SKU here.
+/// The master product record. Every unique item variation has its own SKU.
+/// Maps to Supabase `products` table.
 struct Product: Codable, Identifiable, Hashable {
     let id: UUID
     let sku: String
@@ -39,14 +41,15 @@ struct Product: Codable, Identifiable, Hashable {
 
 // MARK: - Stock Item
 
-/// Keeps track of individual items in stock, often using RFID tags, and notes exactly where they are in the store.
+/// An inventory record for a product at a specific store, optionally RFID-tagged.
+/// Maps to Supabase `stock_items` table.
 struct StockItem: Codable, Identifiable, Hashable {
     let id: UUID
     let productId: UUID
     let storeId: UUID
     let quantity: Int
     let rfidTag: String?
-    let location: String?           // e.g. "display_case_A3", "vault", "back_stock"
+    let location: String?
     let status: StockStatus
     let lastScannedAt: Date?
     let updatedAt: Date
@@ -62,17 +65,18 @@ struct StockItem: Codable, Identifiable, Hashable {
 }
 
 enum StockStatus: String, Codable, CaseIterable {
-    case available   = "available"
-    case reserved    = "reserved"
-    case sold        = "sold"
-    case inTransit   = "in_transit"
-    case damaged     = "damaged"
-    case onLoan      = "on_loan"
+    case available = "available"
+    case reserved  = "reserved"
+    case sold      = "sold"
+    case inTransit = "in_transit"
+    case damaged   = "damaged"
+    case onLoan    = "on_loan"
 }
 
 // MARK: - RFID Scan Record
 
-/// Records what happens when someone does an RFID scan of the store, noting how many items were found and any issues.
+/// A record of an RFID scan session in a store.
+/// Maps to Supabase `rfid_scan_records` table.
 struct RFIDScanRecord: Codable, Identifiable, Hashable {
     let id: UUID
     let storeId: UUID
@@ -92,176 +96,120 @@ struct RFIDScanRecord: Codable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Stock Discrepancy
+// MARK: - Inventory Variance
 
-/// Used to log when the number of items we actually have doesn't match what the system says we should have.
-struct StockDiscrepancy: Codable, Identifiable, Hashable {
+/// Logs when physical stock count differs from system records.
+/// Maps to Supabase `inventory_variances` table.
+struct InventoryVariance: Codable, Identifiable, Hashable {
     let id: UUID
     let storeId: UUID
     let productId: UUID
     let expectedQty: Int
     let actualQty: Int
+    let variance: Int
     let reportedBy: UUID
-    let status: DiscrepancyStatus
+    let status: VarianceStatus
+    let cycleCountId: UUID?
     let resolution: String?
     let reportedAt: Date
     let resolvedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, status, resolution
-        case storeId     = "store_id"
-        case productId   = "product_id"
-        case expectedQty = "expected_qty"
-        case actualQty   = "actual_qty"
-        case reportedBy  = "reported_by"
-        case reportedAt  = "reported_at"
-        case resolvedAt  = "resolved_at"
+        case id, variance, status, resolution
+        case storeId      = "store_id"
+        case productId    = "product_id"
+        case expectedQty  = "expected_qty"
+        case actualQty    = "actual_qty"
+        case reportedBy   = "reported_by"
+        case cycleCountId = "cycle_count_id"
+        case reportedAt   = "reported_at"
+        case resolvedAt   = "resolved_at"
     }
 }
 
-enum DiscrepancyStatus: String, Codable, CaseIterable {
-    case open         = "open"
+enum VarianceStatus: String, Codable, CaseIterable {
+    case open          = "open"
     case investigating = "investigating"
-    case resolved     = "resolved"
-    case writeOff     = "write_off"
+    case resolved      = "resolved"
+    case writeOff      = "write_off"
 }
 
-// MARK: - Stock Transfer
+// MARK: - Inventory Movement
 
-/// Represents a request to move inventory from one location to another, like from a warehouse to a store.
-struct StockTransfer: Codable, Identifiable, Hashable {
+/// Unified model for store transfers, DC replenishments, and vendor returns.
+/// Maps to Supabase `inventory_movements` table.
+/// The `type` field distinguishes the movement kind.
+struct InventoryMovement: Codable, Identifiable, Hashable {
     let id: UUID
-    let fromStoreId: UUID
-    let toStoreId: UUID
-    let status: TransferStatus
-    let requestedBy: UUID
+    let type: MovementType
+    let sourceId: String
+    let destinationId: String
+    let status: MovementStatus
+    let requestedBy: UUID?
     let approvedBy: UUID?
-    let requestedAt: Date
+    let requestedAt: Date?
     let shippedAt: Date?
     let receivedAt: Date?
-    let notes: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id, status, notes
-        case fromStoreId  = "from_store_id"
-        case toStoreId    = "to_store_id"
-        case requestedBy  = "requested_by"
-        case approvedBy   = "approved_by"
-        case requestedAt  = "requested_at"
-        case shippedAt    = "shipped_at"
-        case receivedAt   = "received_at"
-    }
-}
-
-enum TransferStatus: String, Codable, CaseIterable {
-    case requested  = "requested"
-    case approved   = "approved"
-    case inTransit  = "in_transit"
-    case received   = "received"
-    case cancelled  = "cancelled"
-}
-
-/// Details the specific items and quantities being moved in a stock transfer.
-struct TransferItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    let transferId: UUID
-    let productId: UUID
-    let quantity: Int
-
-    enum CodingKeys: String, CodingKey {
-        case id, quantity
-        case transferId = "transfer_id"
-        case productId  = "product_id"
-    }
-}
-
-// MARK: - Replenishment Shipment
-
-/// Tracks a delivery coming from the main distribution center to a store, checking what was expected versus what arrived.
-struct ReplenishmentShipment: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let dcId: String
-    let asnNumber: String
-    let expectedDate: Date
-    let status: ShipmentStatus
-    let receivedAt: Date?
-    let receivedBy: UUID?
-    let itemsExpected: Int
+    let asnNumber: String?
+    let itemsExpected: Int?
     let itemsReceived: Int?
+    let reason: String?
     let notes: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, status, notes
-        case storeId       = "store_id"
-        case dcId          = "dc_id"
-        case asnNumber     = "asn_number"
-        case expectedDate  = "expected_date"
+        case id, type, status, reason, notes
+        case sourceId      = "source_id"
+        case destinationId = "destination_id"
+        case requestedBy   = "requested_by"
+        case approvedBy    = "approved_by"
+        case requestedAt   = "requested_at"
+        case shippedAt     = "shipped_at"
         case receivedAt    = "received_at"
-        case receivedBy    = "received_by"
+        case asnNumber     = "asn_number"
         case itemsExpected = "items_expected"
         case itemsReceived = "items_received"
     }
 }
 
-enum ShipmentStatus: String, Codable, CaseIterable {
-    case expected  = "expected"
-    case inTransit = "in_transit"
-    case received  = "received"
-    case partial   = "partial"
-    case exception = "exception"
+enum MovementType: String, Codable, CaseIterable {
+    case storeTransfer    = "store_transfer"
+    case dcReplenishment  = "dc_replenishment"
+    case vendorReturn     = "vendor_return"
 }
 
-// MARK: - Vendor Return
+enum MovementStatus: String, Codable, CaseIterable {
+    case requested  = "requested"
+    case approved   = "approved"
+    case inTransit  = "in_transit"
+    case received   = "received"
+    case completed  = "completed"
+    case cancelled  = "cancelled"
+    case partial    = "partial"
+    case exception  = "exception"
+}
 
-/// Used when the store needs to send items back to the supplier, whether they are damaged or just overstocked.
-struct VendorReturn: Codable, Identifiable, Hashable {
+// MARK: - Movement Item
+
+/// A line item within an inventory movement.
+/// Maps to Supabase `movement_items` table.
+struct MovementItem: Codable, Identifiable, Hashable {
     let id: UUID
-    let storeId: UUID
-    let vendorId: String
-    let vendorName: String
-    let reason: String
-    let status: VendorReturnStatus
-    let createdBy: UUID
-    let createdAt: Date
-    let shippedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id, reason, status
-        case storeId    = "store_id"
-        case vendorId   = "vendor_id"
-        case vendorName = "vendor_name"
-        case createdBy  = "created_by"
-        case createdAt  = "created_at"
-        case shippedAt  = "shipped_at"
-    }
-}
-
-enum VendorReturnStatus: String, Codable, CaseIterable {
-    case pending   = "pending"
-    case approved  = "approved"
-    case shipped   = "shipped"
-    case completed = "completed"
-}
-
-/// Lists the specific items being sent back to the vendor.
-struct VendorReturnItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    let vendorReturnId: UUID
+    let movementId: UUID
     let productId: UUID
     let quantity: Int
     let reason: String?
 
     enum CodingKeys: String, CodingKey {
         case id, quantity, reason
-        case vendorReturnId = "vendor_return_id"
-        case productId      = "product_id"
+        case movementId = "movement_id"
+        case productId  = "product_id"
     }
 }
 
 // MARK: - Cycle Count
 
-/// Records an inventory counting session, whether it's a regular check or just a spontaneous count.
+/// A scheduled or ad-hoc inventory counting session.
+/// Maps to Supabase `cycle_counts` table.
 struct CycleCount: Codable, Identifiable, Hashable {
     let id: UUID
     let storeId: UUID
@@ -289,27 +237,10 @@ enum CycleCountStatus: String, Codable, CaseIterable {
     case cancelled  = "cancelled"
 }
 
-/// Shows the results of a count for a specific item, highlighting any differences between the physical count and the system.
-struct CycleCountItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    let cycleCountId: UUID
-    let productId: UUID
-    let systemQty: Int
-    let countedQty: Int
-    let variance: Int
-
-    enum CodingKeys: String, CodingKey {
-        case id, variance
-        case cycleCountId = "cycle_count_id"
-        case productId    = "product_id"
-        case systemQty    = "system_qty"
-        case countedQty   = "counted_qty"
-    }
-}
-
 // MARK: - Audit Trail
 
-/// A permanent record of an action taken in the inventory system, keeping an audit trail of who did what and when.
+/// An immutable record of an action in the system.
+/// Maps to Supabase `audit_trails` table.
 struct AuditTrail: Codable, Identifiable, Hashable {
     let id: UUID
     let storeId: UUID
@@ -331,7 +262,8 @@ struct AuditTrail: Codable, Identifiable, Hashable {
 
 // MARK: - Serial Capture
 
-/// Stores the unique serial number scanned for a specific item.
+/// A serial number captured for a specific product.
+/// Maps to Supabase `serial_captures` table.
 struct SerialCapture: Codable, Identifiable, Hashable {
     let id: UUID
     let productId: UUID
@@ -350,7 +282,8 @@ struct SerialCapture: Codable, Identifiable, Hashable {
 
 // MARK: - Authenticity Certificate
 
-/// Represents a certificate proving an item is authentic, tied directly to its serial number.
+/// A certificate proving an item's authenticity, tied to its serial number.
+/// Maps to Supabase `auth_certificates` table.
 struct AuthCertificate: Codable, Identifiable, Hashable {
     let id: UUID
     let productId: UUID
@@ -371,7 +304,8 @@ struct AuthCertificate: Codable, Identifiable, Hashable {
 
 // MARK: - Shrinkage Analytics
 
-/// Provides a summary of how much inventory was lost or stolen over a certain time, showing the total impact.
+/// A summary of inventory loss over a period.
+/// Maps to Supabase `shrinkage_analytics` table.
 struct ShrinkageAnalytics: Codable, Identifiable, Hashable {
     let id: UUID
     let storeId: UUID

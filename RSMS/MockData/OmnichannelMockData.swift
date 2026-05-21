@@ -2,58 +2,74 @@
 //  OmnichannelMockData.swift
 //  RSMS
 //
-//  RSMS_Mock_Data
+//  Preview data for omnichannel orders and ship-from-store.
+//  Updated to match Supabase-aligned OmnichannelOrder model.
 //
 
 import Foundation
 
-// MARK: - BOPISOrder
+// MARK: - Omnichannel Order Mock Data
 
-extension BOPISOrder {
-    static let preview = BOPISOrder(
-        id: UUID(uuidString: "60000000-0000-0000-0000-000000000001")!,
-        onlineOrderId: "ONL-987654",
+extension OmnichannelOrder {
+    /// A BOPIS order
+    static let previewBOPIS = OmnichannelOrder(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000300")!,
+        type: .bopis,
+        onlineOrderId: "WEB-2026-08842",
         storeId: Store.preview.id,
-        clientId: UUID(uuidString: "20000000-0000-0000-0000-000000000001")!, // ClientProfile.preview.id
-        status: .ready,
-        preparedBy: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!, // UserProfile.previewInventory.id
-        preparedAt: .now.addingTimeInterval(-2 * 3600),
-        pickedUpAt: nil,
-        notes: "Client arriving at 5 PM.",
-        createdAt: .now.addingTimeInterval(-24 * 3600)
-    )
-}
-
-// MARK: - EndlessAisleOrder
-
-extension EndlessAisleOrder {
-    static let preview = EndlessAisleOrder(
-        id: UUID(uuidString: "60000000-0000-0000-0000-000000000010")!,
-        storeId: Store.preview.id,
-        associateId: UUID(uuidString: "00000000-0000-0000-0000-000000000011")!, // UserProfile.previewAssociate.id
-        clientId: UUID(uuidString: "20000000-0000-0000-0000-000000000001")!, // ClientProfile.preview.id
-        productId: UUID(uuidString: "30000000-0000-0000-0000-000000000002")!, // Product.previewRing.id
+        clientId: ClientProfile.preview.id,
+        associateId: nil,
+        productId: Product.preview.id,
         sourceStoreId: nil,
-        sourceDCId: "DC-EUROPE-01",
-        status: .confirmed,
-        shippingAddress: "45 Rue du Faubourg Saint-Honoré, 75008 Paris, France",
-        estimatedDelivery: .now.addingTimeInterval(3 * 86400),
+        sourceDCId: nil,
+        status: .preparing,
+        shippingAddress: nil,
+        estimatedDelivery: nil,
+        preparedBy: UserProfile.previewAssociate.id,
+        preparedAt: nil,
+        pickedUpAt: nil,
+        notes: "Client will pick up tomorrow between 10 AM and 12 PM.",
         createdAt: .now
     )
+
+    /// An endless-aisle order
+    static let previewEndlessAisle = OmnichannelOrder(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000301")!,
+        type: .endlessAisle,
+        onlineOrderId: nil,
+        storeId: Store.preview.id,
+        clientId: ClientProfile.previewClient2.id,
+        associateId: UserProfile.previewAssociate.id,
+        productId: Product.previewWatch.id,
+        sourceStoreId: Store.previewMumbai.id,
+        sourceDCId: nil,
+        status: .confirmed,
+        shippingAddress: "15 Avenue Montaigne, 75008 Paris",
+        estimatedDelivery: Calendar.current.date(byAdding: .day, value: 5, to: .now),
+        preparedBy: nil,
+        preparedAt: nil,
+        pickedUpAt: nil,
+        notes: "Rose gold variant not in stock locally — sourced from Mumbai.",
+        createdAt: .now
+    )
+
+    static let all: [OmnichannelOrder] = [.previewBOPIS, .previewEndlessAisle]
 }
 
-// MARK: - ShipFromStoreSlip
+// MARK: - Ship From Store Slip Mock Data
 
 extension ShipFromStoreSlip {
     static let preview = ShipFromStoreSlip(
-        id: UUID(uuidString: "60000000-0000-0000-0000-000000000020")!,
-        orderId: UUID(uuidString: "60000000-0000-0000-0000-000000000010")!, // EndlessAisleOrder.preview.id
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000310")!,
+        orderId: OmnichannelOrder.previewEndlessAisle.id,
         storeId: Store.preview.id,
-        trackingNumber: "DHL-123456789",
+        trackingNumber: "DHL-FR-9876543210",
         carrier: "DHL Express",
-        packingSlipURL: "https://example.com/slips/slip-123.pdf",
-        packedBy: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!, // UserProfile.previewInventory.id
-        shippedAt: .now.addingTimeInterval(-1 * 3600),
-        createdAt: .now.addingTimeInterval(-3 * 3600)
+        packingSlipURL: nil,
+        packedBy: UserProfile.previewInventory.id,
+        shippedAt: nil,
+        createdAt: .now
     )
+
+    static let all: [ShipFromStoreSlip] = [.preview]
 }

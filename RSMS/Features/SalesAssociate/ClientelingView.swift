@@ -8,7 +8,10 @@
 import SwiftUI
 
 struct ClientelingView: View {
-    @State private var viewModel = ClientelingViewModel()
+    private let client = ClientProfile.preview
+    private let anniversary = ClientAnniversary.preview
+    private let wishlist = WishlistItem.preview
+    private let products = Product.all
 
     var body: some View {
         ScrollView {
@@ -42,35 +45,35 @@ struct ClientelingView: View {
             VStack(spacing: 20) {
                 ZStack {
                     Circle()
-                        .fill(RSMSTheme.primary.opacity(0.1))
+                        .fill(RSMSTheme.gold.opacity(0.1))
                         .frame(width: 80, height: 80)
-                    Text(String(viewModel.client.fullName.prefix(2)))
+                    Text(String(client.fullName.prefix(2)))
                         .font(.title2.weight(.bold))
-                        .foregroundStyle(RSMSTheme.primary)
+                        .foregroundStyle(RSMSTheme.gold)
                 }
 
                 VStack(spacing: 6) {
-                    Text(viewModel.client.fullName)
+                    Text(client.fullName)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
 
-                    StatusBadge(text: viewModel.client.vipTier.rawValue.uppercased(), color: viewModel.tierColor(viewModel.client.vipTier))
+                    StatusBadge(text: client.vipTier.rawValue.uppercased(), color: tierColor(client.vipTier))
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
                 VStack(spacing: 10) {
-                    if let email = viewModel.client.email {
+                    if let email = client.email {
                         contactRow(icon: "envelope.fill", value: email)
                     }
-                    if let phone = viewModel.client.phone {
+                    if let phone = client.phone {
                         contactRow(icon: "phone.fill", value: phone)
                     }
                     contactRow(icon: "checkmark.shield.fill",
-                               value: viewModel.client.privacyConsentGiven ? "Consent given" : "No consent")
+                               value: client.privacyConsentGiven ? "Consent given" : "No consent")
                 }
 
-                if let notes = viewModel.client.notes {
+                if let notes = client.notes {
                     Divider().overlay(RSMSTheme.divider)
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "note.text")
@@ -91,23 +94,23 @@ struct ClientelingView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "gift.fill")
                         .font(.title3)
-                        .foregroundStyle(RSMSTheme.primary)
+                        .foregroundStyle(RSMSTheme.gold)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(viewModel.anniversary.title)
+                        Text(anniversary.title)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.textPrimary)
-                        Text(viewModel.formattedDate(viewModel.anniversary.date))
+                        Text(formattedDate(anniversary.date))
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
                     Spacer()
-                    if viewModel.anniversary.reminderEnabled {
+                    if anniversary.reminderEnabled {
                         Image(systemName: "bell.fill")
                             .font(.caption)
-                            .foregroundStyle(RSMSTheme.primary)
+                            .foregroundStyle(RSMSTheme.gold)
                     }
                 }
-                if let notes = viewModel.anniversary.notes {
+                if let notes = anniversary.notes {
                     Text(notes)
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textTertiary)
@@ -115,7 +118,7 @@ struct ClientelingView: View {
             }
             .rsmsCard()
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: 340)
     }
 
     // MARK: - Detail Column
@@ -124,54 +127,43 @@ struct ClientelingView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Preferences
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    SectionHeader(title: "Preferences & Sizes")
-                    Spacer()
-                    NavigationLink(destination: ClientSizePreferencesView()) {
-                        Text("Edit")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 6)
-                            .background(RSMSTheme.primary.opacity(0.1))
-                            .foregroundStyle(RSMSTheme.primary)
-                            .clipShape(Capsule())
-                    }
-                }
+                SectionHeader(title: "Preferences & Sizes")
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    if let ring = viewModel.preference.ringSize {
+                    if let ring = client.ringSize {
                         preferenceChip(label: "Ring Size", value: ring, icon: "circle.circle.fill")
                     }
-                    if let bracelet = viewModel.preference.braceletSize {
+                    if let bracelet = client.braceletSize {
                         preferenceChip(label: "Bracelet", value: bracelet, icon: "link.circle.fill")
                     }
-                    if let necklace = viewModel.preference.necklaceLength {
+                    if let necklace = client.necklaceLength {
                         preferenceChip(label: "Necklace", value: necklace, icon: "oval.portrait.fill")
                     }
-                    if let wrist = viewModel.preference.wristSize {
+                    if let wrist = client.wristSize {
                         preferenceChip(label: "Wrist", value: wrist, icon: "applewatch")
                     }
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
-                tagSection(title: "Favorite Categories", tags: viewModel.preference.favoriteCategories, color: RSMSTheme.primary)
+                if let favoriteCategories = client.favoriteCategories {
+                    tagSection(title: "Favorite Categories", tags: favoriteCategories, color: RSMSTheme.gold)
+                }
 
-                if let metals = viewModel.preference.favoriteMetals {
+                if let metals = client.favoriteMetals {
                     tagSection(title: "Preferred Metals", tags: metals, color: RSMSTheme.info)
                 }
-                if let gems = viewModel.preference.favoriteGemstones {
+                if let gems = client.favoriteGemstones {
                     tagSection(title: "Gemstones", tags: gems, color: RSMSTheme.success)
                 }
             }
-            .frame(maxWidth: .infinity)
             .rsmsCard()
 
             // Wishlist
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Wishlist")
 
-                let product = viewModel.wishlistProduct
+                let product = products.first(where: { $0.id == wishlist.productId })
                 HStack(spacing: 16) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
@@ -179,7 +171,7 @@ struct ClientelingView: View {
                             .frame(width: 64, height: 64)
                         Image(systemName: "sparkles")
                             .font(.title2)
-                            .foregroundStyle(RSMSTheme.primary)
+                            .foregroundStyle(RSMSTheme.gold)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -189,7 +181,7 @@ struct ClientelingView: View {
                         if let product {
                             Text("€\(String(format: "%,.0f", product.price))")
                                 .font(.caption.weight(.medium))
-                                .foregroundStyle(RSMSTheme.primary)
+                                .foregroundStyle(RSMSTheme.gold)
                         }
                     }
 
@@ -197,10 +189,10 @@ struct ClientelingView: View {
 
                     VStack(alignment: .trailing, spacing: 4) {
                         StatusBadge(
-                            text: viewModel.wishlist.isAvailable ? "Available" : "Out of Stock",
-                            color: viewModel.wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
+                            text: wishlist.isAvailable ? "Available" : "Out of Stock",
+                            color: wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
                         )
-                        if viewModel.wishlist.notifyOnRestock {
+                        if wishlist.notifyOnRestock {
                             Label("Notify", systemImage: "bell.fill")
                                 .font(.caption2)
                                 .foregroundStyle(RSMSTheme.textTertiary)
@@ -208,17 +200,15 @@ struct ClientelingView: View {
                     }
                 }
 
-                if let notes = viewModel.wishlist.notes {
+                if let notes = wishlist.notes {
                     Text(notes)
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textSecondary)
                         .italic()
                 }
             }
-            .frame(maxWidth: .infinity)
             .rsmsCard()
         }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Sub-components
@@ -227,7 +217,7 @@ struct ClientelingView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.primary)
+                .foregroundStyle(RSMSTheme.gold)
                 .frame(width: 20)
             Text(value)
                 .font(.subheadline)
@@ -240,7 +230,7 @@ struct ClientelingView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(RSMSTheme.primary)
+                .foregroundStyle(RSMSTheme.gold)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.caption2)
@@ -264,6 +254,43 @@ struct ClientelingView: View {
                 .font(.caption.weight(.medium))
                 .foregroundStyle(RSMSTheme.textSecondary)
             FlowLayout(tags: tags, color: color)
+        }
+    }
+
+    private func formattedDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "d MMMM"
+        return f.string(from: date)
+    }
+
+    private func tierColor(_ tier: VIPTier) -> Color {
+        switch tier {
+        case .standard: return RSMSTheme.textSecondary
+        case .silver:   return Color(hex: "C0C0C0")
+        case .gold:     return RSMSTheme.gold
+        case .platinum: return Color(hex: "B0C4DE")
+        case .prive:    return RSMSTheme.danger
+        }
+    }
+}
+
+// MARK: - Flow Layout for Tags
+
+struct FlowLayout: View {
+    let tags: [String]
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(tags, id: \.self) { tag in
+                Text(tag)
+                    .font(.caption2.weight(.medium))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(color.opacity(0.12))
+                    .foregroundStyle(color)
+                    .clipShape(Capsule())
+            }
         }
     }
 }

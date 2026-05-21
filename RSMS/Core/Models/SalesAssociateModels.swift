@@ -2,14 +2,16 @@
 //  SalesAssociateModels.swift
 //  RSMS
 //
-//  RSMS_Mock_Data
+//  Models for clienteling, appointments, wishlists, AI recommendations,
+//  and look builder — aligned with Supabase public schema.
 //
 
 import Foundation
 
 // MARK: - Client Profile
 
-/// A luxury retail client (customer) with preferences and consent tracking.
+/// A luxury retail client with preferences, sizes, and consent tracking.
+/// Maps to Supabase `client_profiles` table (preferences merged in).
 struct ClientProfile: Codable, Identifiable, Hashable {
     let id: UUID
     let fullName: String
@@ -23,15 +25,79 @@ struct ClientProfile: Codable, Identifiable, Hashable {
     let createdAt: Date
     let updatedAt: Date
 
+    // ── Size Preferences ──────────────────────
+    let shoeSize: String?
+    let ringSize: String?
+    let braceletSize: String?
+    let necklaceLength: String?
+    let wristSize: String?
+    let beltSize: String?
+
+    // ── Category / Material Preferences ───────
+    let favoriteCategories: [String]?
+    let favoriteMetals: [String]?
+    let favoriteGemstones: [String]?
+
+    // ── Detailed Preferences ──────────────────
+    let shoeFitPreference: String?
+    let preferredMetal: String?
+    let preferredGemstone: String?
+    let watchCasePreference: String?
+    let strapMaterialPreference: String?
+    let preferredBagSize: String?
+    let preferredBagStyle: String?
+    let preferredMaterial: String?
+    let bucklePreference: String?
+    let fragranceFamily: String?
+    let fragranceStrength: String?
+    let scentPreference: String?
+    let preferredBrands: String?
+    let favoriteColors: String?
+    let stylePreference: String?
+    let giftingPreference: String?
+    let shoppingPreference: String?
+
     enum CodingKeys: String, CodingKey {
         case id, email, phone, notes
-        case fullName            = "full_name"
-        case preferredStoreId    = "preferred_store_id"
-        case vipTier             = "vip_tier"
-        case privacyConsentGiven = "privacy_consent_given"
-        case consentDate         = "consent_date"
-        case createdAt           = "created_at"
-        case updatedAt           = "updated_at"
+        case fullName              = "full_name"
+        case preferredStoreId      = "preferred_store_id"
+        case vipTier               = "vip_tier"
+        case privacyConsentGiven   = "privacy_consent_given"
+        case consentDate           = "consent_date"
+        case createdAt             = "created_at"
+        case updatedAt             = "updated_at"
+
+        // Sizes
+        case shoeSize              = "shoe_size"
+        case ringSize              = "ring_size"
+        case braceletSize          = "bracelet_size"
+        case necklaceLength        = "necklace_length"
+        case wristSize             = "wrist_size"
+        case beltSize              = "belt_size"
+
+        // Arrays
+        case favoriteCategories    = "favorite_categories"
+        case favoriteMetals        = "favorite_metals"
+        case favoriteGemstones     = "favorite_gemstones"
+
+        // Detailed prefs
+        case shoeFitPreference     = "shoe_fit_preference"
+        case preferredMetal        = "preferred_metal"
+        case preferredGemstone     = "preferred_gemstone"
+        case watchCasePreference   = "watch_case_preference"
+        case strapMaterialPreference = "strap_material_preference"
+        case preferredBagSize      = "preferred_bag_size"
+        case preferredBagStyle     = "preferred_bag_style"
+        case preferredMaterial     = "preferred_material"
+        case bucklePreference      = "buckle_preference"
+        case fragranceFamily       = "fragrance_family"
+        case fragranceStrength     = "fragrance_strength"
+        case scentPreference       = "scent_preference"
+        case preferredBrands       = "preferred_brands"
+        case favoriteColors        = "favorite_colors"
+        case stylePreference       = "style_preference"
+        case giftingPreference     = "gifting_preference"
+        case shoppingPreference    = "shopping_preference"
     }
 }
 
@@ -43,39 +109,10 @@ enum VIPTier: String, Codable, CaseIterable {
     case prive    = "prive"
 }
 
-// MARK: - Client Preference
-
-/// Stored size, category, and styling preferences for a client.
-struct ClientPreference: Codable, Identifiable, Hashable {
-    let id: UUID
-    let clientId: UUID
-    let ringSize: String?
-    let braceletSize: String?
-    let necklaceLength: String?
-    let wristSize: String?
-    let favoriteCategories: [String]
-    let favoriteMetals: [String]?
-    let favoriteGemstones: [String]?
-    let notes: String?
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, notes
-        case clientId           = "client_id"
-        case ringSize           = "ring_size"
-        case braceletSize       = "bracelet_size"
-        case necklaceLength     = "necklace_length"
-        case wristSize          = "wrist_size"
-        case favoriteCategories = "favorite_categories"
-        case favoriteMetals     = "favorite_metals"
-        case favoriteGemstones  = "favorite_gemstones"
-        case updatedAt          = "updated_at"
-    }
-}
-
 // MARK: - Client Anniversary
 
-/// Important dates for a client (birthday, wedding, etc.) used for personalized engagement.
+/// Important dates for a client (birthday, wedding, etc.).
+/// Maps to Supabase `client_anniversaries`.
 struct ClientAnniversary: Codable, Identifiable, Hashable {
     let id: UUID
     let clientId: UUID
@@ -93,7 +130,8 @@ struct ClientAnniversary: Codable, Identifiable, Hashable {
 
 // MARK: - Wishlist Item
 
-/// A product on a client's wishlist, managed by the sales associate.
+/// A product on a client's wishlist.
+/// Maps to Supabase `wishlist_items`.
 struct WishlistItem: Codable, Identifiable, Hashable {
     let id: UUID
     let clientId: UUID
@@ -105,17 +143,18 @@ struct WishlistItem: Codable, Identifiable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case id, notes
-        case clientId       = "client_id"
-        case productId      = "product_id"
-        case addedAt        = "added_at"
-        case isAvailable    = "is_available"
+        case clientId        = "client_id"
+        case productId       = "product_id"
+        case addedAt         = "added_at"
+        case isAvailable     = "is_available"
         case notifyOnRestock = "notify_on_restock"
     }
 }
 
 // MARK: - Appointment
 
-/// A scheduled client appointment (in-store or video consultation).
+/// A scheduled client appointment (in-store, video, or phone).
+/// Maps to Supabase `appointments`.
 struct Appointment: Codable, Identifiable, Hashable {
     let id: UUID
     let clientId: UUID
@@ -158,52 +197,10 @@ enum AppointmentStatus: String, Codable, CaseIterable {
     case noShow     = "no_show"
 }
 
-// MARK: - Curated Cart
-
-/// A personalized cart prepared by a sales associate for a specific client.
-struct CuratedCart: Codable, Identifiable, Hashable {
-    let id: UUID
-    let clientId: UUID
-    let associateId: UUID
-    let note: String?
-    let status: CuratedCartStatus
-    let createdAt: Date
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, note, status
-        case clientId    = "client_id"
-        case associateId = "associate_id"
-        case createdAt   = "created_at"
-        case updatedAt   = "updated_at"
-    }
-}
-
-enum CuratedCartStatus: String, Codable, CaseIterable {
-    case draft     = "draft"
-    case shared    = "shared"
-    case viewed    = "viewed"
-    case converted = "converted"
-    case expired   = "expired"
-}
-
-/// A line item within a curated cart.
-struct CuratedCartItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    let cartId: UUID
-    let productId: UUID
-    let note: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id, note
-        case cartId   = "cart_id"
-        case productId = "product_id"
-    }
-}
-
 // MARK: - AI Recommendation
 
 /// An AI-generated product recommendation for a client.
+/// Maps to Supabase `ai_recommendations`.
 struct AIRecommendation: Codable, Identifiable, Hashable {
     let id: UUID
     let clientId: UUID
@@ -233,6 +230,7 @@ enum RecommendationType: String, Codable, CaseIterable {
 // MARK: - Look Builder Outfit
 
 /// A styled outfit / product combination created by a sales associate.
+/// Maps to Supabase `look_builder_outfits`.
 struct LookBuilderOutfit: Codable, Identifiable, Hashable {
     let id: UUID
     let associateId: UUID
