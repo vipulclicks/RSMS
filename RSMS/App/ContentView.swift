@@ -29,7 +29,33 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .environment(AppViewModel())
+#Preview("Boutique Manager Dashboard") {
+    let vm = AppViewModel()
+    vm.login(as: .boutiqueManager)
+    return ContentView()
+        .environment(vm)
+        .environment(vm.dataStore)
+}
+
+#Preview("Sales Associate Dashboard") {
+    let vm = AppViewModel()
+    vm.login(as: .salesAssociate)
+    return ContentView()
+        .environment(vm)
+        .environment(vm.dataStore)
+}
+
+#Preview("Inventory Dashboard") {
+    let vm = AppViewModel()
+    vm.login(as: .inventoryController)
+    return ContentView()
+        .environment(vm)
+        .environment(vm.dataStore)
+}
+
+#Preview("Login Screen") {
+    let vm = AppViewModel()
+    return ContentView()
+        .environment(vm)
+        .environment(vm.dataStore)
 }
