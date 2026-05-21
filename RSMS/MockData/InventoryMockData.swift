@@ -232,7 +232,12 @@ extension AuthCertificate {
     )
 }
 
+<<<<<<< Updated upstream
 // MARK: - ShrinkageAnalytics
+=======
+
+// MARK: - Shrinkage Analytics Mock Data
+>>>>>>> Stashed changes
 
 extension ShrinkageAnalytics {
     static let preview = ShrinkageAnalytics(
@@ -245,5 +250,45 @@ extension ShrinkageAnalytics {
         currency: "EUR",
         topCategory: "Small Leather Goods",
         primaryCause: "Theft"
+    )
+}
+
+// MARK: - Additional AuditTrail Previews (for activity feed)
+
+extension AuditTrail {
+    static let previewTwo = AuditTrail(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000171")!,
+        storeId: Store.preview.id,
+        action: "RFID Scan Complete",
+        entityType: "RFIDScanRecord",
+        entityId: UUID(uuidString: "00000000-0000-0000-0000-000000000172")!,
+        performedBy: UserProfile.previewInventory.id,
+        timestamp: .now.addingTimeInterval(-900),
+        details: "SKU: 882-ALP-04 — 142 items scanned, 0 exceptions"
+    )
+
+    static let previewThree = AuditTrail(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000173")!,
+        storeId: Store.preview.id,
+        action: "Low Stock Alert",
+        entityType: "StockItem",
+        entityId: UUID(uuidString: "00000000-0000-0000-0000-000000000174")!,
+        performedBy: UserProfile.previewInventory.id,
+        timestamp: .now.addingTimeInterval(-1800),
+        details: "Eternity Diamond Ring — only 1 unit remaining"
+    )
+}
+
+// MARK: - Dashboard Snapshot Mock Data
+
+extension InventoryDashboardSnapshot {
+    static let preview = InventoryDashboardSnapshot(
+        totalInventoryCount: 12_482,
+        todaysScanCount: 142,
+        scanCompletionPercent: 0.88,
+        lowStockAlertCount: 14,
+        newLowStockCount: 2,
+        pendingTaskCount: 38,
+        recentActivity: [.preview, .previewTwo, .previewThree]
     )
 }

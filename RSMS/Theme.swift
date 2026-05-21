@@ -2,7 +2,7 @@
 //  Theme.swift
 //  RSMS
 //
-//  Deep Emerald & Gold luxury design system for Maison Lumière.
+//  Luxury Ivory & Burgundy design system for Maison Lumière.
 //
 
 import SwiftUI
@@ -27,40 +27,51 @@ extension Color {
 // MARK: - Design Tokens
 
 enum RSMSTheme {
-    // Backgrounds — deep emerald tones
-    static let background       = Color(hex: "0A1F1A")
-    static let surfacePrimary   = Color(hex: "122C24")
-    static let surfaceSecondary = Color(hex: "1A3D32")
-    static let surfaceTertiary  = Color(hex: "234A3E")
 
-    // Gold palette
-    static let gold      = Color(hex: "D4A843")
-    static let goldLight = Color(hex: "E8C96E")
-    static let goldDark  = Color(hex: "9A7A2E")
+    // Internal Asset References
+    private static let beige      = Color("beige")
+    private static let darkRed    = Color("darkRed")
+    private static let lightBrown = Color("lightBrown")
+    private static let magenta    = Color("magenta")
 
-    // Text — ivory & sage
-    static let cream         = Color(hex: "F2EDE4")
-    static let textPrimary   = Color(hex: "F2EDE4")
-    static let textSecondary = Color(hex: "8FA99C")
-    static let textTertiary  = Color(hex: "5E7A6E")
+    // Backgrounds — Luxury Ivory & Beige
+    static let background       = beige
+    static let surfacePrimary   = lightBrown
+    static let surfaceSecondary = lightBrown.opacity(0.80)
+    static let surfaceTertiary  = lightBrown.opacity(0.90)
 
-    // Semantic
-    static let success = Color(hex: "5CB88A")
-    static let warning = Color(hex: "DEBB4C")
-    static let danger  = Color(hex: "D45B5B")
-    static let info    = Color(hex: "4DA8B0")
+    // Primary palette — Luxury Burgundy
+    static let primary      = magenta
+    static let primaryLight = magenta.opacity(0.85)
+    static let primaryDark  = darkRed
+
+    // Legacy aliases — keep all call-sites compiling without edits
+    static let gold         = primary
+    static let goldGradient = primaryGradient
+
+    // Text — Deep Maroon on Ivory
+    static let cream         = Color.white
+    static let textPrimary   = darkRed
+    static let textSecondary = darkRed.opacity(0.75)
+    static let textTertiary  = darkRed.opacity(0.55)
+
+    // Semantic — darkened for legibility on light backgrounds
+    static let success = Color(red:  45 / 255.0, green: 122 / 255.0, blue:  93 / 255.0)
+    static let warning = Color(red: 179 / 255.0, green: 125 / 255.0, blue:  42 / 255.0)
+    static let danger  = Color(red: 179 / 255.0, green:  58 / 255.0, blue:  58 / 255.0)
+    static let info    = Color(red:  43 / 255.0, green: 115 / 255.0, blue: 138 / 255.0)
 
     // Divider / Border
-    static let divider = Color.white.opacity(0.08)
-    static let border  = Color.white.opacity(0.06)
+    static let divider = darkRed.opacity(0.10)
+    static let border  = darkRed.opacity(0.08)
 
     // Gradients
     static let backgroundGradient = LinearGradient(
-        colors: [Color(hex: "0A1F1A"), Color(hex: "0E2920"), Color(hex: "0A1F1A")],
+        colors: [beige, lightBrown.opacity(0.80), beige],
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
-    static let goldGradient = LinearGradient(
-        colors: [Color(hex: "D4A843"), Color(hex: "E8C96E"), Color(hex: "D4A843")],
+    static let primaryGradient = LinearGradient(
+        colors: [magenta, magenta.opacity(0.85), darkRed],
         startPoint: .leading, endPoint: .trailing
     )
 }
@@ -80,7 +91,7 @@ struct RSMSCardModifier: ViewModifier {
                             .stroke(RSMSTheme.border, lineWidth: 1)
                     )
             )
-            .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
 }
 
