@@ -302,6 +302,55 @@ struct AuthCertificate: Codable, Identifiable, Hashable {
     }
 }
 
+// MARK: - Dashboard Snapshot
+
+/// Aggregates all KPIs shown on the Inventory Controller home dashboard into one model.
+/// Swap the `preview` static for a real data source when a backend is connected.
+struct InventoryDashboardSnapshot {
+    let totalInventoryCount: Int
+    let todaysScanCount: Int
+    let scanCompletionPercent: Double   // 0.0 – 1.0
+    let lowStockAlertCount: Int
+    let newLowStockCount: Int           // value shown in "+N New" badge
+    let pendingTaskCount: Int
+    let recentActivity: [AuditTrail]
+}
+
+// MARK: - Inventory Variance
+
+enum VarianceStatus: String, Codable {
+    case open, investigating, resolved, closed
+}
+
+struct InventoryVariance: Codable, Identifiable, Hashable {
+    let id: UUID
+    let storeId: UUID
+    let productId: UUID
+    let reportedQuantity: Int
+    let expectedQuantity: Int
+    let status: VarianceStatus
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, status
+        case storeId          = "store_id"
+        case productId        = "product_id"
+        case reportedQuantity = "reported_quantity"
+        case expectedQuantity = "expected_quantity"
+        case createdAt        = "created_at"
+    }
+    
+    static let preview = InventoryVariance(
+        id: UUID(),
+        storeId: UUID(),
+        productId: UUID(),
+        reportedQuantity: 40,
+        expectedQuantity: 42,
+        status: .open,
+        createdAt: .now
+    )
+}
+
 // MARK: - Shrinkage Analytics
 
 /// A summary of inventory loss over a period.
@@ -327,4 +376,46 @@ struct ShrinkageAnalytics: Codable, Identifiable, Hashable {
         case topCategory    = "top_category"
         case primaryCause   = "primary_cause"
     }
+}
+
+// MARK: - Scan Mode
+
+/// Describes the intent of a barcode scanning session.
+/// Drives stock updates, audit log wording, and UI badge colours.
+enum ScanMode: String, CaseIterable, Identifiable {
+    case stockIn      = "Stock In"
+    case verification = "Verify"
+    case audit        = "Audit"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .stockIn:      return "plus.circle.fill"
+        case .verification: return "checkmark.circle.fill"
+        case .audit:        return "doc.text.magnifyingglass"
+        }
+    }
+
+    /// Audit trail action string written to Supabase.
+    var auditAction: String {
+        switch self {
+        case .stockIn:      return "Stock In — Barcode Scan"
+        case .verification: return "Verification — Barcode Scan"
+        case .audit:        return "Audit — Barcode Scan"
+        }
+    }
+}
+
+// MARK: - Scan Log Entry
+
+/// A single confirmed scan recorded in the in-session history log.
+/// Shown in the Session Log panel of the scanner view.
+struct ScanLogEntry: Identifiable {
+    let id: UUID
+    let sku: String
+    let productName: String
+    let timestamp: Date
+    let mode: ScanMode
+    let success: Bool
 }
