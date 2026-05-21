@@ -11,8 +11,8 @@ final class AppointmentRemoteSellingViewModel {
     // MARK: - Data
     // TODO: Replace mock data with Supabase fetch
     private(set) var appointment: Appointment = .preview
-    private(set) var curatedCart: CuratedCart = .preview
-    private(set) var curatedItem: CuratedCartItem = .preview
+    private(set) var curatedCart: UniversalCart = .previewCurated
+    private(set) var curatedItem: UniversalCartItem = .previewCuratedItem
     private(set) var client: ClientProfile = .preview
     private(set) var products: [Product] = Product.all
 
@@ -37,13 +37,14 @@ final class AppointmentRemoteSellingViewModel {
         }
     }
 
-    func cartStatusColor(_ status: CuratedCartStatus) -> Color {
+    func cartStatusColor(_ status: CartStatus) -> Color {
         switch status {
         case .draft:     return RSMSTheme.textSecondary
         case .shared:    return RSMSTheme.info
         case .viewed:    return RSMSTheme.warning
         case .converted: return RSMSTheme.success
         case .expired:   return RSMSTheme.danger
+        case .active, .completed, .abandoned: return RSMSTheme.textSecondary
         }
     }
 }

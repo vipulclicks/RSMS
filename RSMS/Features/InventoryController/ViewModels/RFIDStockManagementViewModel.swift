@@ -12,7 +12,7 @@ final class RFIDStockManagementViewModel {
     // TODO: Replace mock data with Supabase fetch
     private(set) var stockItem: StockItem = .preview
     private(set) var scanRecord: RFIDScanRecord = .preview
-    private(set) var discrepancy: StockDiscrepancy = .preview
+    private(set) var discrepancy: InventoryVariance = .preview
     private(set) var shrinkage: ShrinkageAnalytics = .preview
     private(set) var products: [Product] = Product.all
 
@@ -49,7 +49,7 @@ final class RFIDStockManagementViewModel {
         }
     }
 
-    func discrepancyStatusColor(_ status: DiscrepancyStatus) -> Color {
+    func discrepancyStatusColor(_ status: VarianceStatus) -> Color {
         switch status {
         case .open:          return RSMSTheme.danger
         case .investigating: return RSMSTheme.warning

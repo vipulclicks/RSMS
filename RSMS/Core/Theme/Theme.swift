@@ -27,6 +27,10 @@ enum RSMSTheme {
     static let primaryLight = magenta.opacity(0.85)
     static let primaryDark  = darkRed
 
+    // Legacy aliases
+    static let gold = primary
+    static let goldGradient = primaryGradient
+
     // Text — Deep Maroon
     static let cream         = Color.white
     static let textPrimary   = darkRed

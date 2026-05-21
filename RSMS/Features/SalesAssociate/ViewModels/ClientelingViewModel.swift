@@ -11,8 +11,7 @@ final class ClientelingViewModel {
     // MARK: - Data
     // TODO: Replace mock data with Supabase fetch
     private(set) var client: ClientProfile = .preview
-    private(set) var preference: ClientPreference = .preview
-    private(set) var anniversary: ClientAnniversary = .previewBirthday
+    private(set) var anniversary: ClientAnniversary = .preview
     private(set) var wishlist: WishlistItem = .preview
     private(set) var products: [Product] = Product.all
 
