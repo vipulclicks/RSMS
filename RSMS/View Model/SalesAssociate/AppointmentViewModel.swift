@@ -134,4 +134,68 @@ final class AppointmentViewModel {
         case .active, .completed, .abandoned: return RSMSTheme.textSecondary
         }
     }
+
+    // MARK: - Reminder Helpers
+
+    func reminderStatusColor(_ status: String) -> Color {
+        switch status {
+        case "Sent":    return RSMSTheme.success
+        case "Failed":  return RSMSTheme.danger
+        default:        return RSMSTheme.textSecondary   // Pending
+        }
+    }
+
+    func reminderStatusIcon(_ status: String) -> String {
+        switch status {
+        case "Sent":    return "bell.badge.fill"
+        case "Failed":  return "exclamationmark.triangle.fill"
+        default:        return "bell"
+        }
+    }
+
+    /// Manually send (or re-send) a reminder for a specific appointment.
+    /// Simulates a network call and updates the appointment record.
+    @MainActor
+    func sendReminder(for appointment: Appointment) async throws {
+        // Simulate a short network delay
+        try await Task.sleep(nanoseconds: 600_000_000) // 0.6s
+
+        // Simulate ~90% success rate for demo purposes
+        let success = Int.random(in: 0..<10) < 9
+
+        let updated = Appointment(
+            id: appointment.id,
+            clientId: appointment.clientId,
+            associateId: appointment.associateId,
+            storeId: appointment.storeId,
+            dateTime: appointment.dateTime,
+            durationMinutes: appointment.durationMinutes,
+            type: appointment.type,
+            status: appointment.status,
+            reminderSentAt: success ? Date() : appointment.reminderSentAt,
+            videoLink: appointment.videoLink,
+            notes: appointment.notes,
+            createdAt: appointment.createdAt,
+            reminderTimingHours: appointment.reminderTimingHours,
+            reminderChannel: appointment.reminderChannel,
+            reminderStatus: success ? "Sent" : "Failed",
+            reminderError: success ? nil : "Delivery service temporarily unavailable"
+        )
+
+        try await dataStore.updateAppointment(updated)
+    }
+
+    /// Automatic sweep: process all pending reminders whose window has arrived.
+    @MainActor
+    func processAutomaticReminders() async {
+        let now = Date()
+        let pendingAppointments = upcomingAppointments.filter { $0.reminderStatus == "Pending" }
+
+        for appointment in pendingAppointments {
+            let triggerDate = appointment.dateTime.addingTimeInterval(-Double(appointment.reminderTimingHours) * 3600)
+            if now >= triggerDate {
+                try? await sendReminder(for: appointment)
+            }
+        }
+    }
 }

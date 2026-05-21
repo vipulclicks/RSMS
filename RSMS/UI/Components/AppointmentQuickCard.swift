@@ -37,14 +37,6 @@ struct AppointmentQuickCard: View {
                         .font(.subheadline)
                         .foregroundStyle(RSMSTheme.textSecondary)
                 }
-
-                HStack(spacing: 4) {
-                    Image(systemName: "timer")
-                        .font(.caption2)
-                    Text("\(appointment.durationMinutes) min")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                }
             }
             .padding(14)
         }

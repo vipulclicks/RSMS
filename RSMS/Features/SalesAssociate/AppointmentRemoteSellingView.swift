@@ -28,6 +28,8 @@ struct AppointmentRemoteSellingView: View {
     // State for scheduling / quick actions
     @State private var selectedClientForBooking: ClientProfile? = nil
     @State private var selectedAppointmentForAction: Appointment? = nil
+    @State private var appointmentToDelete: Appointment? = nil
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         ZStack {
@@ -87,6 +89,37 @@ struct AppointmentRemoteSellingView: View {
             if let appointment = selectedAppointmentForAction {
                 videoCallSheet(appointment: appointment)
             }
+        }
+        .task {
+            await viewModel.processAutomaticReminders()
+        }
+        .alert("Cancel Appointment", isPresented: $showDeleteConfirmation, presenting: appointmentToDelete) { appointment in
+            Button("Cancel Appointment", role: .destructive) {
+                Task {
+                    let updatedApp = Appointment(
+                        id: appointment.id,
+                        clientId: appointment.clientId,
+                        associateId: appointment.associateId,
+                        storeId: appointment.storeId,
+                        dateTime: appointment.dateTime,
+                        durationMinutes: appointment.durationMinutes,
+                        type: appointment.type,
+                        status: .cancelled,
+                        reminderSentAt: appointment.reminderSentAt,
+                        videoLink: appointment.videoLink,
+                        notes: appointment.notes,
+                        createdAt: appointment.createdAt,
+                        reminderTimingHours: appointment.reminderTimingHours,
+                        reminderChannel: appointment.reminderChannel,
+                        reminderStatus: appointment.reminderStatus,
+                        reminderError: appointment.reminderError
+                    )
+                    try? await viewModel.updateAppointment(updatedApp)
+                }
+            }
+            Button("Keep Appointment", role: .cancel) {}
+        } message: { appointment in
+            Text("Are you sure you want to cancel this appointment? This action cannot be undone.")
         }
     }
 
@@ -212,15 +245,6 @@ struct AppointmentRemoteSellingView: View {
                     Image(systemName: "calendar")
                         .foregroundStyle(RSMSTheme.primary)
                 }
-
-                Label {
-                    Text("\(appointment.durationMinutes) min")
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                } icon: {
-                    Image(systemName: "clock")
-                        .foregroundStyle(RSMSTheme.primary)
-                }
             }
 
             if let notes = appointment.notes, !notes.isEmpty {
@@ -229,6 +253,44 @@ struct AppointmentRemoteSellingView: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
                     .lineLimit(2)
                     .padding(.top, 2)
+            }
+
+            // Reminder Status Row
+            VStack(alignment: .leading, spacing: 6) {
+                Divider().overlay(RSMSTheme.divider)
+
+                HStack(spacing: 8) {
+                    Image(systemName: viewModel.reminderStatusIcon(appointment.reminderStatus))
+                        .font(.caption)
+                        .foregroundStyle(viewModel.reminderStatusColor(appointment.reminderStatus))
+
+                    Text("Reminder:")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+
+                    Text(appointment.reminderStatus)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(viewModel.reminderStatusColor(appointment.reminderStatus))
+
+                    Text("via \(appointment.reminderChannel)")
+                        .font(.caption2)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+
+                    Spacer()
+
+                    if appointment.reminderStatus == "Sent", let sentAt = appointment.reminderSentAt {
+                        Text(sentAt, format: .dateTime.hour().minute())
+                            .font(.caption2)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                }
+
+                if appointment.reminderStatus == "Failed", let error = appointment.reminderError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(RSMSTheme.danger.opacity(0.8))
+                        .padding(.leading, 22)
+                }
             }
 
             // Quick Actions Footer
@@ -249,40 +311,120 @@ struct AppointmentRemoteSellingView: View {
                     .buttonStyle(ScaleButtonStyle())
                 }
 
-                Button {
-                    appointmentToReschedule = appointment
-                } label: {
-                    Text("Reschedule")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(RSMSTheme.surfacePrimary, in: Capsule())
-                        .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
-                }
-
-                Button {
-                    if let c = client {
-                        navigationPath.append(c)
+                // Resend/Send Reminder Button
+                if appointment.reminderStatus == "Pending" || appointment.reminderStatus == "Failed" {
+                    Button {
+                        Task {
+                            try? await viewModel.sendReminder(for: appointment)
+                        }
+                    } label: {
+                        Label("Send Reminder", systemImage: "bell.badge")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.cream)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                LinearGradient(
+                                    colors: [RSMSTheme.info, RSMSTheme.info.opacity(0.7)],
+                                    startPoint: .leading, endPoint: .trailing
+                                ),
+                                in: Capsule()
+                            )
                     }
-                } label: {
-                    Text("Profile")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(RSMSTheme.surfacePrimary, in: Capsule())
-                        .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
+                    .buttonStyle(ScaleButtonStyle())
+                } else if appointment.reminderStatus == "Sent" {
+                    Button {
+                        Task {
+                            try? await viewModel.sendReminder(for: appointment)
+                        }
+                    } label: {
+                        Label("Resend", systemImage: "arrow.clockwise")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(RSMSTheme.surfacePrimary, in: Capsule())
+                            .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
                 }
 
                 Spacer()
 
-                Button {
-                    appointmentToAddNotes = appointment
+                // Context Menu for management actions
+                Menu {
+                    if let c = client {
+                        Button {
+                            navigationPath.append(c)
+                        } label: {
+                            Label("Client Profile", systemImage: "person.crop.circle")
+                        }
+                    }
+
+                    Button {
+                        appointmentToReschedule = appointment
+                    } label: {
+                        Label("Reschedule", systemImage: "calendar.badge.clock")
+                    }
+
+                    Button {
+                        appointmentToAddNotes = appointment
+                    } label: {
+                        Label("Add Notes", systemImage: "square.and.pencil")
+                    }
+
+                    Menu {
+                        ForEach(AppointmentStatus.allCases, id: \.self) { status in
+                            Button {
+                                Task {
+                                    let updatedApp = Appointment(
+                                        id: appointment.id,
+                                        clientId: appointment.clientId,
+                                        associateId: appointment.associateId,
+                                        storeId: appointment.storeId,
+                                        dateTime: appointment.dateTime,
+                                        durationMinutes: appointment.durationMinutes,
+                                        type: appointment.type,
+                                        status: status,
+                                        reminderSentAt: appointment.reminderSentAt,
+                                        videoLink: appointment.videoLink,
+                                        notes: appointment.notes,
+                                        createdAt: appointment.createdAt,
+                                        reminderTimingHours: appointment.reminderTimingHours,
+                                        reminderChannel: appointment.reminderChannel,
+                                        reminderStatus: appointment.reminderStatus,
+                                        reminderError: appointment.reminderError
+                                    )
+                                    try? await viewModel.updateAppointment(updatedApp)
+                                }
+                            } label: {
+                                HStack {
+                                    Text(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    if appointment.status == status {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("Change Status", systemImage: "arrow.triangle.2.circlepath")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        appointmentToDelete = appointment
+                        showDeleteConfirmation = true
+                    } label: {
+                        Label("Cancel Appointment", systemImage: "trash")
+                    }
                 } label: {
-                    Image(systemName: "square.and.pencil")
-                        .font(.subheadline)
+                    Image(systemName: "ellipsis.circle")
+                        .font(.title3)
                         .foregroundStyle(RSMSTheme.textSecondary)
+                        .padding(8)
+                        .background(RSMSTheme.surfacePrimary, in: Circle())
+                        .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
                 }
             }
             .padding(.top, 4)
@@ -540,12 +682,15 @@ private struct AppointmentBookingFormSheet: View {
 
     // Video consultation specific fields
     @State private var videoLink = ""
-    @State private var reminderEnabled = true
     @State private var calendarSyncEnabled = true
     @State private var cameraChecking = false
     @State private var cameraOk = true
     @State private var errorMessage: String? = nil
     @State private var showErrorAlert = false
+
+    // Reminders Config
+    @State private var reminderTimingHours = 24
+    @State private var reminderChannel = "Email"
 
     private var currentStoreName: String {
         let storeId = appViewModel.currentUser?.storeId ?? viewModel.storeId
@@ -718,12 +863,41 @@ private struct AppointmentBookingFormSheet: View {
                                     .background(RSMSTheme.background, in: RoundedRectangle(cornerRadius: 8))
                                 }
 
-                                Toggle("Send Calendar Reminder Sync", isOn: $reminderEnabled)
-                                    .tint(RSMSTheme.primary)
-                                    .font(.subheadline)
                                 Toggle("Add to Apple Calendar", isOn: $calendarSyncEnabled)
                                     .tint(RSMSTheme.primary)
                                     .font(.subheadline)
+                            }
+                        }
+
+                        // Reminder settings card
+                        LuxuryFormCard(title: "Appointment Reminders", icon: "bell.fill") {
+                            if appViewModel.currentUser?.role == .salesAssociate || appViewModel.currentUser?.role == .boutiqueManager {
+                                LuxuryPicker(
+                                    title: "Reminder Timing",
+                                    selection: Binding(
+                                        get: { "\(reminderTimingHours) Hours Before" },
+                                        set: { val in
+                                            if let hr = Int(val.split(separator: " ").first ?? "") {
+                                                reminderTimingHours = hr
+                                            }
+                                        }
+                                    ),
+                                    options: ["1 Hours Before", "24 Hours Before", "48 Hours Before"]
+                                )
+
+                                LuxuryPicker(
+                                    title: "Preferred Channel",
+                                    selection: $reminderChannel,
+                                    options: ["Email", "SMS", "Both"]
+                                )
+                            } else {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "lock.shield")
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                    Text("Only authorized roles may manage reminder settings.")
+                                        .font(.caption)
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
                             }
                         }
 
@@ -838,10 +1012,14 @@ private struct AppointmentBookingFormSheet: View {
                                     durationMinutes: durationMinutes,
                                     type: appointmentType,
                                     status: .scheduled,
-                                    reminderSentAt: reminderEnabled ? Date() : nil,
+                                    reminderSentAt: nil,
                                     videoLink: appointmentType == .video ? videoLink : nil,
                                     notes: combinedNotes,
-                                    createdAt: Date()
+                                    createdAt: Date(),
+                                    reminderTimingHours: reminderTimingHours,
+                                    reminderChannel: reminderChannel,
+                                    reminderStatus: "Pending",
+                                    reminderError: nil
                                 )
 
                                 print("[RSMS Debug]   - Appointment payload to insert: \(newApp)")
@@ -909,8 +1087,11 @@ private struct RescheduleAppointmentSheet: View {
     let onDismiss: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppViewModel.self) private var appViewModel
     @State private var date = Date.now
     @State private var rescheduleTime = Date.now
+    @State private var reminderTimingHours = 24
+    @State private var reminderChannel = "Email"
 
     var body: some View {
         NavigationStack {
@@ -934,6 +1115,37 @@ private struct RescheduleAppointmentSheet: View {
                             .datePickerStyle(.wheel)
                             .labelsHidden()
                             .frame(maxWidth: .infinity, alignment: .center)
+                        }
+
+                        LuxuryFormCard(title: "Appointment Reminders", icon: "bell.fill") {
+                            if appViewModel.currentUser?.role == .salesAssociate || appViewModel.currentUser?.role == .boutiqueManager {
+                                LuxuryPicker(
+                                    title: "Reminder Timing",
+                                    selection: Binding(
+                                        get: { "\(reminderTimingHours) Hours Before" },
+                                        set: { val in
+                                            if let hr = Int(val.split(separator: " ").first ?? "") {
+                                                reminderTimingHours = hr
+                                            }
+                                        }
+                                    ),
+                                    options: ["1 Hours Before", "24 Hours Before", "48 Hours Before"]
+                                )
+
+                                LuxuryPicker(
+                                    title: "Preferred Channel",
+                                    selection: $reminderChannel,
+                                    options: ["Email", "SMS", "Both"]
+                                )
+                            } else {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "lock.shield")
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                    Text("Only authorized roles may manage reminder settings.")
+                                        .font(.caption)
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                            }
                         }
                         
                         Spacer().frame(height: 100)
@@ -969,10 +1181,14 @@ private struct RescheduleAppointmentSheet: View {
                                 durationMinutes: appointment.durationMinutes,
                                 type: appointment.type,
                                 status: .confirmed,
-                                reminderSentAt: Date(),
+                                reminderSentAt: nil,
                                 videoLink: appointment.videoLink,
                                 notes: appointment.notes,
-                                createdAt: appointment.createdAt
+                                createdAt: appointment.createdAt,
+                                reminderTimingHours: reminderTimingHours,
+                                reminderChannel: reminderChannel,
+                                reminderStatus: "Pending",
+                                reminderError: nil
                             )
 
                             try? await viewModel.updateAppointment(updated)
@@ -994,6 +1210,12 @@ private struct RescheduleAppointmentSheet: View {
             }
             .navigationTitle("Reschedule")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                date = appointment.dateTime
+                rescheduleTime = appointment.dateTime
+                reminderTimingHours = appointment.reminderTimingHours
+                reminderChannel = appointment.reminderChannel
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -1001,10 +1223,6 @@ private struct RescheduleAppointmentSheet: View {
                         onDismiss()
                     }
                 }
-            }
-            .onAppear {
-                self.date = appointment.dateTime
-                self.rescheduleTime = appointment.dateTime
             }
         }
     }
@@ -1059,7 +1277,11 @@ private struct AddNotesAppointmentSheet: View {
                                 reminderSentAt: appointment.reminderSentAt,
                                 videoLink: appointment.videoLink,
                                 notes: updatedNotes,
-                                createdAt: appointment.createdAt
+                                createdAt: appointment.createdAt,
+                                reminderTimingHours: appointment.reminderTimingHours,
+                                reminderChannel: appointment.reminderChannel,
+                                reminderStatus: appointment.reminderStatus,
+                                reminderError: appointment.reminderError
                             )
 
                             try? await viewModel.updateAppointment(updated)

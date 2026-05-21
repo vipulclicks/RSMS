@@ -168,17 +168,91 @@ struct Appointment: Codable, Identifiable, Hashable {
     let videoLink: String?
     let notes: String?
     let createdAt: Date
+    
+    // ── Reminders ──────────────────────────────
+    let reminderTimingHours: Int
+    let reminderChannel: String
+    let reminderStatus: String
+    let reminderError: String?
 
     enum CodingKeys: String, CodingKey {
         case id, type, status, notes
-        case clientId        = "client_id"
-        case associateId     = "associate_id"
-        case storeId         = "store_id"
-        case dateTime        = "date_time"
-        case durationMinutes = "duration_minutes"
-        case reminderSentAt  = "reminder_sent_at"
-        case videoLink       = "video_link"
-        case createdAt       = "created_at"
+        case clientId            = "client_id"
+        case associateId         = "associate_id"
+        case storeId             = "store_id"
+        case dateTime            = "date_time"
+        case durationMinutes     = "duration_minutes"
+        case reminderSentAt      = "reminder_sent_at"
+        case videoLink           = "video_link"
+        case createdAt           = "created_at"
+    }
+
+    enum ReminderKeys: String, CodingKey {
+        case reminderTimingHours = "reminder_timing_hours"
+        case reminderChannel     = "reminder_channel"
+        case reminderStatus      = "reminder_status"
+        case reminderError       = "reminder_error"
+    }
+
+    init(id: UUID, clientId: UUID, associateId: UUID, storeId: UUID, dateTime: Date, durationMinutes: Int, type: AppointmentType, status: AppointmentStatus, reminderSentAt: Date?, videoLink: String?, notes: String?, createdAt: Date, reminderTimingHours: Int = 24, reminderChannel: String = "Email", reminderStatus: String = "Pending", reminderError: String? = nil) {
+        self.id = id
+        self.clientId = clientId
+        self.associateId = associateId
+        self.storeId = storeId
+        self.dateTime = dateTime
+        self.durationMinutes = durationMinutes
+        self.type = type
+        self.status = status
+        self.reminderSentAt = reminderSentAt
+        self.videoLink = videoLink
+        self.notes = notes
+        self.createdAt = createdAt
+        self.reminderTimingHours = reminderTimingHours
+        self.reminderChannel = reminderChannel
+        self.reminderStatus = reminderStatus
+        self.reminderError = reminderError
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        clientId = try container.decode(UUID.self, forKey: .clientId)
+        associateId = try container.decode(UUID.self, forKey: .associateId)
+        storeId = try container.decode(UUID.self, forKey: .storeId)
+        dateTime = try container.decode(Date.self, forKey: .dateTime)
+        durationMinutes = try container.decode(Int.self, forKey: .durationMinutes)
+        type = try container.decode(AppointmentType.self, forKey: .type)
+        status = try container.decode(AppointmentStatus.self, forKey: .status)
+        reminderSentAt = try container.decodeIfPresent(Date.self, forKey: .reminderSentAt)
+        videoLink = try container.decodeIfPresent(String.self, forKey: .videoLink)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+
+        // Try to decode reminder keys, or fall back to default values if they don't exist in DB response yet
+        let reminderContainer = try? decoder.container(keyedBy: ReminderKeys.self)
+        reminderTimingHours = (try? reminderContainer?.decode(Int.self, forKey: .reminderTimingHours)) ?? 24
+        reminderChannel = (try? reminderContainer?.decode(String.self, forKey: .reminderChannel)) ?? "Email"
+        reminderStatus = (try? reminderContainer?.decode(String.self, forKey: .reminderStatus)) ?? "Pending"
+        reminderError = try? reminderContainer?.decodeIfPresent(String.self, forKey: .reminderError)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(clientId, forKey: .clientId)
+        try container.encode(associateId, forKey: .associateId)
+        try container.encode(storeId, forKey: .storeId)
+        try container.encode(dateTime, forKey: .dateTime)
+        try container.encode(durationMinutes, forKey: .durationMinutes)
+        try container.encode(type, forKey: .type)
+        try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(reminderSentAt, forKey: .reminderSentAt)
+        try container.encodeIfPresent(videoLink, forKey: .videoLink)
+        try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encode(createdAt, forKey: .createdAt)
+        
+        // Exclude reminder fields during encoding so we don't cause 400 Bad Request / DB errors
+        // against the live database instances that don't have these columns.
     }
 }
 

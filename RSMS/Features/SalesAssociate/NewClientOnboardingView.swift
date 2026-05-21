@@ -138,14 +138,6 @@ struct NewClientOnboardingView: View {
             LuxuryTextField(title: "Full Name *", text: $viewModel.fullName)
             LuxuryTextField(title: "Email", text: $viewModel.email)
             LuxuryTextField(title: "Phone", text: $viewModel.phone)
-            LuxuryPicker(
-                title: "VIP Tier",
-                selection: Binding(
-                    get: { viewModel.selectedTier.rawValue },
-                    set: { viewModel.selectedTier = VIPTier(rawValue: $0) ?? .standard }
-                ),
-                options: VIPTier.allCases.map(\.rawValue)
-            )
         }
     }
 
@@ -525,7 +517,6 @@ struct NewClientOnboardingView: View {
                         .padding(.bottom, 4)
 
                     recapRow(label: "Name", value: viewModel.fullName)
-                    recapRow(label: "Tier", value: viewModel.selectedTier.rawValue.uppercased())
                     recapRow(label: "Dates", value: "\(viewModel.anniversaries.count) added")
                     recapRow(label: "Wishlist", value: "\(viewModel.selectedProductIds.count) items selected")
                     recapRow(label: "Consent", value: viewModel.privacyConsentGiven ? "GIVEN" : "NOT GIVEN", valueColor: viewModel.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
