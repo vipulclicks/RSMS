@@ -10,7 +10,7 @@ import SwiftUI
 struct RFIDStockManagementView: View {
     private let stockItem = StockItem.preview
     private let scanRecord = RFIDScanRecord.preview
-    private let discrepancy = StockDiscrepancy.preview
+    private let variance = InventoryVariance.preview
     private let shrinkage = ShrinkageAnalytics.preview
     private let products = Product.all
 
@@ -196,7 +196,7 @@ struct RFIDStockManagementView: View {
                     StatusBadge(text: "Action Required", color: RSMSTheme.danger)
                 }
 
-                let product = products.first(where: { $0.id == discrepancy.productId })
+                let product = products.first(where: { $0.id == variance.productId })
 
                 VStack(spacing: 12) {
                     HStack {
@@ -207,20 +207,20 @@ struct RFIDStockManagementView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Spacer()
-                        StatusBadge(text: discrepancy.status.rawValue.replacingOccurrences(of: "_", with: " "),
-                                    color: discrepancyStatusColor(discrepancy.status))
+                        StatusBadge(text: variance.status.rawValue.replacingOccurrences(of: "_", with: " "),
+                                    color: varianceStatusColor(variance.status))
                     }
 
                     Divider().overlay(RSMSTheme.divider)
 
                     HStack(spacing: 20) {
-                        varianceBlock(label: "Expected", value: "\(discrepancy.expectedQty)", color: RSMSTheme.textSecondary)
+                        varianceBlock(label: "Expected", value: "\(variance.expectedQty)", color: RSMSTheme.textSecondary)
                         Image(systemName: "arrow.right")
                             .foregroundStyle(RSMSTheme.textTertiary)
-                        varianceBlock(label: "Actual", value: "\(discrepancy.actualQty)", color: RSMSTheme.danger)
+                        varianceBlock(label: "Actual", value: "\(variance.actualQty)", color: RSMSTheme.danger)
                         Image(systemName: "minus.circle.fill")
                             .foregroundStyle(RSMSTheme.danger)
-                        varianceBlock(label: "Variance", value: "\(discrepancy.actualQty - discrepancy.expectedQty)", color: RSMSTheme.danger)
+                        varianceBlock(label: "Variance", value: "\(variance.variance)", color: RSMSTheme.danger)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -328,7 +328,7 @@ struct RFIDStockManagementView: View {
         }
     }
 
-    private func discrepancyStatusColor(_ status: DiscrepancyStatus) -> Color {
+    private func varianceStatusColor(_ status: VarianceStatus) -> Color {
         switch status {
         case .open:          return RSMSTheme.danger
         case .investigating: return RSMSTheme.warning

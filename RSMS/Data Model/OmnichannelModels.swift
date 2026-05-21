@@ -1,21 +1,31 @@
 //
 //  OmnichannelModels.swift
-//  RSMS_Mock_Data
+//  RSMS
 //
-//  Created by Prem Kumar on 18/05/26.
+//  Omnichannel fulfilment models (BOPIS, endless aisle, ship-from-store)
+//  — aligned with Supabase public schema.
 //
 
 import Foundation
 
-// MARK: - BOPIS Order
+// MARK: - Omnichannel Order
 
-/// Represents an order where a customer buys something online and picks it up at a physical store.
-struct BOPISOrder: Codable, Identifiable, Hashable {
+/// Unified model for BOPIS and endless-aisle orders.
+/// Maps to Supabase `omnichannel_orders` table.
+/// The `type` field distinguishes between BOPIS and endless aisle.
+struct OmnichannelOrder: Codable, Identifiable, Hashable {
     let id: UUID
-    let onlineOrderId: String
+    let type: OmnichannelOrderType
+    let onlineOrderId: String?
     let storeId: UUID
     let clientId: UUID
-    let status: BOPISStatus
+    let associateId: UUID?
+    let productId: UUID?
+    let sourceStoreId: UUID?
+    let sourceDCId: String?
+    let status: OmnichannelOrderStatus
+    let shippingAddress: String?
+    let estimatedDelivery: Date?
     let preparedBy: UUID?
     let preparedAt: Date?
     let pickedUpAt: Date?
@@ -23,66 +33,44 @@ struct BOPISOrder: Codable, Identifiable, Hashable {
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, status, notes
-        case onlineOrderId = "online_order_id"
-        case storeId       = "store_id"
-        case clientId      = "client_id"
-        case preparedBy    = "prepared_by"
-        case preparedAt    = "prepared_at"
-        case pickedUpAt    = "picked_up_at"
-        case createdAt     = "created_at"
-    }
-}
-
-enum BOPISStatus: String, Codable, CaseIterable {
-    case pending   = "pending"
-    case preparing = "preparing"
-    case ready     = "ready"
-    case pickedUp  = "picked_up"
-    case cancelled = "cancelled"
-}
-
-// MARK: - Endless Aisle Order
-
-/// Used when a customer orders an item in the store that isn't currently in stock there, so it can be shipped to them.
-struct EndlessAisleOrder: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let associateId: UUID
-    let clientId: UUID
-    let productId: UUID
-    let sourceStoreId: UUID?
-    let sourceDCId: String?
-    let status: EndlessAisleStatus
-    let shippingAddress: String?
-    let estimatedDelivery: Date?
-    let createdAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, status
+        case id, type, status, notes
+        case onlineOrderId     = "online_order_id"
         case storeId           = "store_id"
-        case associateId       = "associate_id"
         case clientId          = "client_id"
+        case associateId       = "associate_id"
         case productId         = "product_id"
         case sourceStoreId     = "source_store_id"
         case sourceDCId        = "source_dc_id"
         case shippingAddress   = "shipping_address"
         case estimatedDelivery = "estimated_delivery"
+        case preparedBy        = "prepared_by"
+        case preparedAt        = "prepared_at"
+        case pickedUpAt        = "picked_up_at"
         case createdAt         = "created_at"
     }
 }
 
-enum EndlessAisleStatus: String, Codable, CaseIterable {
-    case placed    = "placed"
-    case confirmed = "confirmed"
-    case shipped   = "shipped"
-    case delivered = "delivered"
-    case cancelled = "cancelled"
+enum OmnichannelOrderType: String, Codable, CaseIterable {
+    case bopis        = "bopis"
+    case endlessAisle = "endless_aisle"
+}
+
+enum OmnichannelOrderStatus: String, Codable, CaseIterable {
+    case pending    = "pending"
+    case preparing  = "preparing"
+    case ready      = "ready"
+    case pickedUp   = "picked_up"
+    case placed     = "placed"
+    case confirmed  = "confirmed"
+    case shipped    = "shipped"
+    case delivered  = "delivered"
+    case cancelled  = "cancelled"
 }
 
 // MARK: - Ship From Store Packing Slip
 
-/// Details the packing and shipping information when a store fulfills an online order by shipping it directly to the customer.
+/// Packing and shipping details when a store fulfils an online order.
+/// Maps to Supabase `ship_from_store_slips` table.
 struct ShipFromStoreSlip: Codable, Identifiable, Hashable {
     let id: UUID
     let orderId: UUID
