@@ -1,188 +1,292 @@
-//
-//  StoreDashboardView.swift
-//  RSMS
-//
-//  Boutique Manager store dashboard with KPIs, staff, and alerts.
-//
-
 import SwiftUI
 
 struct StoreDashboardView: View {
-    @State private var viewModel = StoreDashboardViewModel()
-
+    // MARK: - View Models & State
+    @State private var dashboardVM = StoreDashboardViewModel()
+    @State private var showingNotifications = false
+    
+    private let summary = DashboardSummary.preview
+    private let shifts = StaffShift.all
+    private let store = Store.preview
+    
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
     var body: some View {
-        GeometryReader { geometry in
-            let viewWidth = geometry.size.width
-            let padding: CGFloat = viewWidth > 550 ? 24 : 20
-            let availableWidth = viewWidth - (padding * 2)
-            let spacing: CGFloat = viewWidth > 550 ? 16 : 12
-
-            let columns: [GridItem] = {
-                let columnsCount: Int
-                if availableWidth >= 700 {
-                    columnsCount = 4
-                } else if availableWidth >= 480 {
-                    columnsCount = 3
-                } else {
-                    columnsCount = 2
-                }
-                return Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnsCount)
-            }()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    headerSection
-                    
-                    LazyVGrid(columns: columns, spacing: spacing) {
-                        KPICard(
-                            icon: "eurosign.circle.fill",
-                            value: viewModel.formatCurrency(viewModel.summary.salesActual),
-                            label: "Today's Sales",
-                            trend: "\(Int(viewModel.summary.salesActual / viewModel.summary.salesTarget * 100))% of target",
-                            trendColor: viewModel.summary.salesActual >= viewModel.summary.salesTarget ? RSMSTheme.success : RSMSTheme.warning
-                        )
-                        KPICard(
-                            icon: "calendar.badge.clock",
-                            value: "\(viewModel.summary.appointmentCount)",
-                            label: "Appointments",
-                            iconColor: RSMSTheme.info
-                        )
-                        KPICard(
-                            icon: "exclamationmark.triangle.fill",
-                            value: "\(viewModel.summary.lowStockAlertCount)",
-                            label: "Low Stock Alerts",
-                            iconColor: RSMSTheme.warning
-                        )
-                        KPICard(
-                            icon: "figure.walk.arrival",
-                            value: "\(viewModel.summary.footfallCount ?? 0)",
-                            label: "Footfall Today",
-                            iconColor: RSMSTheme.success
-                        )
-                    }
-
-                    if viewWidth > 650 {
-                        HStack(alignment: .top, spacing: 16) {
-                            salesProgressCard
-                            highlightsCard
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 16) {
-                            salesProgressCard
-                            highlightsCard
-                        }
-                    }
-
-                    staffSection
-                }
-                .padding(padding)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                headerSection
+                kpiCardsRow
+                mainContentRow
+                staffSection
             }
+            .padding(24)
         }
         .background(RSMSTheme.background)
         .navigationTitle("Store Dashboard")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                notificationBell
+            }
+        }
+        .sheet(isPresented: $showingNotifications) {
+            LowStockNotificationView(dashboardVM: dashboardVM)
+        }
     }
-
+    
+    // MARK: - Notification Bell
+    private var notificationBell: some View {
+        Button {
+            showingNotifications = true
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "bell")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                if !dashboardVM.lowStockAlerts.isEmpty {
+                    let count = dashboardVM.lowStockAlerts.count
+                    let displayText = count > 99 ? "99+" : "\(count)"
+                    
+                    Text(displayText)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                        .padding(.horizontal, count >= 10 ? 4 : 0)
+                        .frame(
+                            minWidth: count >= 10 ? 10 : 14,
+                            minHeight: 14
+                        )
+                        .background(RSMSTheme.danger)
+                        .clipShape(Capsule())
+                        .offset(x: 2, y: -6)
+                        .transition(.scale)
+                }
+            }
+            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
+        }
+    }
+    
     // MARK: - Header
-
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Welcome back, Sophie")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
-                Text(viewModel.formattedDate)
+                
+                Text(formattedDate)
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
+            
             Spacer()
-            HStack(spacing: 6) {
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundStyle(RSMSTheme.primary)
-                Text(viewModel.store.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-        }
-    }
-
-    // MARK: - Main Content Subviews
-
-    private var salesProgressCard: some View {
-        VStack(spacing: 16) {
-            SectionHeader(title: "Sales Progress")
-            HStack(spacing: 32) {
-                CircularProgressView(
-                    progress: viewModel.summary.salesActual / viewModel.summary.salesTarget,
-                    label: "of target",
-                    value: "\(Int(viewModel.summary.salesActual / viewModel.summary.salesTarget * 100))%"
-                )
-                VStack(alignment: .leading, spacing: 16) {
-                    metricRow(label: "Target", value: viewModel.formatCurrency(viewModel.summary.salesTarget), color: RSMSTheme.textSecondary)
-                    metricRow(label: "Actual", value: viewModel.formatCurrency(viewModel.summary.salesActual), color: RSMSTheme.primary)
-                    metricRow(label: "Remaining", value: viewModel.formatCurrency(viewModel.summary.salesTarget - viewModel.summary.salesActual), color: RSMSTheme.warning)
+            
+            Button {
+                dashboardVM.simulateStockDrop()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .foregroundStyle(RSMSTheme.gold)
+                    
+                    Text(store.name)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(RSMSTheme.surfaceSecondary)
+                .clipShape(Capsule())
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .rsmsCard()
     }
-
-    private var highlightsCard: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SectionHeader(title: "Highlights")
-
-            if let topCategory = viewModel.summary.topSellingCategory {
-                highlightRow(icon: "crown.fill", title: "Top Selling", value: topCategory, color: RSMSTheme.primary)
+    
+    // MARK: - KPI Cards
+    private var kpiCardsRow: some View {
+        LazyVGrid(
+            columns: columns,
+            alignment: .leading,
+            spacing: 16
+        ) {
+            
+            KPICard(
+                icon: "indianrupeesign.square.fill",
+                value: summary.salesActual.formatted(
+                    .currency(code: "INR").precision(.fractionLength(0))
+                ),
+                label: "Today's Sales",
+                trend: "\(Int(summary.salesActual / summary.salesTarget * 100))% of target",
+                trendColor: summary.salesActual >= summary.salesTarget
+                ? RSMSTheme.success
+                : RSMSTheme.warning
+            )
+            
+            KPICard(
+                icon: "calendar.badge.clock",
+                value: "\(summary.appointmentCount)",
+                label: "Appointments",
+                iconColor: RSMSTheme.info
+            )
+            
+            Button {
+                showingNotifications = true
+            } label: {
+                KPICard(
+                    icon: "exclamationmark.triangle.fill",
+                    value: "\(dashboardVM.lowStockAlerts.count)",
+                    label: "Low Stock Alerts",
+                    iconColor: dashboardVM.lowStockAlerts.isEmpty
+                    ? RSMSTheme.success
+                    : RSMSTheme.warning
+                )
             }
-            highlightRow(icon: "calendar", title: "Appointments", value: "\(viewModel.summary.appointmentCount) scheduled today", color: RSMSTheme.info)
-            highlightRow(icon: "exclamationmark.shield.fill", title: "Stock Alerts", value: "\(viewModel.summary.lowStockAlertCount) items low", color: RSMSTheme.warning)
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            KPICard(
+                icon: "figure.walk.arrival",
+                value: "\(summary.footfallCount ?? 0)",
+                label: "Footfall Today",
+                iconColor: RSMSTheme.success
+            )
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .rsmsCard()
     }
-
-
+    
+    // MARK: - Main Content
+    private var mainContentRow: some View {
+        HStack(alignment: .top, spacing: 16) {
+            
+            VStack(alignment: .leading, spacing: 16) {
+                SectionHeader(title: "Sales Progress")
+                
+                HStack(spacing: 32) {
+                    CircularProgressView(
+                        progress: summary.salesActual / summary.salesTarget,
+                        label: "of target",
+                        value: "\(Int(summary.salesActual / summary.salesTarget * 100))%"
+                    )
+                    
+                    VStack(alignment: .leading, spacing: 16) {
+                        metricRow(
+                            label: "Target",
+                            value: summary.salesTarget.formatted(
+                                .currency(code: "INR").precision(.fractionLength(0))
+                            ),
+                            color: RSMSTheme.textSecondary
+                        )
+                        
+                        metricRow(
+                            label: "Actual",
+                            value: summary.salesActual.formatted(
+                                .currency(code: "INR").precision(.fractionLength(0))
+                            ),
+                            color: RSMSTheme.gold
+                        )
+                        
+                        metricRow(
+                            label: "Remaining",
+                            value: (summary.salesTarget - summary.salesActual).formatted(
+                                .currency(code: "INR").precision(.fractionLength(0))
+                            ),
+                            color: RSMSTheme.warning
+                        )
+                    }
+                }
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, minHeight: 220)
+            .rsmsCard()
+            
+            VStack(alignment: .leading, spacing: 20) {
+                SectionHeader(title: "Highlights")
+                
+                if let topCategory = summary.topSellingCategory {
+                    highlightRow(
+                        icon: "crown.fill",
+                        title: "Top Selling",
+                        value: topCategory,
+                        color: RSMSTheme.gold
+                    )
+                }
+                
+                highlightRow(
+                    icon: "calendar",
+                    title: "Appointments",
+                    value: "\(summary.appointmentCount) scheduled today",
+                    color: RSMSTheme.info
+                )
+                
+                highlightRow(
+                    icon: "exclamationmark.shield.fill",
+                    title: "Stock Alerts",
+                    value: "\(dashboardVM.lowStockAlerts.count) items low",
+                    color: RSMSTheme.warning
+                )
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, minHeight: 220)
+            .rsmsCard()
+        }
+    }
+    
     // MARK: - Staff Section
-
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Staff on Shift Today", subtitle: "\(viewModel.shifts.count) team members")
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(viewModel.shifts) { shift in
+            SectionHeader(
+                title: "Staff on Shift Today",
+                subtitle: "\(shifts.count) team members"
+            )
+            
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ],
+                spacing: 12
+            ) {
+                ForEach(shifts) { shift in
                     staffShiftCard(shift)
                 }
             }
         }
     }
-
+    
     private func staffShiftCard(_ shift: StaffShift) -> some View {
-        let name = viewModel.staffName(for: shift.staffId)
+        let name = UserProfile.all.first(where: { $0.id == shift.staffId })?.fullName ?? "Unknown"
+        
         return HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(RSMSTheme.primary.opacity(0.1))
+                    .fill(RSMSTheme.gold.opacity(0.1))
                     .frame(width: 44, height: 44)
+                
                 Text(String(name.prefix(1)))
                     .font(.headline)
-                    .foregroundStyle(RSMSTheme.primary)
+                    .foregroundStyle(RSMSTheme.gold)
             }
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
+                
                 Text(shift.role.capitalized)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
-
+            
             Spacer()
-
+            
             VStack(alignment: .trailing, spacing: 4) {
                 Text("\(shift.startTime) – \(shift.endTime)")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.primary)
+                    .foregroundStyle(RSMSTheme.gold)
+                
                 if let notes = shift.notes {
                     Text(notes)
                         .font(.caption2)
@@ -192,37 +296,51 @@ struct StoreDashboardView: View {
         }
         .rsmsCard(padding: 16)
     }
-
-    // MARK: - Helpers
-
+    
     private func metricRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textSecondary)
+            
             Spacer()
+            
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(color)
         }
     }
-
-    private func highlightRow(icon: String, title: String, value: String, color: Color) -> some View {
+    
+    private func highlightRow(
+        icon: String,
+        title: String,
+        value: String,
+        color: Color
+    ) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(color)
                 .frame(width: 28)
+            
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
+                
                 Text(value)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
+            
             Spacer()
         }
+    }
+    
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, d MMMM yyyy"
+        return formatter.string(from: .now)
     }
 }
 
