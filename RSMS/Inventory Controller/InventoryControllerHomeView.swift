@@ -14,11 +14,13 @@ import SwiftUI
 enum NavDestination: String, CaseIterable {
     case dashboard = "Dashboard"
     case scan      = "Scan Item"
+    case notifyManager = "Notify Manager"
 
     var icon: String {
         switch self {
-        case .dashboard: return "house.fill"
-        case .scan:      return "barcode.viewfinder"
+        case .dashboard:     return "house.fill"
+        case .scan:          return "barcode.viewfinder"
+        case .notifyManager: return "paperplane.fill"
         }
     }
 }
@@ -157,6 +159,9 @@ struct InventoryControllerHomeView: View {
 
         case .scan:
             InventoryBarcodeScannerView()
+            
+        case .notifyManager:
+            NotifyBoutiqueManagerView()
         }
     }
 
