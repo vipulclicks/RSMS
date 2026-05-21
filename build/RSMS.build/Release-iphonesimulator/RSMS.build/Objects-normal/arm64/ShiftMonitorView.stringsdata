@@ -7,7 +7,7 @@
         "key": "Today's Shifts",
         "location": {
           "startingColumn": 18,
-          "startingLine": 87
+          "startingLine": 93
         }
       },
       {
@@ -15,7 +15,7 @@
         "key": "LIVE · %@",
         "location": {
           "startingColumn": 22,
-          "startingLine": 80
+          "startingLine": 86
         }
       },
       {
@@ -23,7 +23,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 22,
-          "startingLine": 115
+          "startingLine": 121
         }
       },
       {
@@ -31,7 +31,7 @@
         "key": "No Shifts Found",
         "location": {
           "startingColumn": 18,
-          "startingLine": 230
+          "startingLine": 236
         }
       },
       {
@@ -39,7 +39,63 @@
         "key": "Try adjusting your filters or add a new shift to the roster.",
         "location": {
           "startingColumn": 18,
-          "startingLine": 233
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "SALES GOALS & COMMISSIONS",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Goal: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 300
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% achieved",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 311
+        }
+      },
+      {
+        "comment": "",
+        "key": "COMMISSION PAYOUTS — MAY 2026",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 370
+        }
+      },
+      {
+        "comment": "",
+        "key": "Pending",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 375
+        }
+      },
+      {
+        "comment": "",
+        "key": "Added to salary",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 375
         }
       },
       {
@@ -47,7 +103,7 @@
         "key": "%@ – %@",
         "location": {
           "startingColumn": 34,
-          "startingLine": 303
+          "startingLine": 447
         }
       },
       {
@@ -55,7 +111,7 @@
         "key": "Progress",
         "location": {
           "startingColumn": 30,
-          "startingLine": 335
+          "startingLine": 479
         }
       },
       {
@@ -63,7 +119,7 @@
         "key": "%lld%%",
         "location": {
           "startingColumn": 30,
-          "startingLine": 340
+          "startingLine": 484
         }
       },
       {
@@ -71,7 +127,7 @@
         "key": "No additional notes.",
         "location": {
           "startingColumn": 26,
-          "startingLine": 359
+          "startingLine": 503
         }
       },
       {
@@ -79,7 +135,7 @@
         "key": "Remove",
         "location": {
           "startingColumn": 26,
-          "startingLine": 370
+          "startingLine": 514
         }
       },
       {
@@ -87,7 +143,7 @@
         "key": "New Shift",
         "location": {
           "startingColumn": 30,
-          "startingLine": 442
+          "startingLine": 586
         }
       },
       {
@@ -95,7 +151,7 @@
         "key": "Staff Member",
         "location": {
           "startingColumn": 25,
-          "startingLine": 414
+          "startingLine": 558
         }
       },
       {
@@ -103,7 +159,7 @@
         "key": "Shift Timing",
         "location": {
           "startingColumn": 25,
-          "startingLine": 423
+          "startingLine": 567
         }
       },
       {
@@ -111,7 +167,7 @@
         "key": "Role",
         "location": {
           "startingColumn": 25,
-          "startingLine": 428
+          "startingLine": 572
         }
       },
       {
@@ -119,7 +175,7 @@
         "key": "Notes",
         "location": {
           "startingColumn": 25,
-          "startingLine": 438
+          "startingLine": 582
         }
       },
       {
@@ -127,7 +183,7 @@
         "key": "Select Staff",
         "location": {
           "startingColumn": 28,
-          "startingLine": 415
+          "startingLine": 559
         }
       },
       {
@@ -135,7 +191,7 @@
         "key": "Start Time",
         "location": {
           "startingColumn": 32,
-          "startingLine": 424
+          "startingLine": 568
         }
       },
       {
@@ -143,7 +199,7 @@
         "key": "End Time",
         "location": {
           "startingColumn": 32,
-          "startingLine": 425
+          "startingLine": 569
         }
       },
       {
@@ -151,7 +207,7 @@
         "key": "Assigned Role",
         "location": {
           "startingColumn": 28,
-          "startingLine": 429
+          "startingLine": 573
         }
       },
       {
@@ -159,7 +215,7 @@
         "key": "Optional instructions...",
         "location": {
           "startingColumn": 31,
-          "startingLine": 439
+          "startingLine": 583
         }
       },
       {
@@ -167,7 +223,7 @@
         "key": "Cancel",
         "location": {
           "startingColumn": 28,
-          "startingLine": 446
+          "startingLine": 590
         }
       },
       {
@@ -175,7 +231,7 @@
         "key": "Save",
         "location": {
           "startingColumn": 28,
-          "startingLine": 450
+          "startingLine": 594
         }
       }
     ]

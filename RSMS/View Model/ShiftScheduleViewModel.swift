@@ -10,12 +10,15 @@ enum ShiftStatus: String, CaseIterable {
 @Observable
 class ShiftScheduleViewModel {
     var shifts: [StaffShift] = []
+    var salesGoals: [SalesGoal] = []
+    var commissions: [Commission] = []
     
     // Timer to trigger UI updates for progress bars and live clocks
     var currentTime: Date = Date()
     
     init() {
         fetchTodayShifts()
+        fetchGoalsAndCommissions()
         
         // Timer for progress bars and live clock updates
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -26,6 +29,24 @@ class ShiftScheduleViewModel {
     func fetchTodayShifts() {
         // Load mock shifts
         self.shifts = StaffShift.all
+    }
+    
+    func fetchGoalsAndCommissions() {
+        // Generating mock data using actual Models to match UI
+        let users = UserProfile.all
+        guard users.count >= 3 else { return }
+        
+        self.salesGoals = [
+            SalesGoal(id: UUID(), staffId: users[0].id, storeId: UUID(), targetAmount: 180000, achievedAmount: 167200, period: .monthly, startDate: .now, endDate: .now, createdAt: .now),
+            SalesGoal(id: UUID(), staffId: users[1].id, storeId: UUID(), targetAmount: 160000, achievedAmount: 138400, period: .monthly, startDate: .now, endDate: .now, createdAt: .now),
+            SalesGoal(id: UUID(), staffId: users[2].id, storeId: UUID(), targetAmount: 140000, achievedAmount: 141000, period: .monthly, startDate: .now, endDate: .now, createdAt: .now)
+        ]
+        
+        self.commissions = [
+            Commission(id: UUID(), staffId: users[0].id, transactionId: UUID(), amount: 13360, rate: 0.05, status: .paid, createdAt: .now),
+            Commission(id: UUID(), staffId: users[1].id, transactionId: UUID(), amount: 11920, rate: 0.05, status: .pending, createdAt: .now),
+            Commission(id: UUID(), staffId: users[2].id, transactionId: UUID(), amount: 12050, rate: 0.05, status: .paid, createdAt: .now)
+        ]
     }
     
     func getStaffName(for staffId: UUID) -> String {

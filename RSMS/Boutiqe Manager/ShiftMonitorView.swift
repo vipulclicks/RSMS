@@ -41,6 +41,12 @@ struct ShiftMonitorView: View {
                 filterSection
                 
                 shiftsList
+                
+                salesGoalsSection
+                    .padding(.top, 24)
+                    
+                commissionPayoutsSection
+                    .padding(.top, 12)
             }
             .padding(.horizontal, 48)
             .padding(.bottom, 60)
@@ -238,6 +244,144 @@ struct ShiftMonitorView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)
+    }
+
+    // MARK: - Sales Goals & Commissions
+    private var salesGoalsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("SALES GOALS & COMMISSIONS")
+                .font(.system(size: 13, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(RSMSTheme.primary)
+            
+            VStack(spacing: 0) {
+                ForEach(vm.salesGoals.indices, id: \.self) { index in
+                    salesGoalRow(vm.salesGoals[index], index: index)
+                    if index < vm.salesGoals.count - 1 {
+                        Divider().overlay(RSMSTheme.border)
+                    }
+                }
+            }
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(RSMSTheme.border, lineWidth: 1))
+        }
+    }
+    
+    private func salesGoalRow(_ goal: SalesGoal, index: Int) -> some View {
+        let name = vm.getStaffName(for: goal.staffId)
+        let initials = name.split(separator: " ").compactMap { $0.first }.map { String($0) }.joined()
+        let progress = goal.targetAmount > 0 ? goal.achievedAmount / goal.targetAmount : 0
+        let color = index == 0 ? RSMSTheme.success : (index == 1 ? RSMSTheme.warning : RSMSTheme.info)
+        
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencySymbol = "₹"
+        formatter.maximumFractionDigits = 0
+        let goalFormatted = formatter.string(from: NSNumber(value: goal.targetAmount)) ?? ""
+        let achievedFormatted = formatter.string(from: NSNumber(value: goal.achievedAmount)) ?? ""
+
+        return HStack(alignment: .top, spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.surfaceTertiary)
+                    .frame(width: 50, height: 50)
+                Text(initials)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+            
+            VStack(spacing: 16) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(name)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Goal: \(goalFormatted)")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(achievedFormatted)
+                            .font(.system(size: 22, weight: .heavy))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("\(Int(progress * 100))% achieved")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(color)
+                    }
+                }
+                
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(RSMSTheme.surfaceTertiary)
+                        Capsule()
+                            .fill(color)
+                            .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(progress))))
+                    }
+                }
+                .frame(height: 6)
+            }
+        }
+        .padding(24)
+    }
+
+    // MARK: - Commission Payouts
+    private var commissionPayoutsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("COMMISSION PAYOUTS — MAY 2026")
+                .font(.system(size: 13, weight: .bold))
+                .tracking(1.5)
+                .foregroundStyle(RSMSTheme.primary)
+            
+            VStack(spacing: 0) {
+                ForEach(vm.commissions.indices, id: \.self) { index in
+                    commissionRow(vm.commissions[index])
+                    if index < vm.commissions.count - 1 {
+                        Divider().overlay(RSMSTheme.border).padding(.horizontal, 24)
+                    }
+                }
+            }
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(RSMSTheme.border, lineWidth: 1))
+        }
+    }
+    
+    private func commissionRow(_ payout: Commission) -> some View {
+        let name = vm.getStaffName(for: payout.staffId)
+        let isPending = payout.status == .pending
+        
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencySymbol = "₹"
+        formatter.maximumFractionDigits = 0
+        let amountFormatted = formatter.string(from: NSNumber(value: payout.amount)) ?? ""
+
+        return HStack {
+            Text(name)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+            
+            Spacer()
+            
+            Text("+ \(amountFormatted)")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .padding(.trailing, 24)
+            
+            Text(isPending ? "Pending" : "Added to salary")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(isPending ? RSMSTheme.warning : RSMSTheme.success)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isPending ? RSMSTheme.warning.opacity(0.15) : RSMSTheme.success.opacity(0.15))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke(isPending ? RSMSTheme.warning.opacity(0.3) : RSMSTheme.success.opacity(0.3), lineWidth: 1))
+        }
+        .padding(24)
     }
 
     // MARK: - Helpers
@@ -483,3 +627,4 @@ struct AddShiftView: View {
         ShiftMonitorView()
     }
 }
+
