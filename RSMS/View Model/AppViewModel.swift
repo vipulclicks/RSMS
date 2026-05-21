@@ -10,6 +10,10 @@ import SwiftUI
 @Observable
 class AppViewModel {
     var currentUser: UserProfile?
+    var dataStore = DataStore()
+    
+    // Mock store ID for the current session since it's not wired to the auth user yet
+    var currentStoreId: UUID? = UUID()
 
     func login(as role: UserRole) {
         switch role {

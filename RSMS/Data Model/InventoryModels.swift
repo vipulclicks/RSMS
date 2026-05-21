@@ -383,6 +383,41 @@ struct InventoryDashboardSnapshot {
     let recentActivity: [AuditTrail]
 }
 
+// MARK: - Inventory Variance
+
+enum VarianceStatus: String, Codable {
+    case open, investigating, resolved, closed
+}
+
+struct InventoryVariance: Codable, Identifiable, Hashable {
+    let id: UUID
+    let storeId: UUID
+    let productId: UUID
+    let reportedQuantity: Int
+    let expectedQuantity: Int
+    let status: VarianceStatus
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, status
+        case storeId          = "store_id"
+        case productId        = "product_id"
+        case reportedQuantity = "reported_quantity"
+        case expectedQuantity = "expected_quantity"
+        case createdAt        = "created_at"
+    }
+    
+    static let preview = InventoryVariance(
+        id: UUID(),
+        storeId: UUID(),
+        productId: UUID(),
+        reportedQuantity: 40,
+        expectedQuantity: 42,
+        status: .open,
+        createdAt: .now
+    )
+}
+
 // MARK: - Shrinkage Analytics
 
 /// Provides a summary of how much inventory was lost or stolen over a certain time, showing the total impact.
