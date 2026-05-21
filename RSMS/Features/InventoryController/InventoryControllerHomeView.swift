@@ -29,7 +29,7 @@ struct InventoryControllerHomeView: View {
         } detail: {
             detailView
         }
-        .tint(RSMSTheme.gold)
+        .tint(RSMSTheme.primary)
     }
 
     private var sidebar: some View {

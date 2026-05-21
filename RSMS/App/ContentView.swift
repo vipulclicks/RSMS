@@ -2,18 +2,17 @@
 //  ContentView.swift
 //  RSMS
 //
-//  Main Application Router
+//  Created by Yashika Sharma on 19/05/26.
 //
 
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(AppViewModel.self) private var appVM
+    @Environment(AppViewModel.self) private var viewModel
 
     var body: some View {
         Group {
-            if let user = appVM.currentUser {
-                // Route to the appropriate dashboard based on Role
+            if let user = viewModel.currentUser {
                 switch user.role {
                 case .boutiqueManager:
                     BoutiqueManagerHomeView()
@@ -23,11 +22,10 @@ struct ContentView: View {
                     InventoryControllerHomeView()
                 }
             } else {
-                // Not logged in -> Show Login
                 LoginView()
             }
         }
-        .animation(.default, value: appVM.currentUser != nil)
+        .animation(.smooth(duration: 0.6), value: viewModel.currentUser != nil)
     }
 }
 
