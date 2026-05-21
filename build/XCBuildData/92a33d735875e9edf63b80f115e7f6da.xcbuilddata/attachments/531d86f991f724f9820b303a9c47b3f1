@@ -1,0 +1,186 @@
+{
+  "" : {
+    "const-values" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary.swiftconstvalues",
+    "dependencies" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary.d",
+    "diagnostics" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary.dia",
+    "emit-module-dependencies" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary-emit-module.dia",
+    "pch" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMS-primary.swiftdeps"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/AssignGoalFormView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AssignGoalFormView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AssignGoalFormView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AssignGoalFormView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/BoutiqueManagerHomeView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerHomeView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerHomeView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerHomeView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/LowStockNotificationView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LowStockNotificationView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LowStockNotificationView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LowStockNotificationView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/ShiftMonitorView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftMonitorView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftMonitorView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftMonitorView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/StaffPickerView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffPickerView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffPickerView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffPickerView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/StaffShiftPlanningView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffShiftPlanningView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffShiftPlanningView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StaffShiftPlanningView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/StoreDashboardView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/ContentView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ContentView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/BoutiqueManagerModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/CoreModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/InventoryModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/OmnichannelModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/POSModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Data Model/SalesAssociateModels.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateModels.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateModels.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateModels.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Inventory Controller/InventoryControllerHomeView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryControllerHomeView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryControllerHomeView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryControllerHomeView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Inventory Controller/RFIDStockManagementView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RFIDStockManagementView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RFIDStockManagementView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RFIDStockManagementView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/LoginView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LoginView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LoginView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/LoginView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/BoutiqueManagerMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/BoutiqueManagerMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/CoreMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/CoreMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/InventoryMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/InventoryMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/OmnichannelMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/OmnichannelMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/POSMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/POSMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/MockData/SalesAssociateMockData.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateMockData.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateMockData.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateMockData.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/RSMSApp.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSApp.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSApp.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSApp.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/RSMSComponents.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSComponents.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSComponents.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/RSMSComponents.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Sales Associate/AppointmentRemoteSellingView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppointmentRemoteSellingView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppointmentRemoteSellingView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppointmentRemoteSellingView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Sales Associate/ClientelingView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ClientelingView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ClientelingView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ClientelingView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Sales Associate/SalesAssociateHomeView.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateHomeView.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateHomeView.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesAssociateHomeView.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/Theme.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/Theme.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/Theme.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/Theme.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/View Model/AppViewModel.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppViewModel.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppViewModel.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/AppViewModel.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/View Model/SalesGoalViewModel.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalViewModel.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalViewModel.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalViewModel.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/View Model/SalesGoalsRoute.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalsRoute.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalsRoute.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/SalesGoalsRoute.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/View Model/ShiftScheduleViewModel.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftScheduleViewModel.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftScheduleViewModel.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/ShiftScheduleViewModel.o"
+  },
+  "/Users/shiva/Desktop/RSMS/RSMS/View Model/StoreDashboardViewModel.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardViewModel.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardViewModel.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/StoreDashboardViewModel.o"
+  },
+  "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/shiva/Desktop/RSMS/build/RSMS.build/Release-iphonesimulator/RSMS.build/Objects-normal/x86_64/GeneratedAssetSymbols.o"
+  }
+}
