@@ -1,0 +1,80 @@
+{
+  "source": "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/AssignGoalFormView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Assign Sales Goal",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Sales Associate...",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "Goal Period",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Period",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "Target Amount",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 92
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Date",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 120
+        }
+      },
+      {
+        "comment": "",
+        "key": "End Date",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "SAVE NEW GOAL",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 133
+        }
+      }
+    ]
+  },
+  "version": 1
+}

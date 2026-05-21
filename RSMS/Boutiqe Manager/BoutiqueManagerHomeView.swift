@@ -10,6 +10,7 @@ import SwiftUI
 enum BoutiqueSection: String, CaseIterable, Identifiable {
     case dashboard     = "Store Dashboard"
     case staffPlanning = "Staff & Shift Planning"
+    case shiftMonitor  = "Today's Shifts"
 
     var id: String { rawValue }
 
@@ -17,6 +18,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard:     return "chart.bar.fill"
         case .staffPlanning: return "person.3.fill"
+        case .shiftMonitor:  return "calendar.badge.clock"
         }
     }
 }
@@ -61,6 +63,8 @@ struct BoutiqueManagerHomeView: View {
             StoreDashboardView()
         case .staffPlanning:
             StaffShiftPlanningView()
+        case .shiftMonitor:
+            ShiftMonitorView()
         case .none:
             StoreDashboardView()
         }

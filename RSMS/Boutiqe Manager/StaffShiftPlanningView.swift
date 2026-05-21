@@ -3,8 +3,6 @@ import SwiftUI
 struct StaffShiftPlanningView: View {
     @State private var navPath = [SalesGoalRoute]()
     @State private var salesGoalVM = SalesGoalViewModel()
-    
-    private let shifts = StaffShift.all
     private let commission = Commission.preview
     private let metric = PerformanceMetric.preview
 
@@ -12,7 +10,6 @@ struct StaffShiftPlanningView: View {
         NavigationStack(path: $navPath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    shiftsSection
                     goalsAndCommissionsRow
                     performanceSection
                 }
@@ -31,40 +28,6 @@ struct StaffShiftPlanningView: View {
         }
     }
 
-    // MARK: - Shifts Section
-    private var shiftsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Today's Shifts", subtitle: "\(shifts.count) staff members on duty")
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(shifts) { shift in
-                    shiftCard(shift)
-                }
-            }
-        }
-    }
-
-    private func shiftCard(_ shift: StaffShift) -> some View {
-        let name = UserProfile.all.first(where: { $0.id == shift.staffId })?.fullName ?? "Staff"
-        return VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                ZStack {
-                    Circle().fill(RSMSTheme.gold.opacity(0.1)).frame(width: 40, height: 40)
-                    Text(String(name.prefix(1))).font(.headline).foregroundStyle(RSMSTheme.gold)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(name).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
-                    StatusBadge(text: shift.role, color: roleBadgeColor(shift.role))
-                }
-            }
-            Divider().overlay(RSMSTheme.divider)
-            HStack {
-                Image(systemName: "clock.fill").font(.caption).foregroundStyle(RSMSTheme.gold)
-                Text("\(shift.startTime) – \(shift.endTime)").font(.subheadline.weight(.medium)).foregroundStyle(RSMSTheme.textPrimary)
-            }
-        }
-        .rsmsCard(padding: 16)
-    }
 
     // MARK: - Goals & Commissions Row
     private var goalsAndCommissionsRow: some View {

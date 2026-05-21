@@ -1,0 +1,184 @@
+{
+  "source": "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/ShiftMonitorView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Today's Shifts",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "LIVE · %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 115
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Shifts Found",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 230
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try adjusting your filters or add a new shift to the roster.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ – %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 303
+        }
+      },
+      {
+        "comment": "",
+        "key": "Progress",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 340
+        }
+      },
+      {
+        "comment": "",
+        "key": "No additional notes.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 359
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 370
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Shift",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "Staff Member",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 414
+        }
+      },
+      {
+        "comment": "",
+        "key": "Shift Timing",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 423
+        }
+      },
+      {
+        "comment": "",
+        "key": "Role",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 428
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Staff",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 415
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Time",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 424
+        }
+      },
+      {
+        "comment": "",
+        "key": "End Time",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assigned Role",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 429
+        }
+      },
+      {
+        "comment": "",
+        "key": "Optional instructions...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 439
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 446
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 450
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,32 @@
+{
+  "source": "/Users/shiva/Desktop/RSMS/RSMS/Boutiqe Manager/StoreDashboardView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Store Dashboard",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 30
+        }
+      },
+      {
+        "comment": "",
+        "key": "Welcome back, Sophie",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 77
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ – %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 286
+        }
+      }
+    ]
+  },
+  "version": 1
+}

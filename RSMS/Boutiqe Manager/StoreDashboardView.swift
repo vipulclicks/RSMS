@@ -4,18 +4,18 @@ struct StoreDashboardView: View {
     // MARK: - View Models & State
     @State private var dashboardVM = StoreDashboardViewModel()
     @State private var showingNotifications = false
-
+    
     private let summary = DashboardSummary.preview
     private let shifts = StaffShift.all
     private let store = Store.preview
-
+    
     private let columns = [
         GridItem(.flexible()),
         GridItem(.flexible()),
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
-
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -37,7 +37,7 @@ struct StoreDashboardView: View {
             LowStockNotificationView(dashboardVM: dashboardVM)
         }
     }
-
+    
     // MARK: - Notification Bell
     private var notificationBell: some View {
         Button {
@@ -47,11 +47,11 @@ struct StoreDashboardView: View {
                 Image(systemName: "bell")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
-
+                
                 if !dashboardVM.lowStockAlerts.isEmpty {
                     let count = dashboardVM.lowStockAlerts.count
                     let displayText = count > 99 ? "99+" : "\(count)"
-
+                    
                     Text(displayText)
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(RSMSTheme.cream)
@@ -69,7 +69,7 @@ struct StoreDashboardView: View {
             .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
         }
     }
-
+    
     // MARK: - Header
     private var headerSection: some View {
         HStack {
@@ -77,21 +77,21 @@ struct StoreDashboardView: View {
                 Text("Welcome back, Sophie")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
-
+                
                 Text(formattedDate)
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
-
+            
             Spacer()
-
+            
             Button {
                 dashboardVM.simulateStockDrop()
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.circle.fill")
                         .foregroundStyle(RSMSTheme.gold)
-
+                    
                     Text(store.name)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(RSMSTheme.textSecondary)
@@ -103,7 +103,7 @@ struct StoreDashboardView: View {
             }
         }
     }
-
+    
     // MARK: - KPI Cards
     private var kpiCardsRow: some View {
         LazyVGrid(
@@ -111,7 +111,7 @@ struct StoreDashboardView: View {
             alignment: .leading,
             spacing: 16
         ) {
-
+            
             KPICard(
                 icon: "indianrupeesign.square.fill",
                 value: summary.salesActual.formatted(
@@ -120,17 +120,17 @@ struct StoreDashboardView: View {
                 label: "Today's Sales",
                 trend: "\(Int(summary.salesActual / summary.salesTarget * 100))% of target",
                 trendColor: summary.salesActual >= summary.salesTarget
-                    ? RSMSTheme.success
-                    : RSMSTheme.warning
+                ? RSMSTheme.success
+                : RSMSTheme.warning
             )
-
+            
             KPICard(
                 icon: "calendar.badge.clock",
                 value: "\(summary.appointmentCount)",
                 label: "Appointments",
                 iconColor: RSMSTheme.info
             )
-
+            
             Button {
                 showingNotifications = true
             } label: {
@@ -139,13 +139,13 @@ struct StoreDashboardView: View {
                     value: "\(dashboardVM.lowStockAlerts.count)",
                     label: "Low Stock Alerts",
                     iconColor: dashboardVM.lowStockAlerts.isEmpty
-                        ? RSMSTheme.success
-                        : RSMSTheme.warning
+                    ? RSMSTheme.success
+                    : RSMSTheme.warning
                 )
             }
             .buttonStyle(.plain)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
+            
             KPICard(
                 icon: "figure.walk.arrival",
                 value: "\(summary.footfallCount ?? 0)",
@@ -154,21 +154,21 @@ struct StoreDashboardView: View {
             )
         }
     }
-
+    
     // MARK: - Main Content
     private var mainContentRow: some View {
         HStack(alignment: .top, spacing: 16) {
-
+            
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Sales Progress")
-
+                
                 HStack(spacing: 32) {
                     CircularProgressView(
                         progress: summary.salesActual / summary.salesTarget,
                         label: "of target",
                         value: "\(Int(summary.salesActual / summary.salesTarget * 100))%"
                     )
-
+                    
                     VStack(alignment: .leading, spacing: 16) {
                         metricRow(
                             label: "Target",
@@ -177,7 +177,7 @@ struct StoreDashboardView: View {
                             ),
                             color: RSMSTheme.textSecondary
                         )
-
+                        
                         metricRow(
                             label: "Actual",
                             value: summary.salesActual.formatted(
@@ -185,7 +185,7 @@ struct StoreDashboardView: View {
                             ),
                             color: RSMSTheme.gold
                         )
-
+                        
                         metricRow(
                             label: "Remaining",
                             value: (summary.salesTarget - summary.salesActual).formatted(
@@ -195,15 +195,15 @@ struct StoreDashboardView: View {
                         )
                     }
                 }
-
+                
                 Spacer()
             }
             .frame(maxWidth: .infinity, minHeight: 220)
             .rsmsCard()
-
+            
             VStack(alignment: .leading, spacing: 20) {
                 SectionHeader(title: "Highlights")
-
+                
                 if let topCategory = summary.topSellingCategory {
                     highlightRow(
                         icon: "crown.fill",
@@ -212,28 +212,28 @@ struct StoreDashboardView: View {
                         color: RSMSTheme.gold
                     )
                 }
-
+                
                 highlightRow(
                     icon: "calendar",
                     title: "Appointments",
                     value: "\(summary.appointmentCount) scheduled today",
                     color: RSMSTheme.info
                 )
-
+                
                 highlightRow(
                     icon: "exclamationmark.shield.fill",
                     title: "Stock Alerts",
                     value: "\(dashboardVM.lowStockAlerts.count) items low",
                     color: RSMSTheme.warning
                 )
-
+                
                 Spacer()
             }
             .frame(maxWidth: .infinity, minHeight: 220)
             .rsmsCard()
         }
     }
-
+    
     // MARK: - Staff Section
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -241,7 +241,7 @@ struct StoreDashboardView: View {
                 title: "Staff on Shift Today",
                 subtitle: "\(shifts.count) team members"
             )
-
+            
             LazyVGrid(
                 columns: [
                     GridItem(.flexible()),
@@ -255,38 +255,38 @@ struct StoreDashboardView: View {
             }
         }
     }
-
+    
     private func staffShiftCard(_ shift: StaffShift) -> some View {
         let name = UserProfile.all.first(where: { $0.id == shift.staffId })?.fullName ?? "Unknown"
-
+        
         return HStack(spacing: 16) {
             ZStack {
                 Circle()
                     .fill(RSMSTheme.gold.opacity(0.1))
                     .frame(width: 44, height: 44)
-
+                
                 Text(String(name.prefix(1)))
                     .font(.headline)
                     .foregroundStyle(RSMSTheme.gold)
             }
-
+            
             VStack(alignment: .leading, spacing: 4) {
                 Text(name)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
-
+                
                 Text(shift.role.capitalized)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
-
+            
             Spacer()
-
+            
             VStack(alignment: .trailing, spacing: 4) {
                 Text("\(shift.startTime) – \(shift.endTime)")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(RSMSTheme.gold)
-
+                
                 if let notes = shift.notes {
                     Text(notes)
                         .font(.caption2)
@@ -296,21 +296,21 @@ struct StoreDashboardView: View {
         }
         .rsmsCard(padding: 16)
     }
-
+    
     private func metricRow(label: String, value: String, color: Color) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textSecondary)
-
+            
             Spacer()
-
+            
             Text(value)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(color)
         }
     }
-
+    
     private func highlightRow(
         icon: String,
         title: String,
@@ -322,21 +322,21 @@ struct StoreDashboardView: View {
                 .font(.title3)
                 .foregroundStyle(color)
                 .frame(width: 28)
-
+            
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
-
+                
                 Text(value)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
-
+            
             Spacer()
         }
     }
-
+    
     private var formattedDate: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, d MMMM yyyy"
