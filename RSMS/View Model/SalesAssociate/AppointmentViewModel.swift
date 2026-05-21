@@ -12,8 +12,8 @@ import SwiftUI
 final class AppointmentViewModel {
 
     private let dataStore: DataStore
-    private let associateId: UUID
-    private let storeId: UUID
+    let associateId: UUID
+    let storeId: UUID
 
     var selectedDate: Date = .now
     var isLoading = false
@@ -30,6 +30,7 @@ final class AppointmentViewModel {
         isLoading = true
         errorMessage = nil
         do {
+            try await dataStore.fetchStores()
             try await dataStore.fetchClients()
             try await dataStore.fetchProducts()
             try await dataStore.fetchAppointments(associateId: associateId)
@@ -39,6 +40,9 @@ final class AppointmentViewModel {
         }
         isLoading = false
     }
+
+    // MARK: - Stores
+    var stores: [Store] { dataStore.stores }
 
     // MARK: - Appointments
     var appointments: [Appointment] { dataStore.appointments.filter { $0.associateId == associateId } }
