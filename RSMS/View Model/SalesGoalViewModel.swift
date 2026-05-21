@@ -3,7 +3,6 @@ import Observation
 
 @Observable
 class SalesGoalViewModel {
-    // MARK: - App State
     var activeGoals: [SalesGoal] = [SalesGoal.preview]
     var availableStaff: [UserProfile] = UserProfile.all.filter { $0.role == .salesAssociate }
     
