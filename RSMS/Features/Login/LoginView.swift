@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct LoginView: View {
-    @Environment(AppViewModel.self) private var viewModel
+    @Environment(AppViewModel.self) private var appViewModel
+    @State private var viewModel = LoginViewModel()
     @State private var appeared = false
 
     var body: some View {
@@ -94,11 +95,11 @@ struct LoginView: View {
     // MARK: - Role Card
 
     private func roleCard(for role: UserRole) -> some View {
-        let info = roleInfo(for: role)
+        let info = viewModel.roleInfo(for: role)
 
         return Button {
             withAnimation(.spring(duration: 0.5, bounce: 0.2)) {
-                viewModel.login(as: role)
+                appViewModel.login(as: role)
             }
         } label: {
             VStack(spacing: 20) {
@@ -165,24 +166,6 @@ struct LoginView: View {
         }
     }
 
-    // MARK: - Helpers
-
-    private struct RoleInfo {
-        let icon: String
-        let userName: String
-        let description: String
-    }
-
-    private func roleInfo(for role: UserRole) -> RoleInfo {
-        switch role {
-        case .boutiqueManager:
-            return RoleInfo(icon: "building.columns.fill", userName: "Sophie Martin", description: "Dashboard, staff scheduling & store operations")
-        case .salesAssociate:
-            return RoleInfo(icon: "person.crop.circle.fill", userName: "Lucas Dubois", description: "Clienteling, appointments & remote selling")
-        case .inventoryController:
-            return RoleInfo(icon: "shippingbox.fill", userName: "Emma Leroy", description: "RFID stock management & tracking")
-        }
-    }
 }
 
 

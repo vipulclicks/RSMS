@@ -8,9 +8,7 @@
 import SwiftUI
 
 struct StoreDashboardView: View {
-    private let summary = DashboardSummary.preview
-    private let shifts = StaffShift.all
-    private let store = Store.preview
+    @State private var viewModel = StoreDashboardViewModel()
 
     private let columns = [
         GridItem(.flexible()),
@@ -41,7 +39,7 @@ struct StoreDashboardView: View {
                 Text("Welcome back, Sophie")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
-                Text(formattedDate)
+                Text(viewModel.formattedDate)
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
@@ -49,7 +47,7 @@ struct StoreDashboardView: View {
             HStack(spacing: 6) {
                 Image(systemName: "mappin.circle.fill")
                     .foregroundStyle(RSMSTheme.primary)
-                Text(store.name)
+                Text(viewModel.store.name)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
@@ -62,26 +60,26 @@ struct StoreDashboardView: View {
         LazyVGrid(columns: columns, spacing: 16) {
             KPICard(
                 icon: "eurosign.circle.fill",
-                value: formatCurrency(summary.salesActual),
+                value: viewModel.formatCurrency(viewModel.summary.salesActual),
                 label: "Today's Sales",
-                trend: "\(Int(summary.salesActual / summary.salesTarget * 100))% of target",
-                trendColor: summary.salesActual >= summary.salesTarget ? RSMSTheme.success : RSMSTheme.warning
+                trend: "\(Int(viewModel.summary.salesActual / viewModel.summary.salesTarget * 100))% of target",
+                trendColor: viewModel.summary.salesActual >= viewModel.summary.salesTarget ? RSMSTheme.success : RSMSTheme.warning
             )
             KPICard(
                 icon: "calendar.badge.clock",
-                value: "\(summary.appointmentCount)",
+                value: "\(viewModel.summary.appointmentCount)",
                 label: "Appointments",
                 iconColor: RSMSTheme.info
             )
             KPICard(
                 icon: "exclamationmark.triangle.fill",
-                value: "\(summary.lowStockAlertCount)",
+                value: "\(viewModel.summary.lowStockAlertCount)",
                 label: "Low Stock Alerts",
                 iconColor: RSMSTheme.warning
             )
             KPICard(
                 icon: "figure.walk.arrival",
-                value: "\(summary.footfallCount ?? 0)",
+                value: "\(viewModel.summary.footfallCount ?? 0)",
                 label: "Footfall Today",
                 iconColor: RSMSTheme.success
             )
@@ -97,14 +95,14 @@ struct StoreDashboardView: View {
                 SectionHeader(title: "Sales Progress")
                 HStack(spacing: 32) {
                     CircularProgressView(
-                        progress: summary.salesActual / summary.salesTarget,
+                        progress: viewModel.summary.salesActual / viewModel.summary.salesTarget,
                         label: "of target",
-                        value: "\(Int(summary.salesActual / summary.salesTarget * 100))%"
+                        value: "\(Int(viewModel.summary.salesActual / viewModel.summary.salesTarget * 100))%"
                     )
                     VStack(alignment: .leading, spacing: 16) {
-                        metricRow(label: "Target", value: formatCurrency(summary.salesTarget), color: RSMSTheme.textSecondary)
-                        metricRow(label: "Actual", value: formatCurrency(summary.salesActual), color: RSMSTheme.primary)
-                        metricRow(label: "Remaining", value: formatCurrency(summary.salesTarget - summary.salesActual), color: RSMSTheme.warning)
+                        metricRow(label: "Target", value: viewModel.formatCurrency(viewModel.summary.salesTarget), color: RSMSTheme.textSecondary)
+                        metricRow(label: "Actual", value: viewModel.formatCurrency(viewModel.summary.salesActual), color: RSMSTheme.primary)
+                        metricRow(label: "Remaining", value: viewModel.formatCurrency(viewModel.summary.salesTarget - viewModel.summary.salesActual), color: RSMSTheme.warning)
                     }
                 }
             }
@@ -115,11 +113,11 @@ struct StoreDashboardView: View {
             VStack(alignment: .leading, spacing: 20) {
                 SectionHeader(title: "Highlights")
 
-                if let topCategory = summary.topSellingCategory {
+                if let topCategory = viewModel.summary.topSellingCategory {
                     highlightRow(icon: "crown.fill", title: "Top Selling", value: topCategory, color: RSMSTheme.primary)
                 }
-                highlightRow(icon: "calendar", title: "Appointments", value: "\(summary.appointmentCount) scheduled today", color: RSMSTheme.info)
-                highlightRow(icon: "exclamationmark.shield.fill", title: "Stock Alerts", value: "\(summary.lowStockAlertCount) items low", color: RSMSTheme.warning)
+                highlightRow(icon: "calendar", title: "Appointments", value: "\(viewModel.summary.appointmentCount) scheduled today", color: RSMSTheme.info)
+                highlightRow(icon: "exclamationmark.shield.fill", title: "Stock Alerts", value: "\(viewModel.summary.lowStockAlertCount) items low", color: RSMSTheme.warning)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .rsmsCard()
@@ -130,10 +128,10 @@ struct StoreDashboardView: View {
 
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Staff on Shift Today", subtitle: "\(shifts.count) team members")
+            SectionHeader(title: "Staff on Shift Today", subtitle: "\(viewModel.shifts.count) team members")
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(shifts) { shift in
+                ForEach(viewModel.shifts) { shift in
                     staffShiftCard(shift)
                 }
             }
@@ -141,7 +139,7 @@ struct StoreDashboardView: View {
     }
 
     private func staffShiftCard(_ shift: StaffShift) -> some View {
-        let name = staffName(for: shift.staffId)
+        let name = viewModel.staffName(for: shift.staffId)
         return HStack(spacing: 16) {
             ZStack {
                 Circle()
@@ -207,20 +205,6 @@ struct StoreDashboardView: View {
             }
             Spacer()
         }
-    }
-
-    private func staffName(for id: UUID) -> String {
-        UserProfile.all.first(where: { $0.id == id })?.fullName ?? "Unknown"
-    }
-
-    private func formatCurrency(_ value: Double) -> String {
-        "€\(String(format: "%,.0f", value))"
-    }
-
-    private var formattedDate: String {
-        let f = DateFormatter()
-        f.dateFormat = "EEEE, d MMMM yyyy"
-        return f.string(from: .now)
     }
 }
 

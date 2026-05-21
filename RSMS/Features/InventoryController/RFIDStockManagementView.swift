@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct RFIDStockManagementView: View {
-    private let stockItem = StockItem.preview
-    private let scanRecord = RFIDScanRecord.preview
-    private let discrepancy = StockDiscrepancy.preview
-    private let shrinkage = ShrinkageAnalytics.preview
-    private let products = Product.all
+    @State private var viewModel = RFIDStockManagementViewModel()
 
     private let kpiColumns = [
         GridItem(.flexible()),
@@ -64,25 +60,25 @@ struct RFIDStockManagementView: View {
         LazyVGrid(columns: kpiColumns, spacing: 12) {
             KPICard(
                 icon: "shippingbox.fill",
-                value: "\(scanRecord.itemsScanned)",
+                value: "\(viewModel.scanRecord.itemsScanned)",
                 label: "Items Scanned",
                 iconColor: RSMSTheme.primary
             )
             KPICard(
                 icon: "checkmark.circle.fill",
-                value: "\(scanRecord.itemsScanned - scanRecord.exceptionsFound)",
+                value: "\(viewModel.scanRecord.itemsScanned - viewModel.scanRecord.exceptionsFound)",
                 label: "Verified OK",
                 iconColor: RSMSTheme.success
             )
             KPICard(
                 icon: "exclamationmark.triangle.fill",
-                value: "\(scanRecord.exceptionsFound)",
+                value: "\(viewModel.scanRecord.exceptionsFound)",
                 label: "Exceptions",
                 iconColor: RSMSTheme.warning
             )
             KPICard(
                 icon: "chart.line.downtrend.xyaxis",
-                value: "€\(String(format: "%,.0f", shrinkage.totalLossValue))",
+                value: "€\(String(format: "%,.0f", viewModel.shrinkage.totalLossValue))",
                 label: "Shrinkage (90d)",
                 iconColor: RSMSTheme.danger
             )
@@ -111,7 +107,7 @@ struct RFIDStockManagementView: View {
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                         Spacer()
-                        Text(timeAgo(scanRecord.scannedAt))
+                        Text(viewModel.timeAgo(from: viewModel.scanRecord.scannedAt))
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textTertiary)
                     }
@@ -119,11 +115,11 @@ struct RFIDStockManagementView: View {
                     Divider().overlay(RSMSTheme.divider)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                        scanMetric(label: "Items Scanned", value: "\(scanRecord.itemsScanned)", color: RSMSTheme.info)
-                        scanMetric(label: "Exceptions", value: "\(scanRecord.exceptionsFound)", color: RSMSTheme.warning)
+                        scanMetric(label: "Items Scanned", value: "\(viewModel.scanRecord.itemsScanned)", color: RSMSTheme.info)
+                        scanMetric(label: "Exceptions", value: "\(viewModel.scanRecord.exceptionsFound)", color: RSMSTheme.warning)
                     }
 
-                    if let notes = scanRecord.notes {
+                    if let notes = viewModel.scanRecord.notes {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "text.quote")
                                 .font(.caption)
@@ -143,7 +139,7 @@ struct RFIDStockManagementView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Tracked Items")
 
-                let product = products.first(where: { $0.id == stockItem.productId })
+                let product = viewModel.trackedProduct
 
                 HStack(spacing: 14) {
                     ZStack {
@@ -166,17 +162,17 @@ struct RFIDStockManagementView: View {
 
                     Spacer()
 
-                    StatusBadge(text: stockItem.status.rawValue.replacingOccurrences(of: "_", with: " "),
-                                color: stockStatusColor(stockItem.status))
+                    StatusBadge(text: viewModel.stockItem.status.rawValue.replacingOccurrences(of: "_", with: " "),
+                                color: viewModel.stockStatusColor(viewModel.stockItem.status))
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
                 VStack(spacing: 8) {
-                    detailRow(label: "RFID Tag", value: stockItem.rfidTag ?? "—")
-                    detailRow(label: "Location", value: (stockItem.location ?? "Unknown").capitalized)
-                    detailRow(label: "Quantity", value: "\(stockItem.quantity)")
-                    detailRow(label: "Last Scanned", value: stockItem.lastScannedAt != nil ? "Just now" : "—")
+                    detailRow(label: "RFID Tag", value: viewModel.stockItem.rfidTag ?? "—")
+                    detailRow(label: "Location", value: (viewModel.stockItem.location ?? "Unknown").capitalized)
+                    detailRow(label: "Quantity", value: "\(viewModel.stockItem.quantity)")
+                    detailRow(label: "Last Scanned", value: viewModel.stockItem.lastScannedAt != nil ? "Just now" : "—")
                 }
             }
             .rsmsCard()
@@ -196,7 +192,7 @@ struct RFIDStockManagementView: View {
                     StatusBadge(text: "Action Required", color: RSMSTheme.danger)
                 }
 
-                let product = products.first(where: { $0.id == discrepancy.productId })
+                let product = viewModel.discrepancyProduct
 
                 VStack(spacing: 12) {
                     HStack {
@@ -207,20 +203,20 @@ struct RFIDStockManagementView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Spacer()
-                        StatusBadge(text: discrepancy.status.rawValue.replacingOccurrences(of: "_", with: " "),
-                                    color: discrepancyStatusColor(discrepancy.status))
+                        StatusBadge(text: viewModel.discrepancy.status.rawValue.replacingOccurrences(of: "_", with: " "),
+                                    color: viewModel.discrepancyStatusColor(viewModel.discrepancy.status))
                     }
 
                     Divider().overlay(RSMSTheme.divider)
 
                     HStack(spacing: 20) {
-                        varianceBlock(label: "Expected", value: "\(discrepancy.expectedQty)", color: RSMSTheme.textSecondary)
+                        varianceBlock(label: "Expected", value: "\(viewModel.discrepancy.expectedQty)", color: RSMSTheme.textSecondary)
                         Image(systemName: "arrow.right")
                             .foregroundStyle(RSMSTheme.textTertiary)
-                        varianceBlock(label: "Actual", value: "\(discrepancy.actualQty)", color: RSMSTheme.danger)
+                        varianceBlock(label: "Actual", value: "\(viewModel.discrepancy.actualQty)", color: RSMSTheme.danger)
                         Image(systemName: "minus.circle.fill")
                             .foregroundStyle(RSMSTheme.danger)
-                        varianceBlock(label: "Variance", value: "\(discrepancy.actualQty - discrepancy.expectedQty)", color: RSMSTheme.danger)
+                        varianceBlock(label: "Variance", value: "\(viewModel.stockVariance)", color: RSMSTheme.danger)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -234,7 +230,7 @@ struct RFIDStockManagementView: View {
                 VStack(spacing: 12) {
                     HStack(spacing: 24) {
                         VStack(spacing: 6) {
-                            Text("€\(String(format: "%,.0f", shrinkage.totalLossValue))")
+                            Text("€\(String(format: "%,.0f", viewModel.shrinkage.totalLossValue))")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundStyle(RSMSTheme.danger)
                             Text("Total Loss Value")
@@ -245,7 +241,7 @@ struct RFIDStockManagementView: View {
                         Divider().frame(height: 50).overlay(RSMSTheme.divider)
 
                         VStack(spacing: 6) {
-                            Text("\(shrinkage.totalLossUnits)")
+                            Text("\(viewModel.shrinkage.totalLossUnits)")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundStyle(RSMSTheme.warning)
                             Text("Units Lost")
@@ -256,13 +252,13 @@ struct RFIDStockManagementView: View {
 
                     Divider().overlay(RSMSTheme.divider)
 
-                    if let category = shrinkage.topCategory {
+                    if let category = viewModel.shrinkage.topCategory {
                         detailRow(label: "Top Category", value: category)
                     }
-                    if let cause = shrinkage.primaryCause {
+                    if let cause = viewModel.shrinkage.primaryCause {
                         detailRow(label: "Primary Cause", value: cause)
                     }
-                    detailRow(label: "Currency", value: shrinkage.currency)
+                    detailRow(label: "Currency", value: viewModel.shrinkage.currency)
                 }
             }
             .rsmsCard()
@@ -306,34 +302,6 @@ struct RFIDStockManagementView: View {
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(RSMSTheme.textSecondary)
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func timeAgo(_ date: Date) -> String {
-        let mins = Int(-date.timeIntervalSinceNow / 60)
-        if mins < 60 { return "\(mins)m ago" }
-        return "\(mins / 60)h ago"
-    }
-
-    private func stockStatusColor(_ status: StockStatus) -> Color {
-        switch status {
-        case .available: return RSMSTheme.success
-        case .reserved:  return RSMSTheme.warning
-        case .sold:      return RSMSTheme.textSecondary
-        case .inTransit: return RSMSTheme.info
-        case .damaged:   return RSMSTheme.danger
-        case .onLoan:    return RSMSTheme.warning
-        }
-    }
-
-    private func discrepancyStatusColor(_ status: DiscrepancyStatus) -> Color {
-        switch status {
-        case .open:          return RSMSTheme.danger
-        case .investigating: return RSMSTheme.warning
-        case .resolved:      return RSMSTheme.success
-        case .writeOff:      return RSMSTheme.textSecondary
         }
     }
 }

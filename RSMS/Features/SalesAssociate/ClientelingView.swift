@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct ClientelingView: View {
-    private let client = ClientProfile.preview
-    private let preference = ClientPreference.preview
-    private let anniversary = ClientAnniversary.previewBirthday
-    private let wishlist = WishlistItem.preview
-    private let products = Product.all
+    @State private var viewModel = ClientelingViewModel()
 
     var body: some View {
         ScrollView {
@@ -48,33 +44,33 @@ struct ClientelingView: View {
                     Circle()
                         .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 80, height: 80)
-                    Text(String(client.fullName.prefix(2)))
+                    Text(String(viewModel.client.fullName.prefix(2)))
                         .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
 
                 VStack(spacing: 6) {
-                    Text(client.fullName)
+                    Text(viewModel.client.fullName)
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
 
-                    StatusBadge(text: client.vipTier.rawValue.uppercased(), color: tierColor(client.vipTier))
+                    StatusBadge(text: viewModel.client.vipTier.rawValue.uppercased(), color: viewModel.tierColor(viewModel.client.vipTier))
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
                 VStack(spacing: 10) {
-                    if let email = client.email {
+                    if let email = viewModel.client.email {
                         contactRow(icon: "envelope.fill", value: email)
                     }
-                    if let phone = client.phone {
+                    if let phone = viewModel.client.phone {
                         contactRow(icon: "phone.fill", value: phone)
                     }
                     contactRow(icon: "checkmark.shield.fill",
-                               value: client.privacyConsentGiven ? "Consent given" : "No consent")
+                               value: viewModel.client.privacyConsentGiven ? "Consent given" : "No consent")
                 }
 
-                if let notes = client.notes {
+                if let notes = viewModel.client.notes {
                     Divider().overlay(RSMSTheme.divider)
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "note.text")
@@ -97,21 +93,21 @@ struct ClientelingView: View {
                         .font(.title3)
                         .foregroundStyle(RSMSTheme.primary)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(anniversary.title)
+                        Text(viewModel.anniversary.title)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.textPrimary)
-                        Text(formattedDate(anniversary.date))
+                        Text(viewModel.formattedDate(viewModel.anniversary.date))
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
                     Spacer()
-                    if anniversary.reminderEnabled {
+                    if viewModel.anniversary.reminderEnabled {
                         Image(systemName: "bell.fill")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.primary)
                     }
                 }
-                if let notes = anniversary.notes {
+                if let notes = viewModel.anniversary.notes {
                     Text(notes)
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textTertiary)
@@ -143,28 +139,28 @@ struct ClientelingView: View {
                 }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    if let ring = preference.ringSize {
+                    if let ring = viewModel.preference.ringSize {
                         preferenceChip(label: "Ring Size", value: ring, icon: "circle.circle.fill")
                     }
-                    if let bracelet = preference.braceletSize {
+                    if let bracelet = viewModel.preference.braceletSize {
                         preferenceChip(label: "Bracelet", value: bracelet, icon: "link.circle.fill")
                     }
-                    if let necklace = preference.necklaceLength {
+                    if let necklace = viewModel.preference.necklaceLength {
                         preferenceChip(label: "Necklace", value: necklace, icon: "oval.portrait.fill")
                     }
-                    if let wrist = preference.wristSize {
+                    if let wrist = viewModel.preference.wristSize {
                         preferenceChip(label: "Wrist", value: wrist, icon: "applewatch")
                     }
                 }
 
                 Divider().overlay(RSMSTheme.divider)
 
-                tagSection(title: "Favorite Categories", tags: preference.favoriteCategories, color: RSMSTheme.primary)
+                tagSection(title: "Favorite Categories", tags: viewModel.preference.favoriteCategories, color: RSMSTheme.primary)
 
-                if let metals = preference.favoriteMetals {
+                if let metals = viewModel.preference.favoriteMetals {
                     tagSection(title: "Preferred Metals", tags: metals, color: RSMSTheme.info)
                 }
-                if let gems = preference.favoriteGemstones {
+                if let gems = viewModel.preference.favoriteGemstones {
                     tagSection(title: "Gemstones", tags: gems, color: RSMSTheme.success)
                 }
             }
@@ -175,7 +171,7 @@ struct ClientelingView: View {
             VStack(alignment: .leading, spacing: 16) {
                 SectionHeader(title: "Wishlist")
 
-                let product = products.first(where: { $0.id == wishlist.productId })
+                let product = viewModel.wishlistProduct
                 HStack(spacing: 16) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
@@ -201,10 +197,10 @@ struct ClientelingView: View {
 
                     VStack(alignment: .trailing, spacing: 4) {
                         StatusBadge(
-                            text: wishlist.isAvailable ? "Available" : "Out of Stock",
-                            color: wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
+                            text: viewModel.wishlist.isAvailable ? "Available" : "Out of Stock",
+                            color: viewModel.wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
                         )
-                        if wishlist.notifyOnRestock {
+                        if viewModel.wishlist.notifyOnRestock {
                             Label("Notify", systemImage: "bell.fill")
                                 .font(.caption2)
                                 .foregroundStyle(RSMSTheme.textTertiary)
@@ -212,7 +208,7 @@ struct ClientelingView: View {
                     }
                 }
 
-                if let notes = wishlist.notes {
+                if let notes = viewModel.wishlist.notes {
                     Text(notes)
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textSecondary)
@@ -268,43 +264,6 @@ struct ClientelingView: View {
                 .font(.caption.weight(.medium))
                 .foregroundStyle(RSMSTheme.textSecondary)
             FlowLayout(tags: tags, color: color)
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "d MMMM"
-        return f.string(from: date)
-    }
-
-    private func tierColor(_ tier: VIPTier) -> Color {
-        switch tier {
-        case .standard: return RSMSTheme.textSecondary
-        case .silver:   return Color(red: 192 / 255.0, green: 192 / 255.0, blue: 192 / 255.0)
-        case .gold:     return RSMSTheme.primary
-        case .platinum: return Color(red: 176 / 255.0, green: 196 / 255.0, blue: 222 / 255.0)
-        case .prive:    return RSMSTheme.danger
-        }
-    }
-}
-
-// MARK: - Flow Layout for Tags
-
-struct FlowLayout: View {
-    let tags: [String]
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(tags, id: \.self) { tag in
-                Text(tag)
-                    .font(.caption2.weight(.medium))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(color.opacity(0.12))
-                    .foregroundStyle(color)
-                    .clipShape(Capsule())
-            }
         }
     }
 }
