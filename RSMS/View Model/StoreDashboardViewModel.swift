@@ -55,4 +55,17 @@ class StoreDashboardViewModel {
             }
         }
     }
+    func reorderItem(for productId: UUID) {
+            if let index = stockItems.firstIndex(where: { $0.productId == productId }) {
+                var modified = stockItems[index]
+                // Add 10 to the quantity so it is no longer "Low Stock"
+                let newQty = modified.quantity + 10
+                
+                modified = StockItem(id: modified.id, productId: modified.productId, storeId: modified.storeId, quantity: newQty, rfidTag: modified.rfidTag, location: modified.location, status: modified.status, lastScannedAt: modified.lastScannedAt, updatedAt: .now)
+                
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    stockItems[index] = modified
+                }
+            }
+        }
 }

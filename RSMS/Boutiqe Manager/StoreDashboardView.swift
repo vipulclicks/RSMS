@@ -34,8 +34,9 @@ struct StoreDashboardView: View {
         }
 
         .sheet(isPresented: $showingNotifications) {
-            LowStockNotificationView(alerts: dashboardVM.lowStockAlerts)
-        }
+                // Pass the entire ViewModel instead of just the array!
+                LowStockNotificationView(dashboardVM: dashboardVM)
+            }
     }
 
     // MARK: - Native iOS Notification Bell
