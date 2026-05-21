@@ -2,16 +2,20 @@
 //  RSMSApp.swift
 //  RSMS
 //
-//  Created by Yashika Sharma on 19/05/26.
+//  App entry point. Injects AppViewModel and DataStore into the environment.
 //
 
 import SwiftUI
 
 @main
 struct RSMSApp: App {
+    @State private var appVM = AppViewModel()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(appVM)
+                .environment(appVM.dataStore)
         }
     }
 }

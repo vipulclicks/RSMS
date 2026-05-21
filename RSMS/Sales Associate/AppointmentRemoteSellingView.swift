@@ -9,8 +9,8 @@ import SwiftUI
 
 struct AppointmentRemoteSellingView: View {
     private let appointment = Appointment.preview
-    private let curatedCart = CuratedCart.preview
-    private let curatedItem = CuratedCartItem.preview
+    private let curatedCart = UniversalCart.previewCurated
+    private let curatedItem = UniversalCartItem.previewCuratedItem
     private let client = ClientProfile.preview
     private let products = Product.all
 
@@ -285,13 +285,14 @@ struct AppointmentRemoteSellingView: View {
         }
     }
 
-    private func cartStatusColor(_ status: CuratedCartStatus) -> Color {
+    private func cartStatusColor(_ status: CartStatus) -> Color {
         switch status {
         case .draft:     return RSMSTheme.textSecondary
         case .shared:    return RSMSTheme.info
         case .viewed:    return RSMSTheme.warning
         case .converted: return RSMSTheme.success
         case .expired:   return RSMSTheme.danger
+        case .active, .completed, .abandoned: return RSMSTheme.textSecondary
         }
     }
 }

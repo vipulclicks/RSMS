@@ -9,6 +9,10 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(AppViewModel.self) private var viewModel
+    @State private var email = ""
+    @State private var password = ""
+    @FocusState private var isEmailFocused: Bool
+    @FocusState private var isPasswordFocused: Bool
     @State private var appeared = false
 
     var body: some View {
@@ -27,24 +31,10 @@ struct LoginView: View {
 
                 Spacer().frame(height: 60)
 
-                // Role Cards
-                HStack(spacing: 24) {
-                    ForEach(Array(UserRole.allCases.enumerated()), id: \.element.id) { index, role in
-                        roleCard(for: role)
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 30)
-                            .animation(.spring(duration: 0.7, bounce: 0.3).delay(Double(index) * 0.15 + 0.3), value: appeared)
-                    }
-                }
-                .padding(.horizontal, 60)
-
-                Spacer().frame(height: 48)
-
-                // Footer
-                Text("Select your role to continue")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
+                // Login Form
+                loginForm
                     .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 30)
 
                 Spacer()
 
@@ -91,59 +81,110 @@ struct LoginView: View {
         }
     }
 
-    // MARK: - Role Card
+    // MARK: - Login Form
 
-    private func roleCard(for role: UserRole) -> some View {
-        let info = roleInfo(for: role)
-
-        return Button {
-            withAnimation(.spring(duration: 0.5, bounce: 0.2)) {
-                viewModel.login(as: role)
-            }
-        } label: {
-            VStack(spacing: 20) {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(RSMSTheme.gold.opacity(0.1))
-                        .frame(width: 72, height: 72)
-                    Image(systemName: info.icon)
-                        .font(.system(size: 28))
-                        .foregroundStyle(RSMSTheme.gold)
+    private var loginForm: some View {
+        VStack(spacing: 24) {
+            Text("Sign in to your account")
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.textPrimary)
+            
+            if let error = viewModel.authError {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text(error)
                 }
-
-                // Role name
-                Text(role.displayName)
-                    .font(.headline)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-
-                // User name
-                Text(info.userName)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(RSMSTheme.gold)
-
-                // Description
-                Text(info.description)
-                    .font(.caption)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .frame(height: 34)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.danger)
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(RSMSTheme.danger.opacity(0.1))
+                .cornerRadius(8)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-            .padding(.horizontal, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(RSMSTheme.surfacePrimary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(RSMSTheme.gold.opacity(0.15), lineWidth: 1)
-                    )
-            )
-            .shadow(color: RSMSTheme.gold.opacity(0.05), radius: 20, y: 8)
+            
+            VStack(spacing: 16) {
+                // Email Field
+                HStack {
+                    Image(systemName: "envelope.fill")
+                        .foregroundStyle(RSMSTheme.gold)
+                        .frame(width: 24)
+                    TextField("Email Address", text: $email)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .focused($isEmailFocused)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                .padding()
+                .background(RSMSTheme.surfaceSecondary)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isEmailFocused ? RSMSTheme.gold : Color.clear, lineWidth: 1)
+                )
+                
+                // Password Field
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .foregroundStyle(RSMSTheme.gold)
+                        .frame(width: 24)
+                    SecureField("Password", text: $password)
+                        .focused($isPasswordFocused)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                .padding()
+                .background(RSMSTheme.surfaceSecondary)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isPasswordFocused ? RSMSTheme.gold : Color.clear, lineWidth: 1)
+                )
+            }
+            
+            // Login Button
+            Button(action: {
+                Task {
+                    await viewModel.login(email: email, password: password)
+                }
+            }) {
+                HStack {
+                    Spacer()
+                    if viewModel.isAuthenticating {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text("Sign In")
+                            .font(.headline)
+                    }
+                    Spacer()
+                }
+                .padding()
+                .background(RSMSTheme.goldGradient)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: RSMSTheme.gold.opacity(0.3), radius: 10, y: 4)
+            }
+            .disabled(email.isEmpty || password.isEmpty || viewModel.isAuthenticating)
+            .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
+            
+            // Demo fallback for quick testing
+            Button("Bypass Login (Offline Demo)") {
+                viewModel.login(as: .boutiqueManager)
+            }
+            .font(.caption)
+            .foregroundStyle(RSMSTheme.textTertiary)
+            .padding(.top, 8)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: 400)
+        .padding(32)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(RSMSTheme.surfacePrimary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(RSMSTheme.gold.opacity(0.15), lineWidth: 1)
+                )
+        )
+        .shadow(color: Color.black.opacity(0.2), radius: 30, y: 15)
     }
 
     // MARK: - Background Decoration
@@ -158,25 +199,6 @@ struct LoginView: View {
                 .fill(RSMSTheme.gold.opacity(0.02))
                 .frame(width: 400, height: 400)
                 .offset(x: 300, y: 200)
-        }
-    }
-
-    // MARK: - Helpers
-
-    private struct RoleInfo {
-        let icon: String
-        let userName: String
-        let description: String
-    }
-
-    private func roleInfo(for role: UserRole) -> RoleInfo {
-        switch role {
-        case .boutiqueManager:
-            return RoleInfo(icon: "building.columns.fill", userName: "Sophie Martin", description: "Dashboard, staff scheduling & store operations")
-        case .salesAssociate:
-            return RoleInfo(icon: "person.crop.circle.fill", userName: "Lucas Dubois", description: "Clienteling, appointments & remote selling")
-        case .inventoryController:
-            return RoleInfo(icon: "shippingbox.fill", userName: "Emma Leroy", description: "RFID stock management & tracking")
         }
     }
 }
