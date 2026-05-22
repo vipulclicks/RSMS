@@ -132,6 +132,58 @@ class SupabaseAuth {
         }
     }
 
+    // MARK: - Password Reset (Step 2: Verify OTP Code)
+
+    /// Verifies the 6-digit OTP code sent to the user's email via GoTrue `/verify`.
+    /// On success, returns an `AuthSession` whose `accessToken` can be used to update the password.
+    ///
+    /// - Parameters:
+    ///   - email: The email address that received the OTP.
+    ///   - otpCode: The 6-digit code from the email.
+    /// - Returns: A valid `AuthSession` containing a JWT for the password update.
+    /// - Throws: On invalid code, expired code, or network errors.
+    func verifyOTP(email: String, otpCode: String) async throws -> AuthSession {
+        guard let url = URL(string: "\(authURL)/verify") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+
+        let body: [String: String] = [
+            "type": "recovery",
+            "token": otpCode,
+            "email": email
+        ]
+        request.httpBody = try JSONEncoder().encode(body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            if let authError = try? JSONDecoder().decode(AuthError.self, from: data) {
+                throw NSError(domain: "SupabaseAuth", code: httpResponse.statusCode,
+                              userInfo: [NSLocalizedDescriptionKey: authError.errorDescription])
+            }
+            let body = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw NSError(domain: "SupabaseAuth", code: httpResponse.statusCode,
+                          userInfo: [NSLocalizedDescriptionKey: "OTP verification failed: \(body)"])
+        }
+
+        do {
+            return try JSONDecoder().decode(AuthSession.self, from: data)
+        } catch {
+            throw NSError(domain: "SupabaseAuth", code: 500,
+                          userInfo: [NSLocalizedDescriptionKey: "Failed to decode session after OTP verification."])
+        }
+    }
+
+
     // MARK: - Password Reset (Step 2: Update Password)
 
     /// Updates the password for the currently authenticated user via GoTrue `/user`.

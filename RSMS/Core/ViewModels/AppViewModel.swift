@@ -69,28 +69,40 @@ class AppViewModel {
     }
 
     // ══════════════════════════════════════════════════════════
-    // MARK: - Password Reset
+    // MARK: - Password Reset (OTP Flow)
     // ══════════════════════════════════════════════════════════
 
-    /// Tracks whether a reset-password request is in progress.
+    /// Tracks the current step of the reset-password flow.
+    enum ResetStep {
+        case enterEmail       // Step 1: user enters email
+        case enterOTP         // Step 2: user enters the 6-digit code
+        case enterNewPassword // Step 3: user enters a new password
+        case success          // Done!
+    }
+
+    var resetStep: ResetStep = .enterEmail
     var isResettingPassword = false
-    /// Success message after reset email is sent.
     var resetSuccessMessage: String?
-    /// Error message if reset fails.
     var resetError: String?
 
-    /// Step 1: Request a password-reset email.
-    /// Call this from a "Forgot Password" screen.
-    /// On success, sets `resetSuccessMessage`; on failure, sets `resetError`.
+    /// The email used for the current reset flow (needed for OTP verification).
+    var resetEmail: String = ""
+
+    /// Temporary access token obtained after OTP verification.
+    private var resetAccessToken: String?
+
+    /// Step 1: Send a 6-digit OTP code to the user's email.
     func requestPasswordReset(email: String) async {
         isResettingPassword = true
         resetError = nil
         resetSuccessMessage = nil
+        resetEmail = email
 
         do {
             try await SupabaseAuth.shared.requestPasswordReset(email: email)
             withAnimation {
-                resetSuccessMessage = "A password reset link has been sent to \(email). Please check your inbox."
+                resetSuccessMessage = "A 6-digit code has been sent to \(email). Check your inbox."
+                resetStep = .enterOTP
             }
         } catch {
             withAnimation {
@@ -101,12 +113,34 @@ class AppViewModel {
         isResettingPassword = false
     }
 
-    /// Step 2: Update the password using a valid session token.
-    /// Call this after the user taps the reset link and the app receives the token.
-    func updatePassword(newPassword: String) async {
-        guard let token = SupabaseClient.shared.accessToken else {
+    /// Step 2: Verify the 6-digit OTP code. On success, stores the session token
+    /// and advances to the new-password step.
+    func verifyResetOTP(code: String) async {
+        isResettingPassword = true
+        resetError = nil
+        resetSuccessMessage = nil
+
+        do {
+            let session = try await SupabaseAuth.shared.verifyOTP(email: resetEmail, otpCode: code)
+            resetAccessToken = session.accessToken
             withAnimation {
-                resetError = "No active session. Please use the reset link from your email first."
+                resetSuccessMessage = "Code verified! Enter your new password."
+                resetStep = .enterNewPassword
+            }
+        } catch {
+            withAnimation {
+                resetError = error.localizedDescription
+            }
+        }
+
+        isResettingPassword = false
+    }
+
+    /// Step 3: Update the password using the session token from OTP verification.
+    func updatePassword(newPassword: String) async {
+        guard let token = resetAccessToken else {
+            withAnimation {
+                resetError = "Session expired. Please restart the reset process."
             }
             return
         }
@@ -118,8 +152,10 @@ class AppViewModel {
         do {
             try await SupabaseAuth.shared.updatePassword(newPassword: newPassword, accessToken: token)
             withAnimation {
-                resetSuccessMessage = "Password updated successfully. Please log in with your new password."
+                resetSuccessMessage = "Password updated successfully! You can now sign in."
+                resetStep = .success
             }
+            resetAccessToken = nil
         } catch {
             withAnimation {
                 resetError = error.localizedDescription
@@ -127,5 +163,15 @@ class AppViewModel {
         }
 
         isResettingPassword = false
+    }
+
+    /// Resets the password-reset flow back to the initial state.
+    func clearResetState() {
+        resetStep = .enterEmail
+        isResettingPassword = false
+        resetSuccessMessage = nil
+        resetError = nil
+        resetEmail = ""
+        resetAccessToken = nil
     }
 }

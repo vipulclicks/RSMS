@@ -16,6 +16,9 @@ struct LoginView: View {
     @State private var appeared = false
     @State private var showForgotPassword = false
     @State private var resetEmail = ""
+    @State private var otpCode = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
 
     var body: some View {
         ZStack {
@@ -193,101 +196,42 @@ struct LoginView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.2), radius: 30, y: 15)
-        .sheet(isPresented: $showForgotPassword) {
+        .sheet(isPresented: $showForgotPassword, onDismiss: {
+            viewModel.clearResetState()
+            otpCode = ""
+            newPassword = ""
+            confirmPassword = ""
+        }) {
             forgotPasswordSheet
         }
     }
 
-    // MARK: - Forgot Password Sheet
+    // MARK: - Forgot Password Sheet (3-Step OTP Flow)
 
     private var forgotPasswordSheet: some View {
         NavigationStack {
             VStack(spacing: 24) {
-                Image(systemName: "lock.rotation")
-                    .font(.system(size: 48))
-                    .foregroundStyle(RSMSTheme.goldGradient)
+                // Step icon
+                stepIcon
                     .padding(.top, 20)
 
-                Text("Reset Your Password")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.textPrimary)
+                // Step title & subtitle
+                stepHeader
 
-                Text("Enter your email address and we'll send you a link to reset your password.")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                // Messages (success / error)
+                feedbackMessages
 
-                // Reset email field
-                HStack {
-                    Image(systemName: "envelope.fill")
-                        .foregroundStyle(RSMSTheme.gold)
-                        .frame(width: 24)
-                    TextField("Email Address", text: $resetEmail)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .foregroundStyle(RSMSTheme.textPrimary)
+                // Step-specific content
+                switch viewModel.resetStep {
+                case .enterEmail:
+                    emailStepContent
+                case .enterOTP:
+                    otpStepContent
+                case .enterNewPassword:
+                    newPasswordStepContent
+                case .success:
+                    successStepContent
                 }
-                .padding()
-                .background(RSMSTheme.surfaceSecondary)
-                .cornerRadius(12)
-                .padding(.horizontal)
-
-                // Success message
-                if let success = viewModel.resetSuccessMessage {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                        Text(success)
-                    }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.success)
-                    .padding(12)
-                    .frame(maxWidth: .infinity)
-                    .background(RSMSTheme.success.opacity(0.1))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                }
-
-                // Error message
-                if let error = viewModel.resetError {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text(error)
-                    }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.danger)
-                    .padding(12)
-                    .frame(maxWidth: .infinity)
-                    .background(RSMSTheme.danger.opacity(0.1))
-                    .cornerRadius(8)
-                    .padding(.horizontal)
-                }
-
-                // Send Reset Link Button
-                Button {
-                    Task {
-                        await viewModel.requestPasswordReset(email: resetEmail)
-                    }
-                } label: {
-                    HStack {
-                        Spacer()
-                        if viewModel.isResettingPassword {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Send Reset Link")
-                                .font(.headline)
-                        }
-                        Spacer()
-                    }
-                    .padding()
-                    .background(RSMSTheme.goldGradient)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .disabled(resetEmail.isEmpty || viewModel.isResettingPassword)
-                .opacity(resetEmail.isEmpty ? 0.6 : 1.0)
-                .padding(.horizontal)
 
                 Spacer()
             }
@@ -296,16 +240,271 @@ struct LoginView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button("Close") {
                         showForgotPassword = false
-                        viewModel.resetSuccessMessage = nil
-                        viewModel.resetError = nil
                     }
                     .font(.headline)
                     .foregroundStyle(RSMSTheme.gold)
                 }
             }
         }
+    }
+
+    // MARK: - Step Icon
+
+    private var stepIcon: some View {
+        Group {
+            switch viewModel.resetStep {
+            case .enterEmail:
+                Image(systemName: "envelope.badge.fill")
+            case .enterOTP:
+                Image(systemName: "lock.shield.fill")
+            case .enterNewPassword:
+                Image(systemName: "key.fill")
+            case .success:
+                Image(systemName: "checkmark.seal.fill")
+            }
+        }
+        .font(.system(size: 48))
+        .foregroundStyle(RSMSTheme.goldGradient)
+    }
+
+    // MARK: - Step Header
+
+    private var stepHeader: some View {
+        VStack(spacing: 8) {
+            switch viewModel.resetStep {
+            case .enterEmail:
+                Text("Reset Your Password")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("Enter your email and we'll send you a 6-digit code.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            case .enterOTP:
+                Text("Enter Verification Code")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("We sent a 6-digit code to **\(viewModel.resetEmail)**")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            case .enterNewPassword:
+                Text("Set New Password")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("Choose a strong password (minimum 6 characters).")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            case .success:
+                Text("Password Updated!")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.success)
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    // MARK: - Feedback Messages
+
+    private var feedbackMessages: some View {
+        VStack(spacing: 8) {
+            if let success = viewModel.resetSuccessMessage, viewModel.resetStep != .success {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text(success)
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.success)
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(RSMSTheme.success.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
+
+            if let error = viewModel.resetError {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text(error)
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.danger)
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(RSMSTheme.danger.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    // MARK: - Step 1: Enter Email
+
+    private var emailStepContent: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "envelope.fill")
+                    .foregroundStyle(RSMSTheme.gold)
+                    .frame(width: 24)
+                TextField("Email Address", text: $resetEmail)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+            }
+            .padding()
+            .background(RSMSTheme.surfaceSecondary)
+            .cornerRadius(12)
+            .padding(.horizontal)
+
+            resetActionButton(title: "Send Code", disabled: resetEmail.isEmpty) {
+                await viewModel.requestPasswordReset(email: resetEmail)
+            }
+        }
+    }
+
+    // MARK: - Step 2: Enter OTP
+
+    private var otpStepContent: some View {
+        VStack(spacing: 16) {
+            // OTP Code field
+            HStack {
+                Image(systemName: "number")
+                    .foregroundStyle(RSMSTheme.gold)
+                    .frame(width: 24)
+                TextField("6-Digit Code", text: $otpCode)
+                    .keyboardType(.numberPad)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .onChange(of: otpCode) { _, newValue in
+                        // Limit to 6 digits
+                        otpCode = String(newValue.filter { $0.isNumber }.prefix(6))
+                    }
+            }
+            .padding()
+            .background(RSMSTheme.surfaceSecondary)
+            .cornerRadius(12)
+            .padding(.horizontal)
+
+            resetActionButton(title: "Verify Code", disabled: otpCode.count != 6) {
+                await viewModel.verifyResetOTP(code: otpCode)
+            }
+
+            // Resend option
+            Button {
+                Task {
+                    await viewModel.requestPasswordReset(email: resetEmail)
+                }
+            } label: {
+                Text("Didn't get the code? Resend")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(RSMSTheme.gold)
+            }
+        }
+    }
+
+    // MARK: - Step 3: New Password
+
+    private var newPasswordStepContent: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Image(systemName: "lock.fill")
+                    .foregroundStyle(RSMSTheme.gold)
+                    .frame(width: 24)
+                SecureField("New Password", text: $newPassword)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+            }
+            .padding()
+            .background(RSMSTheme.surfaceSecondary)
+            .cornerRadius(12)
+            .padding(.horizontal)
+
+            HStack {
+                Image(systemName: "lock.rotation")
+                    .foregroundStyle(RSMSTheme.gold)
+                    .frame(width: 24)
+                SecureField("Confirm Password", text: $confirmPassword)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+            }
+            .padding()
+            .background(RSMSTheme.surfaceSecondary)
+            .cornerRadius(12)
+            .padding(.horizontal)
+
+            // Password mismatch warning
+            if !confirmPassword.isEmpty && newPassword != confirmPassword {
+                HStack {
+                    Image(systemName: "exclamationmark.circle.fill")
+                    Text("Passwords do not match")
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.danger)
+                .padding(.horizontal)
+            }
+
+            resetActionButton(
+                title: "Update Password",
+                disabled: newPassword.count < 6 || newPassword != confirmPassword
+            ) {
+                await viewModel.updatePassword(newPassword: newPassword)
+            }
+        }
+    }
+
+    // MARK: - Step 4: Success
+
+    private var successStepContent: some View {
+        VStack(spacing: 20) {
+            Text("Your password has been updated successfully. You can now sign in with your new password.")
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            Button {
+                showForgotPassword = false
+            } label: {
+                HStack {
+                    Spacer()
+                    Text("Back to Sign In")
+                        .font(.headline)
+                    Spacer()
+                }
+                .padding()
+                .background(RSMSTheme.goldGradient)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    // MARK: - Reusable Action Button
+
+    private func resetActionButton(title: String, disabled: Bool, action: @escaping () async -> Void) -> some View {
+        Button {
+            Task { await action() }
+        } label: {
+            HStack {
+                Spacer()
+                if viewModel.isResettingPassword {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Text(title)
+                        .font(.headline)
+                }
+                Spacer()
+            }
+            .padding()
+            .background(RSMSTheme.goldGradient)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+        }
+        .disabled(disabled || viewModel.isResettingPassword)
+        .opacity(disabled ? 0.6 : 1.0)
+        .padding(.horizontal)
     }
 
     // MARK: - Background Decoration
