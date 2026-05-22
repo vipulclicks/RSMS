@@ -1,9 +1,3 @@
-//
-//  ContentView.swift
-//  RSMS
-//
-//  Created by Yashika Sharma on 19/05/26.
-//
 
 import SwiftUI
 
@@ -28,8 +22,6 @@ struct ContentView: View {
         .animation(.smooth(duration: 0.6), value: viewModel.currentUser != nil)
     }
 }
-
 #Preview {
     ContentView()
-        .environment(AppViewModel())
-}
+    .environment(AppViewModel())}

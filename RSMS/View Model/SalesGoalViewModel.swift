@@ -3,7 +3,7 @@ import Observation
 
 @Observable
 class SalesGoalViewModel {
-    var activeGoals: [SalesGoal] = [SalesGoal.preview]
+    var activeGoals: [SalesGoal] = []
     var availableStaff: [UserProfile] = UserProfile.all.filter { $0.role == .salesAssociate }
     
     // MARK: - Draft Form State

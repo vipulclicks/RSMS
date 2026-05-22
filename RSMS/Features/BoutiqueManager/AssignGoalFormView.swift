@@ -126,7 +126,7 @@ struct AssignGoalFormView: View {
                 
                 // MARK: - Save Button
                 Button {
-                    let storeId = appViewModel.currentUser?.storeId ?? Store.preview.id
+                    let storeId = appViewModel.currentStoreId ?? appViewModel.currentUser?.storeId ?? UUID()
                     viewModel.saveNewGoal(storeId: storeId)
                     navPath.removeAll()
                 } label: {

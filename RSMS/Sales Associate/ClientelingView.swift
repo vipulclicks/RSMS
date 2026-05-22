@@ -8,24 +8,33 @@
 import SwiftUI
 
 struct ClientelingView: View {
-    private let client = ClientProfile.preview
-    private let anniversary = ClientAnniversary.preview
-    private let wishlist = WishlistItem.preview
-    private let products = Product.all
+    @Environment(AppViewModel.self) private var appVM
+    @State private var clientVM = ClientelingViewModel()
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
-                HStack(alignment: .top, spacing: 16) {
-                    profileColumn
-                    detailColumn
+                if let client = clientVM.client {
+                    HStack(alignment: .top, spacing: 16) {
+                        profileColumn(for: client)
+                        detailColumn(for: client)
+                    }
+                } else if clientVM.isLoading {
+                    ProgressView("Loading clients...")
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else {
+                    ContentUnavailableView("No Clients Found", systemImage: "person.crop.circle.badge.xmark")
                 }
             }
             .padding(24)
         }
         .background(RSMSTheme.background)
         .navigationTitle("Clienteling")
+        .task {
+            // Load live data from Supabase
+            await clientVM.load(dataStore: appVM.dataStore)
+        }
     }
 
     // MARK: - Header
@@ -39,7 +48,7 @@ struct ClientelingView: View {
 
     // MARK: - Profile Column
 
-    private var profileColumn: some View {
+    private func profileColumn(for client: ClientProfile) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             // Client card
             VStack(spacing: 20) {
@@ -57,7 +66,7 @@ struct ClientelingView: View {
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
 
-                    StatusBadge(text: client.vipTier.rawValue.uppercased(), color: tierColor(client.vipTier))
+                    StatusBadge(text: client.vipTier.rawValue.uppercased(), color: clientVM.tierColor(client.vipTier))
                 }
 
                 Divider().overlay(RSMSTheme.divider)
@@ -89,41 +98,43 @@ struct ClientelingView: View {
             .rsmsCard()
 
             // Anniversary
-            VStack(alignment: .leading, spacing: 12) {
-                SectionHeader(title: "Key Dates")
-                HStack(spacing: 12) {
-                    Image(systemName: "gift.fill")
-                        .font(.title3)
-                        .foregroundStyle(RSMSTheme.gold)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(anniversary.title)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text(formattedDate(anniversary.date))
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    Spacer()
-                    if anniversary.reminderEnabled {
-                        Image(systemName: "bell.fill")
-                            .font(.caption)
+            if let anniversary = clientVM.anniversary {
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionHeader(title: "Key Dates")
+                    HStack(spacing: 12) {
+                        Image(systemName: "gift.fill")
+                            .font(.title3)
                             .foregroundStyle(RSMSTheme.gold)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(anniversary.title)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text(clientVM.formattedDate(anniversary.date))
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        Spacer()
+                        if anniversary.reminderEnabled {
+                            Image(systemName: "bell.fill")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.gold)
+                        }
+                    }
+                    if let notes = anniversary.notes {
+                        Text(notes)
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textTertiary)
                     }
                 }
-                if let notes = anniversary.notes {
-                    Text(notes)
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                }
+                .rsmsCard()
             }
-            .rsmsCard()
         }
         .frame(maxWidth: 340)
     }
 
     // MARK: - Detail Column
 
-    private var detailColumn: some View {
+    private func detailColumn(for client: ClientProfile) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             // Preferences
             VStack(alignment: .leading, spacing: 16) {
@@ -160,54 +171,56 @@ struct ClientelingView: View {
             .rsmsCard()
 
             // Wishlist
-            VStack(alignment: .leading, spacing: 16) {
-                SectionHeader(title: "Wishlist")
+            if let wishlist = clientVM.wishlist {
+                VStack(alignment: .leading, spacing: 16) {
+                    SectionHeader(title: "Wishlist")
 
-                let product = products.first(where: { $0.id == wishlist.productId })
-                HStack(spacing: 16) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(RSMSTheme.surfaceSecondary)
-                            .frame(width: 64, height: 64)
-                        Image(systemName: "sparkles")
-                            .font(.title2)
-                            .foregroundStyle(RSMSTheme.gold)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(product?.name ?? "Product")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        if let product {
-                            Text("€\(String(format: "%,.0f", product.price))")
-                                .font(.caption.weight(.medium))
+                    let product = clientVM.products.first(where: { $0.id == wishlist.productId })
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(RSMSTheme.surfaceSecondary)
+                                .frame(width: 64, height: 64)
+                            Image(systemName: "sparkles")
+                                .font(.title2)
                                 .foregroundStyle(RSMSTheme.gold)
                         }
-                    }
 
-                    Spacer()
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(product?.name ?? "Product")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            if let product {
+                                Text("€\(String(format: "%,.0f", product.price))")
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(RSMSTheme.gold)
+                            }
+                        }
 
-                    VStack(alignment: .trailing, spacing: 4) {
-                        StatusBadge(
-                            text: wishlist.isAvailable ? "Available" : "Out of Stock",
-                            color: wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
-                        )
-                        if wishlist.notifyOnRestock {
-                            Label("Notify", systemImage: "bell.fill")
-                                .font(.caption2)
-                                .foregroundStyle(RSMSTheme.textTertiary)
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 4) {
+                            StatusBadge(
+                                text: wishlist.isAvailable ? "Available" : "Out of Stock",
+                                color: wishlist.isAvailable ? RSMSTheme.success : RSMSTheme.danger
+                            )
+                            if wishlist.notifyOnRestock {
+                                Label("Notify", systemImage: "bell.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                            }
                         }
                     }
-                }
 
-                if let notes = wishlist.notes {
-                    Text(notes)
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .italic()
+                    if let notes = wishlist.notes {
+                        Text(notes)
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                            .italic()
+                    }
                 }
+                .rsmsCard()
             }
-            .rsmsCard()
         }
     }
 
@@ -254,22 +267,6 @@ struct ClientelingView: View {
                 .font(.caption.weight(.medium))
                 .foregroundStyle(RSMSTheme.textSecondary)
             FlowLayout(tags: tags, color: color)
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "d MMMM"
-        return f.string(from: date)
-    }
-
-    private func tierColor(_ tier: VIPTier) -> Color {
-        switch tier {
-        case .standard: return RSMSTheme.textSecondary
-        case .silver:   return RSMSTheme.textTertiary
-        case .gold:     return RSMSTheme.gold
-        case .platinum: return RSMSTheme.info
-        case .prive:    return RSMSTheme.danger
         }
     }
 }

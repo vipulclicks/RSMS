@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct StaffShiftPlanningView: View {
+    @Environment(AppViewModel.self) private var appVM
     @State private var navPath = [SalesGoalRoute]()
     @State private var salesGoalVM = SalesGoalViewModel()
-    private let commission = Commission.preview
-    private let metric = PerformanceMetric.preview
+    @State private var shiftVM = StaffShiftPlanningViewModel()
 
     var body: some View {
         NavigationStack(path: $navPath) {
@@ -23,6 +23,13 @@ struct StaffShiftPlanningView: View {
                     AssignGoalFormView(viewModel: salesGoalVM, navPath: $navPath)
                 case .staffPicker:
                     StaffPickerView(viewModel: salesGoalVM, navPath: $navPath)
+                }
+            }
+            .task {
+                if let storeId = appVM.currentStoreId, let userId = appVM.currentUser?.id {
+                    await shiftVM.load(dataStore: appVM.dataStore, storeId: storeId, userId: userId)
+                    salesGoalVM.activeGoals = appVM.dataStore.salesGoals
+                    salesGoalVM.availableStaff = appVM.dataStore.users.filter { $0.role == .salesAssociate }
                 }
             }
         }
@@ -65,25 +72,30 @@ struct StaffShiftPlanningView: View {
                 HStack {
                     SectionHeader(title: "Recent Commissions")
                     Spacer()
-                    // Invisible spacer matching the "New Goal" button height
                     Text("New Goal")
                         .font(.subheadline.weight(.semibold))
                         .padding(.vertical, 6)
                         .opacity(0)
                 }
-                let staffName = UserProfile.all.first(where: { $0.id == commission.staffId })?.fullName ?? "Staff"
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(staffName).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
-                        Spacer()
-                        StatusBadge(text: commission.status.rawValue, color: commissionColor(commission.status))
+                if let commission = shiftVM.commission {
+                    let staffName = shiftVM.staffName(for: commission.staffId, from: appVM.dataStore)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(staffName).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
+                            Spacer()
+                            StatusBadge(text: commission.status.rawValue, color: commissionColor(commission.status))
+                        }
+                        Divider().overlay(RSMSTheme.divider)
+                        infoRow(label: "Amount", value: commission.amount.formatted(.currency(code: "INR").precision(.fractionLength(2))))
+                        infoRow(label: "Rate", value: "\(Int(commission.rate * 100))%")
                     }
-                    Divider().overlay(RSMSTheme.divider)
-                    
-                    infoRow(label: "Amount", value: commission.amount.formatted(.currency(code: "INR").precision(.fractionLength(2))))
-                    infoRow(label: "Rate", value: "\(Int(commission.rate * 100))%")
+                    .rsmsCard(padding: 16)
+                } else {
+                    Text("No commission data")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .rsmsCard(padding: 16)
                 }
-                .rsmsCard(padding: 16)
             }
             .frame(maxWidth: .infinity)
         }
@@ -91,15 +103,20 @@ struct StaffShiftPlanningView: View {
 
     // MARK: - Performance Section
     private var performanceSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            let staffName = UserProfile.all.first(where: { $0.id == metric.staffId })?.fullName ?? "Staff"
-            SectionHeader(title: "Performance Overview", subtitle: staffName + " · \(metric.period.rawValue.capitalized)")
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                KPICard(icon: "indianrupeesign.square.fill", value: metric.totalSales.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Total Sales", iconColor: RSMSTheme.gold)
-                KPICard(icon: "bag.fill", value: "\(metric.unitsSold)", label: "Units Sold", iconColor: RSMSTheme.info)
-                KPICard(icon: "chart.line.uptrend.xyaxis", value: metric.avgTransactionValue.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Avg Transaction", iconColor: RSMSTheme.success)
-                KPICard(icon: "percent", value: "\(Int((metric.conversionRate ?? 0) * 100))%", label: "Conversion Rate", iconColor: RSMSTheme.warning)
+        Group {
+            if let metric = shiftVM.metric {
+                let staffName = shiftVM.staffName(for: metric.staffId, from: appVM.dataStore)
+                VStack(alignment: .leading, spacing: 16) {
+                    SectionHeader(title: "Performance Overview", subtitle: staffName + " · \(metric.period.rawValue.capitalized)")
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        KPICard(icon: "indianrupeesign.square.fill", value: metric.totalSales.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Total Sales", iconColor: RSMSTheme.gold)
+                        KPICard(icon: "bag.fill", value: "\(metric.unitsSold)", label: "Units Sold", iconColor: RSMSTheme.info)
+                        KPICard(icon: "chart.line.uptrend.xyaxis", value: metric.avgTransactionValue.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Avg Transaction", iconColor: RSMSTheme.success)
+                        KPICard(icon: "percent", value: "\(Int((metric.conversionRate ?? 0) * 100))%", label: "Conversion Rate", iconColor: RSMSTheme.warning)
+                    }
+                }
+            } else {
+                ContentUnavailableView("No Performance Data", systemImage: "chart.bar.xaxis", description: Text("Performance metrics will appear here once data is available."))
             }
         }
     }

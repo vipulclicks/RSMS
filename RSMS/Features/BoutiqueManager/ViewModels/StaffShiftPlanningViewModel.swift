@@ -2,23 +2,53 @@
 //  StaffShiftPlanningViewModel.swift
 //  RSMS
 //
+//  Fetches live shift, goal, commission and performance data from Supabase.
+//  Replaces hardcoded preview data.
+//
 
 import SwiftUI
 
 @Observable
 final class StaffShiftPlanningViewModel {
 
-    // MARK: - Data
-    // TODO: Replace mock data with Supabase fetch
-    private(set) var shifts: [StaffShift] = StaffShift.all
-    private(set) var goal: SalesGoal = .preview
-    private(set) var commission: Commission = .preview
-    private(set) var metric: PerformanceMetric = .preview
+    // MARK: - State
+    private(set) var shifts: [StaffShift] = []
+    private(set) var goal: SalesGoal? = nil
+    private(set) var commission: Commission? = nil
+    private(set) var metric: PerformanceMetric? = nil
+    var isLoading = false
+    var errorMessage: String? = nil
+
+    // MARK: - Load
+
+    @MainActor
+    func load(dataStore: DataStore, storeId: UUID, userId: UUID) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        do {
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask { try await dataStore.fetchStaffShifts(storeId: storeId) }
+                group.addTask { try await dataStore.fetchSalesGoals(storeId: storeId) }
+                group.addTask { try await dataStore.fetchCommissions(staffId: userId) }
+                group.addTask { try await dataStore.fetchPerformanceMetrics(storeId: storeId) }
+                try await group.waitForAll()
+            }
+
+            shifts = dataStore.staffShifts.filter { $0.storeId == storeId }
+            goal = dataStore.salesGoals.first { $0.storeId == storeId }
+            commission = dataStore.commissions.first { $0.staffId == userId }
+            metric = dataStore.performanceMetrics.first { $0.storeId == storeId }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     // MARK: - Helpers
 
-    func staffName(for id: UUID) -> String {
-        UserProfile.all.first(where: { $0.id == id })?.fullName ?? "Staff"
+    func staffName(for id: UUID, from dataStore: DataStore) -> String {
+        dataStore.users.first(where: { $0.id == id })?.fullName ?? "Staff"
     }
 
     func roleBadgeColor(_ role: String) -> Color {
@@ -39,7 +69,8 @@ final class StaffShiftPlanningViewModel {
     }
 
     var goalProgressRatio: Double {
-        goal.achievedAmount / goal.targetAmount
+        guard let g = goal, g.targetAmount > 0 else { return 0 }
+        return g.achievedAmount / g.targetAmount
     }
 
     var goalAchievedPercent: Int {

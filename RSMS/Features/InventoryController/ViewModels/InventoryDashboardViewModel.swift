@@ -13,7 +13,7 @@ final class InventoryDashboardViewModel {
 
     // MARK: - State
 
-    var snapshot: InventoryDashboardSnapshot = .preview
+    var snapshot: InventoryDashboardSnapshot? = nil
     var isLoading: Bool = false
     var errorMessage: String? = nil
 

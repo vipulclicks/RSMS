@@ -126,7 +126,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(RSMSTheme.border, lineWidth: 1))
 
@@ -163,7 +163,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -206,7 +206,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -267,7 +267,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -350,7 +350,7 @@ struct ScanResultSheet: View {
                 .foregroundStyle(RSMSTheme.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(RSMSTheme.cream)
+                .background(RSMSTheme.surfacePrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
