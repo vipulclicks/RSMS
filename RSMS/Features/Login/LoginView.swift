@@ -378,8 +378,8 @@ struct LoginView: View {
                     .keyboardType(.numberPad)
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .onChange(of: otpCode) { _, newValue in
-                        // Limit to 6 digits
-                        otpCode = String(newValue.filter { $0.isNumber }.prefix(6))
+                        // Allow up to 10 digits to be safe
+                        otpCode = String(newValue.filter { $0.isNumber }.prefix(10))
                     }
             }
             .padding()
@@ -387,7 +387,7 @@ struct LoginView: View {
             .cornerRadius(12)
             .padding(.horizontal)
 
-            resetActionButton(title: "Verify Code", disabled: otpCode.count != 6) {
+            resetActionButton(title: "Verify Code", disabled: otpCode.count < 6) {
                 await viewModel.verifyResetOTP(code: otpCode)
             }
 
