@@ -156,7 +156,26 @@ extension Appointment {
         reminderError: nil
     )
 
-    static let all: [Appointment] = [.preview, .previewVideo]
+    static let previewVideoClient1 = Appointment(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000052")!,
+        clientId: ClientProfile.preview.id,
+        associateId: UserProfile.previewAssociate.id,
+        storeId: Store.preview.id,
+        dateTime: Calendar.current.date(byAdding: .minute, value: 5, to: .now)!,
+        durationMinutes: 45,
+        type: .video,
+        status: .confirmed,
+        reminderSentAt: nil,
+        videoLink: "facetime://lucas.dubois@maisonlumiere.com",
+        notes: "Anniversary High Jewelry FaceTime Selection",
+        createdAt: .now,
+        reminderTimingHours: 24,
+        reminderChannel: "Email",
+        reminderStatus: "Pending",
+        reminderError: nil
+    )
+
+    static let all: [Appointment] = [.preview, .previewVideo, .previewVideoClient1]
 }
 
 // MARK: - AI Recommendation Mock Data

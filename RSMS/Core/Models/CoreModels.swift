@@ -14,6 +14,7 @@ enum UserRole: String, Codable, CaseIterable, Identifiable {
     case boutiqueManager     = "boutique_manager"
     case salesAssociate      = "sales_associate"
     case inventoryController = "inventory_controller"
+    case client              = "client"
 
     var id: String { rawValue }
 
@@ -22,6 +23,7 @@ enum UserRole: String, Codable, CaseIterable, Identifiable {
         case .boutiqueManager:      return "Boutique Manager"
         case .salesAssociate:       return "Sales Associate"
         case .inventoryController:  return "Inventory Controller"
+        case .client:               return "Client Profile"
         }
     }
 }

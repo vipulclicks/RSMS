@@ -58,6 +58,8 @@ class AppViewModel {
             currentUser = .previewAssociate
         case .inventoryController:
             currentUser = .previewInventory
+        case .client:
+            currentUser = .previewClient
         }
     }
 

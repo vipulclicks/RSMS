@@ -167,11 +167,31 @@ struct LoginView: View {
             .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
             
             // Demo fallback for quick testing
-            Button("Bypass Login (Offline Demo)") {
-                viewModel.login(as: .boutiqueManager)
+            Menu {
+                Button("Boutique Manager (Sophie)") {
+                    viewModel.login(as: .boutiqueManager)
+                }
+                Button("Sales Associate (Lucas)") {
+                    viewModel.login(as: .salesAssociate)
+                }
+                Button("Inventory Controller (Emma)") {
+                    viewModel.login(as: .inventoryController)
+                }
+                Button("Client Portal (Isabelle)") {
+                    viewModel.login(as: .client)
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                    Text("Bypass Login (Offline Demo)")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(RSMSTheme.textTertiary)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .background(RSMSTheme.surfaceSecondary, in: Capsule())
+                .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
             }
-            .font(.caption)
-            .foregroundStyle(RSMSTheme.textTertiary)
             .padding(.top, 8)
         }
         .frame(maxWidth: 400)
