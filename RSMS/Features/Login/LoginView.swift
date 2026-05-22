@@ -16,38 +16,46 @@ struct LoginView: View {
     @State private var appeared = false
 
     var body: some View {
-        ZStack {
-            // Background
-            RSMSTheme.background.ignoresSafeArea()
-            backgroundDecoration
+        GeometryReader { geometry in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 40)
 
-            VStack(spacing: 0) {
-                Spacer()
+                    // Branding
+                    brandingSection
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : -20)
 
-                // Branding
-                brandingSection
+                    Spacer().frame(height: 32)
+
+                    // Login Form
+                    loginForm
+                        .padding(.horizontal, 24)
+                        .opacity(appeared ? 1 : 0)
+                        .offset(y: appeared ? 0 : 30)
+
+                    Spacer().frame(height: 40)
+
+                    // Store info
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin.circle.fill")
+                        Text("Paris Vendôme · Maison Lumière")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .padding(.bottom, 24)
                     .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : -20)
-
-                Spacer().frame(height: 60)
-
-                // Login Form
-                loginForm
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 30)
-
-                Spacer()
-
-                // Store info
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
-                    Text("Paris Vendôme · Maison Lumière")
                 }
-                .font(.caption)
-                .foregroundStyle(RSMSTheme.textTertiary)
-                .padding(.bottom, 30)
-                .opacity(appeared ? 1 : 0)
+                .frame(width: geometry.size.width)
+                .frame(minHeight: geometry.size.height)
             }
+            .background(
+                ZStack {
+                    RSMSTheme.background
+                    backgroundDecoration
+                }
+                .ignoresSafeArea()
+            )
         }
         .onAppear {
             withAnimation(.easeOut(duration: 0.6)) {
@@ -59,26 +67,31 @@ struct LoginView: View {
     // MARK: - Branding
 
     private var brandingSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             // Diamond icon
             Image(systemName: "diamond.fill")
-                .font(.system(size: 32))
+                .font(.system(size: 28))
                 .foregroundStyle(RSMSTheme.goldGradient)
 
             Text("MAISON LUMIÈRE")
-                .font(.system(size: 36, weight: .light, design: .serif))
-                .tracking(8)
+                .font(.system(size: 32, weight: .light, design: .serif))
+                .tracking(6)
                 .foregroundStyle(RSMSTheme.goldGradient)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
 
             Rectangle()
                 .fill(RSMSTheme.goldGradient)
                 .frame(width: 60, height: 1)
 
             Text("RETAIL STORE MANAGEMENT")
-                .font(.system(size: 13, weight: .medium))
-                .tracking(4)
+                .font(.system(size: 11, weight: .medium))
+                .tracking(3)
                 .foregroundStyle(RSMSTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Login Form
@@ -174,8 +187,7 @@ struct LoginView: View {
             .foregroundStyle(RSMSTheme.textTertiary)
             .padding(.top, 8)
         }
-        .frame(maxWidth: 400)
-        .padding(32)
+        .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(RSMSTheme.surfacePrimary)
@@ -184,7 +196,8 @@ struct LoginView: View {
                         .stroke(RSMSTheme.gold.opacity(0.15), lineWidth: 1)
                 )
         )
-        .shadow(color: Color.black.opacity(0.2), radius: 30, y: 15)
+        .shadow(color: Color.black.opacity(0.12), radius: 20, y: 10)
+        .frame(maxWidth: 400)
     }
 
     // MARK: - Background Decoration

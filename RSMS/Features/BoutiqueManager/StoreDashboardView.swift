@@ -35,7 +35,7 @@ struct StoreDashboardView: View {
                     
                     LazyVGrid(columns: columns, spacing: spacing) {
                         KPICard(
-                            icon: "eurosign.circle.fill",
+                            icon: "indianrupeesign.circle.fill",
                             value: viewModel.formatCurrency(viewModel.summary.salesActual),
                             label: "Today's Sales",
                             trend: "\(Int(viewModel.summary.salesActual / viewModel.summary.salesTarget * 100))% of target",

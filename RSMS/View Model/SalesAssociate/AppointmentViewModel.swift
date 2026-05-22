@@ -35,10 +35,20 @@ final class AppointmentViewModel {
             try await dataStore.fetchProducts()
             try await dataStore.fetchAppointments(associateId: associateId)
             try await dataStore.fetchUniversalCarts(associateId: associateId, type: .curated)
+            try await dataStore.fetchSalesGoals(storeId: storeId)
+            try await dataStore.fetchStaffShifts(storeId: storeId)
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    var todaySalesGoalTarget: String {
+        let dailyGoal = dataStore.salesGoals.first { $0.staffId == associateId && $0.period == .daily }
+        if let target = dailyGoal?.targetAmount {
+            return "₹\(Int(target).formatted())"
+        }
+        return "₹2,34,500"
     }
 
     // MARK: - Stores

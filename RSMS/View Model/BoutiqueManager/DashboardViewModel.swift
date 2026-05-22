@@ -71,7 +71,7 @@ final class DashboardViewModel {
     var store: Store? { dataStore.store(by: storeId) }
 
     // MARK: - Formatting
-    func formatCurrency(_ value: Double) -> String { "€\(String(format: "%,.0f", value))" }
+    func formatCurrency(_ value: Double) -> String { "₹\(String(format: "%,.0f", value))" }
 
     var formattedDate: String {
         let f = DateFormatter()

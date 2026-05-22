@@ -76,7 +76,7 @@ struct StaffShiftPlanningView: View {
                         LazyVGrid(columns: perfColumns, spacing: 12) {
                             KPICard(
                                 icon: "banknote.fill",
-                                value: "€\(String(format: "%,.0f", viewModel.metric.totalSales))",
+                                value: "₹\(String(format: "%,.0f", viewModel.metric.totalSales))",
                                 label: "Total Sales",
                                 iconColor: RSMSTheme.primary
                             )
@@ -88,7 +88,7 @@ struct StaffShiftPlanningView: View {
                             )
                             KPICard(
                                 icon: "chart.line.uptrend.xyaxis",
-                                value: "€\(String(format: "%,.0f", viewModel.metric.avgTransactionValue))",
+                                value: "₹\(String(format: "%,.0f", viewModel.metric.avgTransactionValue))",
                                 label: "Avg Transaction",
                                 iconColor: RSMSTheme.success
                             )
@@ -139,11 +139,11 @@ struct StaffShiftPlanningView: View {
                     .frame(height: 12)
 
                     HStack {
-                        Text("€\(String(format: "%,.0f", viewModel.goal.achievedAmount))")
+                        Text("₹\(String(format: "%,.0f", viewModel.goal.achievedAmount))")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(RSMSTheme.primary)
                         Spacer()
-                        Text("€\(String(format: "%,.0f", viewModel.goal.targetAmount))")
+                        Text("₹\(String(format: "%,.0f", viewModel.goal.targetAmount))")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
@@ -178,7 +178,7 @@ struct StaffShiftPlanningView: View {
 
                 Divider().overlay(RSMSTheme.divider)
 
-                infoRow(label: "Amount", value: "€\(String(format: "%,.2f", viewModel.commission.amount))")
+                infoRow(label: "Amount", value: "₹\(String(format: "%,.2f", viewModel.commission.amount))")
                 infoRow(label: "Rate", value: "\(Int(viewModel.commission.rate * 100))%")
             }
             .rsmsCard(padding: 16)

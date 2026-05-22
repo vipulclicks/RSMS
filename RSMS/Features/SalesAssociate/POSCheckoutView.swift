@@ -49,7 +49,7 @@ struct POSCheckoutView: View {
                 // Process checkout
             }
         } message: {
-            Text("Total: €\(Int(viewModel.cartTotal).formatted()). This action will finalise the transaction.")
+            Text("Total: ₹\(Int(viewModel.cartTotal).formatted()). This action will finalise the transaction.")
         }
     }
 
@@ -152,7 +152,7 @@ struct POSCheckoutView: View {
                     Spacer()
                     Text(discount.type == .percentage
                          ? "\(Int(discount.value))% OFF"
-                         : "€\(Int(discount.value)) OFF")
+                         : "₹\(Int(discount.value)) OFF")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(RSMSTheme.success)
                         .padding(.horizontal, 10)
@@ -172,7 +172,7 @@ struct POSCheckoutView: View {
                 Text("Subtotal")
                     .foregroundStyle(RSMSTheme.textSecondary)
                 Spacer()
-                Text("€\(Int(viewModel.cartSubtotal).formatted())")
+                Text("₹\(Int(viewModel.cartSubtotal).formatted())")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -180,7 +180,7 @@ struct POSCheckoutView: View {
                 Text("Tax (20%)")
                     .foregroundStyle(RSMSTheme.textSecondary)
                 Spacer()
-                Text("€\(Int(viewModel.cartTax).formatted())")
+                Text("₹\(Int(viewModel.cartTax).formatted())")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -190,7 +190,7 @@ struct POSCheckoutView: View {
                     .font(.headline)
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
-                Text("€\(Int(viewModel.cartTotal).formatted())")
+                Text("₹\(Int(viewModel.cartTotal).formatted())")
                     .font(.system(size: 24, weight: .bold, design: .serif))
                     .foregroundStyle(RSMSTheme.primary)
             }
@@ -326,11 +326,11 @@ private struct POSCartItemRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text("€\(Int(item.unitPrice ?? viewModel.productPrice(for: item.productId)).formatted())")
+                Text("₹\(Int(item.unitPrice ?? viewModel.productPrice(for: item.productId)).formatted())")
                     .font(.system(size: 15, weight: .bold, design: .serif))
                     .foregroundStyle(RSMSTheme.primary)
                 if let discount = item.discountApplied, discount > 0 {
-                    Text("-€\(Int(discount).formatted())")
+                    Text("-₹\(Int(discount).formatted())")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(RSMSTheme.success)
                 }
@@ -378,7 +378,7 @@ private struct POSTransactionCard: View {
 
                 Spacer()
 
-                Text("€\(Int(transaction.totalAmount).formatted())")
+                Text("₹\(Int(transaction.totalAmount).formatted())")
                     .font(.system(size: 18, weight: .bold, design: .serif))
                     .foregroundStyle(RSMSTheme.primary)
             }
@@ -420,7 +420,7 @@ private struct POSReturnCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
                 Spacer()
                 if let refund = exchangeReturn.refundAmount {
-                    Text("€\(Int(refund).formatted())")
+                    Text("₹\(Int(refund).formatted())")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(RSMSTheme.danger)
                 }

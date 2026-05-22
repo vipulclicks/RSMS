@@ -91,7 +91,7 @@ final class POSCheckoutViewModel {
         let txn = Transaction(
             id: UUID(), cartId: cart.id, storeId: storeId, associateId: associateId,
             clientId: cart.clientId, totalAmount: totalAmount, taxAmount: taxAmount,
-            currency: "EUR", status: .completed, isTaxFree: isTaxFree, createdAt: .now
+            currency: "INR", status: .completed, isTaxFree: isTaxFree, createdAt: .now
         )
         try await dataStore.createTransaction(txn)
 

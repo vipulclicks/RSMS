@@ -58,7 +58,7 @@ struct RFIDStockManagementView: View {
                         )
                         KPICard(
                             icon: "chart.line.downtrend.xyaxis",
-                            value: "€\(String(format: "%,.0f", shrinkage.totalLossValue))",
+                            value: "₹\(String(format: "%,.0f", shrinkage.totalLossValue))",
                             label: "Shrinkage (90d)",
                             iconColor: RSMSTheme.danger
                         )
@@ -249,7 +249,7 @@ struct RFIDStockManagementView: View {
                 VStack(spacing: 12) {
                     HStack(spacing: 24) {
                         VStack(spacing: 6) {
-                            Text("€\(String(format: "%,.0f", shrinkage.totalLossValue))")
+                            Text("₹\(String(format: "%,.0f", shrinkage.totalLossValue))")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundStyle(RSMSTheme.danger)
                             Text("Total Loss Value")
