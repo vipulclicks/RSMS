@@ -67,4 +67,65 @@ class AppViewModel {
             SupabaseClient.shared.accessToken = nil
         }
     }
+
+    // ══════════════════════════════════════════════════════════
+    // MARK: - Password Reset
+    // ══════════════════════════════════════════════════════════
+
+    /// Tracks whether a reset-password request is in progress.
+    var isResettingPassword = false
+    /// Success message after reset email is sent.
+    var resetSuccessMessage: String?
+    /// Error message if reset fails.
+    var resetError: String?
+
+    /// Step 1: Request a password-reset email.
+    /// Call this from a "Forgot Password" screen.
+    /// On success, sets `resetSuccessMessage`; on failure, sets `resetError`.
+    func requestPasswordReset(email: String) async {
+        isResettingPassword = true
+        resetError = nil
+        resetSuccessMessage = nil
+
+        do {
+            try await SupabaseAuth.shared.requestPasswordReset(email: email)
+            withAnimation {
+                resetSuccessMessage = "A password reset link has been sent to \(email). Please check your inbox."
+            }
+        } catch {
+            withAnimation {
+                resetError = error.localizedDescription
+            }
+        }
+
+        isResettingPassword = false
+    }
+
+    /// Step 2: Update the password using a valid session token.
+    /// Call this after the user taps the reset link and the app receives the token.
+    func updatePassword(newPassword: String) async {
+        guard let token = SupabaseClient.shared.accessToken else {
+            withAnimation {
+                resetError = "No active session. Please use the reset link from your email first."
+            }
+            return
+        }
+
+        isResettingPassword = true
+        resetError = nil
+        resetSuccessMessage = nil
+
+        do {
+            try await SupabaseAuth.shared.updatePassword(newPassword: newPassword, accessToken: token)
+            withAnimation {
+                resetSuccessMessage = "Password updated successfully. Please log in with your new password."
+            }
+        } catch {
+            withAnimation {
+                resetError = error.localizedDescription
+            }
+        }
+
+        isResettingPassword = false
+    }
 }

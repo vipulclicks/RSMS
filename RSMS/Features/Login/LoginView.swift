@@ -14,6 +14,8 @@ struct LoginView: View {
     @FocusState private var isEmailFocused: Bool
     @FocusState private var isPasswordFocused: Bool
     @State private var appeared = false
+    @State private var showForgotPassword = false
+    @State private var resetEmail = ""
 
     var body: some View {
         ZStack {
@@ -139,7 +141,21 @@ struct LoginView: View {
                         .stroke(isPasswordFocused ? RSMSTheme.gold : Color.clear, lineWidth: 1)
                 )
             }
-            
+
+            // Forgot Password
+            HStack {
+                Spacer()
+                Button {
+                    resetEmail = email  // Pre-fill with current email
+                    showForgotPassword = true
+                } label: {
+                    Text("Forgot Password?")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(RSMSTheme.gold)
+                }
+            }
+            .padding(.top, -8)
+
             // Login Button
             Button(action: {
                 Task {
@@ -165,14 +181,6 @@ struct LoginView: View {
             }
             .disabled(email.isEmpty || password.isEmpty || viewModel.isAuthenticating)
             .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
-            
-            // Demo fallback for quick testing
-            Button("Bypass Login (Offline Demo)") {
-                viewModel.login(as: .boutiqueManager)
-            }
-            .font(.caption)
-            .foregroundStyle(RSMSTheme.textTertiary)
-            .padding(.top, 8)
         }
         .frame(maxWidth: 400)
         .padding(32)
@@ -185,6 +193,119 @@ struct LoginView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.2), radius: 30, y: 15)
+        .sheet(isPresented: $showForgotPassword) {
+            forgotPasswordSheet
+        }
+    }
+
+    // MARK: - Forgot Password Sheet
+
+    private var forgotPasswordSheet: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Image(systemName: "lock.rotation")
+                    .font(.system(size: 48))
+                    .foregroundStyle(RSMSTheme.goldGradient)
+                    .padding(.top, 20)
+
+                Text("Reset Your Password")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+
+                Text("Enter your email address and we'll send you a link to reset your password.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                // Reset email field
+                HStack {
+                    Image(systemName: "envelope.fill")
+                        .foregroundStyle(RSMSTheme.gold)
+                        .frame(width: 24)
+                    TextField("Email Address", text: $resetEmail)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                .padding()
+                .background(RSMSTheme.surfaceSecondary)
+                .cornerRadius(12)
+                .padding(.horizontal)
+
+                // Success message
+                if let success = viewModel.resetSuccessMessage {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text(success)
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(RSMSTheme.success)
+                    .padding(12)
+                    .frame(maxWidth: .infinity)
+                    .background(RSMSTheme.success.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }
+
+                // Error message
+                if let error = viewModel.resetError {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error)
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(RSMSTheme.danger)
+                    .padding(12)
+                    .frame(maxWidth: .infinity)
+                    .background(RSMSTheme.danger.opacity(0.1))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                }
+
+                // Send Reset Link Button
+                Button {
+                    Task {
+                        await viewModel.requestPasswordReset(email: resetEmail)
+                    }
+                } label: {
+                    HStack {
+                        Spacer()
+                        if viewModel.isResettingPassword {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Text("Send Reset Link")
+                                .font(.headline)
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(RSMSTheme.goldGradient)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .disabled(resetEmail.isEmpty || viewModel.isResettingPassword)
+                .opacity(resetEmail.isEmpty ? 0.6 : 1.0)
+                .padding(.horizontal)
+
+                Spacer()
+            }
+            .padding()
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        showForgotPassword = false
+                        viewModel.resetSuccessMessage = nil
+                        viewModel.resetError = nil
+                    }
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.gold)
+                }
+            }
+        }
     }
 
     // MARK: - Background Decoration
