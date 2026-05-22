@@ -8,17 +8,23 @@
 import SwiftUI
 
 enum BoutiqueSection: String, CaseIterable, Identifiable {
-    case dashboard     = "Store Dashboard"
-    case staffPlanning = "Staff & Shift Planning"
-    case shiftMonitor  = "Today's Shifts"
+    case dashboard             = "Store Dashboard"
+    case staff                 = "Staff"
+    case performance           = "Performance"
+    case todaysShift           = "Today's Shift"
+    case appointmentsInventory = "Appointments & Inventory"
+    case commissionManagement  = "Commission Management"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:     return "chart.bar.fill"
-        case .staffPlanning: return "person.3.fill"
-        case .shiftMonitor:  return "calendar.badge.clock"
+        case .dashboard:             return "chart.bar.fill"
+        case .staff:                 return "person.2.fill"
+        case .performance:           return "chart.line.uptrend.xyaxis"
+        case .todaysShift:           return "calendar.badge.clock"
+        case .appointmentsInventory: return "shippingbox.fill"
+        case .commissionManagement:  return "dollarsign.circle.fill"
         }
     }
 }
@@ -33,7 +39,8 @@ struct BoutiqueManagerHomeView: View {
         } detail: {
             detailView
         }
-        .tint(RSMSTheme.gold)
+        .tint(RSMSTheme.primaryDark)
+        .navigationSplitViewStyle(.prominentDetail)
     }
 
     // MARK: - Sidebar
@@ -78,10 +85,16 @@ struct BoutiqueManagerHomeView: View {
         switch selectedSection {
         case .dashboard:
             StoreDashboardView()
-        case .staffPlanning:
-            StaffShiftPlanningView()
-        case .shiftMonitor:
+        case .staff:
+            StaffView()
+        case .performance:
+            PerformanceView()
+        case .todaysShift:
             ShiftMonitorView()
+        case .appointmentsInventory:
+            AppointmentsInventoryView()
+        case .commissionManagement:
+            CommissionManagementView()
         case .none:
             StoreDashboardView()
         }

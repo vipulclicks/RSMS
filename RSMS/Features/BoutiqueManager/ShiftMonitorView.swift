@@ -10,13 +10,14 @@
 import SwiftUI
 
 struct ShiftMonitorView: View {
-    @State private var vm = ShiftScheduleViewModel()
+    @Environment(AppViewModel.self) private var appVM
+    @State private var vm = ShiftManagementViewModel()
     @State private var showAddSheet = false
     @State private var selectedStatus: ShiftStatus? = nil
     @State private var selectedRole: String? = nil
     @Namespace private var animation
 
-    private let roles = ["Back Office", "Cashier", "Floor", "VIP Lounge"]
+    private let roles = ["Back Office", "Cashier", "Floor", "VIP Lounge", "Sales Associate"]
 
     var filteredShifts: [StaffShift] {
         var result = vm.shifts
@@ -31,72 +32,86 @@ struct ShiftMonitorView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
-                headerSection
-                    .padding(.top, 16)
-                
-                summaryStrip
-                
-                filterSection
-                
-                shiftsList
-                
-                salesGoalsSection
-                    .padding(.top, 24)
-                    
-                commissionPayoutsSection
-                    .padding(.top, 12)
-            }
-            .padding(.horizontal, 48)
-            .padding(.bottom, 60)
-        }
-        .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showAddSheet.toggle()
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(RSMSTheme.primaryDark)
-                        .padding(10)
-                        .background(.ultraThinMaterial, in: Circle())
-                        .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
-                        .shadow(color: RSMSTheme.textPrimary.opacity(0.1), radius: 6, x: 0, y: 3)
+        Group {
+            if vm.isLoading {
+                ProgressView("Loading Shifts...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = vm.errorMessage {
+                ContentUnavailableView(
+                    "Error Loading Data",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(error)
+                )
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 32) {
+                        headerSection
+                            .padding(.top, 16)
+                        
+                        summaryStrip
+                        
+                        filterSection
+                        
+                        shiftsList
+                    }
+                    .padding(.horizontal, 48)
+                    .padding(.bottom, 60)
+                }
+                .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showAddSheet.toggle()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(RSMSTheme.primaryDark)
+                                .padding(10)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
+                                .shadow(color: RSMSTheme.textPrimary.opacity(0.1), radius: 6, x: 0, y: 3)
+                        }
+                    }
+                }
+                .sheet(isPresented: $showAddSheet) {
+                    AddShiftView(vm: vm)
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddShiftView(vm: vm)
+        .task {
+            if let storeId = appVM.currentStoreId {
+                await vm.load(dataStore: appVM.dataStore, storeId: storeId)
+            }
         }
     }
 
     // MARK: - Header Section
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(RSMSTheme.primary)
-                    .frame(width: 6, height: 6)
-                    .opacity(isBlinking ? 1.0 : 0.4)
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isBlinking)
-                
-                Text("LIVE · \(clockString)")
-                    .font(.caption.weight(.bold))
-                    .tracking(1.5)
-                    .foregroundStyle(RSMSTheme.primary)
-            }
-            .onAppear { isBlinking = true }
-
             Text("Today's Shifts")
                 .font(.system(size: 34, weight: .heavy, design: .default))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
-            Text(dateString)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(RSMSTheme.textSecondary)
+            HStack(spacing: 8) {
+                Text(dateString)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(RSMSTheme.primary)
+                        .frame(width: 6, height: 6)
+                        .opacity(isBlinking ? 1.0 : 0.4)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isBlinking)
+                    
+                    Text("LIVE · \(clockString)")
+                        .font(.caption.weight(.bold))
+                        .tracking(1.5)
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+                .onAppear { isBlinking = true }
+            }
         }
     }
     
@@ -246,143 +261,7 @@ struct ShiftMonitorView: View {
         .padding(.vertical, 80)
     }
 
-    // MARK: - Sales Goals & Commissions
-    private var salesGoalsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("SALES GOALS & COMMISSIONS")
-                .font(.system(size: 13, weight: .bold))
-                .tracking(1.5)
-                .foregroundStyle(RSMSTheme.primary)
-            
-            VStack(spacing: 0) {
-                ForEach(vm.salesGoals.indices, id: \.self) { index in
-                    salesGoalRow(vm.salesGoals[index], index: index)
-                    if index < vm.salesGoals.count - 1 {
-                        Divider().overlay(RSMSTheme.border)
-                    }
-                }
-            }
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(RSMSTheme.border, lineWidth: 1))
-        }
-    }
-    
-    private func salesGoalRow(_ goal: SalesGoal, index: Int) -> some View {
-        let name = vm.getStaffName(for: goal.staffId)
-        let initials = name.split(separator: " ").compactMap { $0.first }.map { String($0) }.joined()
-        let progress = goal.targetAmount > 0 ? goal.achievedAmount / goal.targetAmount : 0
-        let color = index == 0 ? RSMSTheme.success : (index == 1 ? RSMSTheme.warning : RSMSTheme.info)
-        
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "₹"
-        formatter.maximumFractionDigits = 0
-        let goalFormatted = formatter.string(from: NSNumber(value: goal.targetAmount)) ?? ""
-        let achievedFormatted = formatter.string(from: NSNumber(value: goal.achievedAmount)) ?? ""
 
-        return HStack(alignment: .top, spacing: 20) {
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.surfaceTertiary)
-                    .frame(width: 50, height: 50)
-                Text(initials)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-            
-            VStack(spacing: 16) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(name)
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("Goal: \(goalFormatted)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(achievedFormatted)
-                            .font(.system(size: 22, weight: .heavy))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("\(Int(progress * 100))% achieved")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(color)
-                    }
-                }
-                
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(RSMSTheme.surfaceTertiary)
-                        Capsule()
-                            .fill(color)
-                            .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(progress))))
-                    }
-                }
-                .frame(height: 6)
-            }
-        }
-        .padding(24)
-    }
-
-    // MARK: - Commission Payouts
-    private var commissionPayoutsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("COMMISSION PAYOUTS — MAY 2026")
-                .font(.system(size: 13, weight: .bold))
-                .tracking(1.5)
-                .foregroundStyle(RSMSTheme.primary)
-            
-            VStack(spacing: 0) {
-                ForEach(vm.commissions.indices, id: \.self) { index in
-                    commissionRow(vm.commissions[index])
-                    if index < vm.commissions.count - 1 {
-                        Divider().overlay(RSMSTheme.border).padding(.horizontal, 24)
-                    }
-                }
-            }
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(RSMSTheme.border, lineWidth: 1))
-        }
-    }
-    
-    private func commissionRow(_ payout: Commission) -> some View {
-        let name = vm.getStaffName(for: payout.staffId)
-        let isPending = payout.status == .pending
-        
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "₹"
-        formatter.maximumFractionDigits = 0
-        let amountFormatted = formatter.string(from: NSNumber(value: payout.amount)) ?? ""
-
-        return HStack {
-            Text(name)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(RSMSTheme.textPrimary)
-            
-            Spacer()
-            
-            Text("+ \(amountFormatted)")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(RSMSTheme.textPrimary)
-                .padding(.trailing, 24)
-            
-            Text(isPending ? "Pending" : "Added to salary")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(isPending ? RSMSTheme.warning : RSMSTheme.success)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(isPending ? RSMSTheme.warning.opacity(0.15) : RSMSTheme.success.opacity(0.15))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(isPending ? RSMSTheme.warning.opacity(0.3) : RSMSTheme.success.opacity(0.3), lineWidth: 1))
-        }
-        .padding(24)
-    }
 
     // MARK: - Helpers
     private var clockString: String {
@@ -401,11 +280,12 @@ struct ShiftMonitorView: View {
 // MARK: - Shift Card View
 
 struct ShiftCardView: View {
+    @Environment(AppViewModel.self) private var appVM
     let shift: StaffShift
-    let vm: ShiftScheduleViewModel
+    let vm: ShiftManagementViewModel
 
     var body: some View {
-        let name = vm.getStaffName(for: shift.staffId)
+        let name = vm.getStaffName(for: shift.staffId, dataStore: appVM.dataStore)
         let status = vm.status(for: shift)
         let progress = vm.progress(for: shift)
 
@@ -509,7 +389,9 @@ struct ShiftCardView: View {
                 Spacer()
 
                 Button(role: .destructive) {
-                    withAnimation { vm.removeShift(shift) }
+                    Task {
+                        await vm.deleteShift(shift, dataStore: appVM.dataStore)
+                    }
                 } label: {
                     Text("Remove")
                         .font(.system(size: 12, weight: .bold))
@@ -542,23 +424,26 @@ struct ShiftCardView: View {
 
 struct AddShiftView: View {
     @Environment(\.dismiss) private var dismiss
-    let vm: ShiftScheduleViewModel
+    @Environment(AppViewModel.self) private var appVM
+    let vm: ShiftManagementViewModel
 
-    @State private var staffId: UUID = UserProfile.all.first?.id ?? UUID()
+    @State private var staffId: UUID? = nil
     @State private var startTime: Date = Date()
     @State private var endTime: Date = Date().addingTimeInterval(3600 * 8)
     @State private var selectedRole: String = "floor"
     @State private var notes: String = ""
+    @State private var availableStaff: [UserProfile] = []
 
-    private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge"]
+    private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge", "sales_associate"]
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Staff Member") {
                     Picker("Select Staff", selection: $staffId) {
-                        ForEach(UserProfile.all) { user in
-                            Text(user.fullName).tag(user.id)
+                        Text("Select...").tag(UUID?.none)
+                        ForEach(availableStaff) { user in
+                            Text(user.fullName).tag(Optional(user.id))
                         }
                     }
                     .tint(RSMSTheme.primaryDark)
@@ -592,33 +477,45 @@ struct AddShiftView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        saveShift()
-                        dismiss()
+                        Task { await saveShift() }
                     }
                     .fontWeight(.bold)
                     .foregroundStyle(RSMSTheme.primaryDark)
+                    .disabled(staffId == nil)
+                }
+            }
+            .task {
+                if let storeId = appVM.currentStoreId {
+                    do {
+                        try await appVM.dataStore.fetchUsers(storeId: storeId)
+                        availableStaff = appVM.dataStore.users
+                    } catch {
+                        print("Failed to load staff for AddShiftView: \(error)")
+                    }
                 }
             }
         }
     }
 
-    private func saveShift() {
+    private func saveShift() async {
+        guard let staffId = staffId else { return }
+        
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         
         let newShift = StaffShift(
             id: UUID(),
             staffId: staffId,
-            storeId: UUID(),
+            storeId: appVM.currentStoreId ?? UUID(),
             shiftDate: Date(),
             startTime: f.string(from: startTime),
             endTime: f.string(from: endTime),
             role: selectedRole,
             notes: notes.isEmpty ? nil : notes
         )
-        withAnimation {
-            vm.addShift(newShift)
-        }
+        
+        await vm.addShift(newShift, dataStore: appVM.dataStore)
+        dismiss()
     }
 }
 

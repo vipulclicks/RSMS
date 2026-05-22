@@ -95,6 +95,8 @@ struct AssignGoalFormView: View {
                                 Text(viewModel.draftAmount.formatted(.number.precision(.fractionLength(0))))
                                     .font(.system(size: 48, weight: .medium, design: .rounded))
                                     .foregroundStyle(RSMSTheme.gold)
+                                    .contentTransition(.numericText())
+                                    .animation(.snappy, value: viewModel.draftAmount)
                             }
                             
                             Spacer()
@@ -126,13 +128,17 @@ struct AssignGoalFormView: View {
                 
                 // MARK: - Save Button
                 Button {
-                    let storeId = appViewModel.currentStoreId ?? appViewModel.currentUser?.storeId ?? UUID()
-                    viewModel.saveNewGoal(storeId: storeId)
-                    navPath.removeAll()
+                    let storeId = appViewModel.currentStoreId ?? UUID()
+                    Task {
+                        await viewModel.saveNewGoal(dataStore: appViewModel.dataStore, storeId: storeId)
+                        navPath.removeAll()
+                    }
                 } label: {
-                    Text("SAVE NEW GOAL")
+                    Text(viewModel.isUpdating ? "UPDATE GOAL" : "SAVE NEW GOAL")
                         .font(.headline.weight(.bold))
                         .tracking(1)
+                        .contentTransition(.numericText())
+                        .animation(.snappy, value: viewModel.isUpdating)
                         .foregroundStyle(RSMSTheme.background)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)

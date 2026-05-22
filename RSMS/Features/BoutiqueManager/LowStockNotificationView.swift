@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LowStockNotificationView: View {
     // Now tracking the live ViewModel
-    var dashboardVM: StoreDashboardViewModel
+    var dashboardVM: BoutiqueDashboardViewModel
     @Environment(\.dismiss) private var dismiss
     
     // Toast state
@@ -94,47 +94,31 @@ struct LowStockNotificationView: View {
                 }
             }
             
-            HStack(spacing: 16) {
-                Button { } label: {
-                    Text("Request Transfer").font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
+            Button {
+                dashboardVM.reorderItem(for: alert.product.id)
+                withAnimation(.spring(response: 0.3)) {
+                    toastMessage = "\(alert.product.name) reorder initiated"
                 }
-                
-                // MARK: REORDER ACTION
-                Button {
-                    placeReorder(for: alert)
-                } label: {
-                    Text("Reorder").font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.cream)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .background(RSMSTheme.gold).clipShape(Capsule())
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    withAnimation { toastMessage = nil }
                 }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Text("Reorder")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(RSMSTheme.cream)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(RSMSTheme.gold)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
         .rsmsCard(padding: 24)
     }
     
-    // MARK: - Helper Methods
-    
-    private func placeReorder(for alert: LowStockAlert) {
-        withAnimation(.spring) {
-            toastMessage = "Order successfully placed for \(alert.product.name)."
-        }
-        
-        dashboardVM.reorderItem(for: alert.product.id)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            withAnimation(.spring) {
-                self.toastMessage = nil
-            }
-        }
-        
-        if dashboardVM.lowStockAlerts.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                dismiss()
-            }
-        }
-    }
+
     
     private var emptyState: some View {
         VStack(spacing: 16) {
@@ -166,5 +150,5 @@ struct LowStockNotificationView: View {
 }
 
 #Preview {
-    LowStockNotificationView(dashboardVM: StoreDashboardViewModel())
+    LowStockNotificationView(dashboardVM: BoutiqueDashboardViewModel())
 }
