@@ -53,7 +53,7 @@ extension InventoryControllerHomeView {
                         .font(.caption.weight(.semibold))
                         .tracking(2)
                         .foregroundStyle(RSMSTheme.gold)
-                    Text(dashVM.snapshot.totalInventoryCount.formatted())
+                    Text((dashVM.snapshot?.totalInventoryCount ?? 0).formatted())
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(RSMSTheme.gold)
                 }
@@ -73,11 +73,11 @@ extension InventoryControllerHomeView {
                 ZStack {
                     Circle().stroke(RSMSTheme.gold.opacity(0.15), lineWidth: 6)
                     Circle()
-                        .trim(from: 0, to: dashVM.snapshot.scanCompletionPercent)
+                        .trim(from: 0, to: dashVM.snapshot?.scanCompletionPercent ?? 0.0)
                         .stroke(RSMSTheme.gold, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut(duration: 0.8), value: dashVM.snapshot.scanCompletionPercent)
-                    Text("\(Int(dashVM.snapshot.scanCompletionPercent * 100))%")
+                        .animation(.easeInOut(duration: 0.8), value: dashVM.snapshot?.scanCompletionPercent ?? 0.0)
+                    Text("\(Int((dashVM.snapshot?.scanCompletionPercent ?? 0.0) * 100))%")
                         .font(.caption2.bold())
                         .foregroundStyle(RSMSTheme.gold)
                 }
@@ -94,17 +94,17 @@ extension InventoryControllerHomeView {
                             Capsule()
                                 .fill(RSMSTheme.gold)
                                 .frame(
-                                    width: geo.size.width * dashVM.snapshot.scanCompletionPercent,
+                                    width: geo.size.width * (dashVM.snapshot?.scanCompletionPercent ?? 0.0),
                                     height: 6
                                 )
-                                .animation(.easeInOut(duration: 0.8), value: dashVM.snapshot.scanCompletionPercent)
+                                .animation(.easeInOut(duration: 0.8), value: dashVM.snapshot?.scanCompletionPercent ?? 0.0)
                         }
                     }
                     .frame(height: 6)
                 }
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(dashVM.snapshot.todaysScanCount)")
+                    Text("\(dashVM.snapshot?.todaysScanCount ?? 0)")
                         .font(.title3.bold())
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text("UNITS")
@@ -115,7 +115,7 @@ extension InventoryControllerHomeView {
             }
         }
         .padding(20)
-        .background(RSMSTheme.cream)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
@@ -123,182 +123,120 @@ extension InventoryControllerHomeView {
         )
     }
 
-    // MARK: - Alert + Tasks Row
+    // MARK: - Action Grid
 
     @ViewBuilder
-    var alertTasksRow: some View {
+    var actionGrid: some View {
+        let columns = [GridItem(.flexible()), GridItem(.flexible())]
         if horizontalSizeClass == .regular {
-            HStack(spacing: 12) { lowStockCard; pendingTasksCard }
+            LazyVGrid(columns: columns, spacing: 16) {
+                lowStockCard
+                stockInCard
+                cycleCountCard
+                auditReconcileCard
+            }
         } else {
-            VStack(spacing: 12) { lowStockCard; pendingTasksCard }
-        }
-    }
-
-    var lowStockCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(RSMSTheme.gold)
-                Spacer()
-                Text("+\(dashVM.snapshot.newLowStockCount) New")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.gold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(RSMSTheme.gold.opacity(0.12))
-                    .clipShape(Capsule())
+            VStack(spacing: 16) {
+                lowStockCard
+                stockInCard
+                cycleCountCard
+                auditReconcileCard
             }
-            Text("LOW STOCK")
-                .font(.caption2.weight(.medium))
-                .tracking(1.5)
-                .foregroundStyle(RSMSTheme.textTertiary)
-            Text("\(dashVM.snapshot.lowStockAlertCount) Alerts")
-                .font(.title3.bold())
-                .foregroundStyle(RSMSTheme.textPrimary)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RSMSTheme.cream)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(RSMSTheme.gold.opacity(0.35), lineWidth: 1)
-        )
     }
 
-    var pendingTasksCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "checklist").foregroundStyle(RSMSTheme.textPrimary)
-                Spacer()
-                Text("Active")
-                    .font(.caption.weight(.semibold))
+    private func actionCard(
+        title: String,
+        subtitle: String,
+        icon: String,
+        accentColor: Color,
+        badgeText: String?,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            action()
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .foregroundStyle(accentColor)
+                    Spacer()
+                    if let badgeText {
+                        Text(badgeText)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(accentColor.opacity(0.12))
+                            .clipShape(Capsule())
+                    }
+                }
+                Text(subtitle)
+                    .font(.caption2.weight(.medium))
+                    .tracking(1.5)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                Text(title)
+                    .font(.title3.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(RSMSTheme.textPrimary.opacity(0.08))
-                    .clipShape(Capsule())
             }
-            Text("PENDING")
-                .font(.caption2.weight(.medium))
-                .tracking(1.5)
-                .foregroundStyle(RSMSTheme.textTertiary)
-            Text("\(dashVM.snapshot.pendingTaskCount) Tasks")
-                .font(.title3.bold())
-                .foregroundStyle(RSMSTheme.textPrimary)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RSMSTheme.cream)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(RSMSTheme.border, lineWidth: 1)
-        )
-    }
-
-    // MARK: - System Control
-
-    var systemControlSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SYSTEM CONTROL")
-                .font(.caption.weight(.semibold))
-                .tracking(3)
-                .foregroundStyle(RSMSTheme.gold)
-
-            VStack(spacing: 0) {
-                Button {
-                    selectedDestination = .scan
-                } label: {
-                    controlRow(
-                        icon: "barcode.viewfinder",
-                        title: "Scan Item",
-                        subtitle: "Scan barcode to add inventory"
-                    )
-                }
-                .buttonStyle(.plain)
-
-                dashedDivider
-
-                Button {
-                    selectedDestination = .scan
-                } label: {
-                    controlRow(
-                        icon: "doc.text.magnifyingglass",
-                        title: "Verify Inventory",
-                        subtitle: "Switch to Verify mode in the scanner"
-                    )
-                }
-                .buttonStyle(.plain)
-
-                dashedDivider
-
-                Button {
-                    selectedDestination = .scan
-                } label: {
-                    controlRow(
-                        icon: "clock.arrow.circlepath",
-                        title: "Audit Log",
-                        subtitle: "Switch to Audit mode in the scanner"
-                    )
-                }
-                .buttonStyle(.plain)
-
-                dashedDivider
-
-                Button {
-                    selectedDestination = .reconcile
-                } label: {
-                    controlRow(
-                        icon: "arrow.triangle.2.circlepath",
-                        title: "Stock Reconciliation",
-                        subtitle: "Resolve inventory discrepancies"
-                    )
-                }
-                .buttonStyle(.plain)
-
-            }
-            .background(RSMSTheme.cream)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(RSMSTheme.border, lineWidth: 1)
+                    .stroke(accentColor.opacity(0.35), lineWidth: 1)
             )
         }
+        .buttonStyle(.plain)
     }
 
-    func controlRow(icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(RSMSTheme.gold.opacity(0.12))
-                    .frame(width: 40, height: 40)
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(RSMSTheme.gold)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(RSMSTheme.gold.opacity(0.4))
+    var lowStockCard: some View {
+        actionCard(
+            title: "\(dashVM.snapshot?.lowStockAlertCount ?? 0) Alerts",
+            subtitle: "LOW STOCK",
+            icon: "exclamationmark.triangle.fill",
+            accentColor: RSMSTheme.gold,
+            badgeText: "+\(dashVM.snapshot?.newLowStockCount ?? 0) New"
+        ) {
+            selectedDestination = .notify
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 14)
     }
 
-    var dashedDivider: some View {
-        Rectangle()
-            .fill(RSMSTheme.divider)
-            .frame(height: 0.5)
-            .padding(.horizontal, 14)
+    var stockInCard: some View {
+        actionCard(
+            title: "Stock In",
+            subtitle: "ADD INVENTORY",
+            icon: "plus.viewfinder",
+            accentColor: RSMSTheme.primary,
+            badgeText: "Scan"
+        ) {
+            selectedDestination = .stockIn
+        }
+    }
+
+    var cycleCountCard: some View {
+        actionCard(
+            title: "Cycle Counts",
+            subtitle: "VERIFY STOCK",
+            icon: "arrow.triangle.2.circlepath",
+            accentColor: RSMSTheme.success,
+            badgeText: "\(dashVM.snapshot?.pendingTaskCount ?? 0) Tasks"
+        ) {
+            selectedDestination = .cycleCounts
+        }
+    }
+
+    var auditReconcileCard: some View {
+        actionCard(
+            title: "Reconcile",
+            subtitle: "DISCREPANCIES",
+            icon: "doc.text.magnifyingglass",
+            accentColor: RSMSTheme.warning,
+            badgeText: "Audit"
+        ) {
+            selectedDestination = .auditReconcile
+        }
     }
 
     // MARK: - Activity Feed
@@ -317,7 +255,7 @@ extension InventoryControllerHomeView {
             }
 
             VStack(spacing: 0) {
-                let entries = Array(dashVM.snapshot.recentActivity.prefix(5).enumerated())
+                let entries = Array((dashVM.snapshot?.recentActivity ?? []).prefix(5).enumerated())
                 ForEach(entries, id: \.element.id) { index, entry in
                     activityRow(entry: entry)
                     if index < entries.count - 1 {
@@ -328,7 +266,7 @@ extension InventoryControllerHomeView {
                     }
                 }
             }
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)

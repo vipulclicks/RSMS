@@ -127,10 +127,65 @@ final class StockReconciliationViewModel {
         return items
     }
 
-    // MARK: - Init
+    // MARK: - Live Data Load
 
-    init() {
-        loadMockData()
+    var totalStoreInventoryValue: Double = 0.0
+    var shrinkageValue: Double = 0.0
+    var shrinkagePercentage: Double {
+        guard totalStoreInventoryValue > 0 else { return 0 }
+        return (shrinkageValue / totalStoreInventoryValue) * 100
+    }
+
+    func load(from dataStore: DataStore, storeId: UUID) {
+        let variances = dataStore.inventoryVariances.filter { $0.storeId == storeId }
+        
+        self.discrepancyItems = variances.compactMap { variance in
+            guard let product = dataStore.product(by: variance.productId) else { return nil }
+            let rStatus: ReconciliationStatus
+            switch variance.status {
+            case .open: rStatus = .pending
+            case .investigating: rStatus = .underReview
+            case .resolved, .writeOff: rStatus = .resolved
+            }
+            return DiscrepancyItem(
+                id: variance.id,
+                product: product,
+                expectedQty: variance.expectedQty,
+                actualQty: variance.actualQty,
+                variance: variance.variance,
+                status: rStatus,
+                lastUpdated: variance.reportedAt
+            )
+        }.sorted { $0.lastUpdated > $1.lastUpdated }
+        
+        let audits = dataStore.auditTrails.filter { $0.storeId == storeId && $0.action.contains("Reconciliation") }
+        self.auditEntries = audits.compactMap { audit in
+            let user = dataStore.user(by: audit.performedBy)
+            return ReconciliationAuditEntry(
+                id: audit.id,
+                userName: user?.fullName ?? "Unknown",
+                timestamp: audit.timestamp,
+                productName: dataStore.productName(for: audit.entityId),
+                previousQty: 0,
+                updatedQty: 0,
+                reason: .scanningError
+            )
+        }.sorted { $0.timestamp > $1.timestamp }
+        
+        // Shrinkage calculations
+        let storeItems = dataStore.stockItems.filter { $0.storeId == storeId }
+        self.totalStoreInventoryValue = storeItems.reduce(0.0) { sum, stock in
+            guard let product = dataStore.product(by: stock.productId) else { return sum }
+            return sum + (Double(stock.quantity) * product.price)
+        }
+        
+        self.shrinkageValue = self.discrepancyItems.reduce(0.0) { sum, item in
+            if item.actualQty < item.expectedQty {
+                let missing = item.expectedQty - item.actualQty
+                return sum + (Double(missing) * item.product.price)
+            }
+            return sum
+        }
     }
 
     // MARK: - Actions
@@ -174,114 +229,5 @@ final class StockReconciliationViewModel {
         correctedQty = ""
         selectedReason = nil
         adjustmentNotes = ""
-    }
-
-    // MARK: - Mock Data
-
-    private func loadMockData() {
-        let watch = Product(
-            id: UUID(), sku: "ML-WTC-8842",
-            name: "Rose Gold Diamond Watch", category: "Watches",
-            subcategory: "Ladies", brand: "Maison Lumière",
-            collection: "Éternité", material: "18K Rose Gold",
-            price: 24500, currency: "EUR", imageURL: nil,
-            description: "Diamond-set bezel with mother-of-pearl dial.",
-            isActive: true, createdAt: .now, updatedAt: .now
-        )
-
-        let bag = Product(
-            id: UUID(), sku: "ML-BAG-5521",
-            name: "Chevron Quilted Flap Bag", category: "Handbags",
-            subcategory: "Shoulder Bags", brand: "Maison Lumière",
-            collection: "Classique", material: "Lambskin",
-            price: 6800, currency: "EUR", imageURL: nil,
-            description: "Burgundy chevron quilted flap bag with gold chain.",
-            isActive: true, createdAt: .now, updatedAt: .now
-        )
-
-        let necklace = Product(
-            id: UUID(), sku: "ML-JWL-3310",
-            name: "Pear Diamond Pendant Necklace", category: "Jewelry",
-            subcategory: "Necklaces", brand: "Maison Lumière",
-            collection: "Héritage", material: "18K Yellow Gold",
-            price: 18200, currency: "EUR", imageURL: nil,
-            description: "Pear-cut diamond pendant on tennis chain.",
-            isActive: true, createdAt: .now, updatedAt: .now
-        )
-
-        let heels = Product(
-            id: UUID(), sku: "ML-SHO-7714",
-            name: "Chain Ankle Strap Stiletto", category: "Heels",
-            subcategory: "Pumps", brand: "Maison Lumière",
-            collection: "Parisienne", material: "Nappa Leather",
-            price: 1150, currency: "EUR", imageURL: nil,
-            description: "Nude stiletto with gold chain ankle strap.",
-            isActive: true, createdAt: .now, updatedAt: .now
-        )
-
-        discrepancyItems = [
-            DiscrepancyItem(
-                id: UUID(), product: watch,
-                expectedQty: 12, actualQty: 9, variance: -3,
-                status: .pending,
-                lastUpdated: Calendar.current.date(byAdding: .minute, value: -12, to: .now)!
-            ),
-            DiscrepancyItem(
-                id: UUID(), product: bag,
-                expectedQty: 8, actualQty: 6, variance: -2,
-                status: .underReview,
-                lastUpdated: Calendar.current.date(byAdding: .minute, value: -38, to: .now)!
-            ),
-            DiscrepancyItem(
-                id: UUID(), product: necklace,
-                expectedQty: 5, actualQty: 3, variance: -2,
-                status: .pending,
-                lastUpdated: Calendar.current.date(byAdding: .hour, value: -1, to: .now)!
-            ),
-            DiscrepancyItem(
-                id: UUID(), product: heels,
-                expectedQty: 15, actualQty: 15, variance: 0,
-                status: .resolved,
-                lastUpdated: Calendar.current.date(byAdding: .hour, value: -2, to: .now)!
-            ),
-        ]
-
-        auditEntries = [
-            ReconciliationAuditEntry(
-                id: UUID(), userName: "Amélie Laurent",
-                timestamp: Calendar.current.date(byAdding: .minute, value: -47, to: .now)!,
-                productName: "Chain Ankle Strap Stiletto",
-                previousQty: 13, updatedQty: 15,
-                reason: .misplacedInventory
-            ),
-            ReconciliationAuditEntry(
-                id: UUID(), userName: "Marc Dubois",
-                timestamp: Calendar.current.date(byAdding: .hour, value: -1, to: .now)!,
-                productName: "Heritage Silk Scarf",
-                previousQty: 22, updatedQty: 24,
-                reason: .scanningError
-            ),
-            ReconciliationAuditEntry(
-                id: UUID(), userName: "Sophie Chen",
-                timestamp: Calendar.current.date(byAdding: .hour, value: -6, to: .now)!,
-                productName: "Diamond Tennis Bracelet",
-                previousQty: 7, updatedQty: 5,
-                reason: .theftLoss
-            ),
-            ReconciliationAuditEntry(
-                id: UUID(), userName: "Amélie Laurent",
-                timestamp: Calendar.current.date(byAdding: .hour, value: -8, to: .now)!,
-                productName: "Cashmere Wrap Coat",
-                previousQty: 4, updatedQty: 3,
-                reason: .supplierIssue
-            ),
-            ReconciliationAuditEntry(
-                id: UUID(), userName: "Jean-Pierre Moreau",
-                timestamp: Calendar.current.date(byAdding: .day, value: -2, to: .now)!,
-                productName: "Monogram Leather Belt",
-                previousQty: 18, updatedQty: 16,
-                reason: .damagedItem
-            ),
-        ]
     }
 }

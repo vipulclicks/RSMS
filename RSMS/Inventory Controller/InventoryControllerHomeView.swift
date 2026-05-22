@@ -11,21 +11,23 @@ import SwiftUI
 // MARK: - Navigation Destinations
 
 enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
-    case dashboard = "Dashboard"
-    case scan      = "Scan Item"
-    case rfid      = "RFID Management"
-    case notify    = "Notify Manager"
-    case reconcile = "Stock Reconciliation"
+    case dashboard      = "Dashboard"
+    case productLookup  = "Product Lookup"
+    case stockIn        = "Stock In"
+    case cycleCounts    = "Cycle Counts & Verify"
+    case auditReconcile = "Audit & Reconcile"
+    case notify         = "Notify Manager"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard: return "chart.bar.fill"
-        case .scan:      return "barcode.viewfinder"
-        case .rfid:      return "sensor.tag.radiowaves.forward"
-        case .notify:    return "paperplane.fill"
-        case .reconcile: return "arrow.triangle.2.circlepath"
+        case .dashboard:       return "chart.bar.fill"
+        case .productLookup:   return "magnifyingglass.circle.fill"
+        case .stockIn:         return "plus.viewfinder"
+        case .cycleCounts:     return "arrow.triangle.2.circlepath"
+        case .auditReconcile:  return "doc.text.magnifyingglass"
+        case .notify:          return "paperplane.fill"
         }
     }
 }
@@ -51,9 +53,34 @@ struct InventoryControllerHomeView: View {
 
     private var sidebar: some View {
         List(selection: $selectedDestination) {
-            ForEach(InventoryDestination.allCases) { dest in
-                Label(dest.rawValue, systemImage: dest.icon)
-                    .tag(dest)
+            Section {
+                Label(InventoryDestination.dashboard.rawValue,
+                      systemImage: InventoryDestination.dashboard.icon)
+                    .tag(InventoryDestination.dashboard)
+
+                Label(InventoryDestination.productLookup.rawValue,
+                      systemImage: InventoryDestination.productLookup.icon)
+                    .tag(InventoryDestination.productLookup)
+            }
+
+            Section {
+                Label(InventoryDestination.stockIn.rawValue,
+                      systemImage: InventoryDestination.stockIn.icon)
+                    .tag(InventoryDestination.stockIn)
+            }
+
+            Section {
+                Label(InventoryDestination.cycleCounts.rawValue,
+                      systemImage: InventoryDestination.cycleCounts.icon)
+                    .tag(InventoryDestination.cycleCounts)
+
+                Label(InventoryDestination.auditReconcile.rawValue,
+                      systemImage: InventoryDestination.auditReconcile.icon)
+                    .tag(InventoryDestination.auditReconcile)
+
+                Label(InventoryDestination.notify.rawValue,
+                      systemImage: InventoryDestination.notify.icon)
+                    .tag(InventoryDestination.notify)
             }
         }
         .listStyle(.sidebar)
@@ -77,14 +104,16 @@ struct InventoryControllerHomeView: View {
         switch selectedDestination {
         case .dashboard, .none:
             dashboardView
-        case .scan:
-            InventoryBarcodeScannerView()
-        case .rfid:
-            RFIDStockManagementView()
+        case .productLookup:
+            ProductLookupView()
+        case .stockIn:
+            InventoryBarcodeScannerView(initialMode: .stockIn)
+        case .cycleCounts:
+            CycleCountView()
+        case .auditReconcile:
+            StockReconciliationView()
         case .notify:
             NotifyBoutiqueManagerView()
-        case .reconcile:
-            StockReconciliationView()
         }
     }
 
@@ -95,8 +124,7 @@ struct InventoryControllerHomeView: View {
             VStack(alignment: .leading, spacing: 20) {
                 greetingSection
                 heroKPICard
-                alertTasksRow
-                systemControlSection
+                actionGrid
                 activityFeedSection
             }
             .padding(24)
@@ -104,6 +132,11 @@ struct InventoryControllerHomeView: View {
         .background(RSMSTheme.background)
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            if dashVM.snapshot == nil {
+                await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+            }
+        }
     }
 }
 

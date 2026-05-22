@@ -11,10 +11,20 @@ import SwiftUI
 
 struct StockReconciliationView: View {
 
+    @Environment(AppViewModel.self) private var appVM
+
     @State private var viewModel = StockReconciliationViewModel()
     @State private var appeared = false
     @State private var showSearchField = false
     @State private var showFilterMenu = false
+    @State private var showShrinkageAnalysis = false
+
+    // Segment control
+    enum ReconcileSegment: String, CaseIterable {
+        case mismatches = "Open Mismatches"
+        case auditLog   = "Audit History"
+    }
+    @State private var segment: ReconcileSegment = .mismatches
 
     // Reconciliation sheet
     @State private var selectedItem: DiscrepancyItem? = nil
@@ -35,12 +45,17 @@ struct StockReconciliationView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     headerSection
-                    if showSearchField { searchSection }
-                    analyticsSection
-                    discrepancySection
-                    auditLogSection
-                    exportSection
-                    securitySection
+                    segmentPicker
+
+                    if segment == .mismatches {
+                        if showSearchField { searchSection }
+                        analyticsSection
+                        discrepancySection
+                        exportSection
+                        securitySection
+                    } else {
+                        auditLogSection
+                    }
                 }
                 .padding(24)
                 .padding(.bottom, 80)
@@ -51,10 +66,11 @@ struct StockReconciliationView: View {
                 successOverlay
             }
         }
-        .navigationTitle("Stock Reconciliation")
+        .navigationTitle("Audit & Reconcile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+            if segment == .mismatches {
                 HStack(spacing: 12) {
                     Button {
                         withAnimation(.spring(response: 0.3)) {
@@ -85,11 +101,23 @@ struct StockReconciliationView: View {
                         )
                 }
             }
+            }
         }
         .sheet(item: $selectedItem) { item in
             reconcileSheet(for: item)
         }
+        .sheet(isPresented: $showShrinkageAnalysis) {
+            ShrinkageAnalysisView(
+                shrinkagePercentage: viewModel.shrinkagePercentage,
+                shrinkageValue: viewModel.shrinkageValue,
+                totalInventoryValue: viewModel.totalStoreInventoryValue,
+                highRiskItems: viewModel.discrepancyItems.filter { $0.actualQty < $0.expectedQty }
+            )
+        }
         .onAppear {
+            if let storeId = appVM.currentStoreId {
+                viewModel.load(from: appVM.dataStore, storeId: storeId)
+            }
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
             }
@@ -98,12 +126,47 @@ struct StockReconciliationView: View {
 
     // MARK: - Header
 
+    // MARK: - Segment Picker
+
+    private var segmentPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(ReconcileSegment.allCases, id: \.self) { seg in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { segment = seg }
+                } label: {
+                    Text(seg.rawValue)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(
+                            segment == seg ? RSMSTheme.background : RSMSTheme.textSecondary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            segment == seg
+                                ? RSMSTheme.textPrimary
+                                : Color.clear
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
+        }
+        .padding(4)
+        .background(RSMSTheme.surfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(RSMSTheme.border, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Header
+
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Stock Reconciliation")
+            Text("Audit & Reconcile")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Resolve inventory discrepancies")
+            Text("Resolve inventory discrepancies and review audit trail")
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
@@ -122,7 +185,7 @@ struct StockReconciliationView: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(RSMSTheme.cream)
+        .background(RSMSTheme.surfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -134,31 +197,48 @@ struct StockReconciliationView: View {
     // MARK: - Analytics Section
 
     private var analyticsSection: some View {
-        LazyVGrid(columns: kpiColumns, spacing: 14) {
-            KPICard(
-                icon: "exclamationmark.triangle.fill",
-                value: "\(viewModel.totalDiscrepancies)",
-                label: "Total Discrepancies",
-                iconColor: RSMSTheme.gold
-            )
-            KPICard(
-                icon: "clock.fill",
-                value: "\(viewModel.pendingVerification)",
-                label: "Pending Verification",
-                iconColor: RSMSTheme.warning
-            )
-            KPICard(
-                icon: "checkmark.circle.fill",
-                value: "\(viewModel.resolvedToday)",
-                label: "Resolved Today",
-                iconColor: RSMSTheme.success
-            )
-            KPICard(
-                icon: "doc.text.fill",
-                value: "\(viewModel.auditLogsUpdated)",
-                label: "Audit Logs Updated",
-                iconColor: RSMSTheme.info
-            )
+        VStack(spacing: 16) {
+            LazyVGrid(columns: kpiColumns, spacing: 14) {
+                KPICard(
+                    icon: "exclamationmark.triangle.fill",
+                    value: "\(viewModel.totalDiscrepancies)",
+                    label: "Total Discrepancies",
+                    iconColor: RSMSTheme.gold
+                )
+                KPICard(
+                    icon: "clock.fill",
+                    value: "\(viewModel.pendingVerification)",
+                    label: "Pending Verification",
+                    iconColor: RSMSTheme.warning
+                )
+                KPICard(
+                    icon: "checkmark.circle.fill",
+                    value: "\(viewModel.resolvedToday)",
+                    label: "Resolved Today",
+                    iconColor: RSMSTheme.success
+                )
+                KPICard(
+                    icon: "doc.text.fill",
+                    value: "\(viewModel.auditLogsUpdated)",
+                    label: "Audit Logs Updated",
+                    iconColor: RSMSTheme.info
+                )
+            }
+            
+            Button {
+                showShrinkageAnalysis = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.pie.fill")
+                    Text("View Shrinkage Analysis")
+                }
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.background)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(RSMSTheme.gold)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 15)
@@ -194,7 +274,7 @@ struct StockReconciliationView: View {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(RSMSTheme.surfacePrimary.opacity(0.3))
+                        .fill(RSMSTheme.surfaceSecondary.opacity(0.3))
                         .frame(width: 56, height: 56)
                     Image(systemName: item.icon)
                         .font(.title2)
@@ -274,7 +354,7 @@ struct StockReconciliationView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(RSMSTheme.cream)
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
                         .stroke(
@@ -362,7 +442,7 @@ struct StockReconciliationView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfaceSecondary)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
@@ -469,7 +549,7 @@ struct StockReconciliationView: View {
         .padding(.vertical, 10)
         .background(
             Capsule()
-                .fill(RSMSTheme.cream)
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     Capsule()
                         .stroke(RSMSTheme.border, lineWidth: 1)
@@ -493,7 +573,7 @@ struct StockReconciliationView: View {
                 dashedDivider
                 securityRow(label: "Inventory tracking enabled")
             }
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfaceSecondary)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
@@ -541,7 +621,7 @@ struct StockReconciliationView: View {
                     HStack(spacing: 12) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(RSMSTheme.surfacePrimary.opacity(0.3))
+                                .fill(RSMSTheme.surfaceSecondary.opacity(0.3))
                                 .frame(width: 48, height: 48)
                             Image(systemName: item.icon)
                                 .font(.title3)
@@ -727,7 +807,7 @@ struct StockReconciliationView: View {
                     }
                 }
                 .padding(16)
-                .background(RSMSTheme.surfacePrimary.opacity(0.3))
+                .background(RSMSTheme.surfaceSecondary.opacity(0.3))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 // Timestamp
