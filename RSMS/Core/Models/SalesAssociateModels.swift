@@ -324,3 +324,26 @@ struct LookBuilderOutfit: Codable, Identifiable, Hashable {
         case createdAt   = "created_at"
     }
 }
+
+// MARK: - FaceTime Configuration Support
+
+/// Multi-field configuration for FaceTime consultations, serialized into the database videoLink property.
+struct FaceTimeConfig: Codable, Hashable {
+    var contact: String        // FaceTime email or phone number
+    var meetingLink: String?   // FaceTime meeting link (optional)
+    var notes: String?         // FaceTime specific notes / instructions (optional)
+}
+
+extension Appointment {
+    /// Decodes the JSON FaceTime configuration stored in `videoLink`, or falls back to treating it as a raw string if legacy.
+    var decodedFaceTimeConfig: FaceTimeConfig? {
+        guard let videoLink = videoLink, !videoLink.isEmpty else { return nil }
+        if let data = videoLink.data(using: .utf8),
+           let config = try? JSONDecoder().decode(FaceTimeConfig.self, from: data) {
+            return config
+        }
+        // Graceful fallback for legacy raw URLs
+        return FaceTimeConfig(contact: videoLink, meetingLink: videoLink, notes: nil)
+    }
+}
+

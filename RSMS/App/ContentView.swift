@@ -14,6 +14,8 @@ struct ContentView: View {
                     SalesAssociateHomeView()
                 case .inventoryController:
                     InventoryControllerHomeView()
+                case .client:
+                    ClientPortalView()
                 }
             } else {
                 LoginView()

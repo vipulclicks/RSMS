@@ -85,5 +85,18 @@ extension UserProfile {
         updatedAt: .now
     )
 
-    static let all: [UserProfile] = [.previewManager, .previewAssociate, .previewInventory]
+    static let previewClient = UserProfile(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000020")!,
+        email: "isabelle.fontaine@email.com",
+        fullName: "Isabelle Fontaine",
+        role: .client,
+        storeId: Store.preview.id,
+        avatarURL: nil,
+        phone: "+33 6 11 22 33 44",
+        isActive: true,
+        createdAt: .now,
+        updatedAt: .now
+    )
+
+    static let all: [UserProfile] = [.previewManager, .previewAssociate, .previewInventory, .previewClient]
 }

@@ -69,10 +69,12 @@ final class AppointmentViewModel {
 
     func createAppointment(_ a: Appointment) async throws {
         try await dataStore.createAppointment(a)
+        simulateNotificationDelivery(for: a, action: "APPOINTMENT CONFIRMATION")
     }
 
     func updateAppointment(_ a: Appointment) async throws {
         try await dataStore.updateAppointment(a)
+        simulateNotificationDelivery(for: a, action: "APPOINTMENT RESCHEDULED / UPDATED")
     }
 
     func cancelAppointment(id: UUID) async throws {
@@ -193,6 +195,10 @@ final class AppointmentViewModel {
         )
 
         try await dataStore.updateAppointment(updated)
+        
+        if success {
+            simulateNotificationDelivery(for: updated, action: "MANUAL REMINDER SENT")
+        }
     }
 
     /// Automatic sweep: process all pending reminders whose window has arrived.
@@ -206,6 +212,78 @@ final class AppointmentViewModel {
             if now >= triggerDate {
                 try? await sendReminder(for: appointment)
             }
+        }
+    }
+    
+    // MARK: - Simulated Notification Engine
+    private func simulateNotificationDelivery(for a: Appointment, action: String) {
+        let clientName = clientName(for: a.clientId)
+        let formattedDate = a.dateTime.formatted(date: .long, time: .shortened)
+        let channel = a.reminderChannel
+        
+        print("\n✨ [MAISON LUMIÈRE NOTIFICATION ENGINE] SIMULATING: \(action) ✨")
+        print("--------------------------------------------------------------------------------")
+        print("Recipient: \(clientName)")
+        print("Channel: \(channel)")
+        print("Time: \(Date().formatted())")
+        print("--------------------------------------------------------------------------------")
+        
+        // Render FaceTime Details if present
+        if a.type == .video, let config = a.decodedFaceTimeConfig {
+            print("📩 --- SIMULATED CONFIRMATION EMAIL ---")
+            print("Subject: Your Private FaceTime Consultation - Maison Lumière")
+            print("Dear \(clientName),")
+            print("Your exclusive luxury styling session is confirmed for \(formattedDate).")
+            print("A personal advisor will connect with you via FaceTime.")
+            print("")
+            print("FaceTime Contact Details:")
+            print("  • FaceTime Account: \(config.contact)")
+            if let link = config.meetingLink, !link.isEmpty {
+                print("  • Direct Meeting Link: \(link)")
+            }
+            if let notes = config.notes, !notes.isEmpty {
+                print("  • Advisor Instructions: \(notes)")
+            }
+            print("")
+            print("To begin your consultation, simply tap the connection link in your portal or open the direct meeting link above.")
+            print("Warmest regards,")
+            print("Maison Lumière Concierge")
+            print("--------------------------------------------------------------------------------")
+            
+            print("📅 --- SIMULATED CALENDAR INVITE (.ICS) ---")
+            print("Title: Private FaceTime Styling Consult | Maison Lumière")
+            print("Start: \(a.dateTime)")
+            print("Duration: \(a.durationMinutes) minutes")
+            print("URL: \(config.meetingLink ?? "facetime://\(config.contact)")")
+            print("Description:")
+            print("  FaceTime Consultation with your personal advisor.")
+            print("  Contact: \(config.contact)")
+            if let notes = config.notes, !notes.isEmpty {
+                print("  Instructions: \(notes)")
+            }
+            print("--------------------------------------------------------------------------------")
+            
+            print("📱 --- SIMULATED CLIENT PUSH / SMS REMINDER ---")
+            var body = "Maison Lumière Reminder: Your FaceTime Styling Consult is scheduled for \(formattedDate)."
+            if let link = config.meetingLink, !link.isEmpty {
+                body += " Join here: \(link)"
+            } else {
+                body += " We will reach you via FaceTime at \(config.contact)."
+            }
+            print(body)
+            print("--------------------------------------------------------------------------------\n")
+        } else {
+            print("📩 --- SIMULATED CONFIRMATION EMAIL ---")
+            print("Subject: Your Consultation Confirmation - Maison Lumière")
+            print("Dear \(clientName),")
+            print("Your Private \(a.type == .inStore ? "In-Store" : "Phone") Consultation is confirmed for \(formattedDate).")
+            print("Location/Details: Maison Lumière Vendôme, Paris")
+            print("--------------------------------------------------------------------------------")
+            
+            print("📅 --- SIMULATED CALENDAR INVITE ---")
+            print("Title: Maison Lumière Consultation")
+            print("Start: \(a.dateTime)")
+            print("--------------------------------------------------------------------------------\n")
         }
     }
 }
