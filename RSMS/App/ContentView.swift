@@ -24,5 +24,4 @@ struct ContentView: View {
 }
 #Preview {
     ContentView()
-        .environment(AppViewModel())
-}
+    .environment(AppViewModel())}

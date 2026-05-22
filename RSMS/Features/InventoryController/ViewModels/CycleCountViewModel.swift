@@ -1,11 +1,3 @@
-//
-//  CycleCountViewModel.swift
-//  RSMS
-//
-//  Drives the Cycle Counts screen.
-//  "Pending" = stock items with lastScannedAt nil or older than 30 days.
-//  Mismatch count = open InventoryVariances.
-//
 
 import SwiftUI
 
