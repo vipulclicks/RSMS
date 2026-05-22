@@ -17,6 +17,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
     case notify         = "Notify Manager"
+    case rfidStock      = "RFID Stock Management"
 
     var id: String { rawValue }
 
@@ -28,6 +29,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
         case .notify:          return "paperplane.fill"
+        case .rfidStock:       return "sensor.tag.radiowaves.forward.fill"
         }
     }
 }
@@ -67,6 +69,10 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.stockIn.rawValue,
                       systemImage: InventoryDestination.stockIn.icon)
                     .tag(InventoryDestination.stockIn)
+                
+                Label(InventoryDestination.rfidStock.rawValue,
+                      systemImage: InventoryDestination.rfidStock.icon)
+                    .tag(InventoryDestination.rfidStock)
             }
 
             Section {
@@ -114,6 +120,8 @@ struct InventoryControllerHomeView: View {
             StockReconciliationView()
         case .notify:
             NotifyBoutiqueManagerView()
+        case .rfidStock:
+            RFIDStockManagementView()
         }
     }
 
