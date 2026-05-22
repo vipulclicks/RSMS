@@ -12,10 +12,6 @@ import SwiftUI
 class AppViewModel {
     let dataStore = DataStore()
     var currentUser: UserProfile?
-    var dataStore = DataStore()
-    
-    // Mock store ID for the current session since it's not wired to the auth user yet
-    var currentStoreId: UUID? = UUID()
 
     /// The store ID of the currently logged-in user.
     var currentStoreId: UUID? { currentUser?.storeId }
