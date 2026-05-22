@@ -244,6 +244,19 @@ extension InventoryControllerHomeView {
                 }
                 .buttonStyle(.plain)
 
+                dashedDivider
+
+                Button {
+                    selectedDestination = .reconcile
+                } label: {
+                    controlRow(
+                        icon: "arrow.triangle.2.circlepath",
+                        title: "Stock Reconciliation",
+                        subtitle: "Resolve inventory discrepancies"
+                    )
+                }
+                .buttonStyle(.plain)
+
             }
             .background(RSMSTheme.cream)
             .clipShape(RoundedRectangle(cornerRadius: 16))
