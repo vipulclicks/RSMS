@@ -11,9 +11,9 @@ import Foundation
 
 /// Role-based access control enum matching Supabase `user_role` CHECK constraint.
 enum UserRole: String, Codable, CaseIterable, Identifiable {
-    case boutiqueManager     = "boutique_manager"
-    case salesAssociate      = "sales_associate"
-    case inventoryController = "inventory_controller"
+    case boutiqueManager      = "boutique_manager"
+    case salesAssociate       = "sales_associate"
+    case inventoryController  = "inventory_controller"
 
     var id: String { rawValue }
 
@@ -28,7 +28,7 @@ enum UserRole: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - Store
 
-/// Represents a physical boutique / retail store.
+
 struct Store: Codable, Identifiable, Hashable {
     let id: UUID
     let name: String

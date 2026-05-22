@@ -1,132 +1,189 @@
 import SwiftUI
 
 struct StaffShiftPlanningView: View {
+    @Environment(AppViewModel.self) private var appVM
+    
     @State private var navPath = [SalesGoalRoute]()
     @State private var salesGoalVM = SalesGoalViewModel()
-    private let commission = Commission.preview
-    private let metric = PerformanceMetric.preview
+    @State private var shiftPlanningVM = StaffManagementViewModel()
+    @State private var showingNewAssociateSheet = false
 
     var body: some View {
-        NavigationStack(path: $navPath) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    goalsAndCommissionsRow
-                    performanceSection
-                }
-                .padding(24)
-            }
-            .background(RSMSTheme.background)
-            .navigationTitle("Staff & Shift Planning")
-            .navigationDestination(for: SalesGoalRoute.self) { route in
-                switch route {
-                case .assignGoalForm:
-                    AssignGoalFormView(viewModel: salesGoalVM, navPath: $navPath)
-                case .staffPicker:
-                    StaffPickerView(viewModel: salesGoalVM, navPath: $navPath)
-                }
-            }
-        }
-    }
-
-
-    // MARK: - Goals & Commissions Row
-    private var goalsAndCommissionsRow: some View {
-        HStack(alignment: .top, spacing: 16) {
-            
-            // MARK: Sales Goals Column
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    SectionHeader(title: "Sales Goals")
-                    Spacer()
-                    Button {
-                        navPath.append(.assignGoalForm)
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("New Goal")
+        Group {
+            if shiftPlanningVM.isLoading || salesGoalVM.isLoading {
+                ProgressView("Loading Planning Data...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = shiftPlanningVM.errorMessage ?? salesGoalVM.errorMessage {
+                ContentUnavailableView(
+                    "Error Loading Data",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(error)
+                )
+            } else {
+                NavigationStack(path: $navPath) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 28) {
+                            goalsAndCommissionsRow
+                            allStaffSection
                         }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.gold)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(RSMSTheme.gold.opacity(0.1))
-                        .clipShape(Capsule())
+                        .padding(24)
+                    }
+                    .background(RSMSTheme.background.ignoresSafeArea())
+                    .navigationTitle("Staff & Shift Planning")
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button {
+                                showingNewAssociateSheet = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "person.badge.plus")
+                                    Text("New Associate")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                            }
+                        }
+                    }
+                    .navigationDestination(for: SalesGoalRoute.self) { route in
+                        switch route {
+                        case .assignGoalForm:
+                            AssignGoalFormView(viewModel: salesGoalVM, navPath: $navPath)
+                        case .staffPicker:
+                            StaffPickerView(viewModel: salesGoalVM, navPath: $navPath)
+                        }
+                    }
+                    .sheet(isPresented: $showingNewAssociateSheet) {
+                        CreateAssociateView {
+                            Task {
+                                if let storeId = appVM.currentStoreId {
+                                    await salesGoalVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                                }
+                            }
+                        }
                     }
                 }
-                
-                ForEach(salesGoalVM.availableStaff) { staff in
-                    StaffGoalCard(staff: staff, viewModel: salesGoalVM)
-                }
             }
-            .frame(maxWidth: .infinity)
-
-            // MARK: Commissions Column
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    SectionHeader(title: "Recent Commissions")
-                    Spacer()
-                    // Invisible spacer matching the "New Goal" button height
-                    Text("New Goal")
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.vertical, 6)
-                        .opacity(0)
-                }
-                let staffName = UserProfile.all.first(where: { $0.id == commission.staffId })?.fullName ?? "Staff"
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(staffName).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
-                        Spacer()
-                        StatusBadge(text: commission.status.rawValue, color: commissionColor(commission.status))
-                    }
-                    Divider().overlay(RSMSTheme.divider)
-                    
-                    infoRow(label: "Amount", value: commission.amount.formatted(.currency(code: "INR").precision(.fractionLength(2))))
-                    infoRow(label: "Rate", value: "\(Int(commission.rate * 100))%")
-                }
-                .rsmsCard(padding: 16)
+        }
+        .task {
+            if let storeId = appVM.currentStoreId {
+                await shiftPlanningVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                await salesGoalVM.load(dataStore: appVM.dataStore, storeId: storeId)
             }
-            .frame(maxWidth: .infinity)
         }
     }
 
-    // MARK: - Performance Section
-    private var performanceSection: some View {
+
+    // MARK: - Goals Row
+    private var goalsAndCommissionsRow: some View {
         VStack(alignment: .leading, spacing: 16) {
-            let staffName = UserProfile.all.first(where: { $0.id == metric.staffId })?.fullName ?? "Staff"
-            SectionHeader(title: "Performance Overview", subtitle: staffName + " · \(metric.period.rawValue.capitalized)")
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                KPICard(icon: "indianrupeesign.square.fill", value: metric.totalSales.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Total Sales", iconColor: RSMSTheme.gold)
-                KPICard(icon: "bag.fill", value: "\(metric.unitsSold)", label: "Units Sold", iconColor: RSMSTheme.info)
-                KPICard(icon: "chart.line.uptrend.xyaxis", value: metric.avgTransactionValue.formatted(.currency(code: "INR").precision(.fractionLength(0))), label: "Avg Transaction", iconColor: RSMSTheme.success)
-                KPICard(icon: "percent", value: "\(Int((metric.conversionRate ?? 0) * 100))%", label: "Conversion Rate", iconColor: RSMSTheme.warning)
+            HStack {
+                SectionHeader(title: "Sales Goals")
+                Spacer()
+                Button {
+                    navPath.append(.assignGoalForm)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("New Goal")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.gold)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(RSMSTheme.gold.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+            }
+            
+            if salesGoalVM.availableStaff.isEmpty {
+                Text("No sales associates available.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    ForEach(salesGoalVM.availableStaff) { staff in
+                        StaffGoalCard(staff: staff, viewModel: salesGoalVM)
+                    }
+                }
             }
         }
     }
 
-    private func infoRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label).font(.subheadline).foregroundStyle(RSMSTheme.textSecondary)
+
+    // MARK: - All Staff Section
+    private var allStaffSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(title: "All Staff", subtitle: "Currently assigned to this store")
+            
+            if shiftPlanningVM.allStaff.isEmpty {
+                Text("No staff found for this store.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            } else {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    ForEach(shiftPlanningVM.allStaff) { staff in
+                        staffProgressCard(staff)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Staff Progress Card
+    private func staffProgressCard(_ staff: UserProfile) -> some View {
+        let goal = salesGoalVM.activeGoals.first { $0.staffId == staff.id }
+        let targetAmount = goal?.targetAmount ?? 0.0
+        let achievedAmount = goal?.achievedAmount ?? 0.0
+        let progress = targetAmount > 0 ? min(1.0, achievedAmount / targetAmount) : 0.0
+        
+        return HStack(spacing: 16) {
+            // Profile
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.gold.opacity(0.1))
+                    .frame(width: 48, height: 48)
+                
+                Text(String(staff.fullName.prefix(1)))
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(RSMSTheme.gold)
+            }
+            
+            // Name & Role
+            VStack(alignment: .leading, spacing: 4) {
+                Text(staff.fullName)
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                Text(staff.role.displayName)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                
+                if targetAmount > 0 {
+                    Text("Target: \(targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
+                        .font(.caption2)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+            }
+            
             Spacer()
-            Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
+            
+            // Circular Progress
+            ZStack {
+                Circle()
+                    .stroke(RSMSTheme.surfaceTertiary, lineWidth: 5)
+                    .frame(width: 44, height: 44)
+                
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(RSMSTheme.gold, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .frame(width: 44, height: 44)
+                    .rotationEffect(.degrees(-90))
+                
+                Text("\(Int(progress * 100))%")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(RSMSTheme.gold)
+            }
         }
-    }
-
-    private func roleBadgeColor(_ role: String) -> Color {
-        switch role {
-        case "floor": return RSMSTheme.success
-        case "cashier": return RSMSTheme.info
-        case "back_office": return RSMSTheme.warning
-        default: return RSMSTheme.textSecondary
-        }
-    }
-
-    private func commissionColor(_ status: CommissionStatus) -> Color {
-        switch status {
-        case .pending: return RSMSTheme.warning
-        case .approved: return RSMSTheme.success
-        case .paid: return RSMSTheme.info
-        }
+        .rsmsCard(padding: 16)
     }
 }
 

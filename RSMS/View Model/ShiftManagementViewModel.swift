@@ -8,49 +8,51 @@ enum ShiftStatus: String, CaseIterable {
 }
 
 @Observable
-class ShiftScheduleViewModel {
+class ShiftManagementViewModel {
     var shifts: [StaffShift] = []
     var salesGoals: [SalesGoal] = []
     var commissions: [Commission] = []
+    
+    // State
+    var isLoading = false
+    var errorMessage: String?
     
     // Timer to trigger UI updates for progress bars and live clocks
     var currentTime: Date = Date()
     
     init() {
-        fetchTodayShifts()
-        fetchGoalsAndCommissions()
-        
         // Timer for progress bars and live clock updates
         Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.currentTime = Date()
         }
     }
     
-    func fetchTodayShifts() {
-        // Load mock shifts
-        self.shifts = StaffShift.all
+    @MainActor
+    func load(dataStore: DataStore, storeId: UUID) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await dataStore.fetchStaffShifts(storeId: storeId)
+            self.shifts = dataStore.staffShifts.filter { Calendar.current.isDateInToday($0.shiftDate) }
+            
+            try await dataStore.fetchSalesGoals(storeId: storeId)
+            self.salesGoals = dataStore.salesGoals
+            
+            try await dataStore.fetchCommissions()
+            // In a real app we might filter commissions by storeId or specific staff,
+            // but for now we'll take what's loaded.
+            self.commissions = dataStore.commissions
+        } catch {
+            print("Failed to load shift monitor data: \(error)")
+            self.errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
     }
     
-    func fetchGoalsAndCommissions() {
-        // Generating mock data using actual Models to match UI
-        let users = UserProfile.all
-        guard users.count >= 3 else { return }
-        
-        self.salesGoals = [
-            SalesGoal(id: UUID(), staffId: users[0].id, storeId: UUID(), targetAmount: 180000, achievedAmount: 167200, period: .monthly, startDate: .now, endDate: .now, createdAt: .now),
-            SalesGoal(id: UUID(), staffId: users[1].id, storeId: UUID(), targetAmount: 160000, achievedAmount: 138400, period: .monthly, startDate: .now, endDate: .now, createdAt: .now),
-            SalesGoal(id: UUID(), staffId: users[2].id, storeId: UUID(), targetAmount: 140000, achievedAmount: 141000, period: .monthly, startDate: .now, endDate: .now, createdAt: .now)
-        ]
-        
-        self.commissions = [
-            Commission(id: UUID(), staffId: users[0].id, transactionId: UUID(), amount: 13360, rate: 0.05, status: .paid, createdAt: .now),
-            Commission(id: UUID(), staffId: users[1].id, transactionId: UUID(), amount: 11920, rate: 0.05, status: .pending, createdAt: .now),
-            Commission(id: UUID(), staffId: users[2].id, transactionId: UUID(), amount: 12050, rate: 0.05, status: .paid, createdAt: .now)
-        ]
-    }
-    
-    func getStaffName(for staffId: UUID) -> String {
-        return UserProfile.all.first(where: { $0.id == staffId })?.fullName ?? "Unknown Staff"
+    func getStaffName(for staffId: UUID, dataStore: DataStore) -> String {
+        return dataStore.userName(for: staffId)
     }
     
     // Status Logic
@@ -110,11 +112,31 @@ class ShiftScheduleViewModel {
     var endedCount: Int { shifts.filter { status(for: $0) == .ended }.count }
     
     // Actions
-    func removeShift(_ shift: StaffShift) {
+    func removeShiftLocally(_ shift: StaffShift) {
         shifts.removeAll { $0.id == shift.id }
     }
     
-    func addShift(_ shift: StaffShift) {
-        shifts.append(shift)
+    @MainActor
+    func deleteShift(_ shift: StaffShift, dataStore: DataStore) async {
+        do {
+            try await dataStore.deleteStaffShift(id: shift.id)
+            removeShiftLocally(shift)
+        } catch {
+            print("Failed to delete shift: \(error)")
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    @MainActor
+    func addShift(_ shift: StaffShift, dataStore: DataStore) async {
+        do {
+            try await dataStore.createStaffShift(shift)
+            withAnimation {
+                shifts.append(shift)
+            }
+        } catch {
+            print("Failed to create shift: \(error)")
+            self.errorMessage = error.localizedDescription
+        }
     }
 }
