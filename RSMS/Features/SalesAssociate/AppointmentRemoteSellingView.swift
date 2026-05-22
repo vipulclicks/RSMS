@@ -36,11 +36,6 @@ struct AppointmentRemoteSellingView: View {
             RSMSTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Dashboard Header
-                headerView
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
 
                 // Search & Filter Row
                 searchAndFilterBar
@@ -70,9 +65,21 @@ struct AppointmentRemoteSellingView: View {
                 }
             }
         }
-        .navigationTitle("")
+        .navigationTitle("Appointments")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(RSMSTheme.background, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showClientSelection = true
+                } label: {
+                    Image(systemName: "plus")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+                .accessibilityLabel("New Appointment")
+            }
+        }
         .sheet(isPresented: $showClientSelection) {
             clientSelectionSheet
         }
@@ -123,39 +130,7 @@ struct AppointmentRemoteSellingView: View {
         }
     }
 
-    // MARK: - Dashboard Header
-
-    private var headerView: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Appointments")
-                    .font(.system(size: 32, weight: .bold, design: .serif))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                Text("Schedule and manage client consultations")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-            Spacer()
-
-            Button {
-                showClientSelection = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.subheadline.weight(.semibold))
-                    Text("New Appointment")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .foregroundStyle(RSMSTheme.cream)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(RSMSTheme.primaryGradient)
-                .clipShape(Capsule())
-                .shadow(color: RSMSTheme.primary.opacity(0.25), radius: 10, y: 4)
-            }
-            .buttonStyle(ScaleButtonStyle())
-        }
-    }
+    // MARK: - Dashboard Header removed in favor of native navigation title
 
     // MARK: - Search & Filters
 

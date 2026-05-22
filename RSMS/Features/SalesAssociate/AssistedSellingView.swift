@@ -185,7 +185,7 @@ private struct ASProductCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
 
                 HStack {
-                    Text("€\(Int(product.price).formatted())")
+                    Text("₹\(Int(product.price).formatted())")
                         .font(.system(size: 16, weight: .bold, design: .serif))
                         .foregroundStyle(RSMSTheme.primary)
 
@@ -252,7 +252,7 @@ private struct ASProductDetailSheet: View {
                                 .font(.system(size: 24, weight: .bold, design: .serif))
                                 .foregroundStyle(RSMSTheme.textPrimary)
 
-                            Text("€\(Int(product.price).formatted())")
+                            Text("₹\(Int(product.price).formatted())")
                                 .font(.system(size: 28, weight: .bold, design: .serif))
                                 .foregroundStyle(RSMSTheme.primary)
 

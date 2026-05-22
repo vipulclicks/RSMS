@@ -37,7 +37,7 @@ final class StoreDashboardViewModel {
     }
 
     func formatCurrency(_ value: Double) -> String {
-        "€\(String(format: "%,.0f", value))"
+        "₹\(String(format: "%,.0f", value))"
     }
 
     func staffName(for id: UUID, from dataStore: DataStore) -> String {

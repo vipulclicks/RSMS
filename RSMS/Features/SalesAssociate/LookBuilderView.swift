@@ -158,7 +158,7 @@ private struct LBProductChip: View {
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .lineLimit(1)
-            Text("€\(Int(product.price).formatted())")
+            Text("₹\(Int(product.price).formatted())")
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(RSMSTheme.primary)
         }
@@ -233,7 +233,7 @@ private struct LBOutfitEditorSheet: View {
                                             Text(product.name)
                                                 .font(.subheadline.weight(.medium))
                                                 .foregroundStyle(RSMSTheme.textPrimary)
-                                            Text("€\(Int(product.price).formatted())")
+                                            Text("₹\(Int(product.price).formatted())")
                                                 .font(.caption.weight(.bold))
                                                 .foregroundStyle(RSMSTheme.primary)
                                         }
@@ -284,7 +284,7 @@ private struct LBOutfitEditorSheet: View {
                                                 .foregroundStyle(RSMSTheme.textTertiary)
                                         }
                                         Spacer()
-                                        Text("€\(Int(product.price).formatted())")
+                                        Text("₹\(Int(product.price).formatted())")
                                             .font(.caption.weight(.bold))
                                             .foregroundStyle(RSMSTheme.primary)
                                     }

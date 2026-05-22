@@ -43,7 +43,7 @@ final class SalesAssociateDashboardViewModel {
     }
 
     var todaySalesFormatted: String {
-        "€\(Int(todaySalesTotal).formatted())"
+        "₹\(Int(todaySalesTotal).formatted())"
     }
 
     var activeClientCount: Int { clients.count }

@@ -41,11 +41,28 @@ struct BoutiqueManagerHomeView: View {
     private var sidebar: some View {
         List(selection: $selectedSection) {
             ForEach(BoutiqueSection.allCases) { section in
-                Label(section.rawValue, systemImage: section.icon)
-                    .tag(section)
+                let isSelected = selectedSection == section
+                HStack(spacing: 16) {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                        .frame(width: 24)
+                    
+                    Text(section.rawValue)
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                    
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .tag(section)
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(.ultraThinMaterial)
         .navigationTitle("Boutique Manager")
         .toolbar {
             ToolbarItem(placement: .bottomBar) {

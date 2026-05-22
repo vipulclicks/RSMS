@@ -388,7 +388,7 @@ struct NewClientOnboardingView: View {
                                             Text(product.name)
                                                 .font(.subheadline.weight(.semibold))
                                                 .foregroundStyle(RSMSTheme.textPrimary)
-                                            Text("SKU: \(product.sku) • €\(Int(product.price).formatted())")
+                                            Text("SKU: \(product.sku) • ₹\(Int(product.price).formatted())")
                                                 .font(.caption)
                                                 .foregroundStyle(RSMSTheme.textSecondary)
                                         }

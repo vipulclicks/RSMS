@@ -192,3 +192,17 @@ extension LookBuilderOutfit {
 
     static let all: [LookBuilderOutfit] = [.preview]
 }
+
+// MARK: - Curated Cart Mock Data
+
+extension CuratedCart {
+    static let preview = CuratedCart(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000080")!,
+        title: "Anniversary Collection",
+        description: "Bespoke selection of platinum and diamond jewelry.",
+        items: [UniversalCartItem.previewCuratedItem]
+    )
+    
+    static let all: [CuratedCart] = [.preview]
+}
+

@@ -12,6 +12,7 @@ import SwiftUI
 struct ClientProfileDetailView: View {
     let client: ClientProfile
     let dataStore: DataStore
+    let associateId: UUID
     @State private var viewModel: ClientProfileDetailViewModel
 
     // Wishlist adding state
@@ -19,10 +20,21 @@ struct ClientProfileDetailView: View {
     @State private var selectedProductIdForWishlist: UUID? = nil
     @State private var wishlistNotes = ""
     @State private var wishlistSearchText = ""
+    
+    // Curated Cart generating state
+    @State private var showGenerateCartSheet = false
+    
+    // Edit profile state
+    @State private var showEditClientSheet = false
 
-    init(client: ClientProfile, dataStore: DataStore) {
+    private var currentClient: ClientProfile {
+        dataStore.clients.first(where: { $0.id == client.id }) ?? client
+    }
+
+    init(client: ClientProfile, dataStore: DataStore, associateId: UUID = UUID()) {
         self.client = client
         self.dataStore = dataStore
+        self.associateId = associateId
         self._viewModel = State(initialValue: ClientProfileDetailViewModel(client: client, dataStore: dataStore))
     }
 
@@ -34,25 +46,50 @@ struct ClientProfileDetailView: View {
                 heroSection
                 consentSection
                 contactSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 purchaseSummarySection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 sizingSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 styleSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 detailedPreferencesSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 wishlistSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 anniversarySection
-                recommendationsSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
+                curatedCartsSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 notesSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle(client.fullName)
+        .navigationTitle(currentClient.fullName)
         .navigationBarTitleDisplayMode(.inline)
         .tint(RSMSTheme.primary)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showEditClientSheet = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .foregroundStyle(RSMSTheme.primary)
+            }
+        }
         .sheet(isPresented: $showAddWishlistSheet) {
             addWishlistSheet
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showGenerateCartSheet) {
+            GenerateCuratedCartView(client: currentClient, dataStore: dataStore, associateId: associateId)
+        }
+        .sheet(isPresented: $showEditClientSheet) {
+            EditClientProfileView(client: currentClient, dataStore: dataStore)
         }
     }
 
@@ -71,14 +108,14 @@ struct ClientProfileDetailView: View {
                 }
                 .padding(.top, 16)
 
-                Text(client.fullName)
+                Text(currentClient.fullName)
                     .font(.system(size: 22, weight: .bold, design: .serif))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .multilineTextAlignment(.center)
 
                 StatusBadge(
-                    text: client.vipTier.rawValue.uppercased(),
-                    color: viewModel.tierColor(client.vipTier)
+                    text: currentClient.vipTier.rawValue.uppercased(),
+                    color: viewModel.tierColor(currentClient.vipTier)
                 )
             }
             .frame(maxWidth: .infinity)
@@ -93,22 +130,22 @@ struct ClientProfileDetailView: View {
     private var consentSection: some View {
         Section {
             HStack(spacing: 12) {
-                Image(systemName: client.privacyConsentGiven
+                Image(systemName: currentClient.privacyConsentGiven
                       ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
                     .font(.title2)
-                    .foregroundStyle(client.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
+                    .foregroundStyle(currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(client.privacyConsentGiven
-                         ? "Privacy Consent Given" : "Privacy Consent Not Given")
+                    Text(currentClient.privacyConsentGiven
+                          ? "Privacy Consent Given" : "Privacy Consent Not Given")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(client.privacyConsentGiven
+                        .foregroundStyle(currentClient.privacyConsentGiven
                                          ? RSMSTheme.success : RSMSTheme.warning)
-                    if client.privacyConsentGiven, let date = client.consentDate {
+                    if currentClient.privacyConsentGiven, let date = currentClient.consentDate {
                         Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
-                    } else if !client.privacyConsentGiven {
+                    } else if !currentClient.privacyConsentGiven {
                         Text("Client data cannot be used for marketing.")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
@@ -118,12 +155,12 @@ struct ClientProfileDetailView: View {
             }
             .padding(12)
             .background(
-                (client.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
+                (currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
                 in: RoundedRectangle(cornerRadius: 10, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke((client.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
+                    .stroke((currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
             )
             .listRowBackground(Color.clear)
             .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
@@ -135,14 +172,14 @@ struct ClientProfileDetailView: View {
 
     private var contactSection: some View {
         Section("Contact Information") {
-            if let email = client.email {
+            if let email = currentClient.email {
                 LabeledContent {
                     Text(email).foregroundStyle(RSMSTheme.textSecondary)
                 } label: {
                     Label("Email", systemImage: "envelope")
                 }
             }
-            if let phone = client.phone {
+            if let phone = currentClient.phone {
                 LabeledContent {
                     Text(phone).foregroundStyle(RSMSTheme.textSecondary)
                 } label: {
@@ -150,7 +187,7 @@ struct ClientProfileDetailView: View {
                 }
             }
             LabeledContent {
-                Text(client.createdAt, style: .date).foregroundStyle(RSMSTheme.textSecondary)
+                Text(currentClient.createdAt, style: .date).foregroundStyle(RSMSTheme.textSecondary)
             } label: {
                 Label("Member Since", systemImage: "calendar")
             }
@@ -192,14 +229,14 @@ struct ClientProfileDetailView: View {
 
     private var styleSection: some View {
         Section("Style Preferences") {
-            if let cats = client.favoriteCategories, !cats.isEmpty {
+            if let cats = currentClient.favoriteCategories, !cats.isEmpty {
                 CPDPreferenceTagRow(title: "Categories", tags: cats, color: RSMSTheme.primary)
             }
-            if let metals = client.favoriteMetals, !metals.isEmpty {
+            if let metals = currentClient.favoriteMetals, !metals.isEmpty {
                 CPDPreferenceTagRow(title: "Metals", tags: metals,
                                     color: Color(red: 0.788, green: 0.659, blue: 0.298))
             }
-            if let gems = client.favoriteGemstones, !gems.isEmpty {
+            if let gems = currentClient.favoriteGemstones, !gems.isEmpty {
                 CPDPreferenceTagRow(title: "Gemstones", tags: gems,
                                     color: Color(red: 0.357, green: 0.435, blue: 0.651))
             }
@@ -314,53 +351,11 @@ struct ClientProfileDetailView: View {
         }
     }
 
-    // MARK: - AI Recommendations
-
-    private var recommendationsSection: some View {
-        Section("AI Recommendations") {
-            if viewModel.clientRecommendations.isEmpty {
-                Text("No recommendations yet")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            } else {
-                ForEach(viewModel.clientRecommendations) { rec in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(viewModel.productName(for: rec.productId))
-                                .font(.system(size: 15, weight: .semibold, design: .serif))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Spacer()
-                            StatusBadge(
-                                text: viewModel.recommendationTypeLabel(rec.type),
-                                color: RSMSTheme.info
-                            )
-                        }
-                        HStack(spacing: 12) {
-                            CircularProgressView(
-                                progress: rec.confidence,
-                                label: "Match",
-                                value: viewModel.confidenceText(rec.confidence),
-                                size: 50
-                            )
-                            if let reason = rec.reason {
-                                Text(reason)
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                    .lineLimit(3)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-        }
-    }
-
     // MARK: - Notes
 
     @ViewBuilder
     private var notesSection: some View {
-        if let notes = client.notes, !notes.isEmpty {
+        if let notes = currentClient.notes, !notes.isEmpty {
             Section("Associate Notes") {
                 Text(notes)
                     .font(.subheadline)
@@ -403,7 +398,7 @@ struct ClientProfileDetailView: View {
                                     Text(product.name)
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.textPrimary)
-                                    Text("SKU: \(product.sku) • €\(Int(product.price).formatted())")
+                                    Text("SKU: \(product.sku) • ₹\(Int(product.price).formatted())")
                                         .font(.caption)
                                         .foregroundStyle(RSMSTheme.textSecondary)
                                 }
@@ -466,6 +461,46 @@ struct ClientProfileDetailView: View {
                         wishlistNotes = ""
                         showAddWishlistSheet = false
                     }
+                }
+            }
+        }
+    }
+
+    // MARK: - Curated Carts Section
+
+    private var curatedCartsSection: some View {
+        Section {
+            let carts = dataStore.curatedCarts(for: currentClient.id)
+            if carts.isEmpty {
+                Text("No curated carts for this client")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(carts) { cart in
+                            NavigationLink(destination: CuratedCartDetailView(cart: cart, dataStore: dataStore)) {
+                                CartCard(cart: cart)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        } header: {
+            HStack {
+                Text("Curated Carts")
+                Spacer()
+                Button {
+                    showGenerateCartSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                        Text("Generate Cart")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
                 }
             }
         }
