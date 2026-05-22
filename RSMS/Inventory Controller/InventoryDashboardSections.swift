@@ -28,18 +28,6 @@ extension InventoryControllerHomeView {
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
 
-            Spacer()
-
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(context.date.formatted(.dateTime.month(.abbreviated).day()))
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    Text(context.date.formatted(.dateTime.hour().minute()))
-                        .font(.title3.bold())
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                }
-            }
         }
     }
 
@@ -247,10 +235,6 @@ extension InventoryControllerHomeView {
                 Text("ACTIVITY FEED")
                     .font(.caption.weight(.semibold))
                     .tracking(3)
-                    .foregroundStyle(RSMSTheme.gold)
-                Spacer()
-                Button("VIEW ALL") { }
-                    .font(.caption.weight(.semibold))
                     .foregroundStyle(RSMSTheme.gold)
             }
 
