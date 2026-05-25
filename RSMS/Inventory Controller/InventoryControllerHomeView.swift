@@ -10,10 +10,28 @@ import SwiftUI
 
 // MARK: - Navigation Destinations
 
-enum InventoryDestination: Hashable {
-    case scan
-    case rfid
-    case notify
+enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
+    case dashboard      = "Dashboard"
+    case productLookup  = "Product Lookup"
+    case stockIn        = "Stock In"
+    case cycleCounts    = "Cycle Counts & Verify"
+    case auditReconcile = "Audit & Reconcile"
+    case notify         = "Notify Manager"
+    case rfidStock      = "RFID Stock Management"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .dashboard:       return "chart.bar.fill"
+        case .productLookup:   return "magnifyingglass.circle.fill"
+        case .stockIn:         return "plus.viewfinder"
+        case .cycleCounts:     return "arrow.triangle.2.circlepath"
+        case .auditReconcile:  return "doc.text.magnifyingglass"
+        case .notify:          return "paperplane.fill"
+        case .rfidStock:       return "sensor.tag.radiowaves.forward.fill"
+        }
+    }
 }
 
 struct InventoryControllerHomeView: View {
@@ -21,42 +39,110 @@ struct InventoryControllerHomeView: View {
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
 
     @State var dashVM = InventoryDashboardViewModel()
-    @State var selectedDestination: InventoryDestination?
+    @State var selectedDestination: InventoryDestination? = .dashboard
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    greetingSection
-                    heroKPICard
-                    alertTasksRow
-                    systemControlSection
-                    activityFeedSection
-                }
-                .padding(24)
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            sidebar
+        } detail: {
+            detailView
+        }
+        .tint(RSMSTheme.gold)
+    }
+    
+    // MARK: - Sidebar
+
+    private var sidebar: some View {
+        List(selection: $selectedDestination) {
+            Section {
+                Label(InventoryDestination.dashboard.rawValue,
+                      systemImage: InventoryDestination.dashboard.icon)
+                    .tag(InventoryDestination.dashboard)
+
+                Label(InventoryDestination.productLookup.rawValue,
+                      systemImage: InventoryDestination.productLookup.icon)
+                    .tag(InventoryDestination.productLookup)
             }
-            .background(RSMSTheme.background)
-            .navigationTitle("Inventory")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        viewModel.logout()
-                    } label: {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .foregroundStyle(RSMSTheme.danger)
-                    }
+
+            Section {
+                Label(InventoryDestination.stockIn.rawValue,
+                      systemImage: InventoryDestination.stockIn.icon)
+                    .tag(InventoryDestination.stockIn)
+                
+                Label(InventoryDestination.rfidStock.rawValue,
+                      systemImage: InventoryDestination.rfidStock.icon)
+                    .tag(InventoryDestination.rfidStock)
+            }
+
+            Section {
+                Label(InventoryDestination.cycleCounts.rawValue,
+                      systemImage: InventoryDestination.cycleCounts.icon)
+                    .tag(InventoryDestination.cycleCounts)
+
+                Label(InventoryDestination.auditReconcile.rawValue,
+                      systemImage: InventoryDestination.auditReconcile.icon)
+                    .tag(InventoryDestination.auditReconcile)
+
+                Label(InventoryDestination.notify.rawValue,
+                      systemImage: InventoryDestination.notify.icon)
+                    .tag(InventoryDestination.notify)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("Inventory")
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button {
+                    viewModel.logout()
+                } label: {
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .foregroundStyle(RSMSTheme.danger)
                 }
             }
-            .navigationDestination(item: $selectedDestination) { dest in
-                switch dest {
-                case .scan:
-                    InventoryBarcodeScannerView()
-                case .rfid:
-                    RFIDStockManagementView()
-                case .notify:
-                    NotifyBoutiqueManagerView()
-                }
+        }
+    }
+
+    // MARK: - Detail
+
+    @ViewBuilder
+    private var detailView: some View {
+        switch selectedDestination {
+        case .dashboard, .none:
+            dashboardView
+        case .productLookup:
+            ProductLookupView()
+        case .stockIn:
+            InventoryBarcodeScannerView(initialMode: .stockIn)
+        case .cycleCounts:
+            CycleCountView()
+        case .auditReconcile:
+            StockReconciliationView()
+        case .notify:
+            NotifyBoutiqueManagerView()
+        case .rfidStock:
+            RFIDStockManagementView()
+        }
+    }
+
+    // MARK: - Dashboard View
+
+    private var dashboardView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                greetingSection
+                heroKPICard
+                actionGrid
+                activityFeedSection
+            }
+            .padding(24)
+        }
+        .background(RSMSTheme.background)
+        .navigationTitle("Dashboard")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            if dashVM.snapshot == nil {
+                await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
             }
         }
     }

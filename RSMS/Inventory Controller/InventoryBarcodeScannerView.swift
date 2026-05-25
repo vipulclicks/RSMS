@@ -16,6 +16,8 @@ import VisionKit
 
 struct InventoryBarcodeScannerView: View {
 
+    var initialMode: ScanMode = .stockIn
+
     @Environment(AppViewModel.self) private var appVM
     @State private var scannerVM = BarcodeScannerViewModel()
     @State private var rawScannedCode: String? = nil
@@ -26,7 +28,7 @@ struct InventoryBarcodeScannerView: View {
             RSMSTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                scanModePickerSection
+                modeBanner
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                     .padding(.bottom, 8)
@@ -35,7 +37,7 @@ struct InventoryBarcodeScannerView: View {
                     .padding(.horizontal, 16)
 
                 if DataScannerViewController.isSupported {
-                    Text("Point the camera at a product barcode or RFID tag")
+                    Text("Point the camera at a product barcode")
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textTertiary)
                         .multilineTextAlignment(.center)
@@ -70,6 +72,7 @@ struct InventoryBarcodeScannerView: View {
             }
         }
         .task {
+            scannerVM.scanMode = initialMode
             await scannerVM.preload(
                 dataStore: appVM.dataStore,
                 storeId: appVM.currentStoreId
@@ -97,52 +100,34 @@ struct InventoryBarcodeScannerView: View {
         }
     }
 
-    // MARK: - Scan Mode Picker
+    // MARK: - Mode Banner
 
-    private var scanModePickerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("SCAN MODE")
-                .font(.caption.weight(.semibold))
+    private var modeBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: scannerVM.scanMode.icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(scannerVM.scanMode.badgeColor)
+            Text(scannerVM.scanMode.rawValue.uppercased())
+                .font(.caption.weight(.bold))
                 .tracking(2)
-                .foregroundStyle(RSMSTheme.gold)
-
-            HStack(spacing: 8) {
-                ForEach(ScanMode.allCases) { mode in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            scannerVM.scanMode = mode
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: mode.icon)
-                                .font(.caption.weight(.medium))
-                            Text(mode.rawValue)
-                                .font(.caption.weight(.semibold))
-                        }
-                        .foregroundStyle(
-                            scannerVM.scanMode == mode
-                                ? RSMSTheme.background
-                                : RSMSTheme.textSecondary
-                        )
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            scannerVM.scanMode == mode
-                                ? RSMSTheme.gold
-                                : RSMSTheme.cream.opacity(0.6)
-                        )
-                        .clipShape(Capsule())
-                    }
-                }
-            }
+                .foregroundStyle(scannerVM.scanMode.badgeColor)
+            Spacer()
+            Circle()
+                .fill(scannerVM.scanMode.badgeColor)
+                .frame(width: 8, height: 8)
+                .overlay(
+                    Circle()
+                        .fill(scannerVM.scanMode.badgeColor.opacity(0.3))
+                        .frame(width: 16, height: 16)
+                )
         }
-        .padding(14)
-        .background(RSMSTheme.cream)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(RSMSTheme.border, lineWidth: 1)
+                .stroke(scannerVM.scanMode.badgeColor.opacity(0.25), lineWidth: 1)
         )
     }
 
@@ -180,7 +165,7 @@ struct InventoryBarcodeScannerView: View {
                 .foregroundStyle(RSMSTheme.textTertiary.opacity(0.7))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(RSMSTheme.cream)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -223,7 +208,7 @@ struct InventoryBarcodeScannerView: View {
             }
         }
         .padding(16)
-        .background(RSMSTheme.cream)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -261,7 +246,7 @@ struct InventoryBarcodeScannerView: View {
                     }
                 }
             }
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -383,15 +368,15 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
 
 // MARK: - Previews
 
-#Preview("Scanner") {
-    InventoryBarcodeScannerView()
+#Preview("Stock In") {
+    InventoryBarcodeScannerView(initialMode: .stockIn)
         .environment(AppViewModel())
 }
 
-#Preview("Scanner — In Tab") {
+#Preview("Verify") {
     NavigationStack {
-        InventoryBarcodeScannerView()
-            .navigationTitle("Scan Item")
+        InventoryBarcodeScannerView(initialMode: .verification)
+            .navigationTitle("Verify Inventory")
             .navigationBarTitleDisplayMode(.inline)
     }
     .environment(AppViewModel())

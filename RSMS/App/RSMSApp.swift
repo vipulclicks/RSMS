@@ -16,6 +16,9 @@ struct RSMSApp: App {
             ContentView()
                 .environment(appVM)
                 .environment(appVM.dataStore)
+                .task {
+                    await VideoConsultationNotificationService.shared.requestPermission()
+                }
         }
     }
 }

@@ -143,10 +143,10 @@ struct NotifyBoutiqueManagerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.8))
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(RSMSTheme.surfacePrimary.opacity(0.6), lineWidth: 1)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
                 )
         )
         .shadow(color: RSMSTheme.textPrimary.opacity(0.06), radius: 8, x: 0, y: 4)
@@ -177,7 +177,7 @@ struct NotifyBoutiqueManagerView: View {
                 // Product Image Placeholder
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(RSMSTheme.surfacePrimary.opacity(0.3))
+                        .fill(RSMSTheme.surfaceSecondary.opacity(0.3))
                         .frame(width: 56, height: 56)
                     Image(systemName: iconForCategory(item.product.category))
                         .font(.title2)
@@ -215,7 +215,7 @@ struct NotifyBoutiqueManagerView: View {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(RSMSTheme.surfacePrimary.opacity(0.4))
+                            .fill(RSMSTheme.surfaceSecondary.opacity(0.4))
                             .frame(height: 8)
                         Capsule()
                             .fill(item.statusColor)
@@ -254,7 +254,7 @@ struct NotifyBoutiqueManagerView: View {
                     .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(item.isManagerNotified ? RSMSTheme.surfacePrimary.opacity(0.5) : RSMSTheme.primary)
+                            .fill(item.isManagerNotified ? RSMSTheme.surfaceSecondary.opacity(0.5) : RSMSTheme.primary)
                     )
                 }
                 .disabled(item.isManagerNotified)
@@ -263,10 +263,10 @@ struct NotifyBoutiqueManagerView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.85))
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(item.isManagerNotified ? RSMSTheme.success.opacity(0.3) : RSMSTheme.textPrimary.opacity(0.12), lineWidth: 1)
+                        .stroke(item.isManagerNotified ? RSMSTheme.success.opacity(0.3) : RSMSTheme.border, lineWidth: 1)
                 )
         )
         .shadow(color: RSMSTheme.textPrimary.opacity(0.06), radius: 10, x: 0, y: 4)
@@ -317,10 +317,10 @@ struct NotifyBoutiqueManagerView: View {
         .padding(.vertical, 10)
         .background(
             Capsule()
-                .fill(RSMSTheme.surfacePrimary.opacity(0.35))
+                .fill(RSMSTheme.surfaceSecondary.opacity(0.35))
                 .overlay(
                     Capsule()
-                        .stroke(RSMSTheme.surfacePrimary.opacity(0.5), lineWidth: 1)
+                        .stroke(RSMSTheme.surfaceSecondary.opacity(0.5), lineWidth: 1)
                 )
         )
     }
@@ -377,7 +377,7 @@ struct NotifyBoutiqueManagerView: View {
                 }
                 
                 Divider()
-                    .background(RSMSTheme.surfacePrimary)
+                    .background(RSMSTheme.surfaceSecondary)
                 
                 HStack {
                     Image(systemName: "clock")
@@ -389,7 +389,7 @@ struct NotifyBoutiqueManagerView: View {
                 .foregroundColor(RSMSTheme.textPrimary.opacity(0.5))
             }
             .padding(16)
-            .background(RSMSTheme.surfacePrimary.opacity(0.3))
+            .background(RSMSTheme.surfaceSecondary.opacity(0.3))
             .cornerRadius(12)
             
             // Duplicate prevention notice

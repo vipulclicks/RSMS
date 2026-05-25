@@ -44,6 +44,7 @@ final class ClientSizePreferencesViewModel {
     var shoppingPref: String = "VIP Appointment"
     var additionalNotes: String = "Prefers private viewing room. Champagne on arrival."
 
+    
     // MARK: - UI State
     var showSuccessBanner: Bool = false
 

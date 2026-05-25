@@ -9,7 +9,7 @@ struct RSMSCardModifier: ViewModifier {
             .padding(padding)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(RSMSTheme.surfacePrimary)
+                    .fill(RSMSTheme.surfaceSecondary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(RSMSTheme.border, lineWidth: 1)
