@@ -74,29 +74,39 @@ struct LuxuryPicker: View {
                 .font(.caption)
                 .foregroundStyle(RSMSTheme.textSecondary)
 
-            Menu {
-                ForEach(options, id: \.self) { option in
-                    Button(option) { selection = option }
+            // Styled static picker container
+            HStack {
+                Text(selection.isEmpty ? "Select" : selection)
+                    .foregroundStyle(
+                        selection.isEmpty ? RSMSTheme.textSecondary : RSMSTheme.textPrimary
+                    )
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(RSMSTheme.background)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(RSMSTheme.border, lineWidth: 1)
+            )
+            // Invisible menu overlay to capture taps and display options
+            .overlay {
+                Menu {
+                    ForEach(options, id: \.self) { option in
+                        Button(option) {
+                            // Dismiss keyboard first to prevent layout jumping
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                            selection = option
+                        }
+                    }
+                } label: {
+                    Color.clear
+                        .contentShape(Rectangle())
                 }
-            } label: {
-                HStack {
-                    Text(selection.isEmpty ? "Select" : selection)
-                        .foregroundStyle(
-                            selection.isEmpty ? RSMSTheme.textSecondary : RSMSTheme.textPrimary
-                        )
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                }
-                .padding(.vertical, 12)
-                .padding(.horizontal, 16)
-                .background(RSMSTheme.background)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(RSMSTheme.border, lineWidth: 1)
-                )
             }
         }
     }

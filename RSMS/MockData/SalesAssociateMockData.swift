@@ -130,7 +130,11 @@ extension Appointment {
         reminderSentAt: .now,
         videoLink: nil,
         notes: "Anniversary gift consultation — wants to see diamond collection",
-        createdAt: .now
+        createdAt: .now,
+        reminderTimingHours: 24,
+        reminderChannel: "Email",
+        reminderStatus: "Sent",
+        reminderError: nil
     )
 
     static let previewVideo = Appointment(
@@ -145,7 +149,11 @@ extension Appointment {
         reminderSentAt: nil,
         videoLink: "https://meet.lumiere.com/raj-session",
         notes: "Follow-up on Chronograph collection",
-        createdAt: .now
+        createdAt: .now,
+        reminderTimingHours: 1,
+        reminderChannel: "SMS",
+        reminderStatus: "Pending",
+        reminderError: nil
     )
 
     static let all: [Appointment] = [.preview, .previewVideo]

@@ -31,7 +31,7 @@ final class LoginViewModel {
                 icon: "person.crop.circle.fill",
                 userName: "Lucas Dubois",
                 description: "Clienteling, appointments & remote selling"
-            )
+            ) 
         case .inventoryController:
             return RoleInfo(
                 icon: "shippingbox.fill",
