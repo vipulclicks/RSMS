@@ -91,9 +91,16 @@ class SupabaseAuth {
         }
     }
     
+    struct SignupRequest: Encodable {
+        let email: String
+        let password: String
+        let data: [String: String]?
+    }
+    
     /// Create a new user with Email and Password.
-    /// - Returns: A valid AuthSession or user ID depending on GoTrue configuration. We return AuthSession for simplicity.
-    func signUp(email: String, password: String) async throws -> AuthSession {
+    /// Note: Metadata is passed here so the backend trigger can read `raw_user_meta_data` to set `store_id` and `role` if configured to do so.
+    /// - Returns: The AuthUser containing the generated ID.
+    func signUp(email: String, password: String, userData: [String: String]? = nil) async throws -> AuthUser {
         guard let url = URL(string: "\(authURL)/signup") else {
             throw URLError(.badURL)
         }
@@ -103,10 +110,7 @@ class SupabaseAuth {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         
-        let body: [String: String] = [
-            "email": email,
-            "password": password
-        ]
+        let body = SignupRequest(email: email, password: password, data: userData)
         request.httpBody = try JSONEncoder().encode(body)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -117,23 +121,23 @@ class SupabaseAuth {
         
         if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
             do {
+                // Try to decode as full session (if auto-confirm is enabled)
                 let session = try JSONDecoder().decode(AuthSession.self, from: data)
-                return session
+                return session.user
             } catch {
-                // If it fails to decode a session, maybe it just returned a user object directly
-                if let user = try? JSONDecoder().decode(AuthUser.self, from: data) {
-                    return AuthSession(accessToken: "", tokenType: "", expiresIn: 0, refreshToken: "", user: user)
+                do {
+                    // Try to decode as AuthUser directly (if email confirmation is required)
+                    let user = try JSONDecoder().decode(AuthUser.self, from: data)
+                    return user
+                } catch {
+                    throw NSError(domain: "SupabaseAuth", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to decode signup response: \(error.localizedDescription)"])
                 }
-                throw error
             }
         } else {
-            let responseString = String(data: data, encoding: .utf8) ?? "Unknown response"
-            print("Signup failed with status \(httpResponse.statusCode). Response: \(responseString)")
-            
             if let authError = try? JSONDecoder().decode(AuthError.self, from: data), let desc = authError.errorDescriptionString {
                 throw NSError(domain: "SupabaseAuth", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: desc])
             }
-            throw NSError(domain: "SupabaseAuth", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Sign up failed: \(responseString)"])
+            throw NSError(domain: "SupabaseAuth", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Sign up failed with status \(httpResponse.statusCode)"])
         }
     }
 }
