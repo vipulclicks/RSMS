@@ -123,14 +123,29 @@ struct AppointmentsInventoryView: View {
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                             
-                            Text(alert.product.category)
-                                .font(.caption2)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(RSMSTheme.surfaceTertiary)
-                                .clipShape(Capsule())
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                            
+                            HStack {
+                                Text(alert.product.category)
+                                    .font(.caption2)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(RSMSTheme.surfaceTertiary)
+                                    .clipShape(Capsule())
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                
+                                Spacer()
+                                
+                                Button {
+                                    dashboardVM.reorderItem(for: alert.product.id)
+                                } label: {
+                                    Text("Reorder")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundStyle(RSMSTheme.cream)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(RSMSTheme.danger)
+                                        .clipShape(Capsule())
+                                }
+                            }
                         }
                         .rsmsCard(padding: 16)
                     }
