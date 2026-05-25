@@ -36,10 +36,10 @@ struct SalesAssociateHomeView: View {
     @State private var showAppointmentsSheet = false
     @State private var appointmentVM: AppointmentViewModel?
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
-    @State private var showSidebarSheet = false
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -63,6 +63,11 @@ struct SalesAssociateHomeView: View {
             }
         }
         .tint(RSMSTheme.primary)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active && horizontalSizeClass == .regular {
+                columnVisibility = .automatic
+            }
+        }
     }
 
     // MARK: - Adaptivity Content Routing
@@ -74,70 +79,29 @@ struct SalesAssociateHomeView: View {
                 sidebar(appointmentVM)
             } detail: {
                 NavigationStack(path: $navigationPath) {
-                    detailView(appointmentVM)
+                    detailView(appointmentVM, section: selectedSection)
                 }
             }
             .navigationSplitViewStyle(.prominentDetail)
         } else {
-            ZStack(alignment: .leading) {
+            iphoneTabView(appointmentVM)
+        }
+    }
+    
+    private func iphoneTabView(_ appointmentVM: AppointmentViewModel) -> some View {
+        TabView(selection: $selectedSection) {
+            ForEach(SalesAssociateSection.allCases) { section in
                 NavigationStack(path: $navigationPath) {
-                    detailView(appointmentVM)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        showSidebarSheet = true
-                                    }
-                                } label: {
-                                    Image(systemName: "sidebar.left")
-                                        .foregroundStyle(RSMSTheme.primary)
-                                }
-                                .accessibilityLabel("Menu")
-                            }
-                        }
+                    detailView(appointmentVM, section: section)
                 }
-                
-                if showSidebarSheet {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                showSidebarSheet = false
-                            }
-                        }
-                        .zIndex(1)
-                    
-                    NavigationStack {
-                        sidebar(appointmentVM)
-                            .navigationBarTitleDisplayMode(.inline)
-                            .toolbar {
-                                ToolbarItem(placement: .topBarTrailing) {
-                                    Button {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            showSidebarSheet = false
-                                        }
-                                    } label: {
-                                        Image(systemName: "sidebar.right")
-                                            .foregroundStyle(RSMSTheme.primary)
-                                    }
-                                }
-                            }
-                    }
-                    .frame(width: min(UIScreen.main.bounds.width - 60, 320))
-                    .background(RSMSTheme.backgroundGradient)
-                    .shadow(color: Color.black.opacity(0.15), radius: 20, x: 5, y: 0)
-                    .padding(.top, 44)
-                    .padding(.bottom, 20)
-                    .transition(.move(edge: .leading))
-                    .zIndex(2)
-                    .onChange(of: selectedSection) { _ in
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            showSidebarSheet = false
-                        }
-                        navigationPath.removeLast(navigationPath.count)
-                    }
+                .tabItem {
+                    Label(section.rawValue, systemImage: section.icon)
                 }
+                .tag(Optional(section))
             }
+        }
+        .onChange(of: selectedSection) { _ in
+            navigationPath = NavigationPath()
         }
     }
 
@@ -160,7 +124,7 @@ struct SalesAssociateHomeView: View {
                             errorBanner(appointmentVM: appointmentVM, error: error)
                         }
 
-                        DashboardHeaderView()
+                        DashboardHeaderView(onProfileTapped: { navigationPath.append("Profile") })
 
                         KPIGridView(appointmentVM: appointmentVM, viewWidth: geometry.size.width)
 
@@ -176,18 +140,6 @@ struct SalesAssociateHomeView: View {
                     }
                     .padding(.bottom, 32)
                 }
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    navigationPath.append("Profile")
-                } label: {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundStyle(RSMSTheme.primary)
-                }
-                .accessibilityLabel("Profile")
             }
         }
         .refreshable {
@@ -240,38 +192,38 @@ struct SalesAssociateHomeView: View {
             .accessibilityLabel("Sign Out")
         }
 
-        @ViewBuilder
-        private func detailView(_ appointmentVM: AppointmentViewModel) -> some View {
-            Group {
-                switch selectedSection {
-                case .dashboard:
-                    if horizontalSizeClass == .regular {
-                        ipadDashboardView(appointmentVM)
-                    } else {
-                        iphoneDashboardView(appointmentVM)
-                    }
-                case .clients:
-                    SAClientBrowserView(onSelectClient: { client in
-                        navigationPath.append(client)
-                    })
-                case .appointments:
-                    AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
+    @ViewBuilder
+    private func detailView(_ appointmentVM: AppointmentViewModel, section: SalesAssociateSection?) -> some View {
+        Group {
+            switch section {
+            case .dashboard:
+                if horizontalSizeClass == .regular {
+                    ipadDashboardView(appointmentVM)
+                } else {
+                    iphoneDashboardView(appointmentVM)
+                }
+            case .clients:
+                SAClientBrowserView(onSelectClient: { client in
+                    navigationPath.append(client)
+                })
+            case .appointments:
+                AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
 //                case .selling:
 //                    AssistedSellingView()
 //                case .pos:
 //                    POSCheckoutView()
 //                case .omnichannel:
 //                    OmnichannelView()
-                case .profile:
-                    SalesAssociateProfileView()
-                case .none:
-                    if horizontalSizeClass == .regular {
-                        ipadDashboardView(appointmentVM)
-                    } else {
-                        iphoneDashboardView(appointmentVM)
-                    }
+            case .profile:
+                SalesAssociateProfileView()
+            case .none:
+                if horizontalSizeClass == .regular {
+                    ipadDashboardView(appointmentVM)
+                } else {
+                    iphoneDashboardView(appointmentVM)
                 }
             }
+        }
             .navigationDestination(for: ClientProfile.self) { client in
                 ClientProfileDetailView(client: client, dataStore: appViewModel.dataStore, associateId: appViewModel.currentUser?.id ?? UUID())
             }
@@ -323,7 +275,7 @@ struct SalesAssociateHomeView: View {
                                 errorBanner(appointmentVM: appointmentVM, error: error)
                             }
 
-                            DashboardHeaderView()
+                            DashboardHeaderView(onProfileTapped: { navigationPath.append("Profile") })
                                 .padding(.horizontal, 4)
 
                             KPIGridView(appointmentVM: appointmentVM, viewWidth: width, isSidebarClosed: true)
@@ -345,20 +297,6 @@ struct SalesAssociateHomeView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.bottom, 32)
                     }
-                }
-            }
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        navigationPath.append("Profile")
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(RSMSTheme.primary)
-                    }
-                    .accessibilityLabel("Profile")
                 }
             }
         }
@@ -389,6 +327,7 @@ struct SalesAssociateHomeView: View {
 
 private struct DashboardHeaderView: View {
     @Environment(AppViewModel.self) private var appViewModel
+    var onProfileTapped: () -> Void
 
     var body: some View {
         let firstName = appViewModel.currentUser?.fullName.components(separatedBy: " ").first ?? "there"
@@ -397,22 +336,37 @@ private struct DashboardHeaderView: View {
 
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(greeting(for: .now)), \(firstName)")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                Text("Dashboard")
+                    .font(.system(size: 34, weight: .heavy, design: .default))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Text("\(greeting(for: .now)), \(firstName)")
+                    Text("•")
                     Image(systemName: "mappin.circle.fill")
-                        .font(.caption)
                         .foregroundStyle(RSMSTheme.primary)
                     Text(storeName)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(RSMSTheme.textSecondary)
             }
             Spacer()
+            
+            Button {
+                onProfileTapped()
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(.white)
+                        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+            .accessibilityLabel("Profile")
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -458,15 +412,15 @@ private struct KPIGridView: View {
         LazyVGrid(columns: columns, spacing: spacing) {
             KPICard(
                 icon: "indianrupeesign.circle.fill",
-                value: appointmentVM.todaySalesGoalTarget,
+                value: appointmentVM.todaySalesFormatted,
                 label: "Today's Sales",
-                trend: "+12% vs yesterday",
+                trend: nil,
                 trendColor: RSMSTheme.success
             )
 
             KPICard(
                 icon: "calendar.circle.fill",
-                value: String(appointmentVM.upcomingAppointments.count),
+                value: appointmentVM.todaysAppointmentsCount,
                 label: "Today's Appointments",
                 trend: nil,
                 iconColor: RSMSTheme.info
@@ -474,7 +428,7 @@ private struct KPIGridView: View {
 
             KPICard(
                 icon: "person.2.circle.fill",
-                value: "3",
+                value: appointmentVM.clientsServedTodayCount,
                 label: "Clients Served",
                 trend: nil,
                 iconColor: RSMSTheme.success
@@ -482,9 +436,7 @@ private struct KPIGridView: View {
 
             KPICard(
                 icon: "clock.circle.fill",
-                value: appointmentVM.upcomingAppointments.first.map {
-                    RSMSDateFormatter.dateTime.string(from: $0.dateTime)
-                } ?? "None today",
+                value: appointmentVM.nextAppointmentDisplay,
                 label: "Next Appointment",
                 trend: nil,
                 iconColor: RSMSTheme.primary
@@ -656,177 +608,300 @@ private struct QuickActionsSection: View {
 
 // MARK: - Client Browser & Row for Navigation Stack
 
+struct MockClientDisplay: Identifiable {
+    let id = UUID()
+    let name: String
+    let email: String
+    let activity: String
+    let tierText: String
+    let isVIP: Bool
+    
+    var profile: ClientProfile {
+        ClientProfile(id: id, fullName: name, email: email, phone: nil, preferredStoreId: nil, vipTier: tierText == "VIP" ? .prive : .standard, privacyConsentGiven: true, consentDate: nil, notes: nil, createdAt: Date(), updatedAt: Date(), shoeSize: nil, ringSize: nil, braceletSize: nil, necklaceLength: nil, wristSize: nil, beltSize: nil, favoriteCategories: nil, favoriteMetals: nil, favoriteGemstones: nil, shoeFitPreference: nil, preferredMetal: nil, preferredGemstone: nil, watchCasePreference: nil, strapMaterialPreference: nil, preferredBagSize: nil, preferredBagStyle: nil, preferredMaterial: nil, bucklePreference: nil, fragranceFamily: nil, fragranceStrength: nil, scentPreference: nil, preferredBrands: nil, favoriteColors: nil, stylePreference: nil, giftingPreference: nil, shoppingPreference: nil)
+    }
+}
+
+struct ClientGroup: Identifiable {
+    let id = UUID()
+    let letter: String
+    let clients: [MockClientDisplay]
+}
+
 struct SAClientBrowserView: View {
-    @Environment(DataStore.self) private var dataStore
     let onSelectClient: (ClientProfile) -> Void
     @State private var searchText = ""
-    @State private var showSearchBar = false
-    @State private var showOnboarding = false
+    @State private var selectedFilter = "All"
+    
+    let filters = ["All", "VIP", "Platinum", "Gold", "Silver"]
+    
+    let groupedClients: [ClientGroup] = [
+        ClientGroup(letter: "E", clients: [
+            MockClientDisplay(name: "Esther P.", email: "esther.prm@gmail.com", activity: "2d ago", tierText: "SILVER", isVIP: false)
+        ]),
+        ClientGroup(letter: "F", clients: [
+            MockClientDisplay(name: "FHH", email: "fhh@mail.com", activity: "1m ago", tierText: "STANDARD", isVIP: false)
+        ]),
+        ClientGroup(letter: "K", clients: [
+            MockClientDisplay(name: "Kushagra", email: "kushk@gmail.com", activity: "Today", tierText: "PLATINUM", isVIP: true),
+            MockClientDisplay(name: "Kavya", email: "kavya@gmail.com", activity: "5d ago", tierText: "VIP", isVIP: true)
+        ]),
+        ClientGroup(letter: "M", clients: [
+            MockClientDisplay(name: "Maroon", email: "maroon@gmail.com", activity: "3w ago", tierText: "STANDARD", isVIP: false)
+        ]),
+        ClientGroup(letter: "S", clients: [
+            MockClientDisplay(name: "Simon Pascal", email: "simonpascal@gmail.com", activity: "1w ago", tierText: "STANDARD", isVIP: false)
+        ])
+    ]
 
-    private var clients: [ClientProfile] {
-        dataStore.clients
-    }
-
-    private var filteredClients: [ClientProfile] {
-        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return clients }
-        return clients.filter {
-            $0.fullName.lowercased().contains(q) ||
-            ($0.email?.lowercased().contains(q) ?? false) ||
-            ($0.phone?.contains(q) ?? false)
+    private var filteredGroupedClients: [ClientGroup] {
+        var groups = groupedClients
+        
+        // 1. Filter by Tier
+        if selectedFilter != "All" {
+            let targetTier = selectedFilter.uppercased()
+            groups = groups.compactMap { group in
+                let filtered = group.clients.filter { $0.tierText == targetTier }
+                return filtered.isEmpty ? nil : ClientGroup(letter: group.letter, clients: filtered)
+            }
         }
+        
+        // 2. Filter by Search Text
+        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            groups = groups.compactMap { group in
+                let filtered = group.clients.filter {
+                    $0.name.lowercased().contains(q) ||
+                    $0.email.lowercased().contains(q)
+                }
+                return filtered.isEmpty ? nil : ClientGroup(letter: group.letter, clients: filtered)
+            }
+        }
+        
+        return groups
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if showSearchBar {
-                HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                    
-                    TextField("Search by name, email, or phone...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    
-                    if !searchText.isEmpty {
-                        Button {
-                            searchText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(RSMSTheme.textTertiary)
+        ZStack {
+            RSMSTheme.background
+                .ignoresSafeArea()
+            
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Clients")
+                                .font(.system(size: 34, weight: .heavy, design: .default))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            
+                            Text("\(filteredGroupedClients.flatMap { $0.clients }.count) contacts")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 12) {
+                            circleButton(icon: "slider.horizontal.3")
+                            circleButton(icon: "plus")
                         }
                     }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-            
-            List {
-                ForEach(filteredClients) { client in
-                    Button {
-                        onSelectClient(client)
-                    } label: {
-                        SAClientRow(client: client)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    
+                    // Search Bar
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        TextField("Search", text: $searchText)
+                            .foregroundStyle(RSMSTheme.textPrimary)
                     }
-                    .buttonStyle(.plain)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    .listRowSeparator(.hidden)
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(RSMSTheme.background)
-        }
-        .background(RSMSTheme.background)
-        .navigationTitle("Clients")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 16) {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            showSearchBar.toggle()
-                            if !showSearchBar {
-                                searchText = ""
+                    .padding(.horizontal, 20)
+                    .frame(height: 52)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(.white)
+                            .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+                    )
+                    .padding(.horizontal, 24)
+                    
+                    // Filter Pills
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(filters, id: \.self) { filter in
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        selectedFilter = filter
+                                    }
+                                } label: {
+                                    Text(filter)
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundStyle(selectedFilter == filter ? .white : RSMSTheme.textSecondary)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Capsule()
+                                                .fill(selectedFilter == filter ? RSMSTheme.primary : .white)
+                                                .shadow(color: .black.opacity(selectedFilter == filter ? 0.1 : 0.03), radius: 4, y: 2)
+                                        )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                            .fontWeight(.medium)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 4)
                     }
-                    .accessibilityLabel("Search Clients")
                     
-                    Button {
-                        showOnboarding = true
-                    } label: {
-                        Image(systemName: "person.badge.plus")
-                            .fontWeight(.medium)
+                    // Client Groups
+                    if filteredGroupedClients.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.2.slash")
+                                .font(.system(size: 48))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            Text("No clients found")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                        }
+                        .padding(.top, 60)
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 32) {
+                            ForEach(filteredGroupedClients) { group in
+                                VStack(alignment: .leading, spacing: 14) {
+                                    Text(group.letter)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                        .padding(.horizontal, 24)
+                                    
+                                    ForEach(group.clients) { client in
+                                        Button {
+                                            onSelectClient(client.profile)
+                                        } label: {
+                                            SAClientRow(client: client)
+                                                .padding(.horizontal, 24)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.bottom, 32)
                     }
-                    .accessibilityLabel("Add New Client")
                 }
             }
         }
-        .sheet(isPresented: $showOnboarding) {
-            NewClientOnboardingView()
-                .environment(dataStore)
-        }
-        .overlay {
-            if filteredClients.isEmpty {
-                ContentUnavailableView.search(text: searchText)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
+    }
+    
+    private func circleButton(icon: String) -> some View {
+        Button {
+            // Action
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(.white)
+                    .frame(width: 42, height: 42)
+                    .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(RSMSTheme.primary)
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
 private struct SAClientRow: View {
-    let client: ClientProfile
-
+    let client: MockClientDisplay
+    
     private var initials: String {
-        client.fullName.split(separator: " ").prefix(2)
+        client.name.split(separator: " ").prefix(2)
             .compactMap { $0.first.map(String.init) }.joined().uppercased()
     }
-
+    
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
+            // Avatar
             ZStack {
+                if client.isVIP {
+                    Circle()
+                        .stroke(RSMSTheme.gold, lineWidth: 1.5)
+                        .frame(width: 52, height: 52)
+                }
+                
                 Circle()
-                    .fill(RSMSTheme.primary.opacity(0.12))
+                    .fill(RSMSTheme.primary)
                     .frame(width: 48, height: 48)
+                
                 Text(initials)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
-                    .foregroundStyle(RSMSTheme.primary)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
             }
-
-            VStack(alignment: .leading, spacing: 3) {
+            
+            // Name, Badge & Email
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(client.fullName)
-                        .font(.system(size: 15, weight: .semibold, design: .serif))
+                    Text(client.name)
+                        .font(.system(size: 18, weight: .bold, design: .default))
                         .foregroundStyle(RSMSTheme.textPrimary)
-                    StatusBadge(
-                        text: client.vipTier.rawValue.uppercased(),
-                        color: tierColor(client.vipTier)
-                    )
+                    
+                    if client.tierText != "STANDARD" {
+                        Text(client.tierText)
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(badgeBackground, in: Capsule())
+                            .foregroundStyle(badgeForeground)
+                    }
                 }
-                if let contact = client.email ?? client.phone {
-                    Text(contact)
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .lineLimit(1)
-                }
+                
+                Text(client.email)
+                    .font(.system(size: 14))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .lineLimit(1)
             }
-
+            
             Spacer(minLength: 0)
-
-            if !client.privacyConsentGiven {
-                Image(systemName: "exclamationmark.shield.fill")
-                    .foregroundStyle(RSMSTheme.warning)
-                    .font(.caption)
-                    .accessibilityLabel("Privacy consent not given")
+            
+            // Activity & Chevron
+            VStack(alignment: .trailing, spacing: 8) {
+                Text(client.activity)
+                    .font(.system(size: 13))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(RSMSTheme.textTertiary)
             }
-
-            Image(systemName: "chevron.right")
-                .font(.footnote)
-                .foregroundStyle(RSMSTheme.textTertiary)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 12)
-        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+        )
+        .contentShape(Rectangle())
     }
-
-    private func tierColor(_ tier: VIPTier) -> Color {
-        switch tier {
-        case .standard: return RSMSTheme.textSecondary
-        case .silver:   return Color(red: 192/255, green: 192/255, blue: 192/255)
-        case .gold:     return RSMSTheme.primary
-        case .platinum: return Color(red: 176/255, green: 196/255, blue: 222/255)
-        case .prive:    return RSMSTheme.danger
+    
+    private var badgeBackground: Color {
+        switch client.tierText {
+        case "VIP": return .black
+        case "PLATINUM": return Color(red: 230/255, green: 230/255, blue: 245/255)
+        case "SILVER": return Color(white: 0.92)
+        case "GOLD": return Color(red: 250/255, green: 240/255, blue: 210/255)
+        default: return .clear
+        }
+    }
+    
+    private var badgeForeground: Color {
+        switch client.tierText {
+        case "VIP": return Color(red: 212/255, green: 175/255, blue: 55/255)
+        case "PLATINUM": return Color(red: 80/255, green: 60/255, blue: 120/255)
+        case "SILVER": return Color(white: 0.4)
+        case "GOLD": return Color(red: 160/255, green: 120/255, blue: 30/255)
+        default: return .clear
         }
     }
 }
