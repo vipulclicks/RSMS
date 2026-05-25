@@ -59,7 +59,7 @@ struct ShrinkageAnalysisView: View {
                 
                 kpiCard(
                     title: "LOSS VALUE",
-                    value: "$\(Int(shrinkageValue).formatted())",
+                    value: "₹\(Int(shrinkageValue).formatted())",
                     icon: "dollarsign.arrow.circlepath",
                     accentColor: RSMSTheme.danger
                 )
@@ -71,7 +71,7 @@ struct ShrinkageAnalysisView: View {
                     .tracking(1.5)
                     .foregroundStyle(RSMSTheme.textTertiary)
                 Spacer()
-                Text("$\(Int(totalInventoryValue).formatted())")
+                Text("₹\(Int(totalInventoryValue).formatted())")
                     .font(.subheadline.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -160,7 +160,7 @@ struct ShrinkageAnalysisView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textSecondary)
                 Spacer()
-                Text("$\(Int(value).formatted())")
+                Text("₹\(Int(value).formatted())")
                     .font(.subheadline.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -217,7 +217,7 @@ struct ShrinkageAnalysisView: View {
                             
                             Spacer()
                             
-                            Text("-$\(Int(lossValue).formatted())")
+                            Text("-₹\(Int(lossValue).formatted())")
                                 .font(.subheadline.bold())
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
