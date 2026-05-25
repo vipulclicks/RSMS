@@ -6,9 +6,9 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case dashboard    = "Dashboard"
     case clients  = "Clients"
     case appointments = "Appointments"
-    case selling      = "Assisted Selling"
-    case pos          = "POS & Checkout"
-    case omnichannel  = "Omnichannel"
+//    case selling      = "Assisted Selling"
+//    case pos          = "POS & Checkout"
+//    case omnichannel  = "Omnichannel"
     case profile      = "Profile"
 
     var id: String { rawValue }
@@ -18,9 +18,9 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
         case .dashboard:    return "square.grid.2x2.fill"
         case .clients:  return "person.crop.circle.fill"
         case .appointments: return "calendar"
-        case .selling:      return "wand.and.stars"
-        case .pos:          return "cart.fill"
-        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
+//        case .selling:      return "wand.and.stars"
+//        case .pos:          return "cart.fill"
+//        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
         case .profile:      return "person.circle.fill"
         }
     }
@@ -168,10 +168,10 @@ struct SalesAssociateHomeView: View {
 
                         QuickActionsSection(
                             columnsCount: 2,
-                            onNewClient: { showNewClientSheet = true },
-                            onNewSale: { navigationPath.append("POS") },
-                            onLookBuilder: { navigationPath.append("LookBuilder") },
-                            onOmnichannel: { navigationPath.append("Omnichannel") }
+                            onNewClient: { showNewClientSheet = true }
+//                            onNewSale: { navigationPath.append("POS") },
+//                            onLookBuilder: { navigationPath.append("LookBuilder") },
+//                            onOmnichannel: { navigationPath.append("Omnichannel") }
                         )
                     }
                     .padding(.bottom, 32)
@@ -256,12 +256,12 @@ struct SalesAssociateHomeView: View {
                     })
                 case .appointments:
                     AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
-                case .selling:
-                    AssistedSellingView()
-                case .pos:
-                    POSCheckoutView()
-                case .omnichannel:
-                    OmnichannelView()
+//                case .selling:
+//                    AssistedSellingView()
+//                case .pos:
+//                    POSCheckoutView()
+//                case .omnichannel:
+//                    OmnichannelView()
                 case .profile:
                     SalesAssociateProfileView()
                 case .none:
@@ -283,12 +283,12 @@ struct SalesAssociateHomeView: View {
                     })
                 case "Appointments":
                     AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
-                case "POS":
-                    POSCheckoutView()
-                case "LookBuilder":
-                    LookBuilderView()
-                case "Omnichannel":
-                    OmnichannelView()
+//                case "POS":
+//                    POSCheckoutView()
+//                case "LookBuilder":
+//                    LookBuilderView()
+//                case "Omnichannel":
+//                    OmnichannelView()
                 case "Profile":
                     SalesAssociateProfileView()
                 default:
@@ -333,10 +333,10 @@ struct SalesAssociateHomeView: View {
                                 
                                 QuickActionsSection(
                                     columnsCount: 4,
-                                    onNewClient: { showNewClientSheet = true },
-                                    onNewSale: { navigationPath.append("POS") },
-                                    onLookBuilder: { navigationPath.append("LookBuilder") },
-                                    onOmnichannel: { navigationPath.append("Omnichannel") }
+                                    onNewClient: { showNewClientSheet = true }
+//                                    onNewSale: { navigationPath.append("POS") },
+//                                    onLookBuilder: { navigationPath.append("LookBuilder") },
+//                                    onOmnichannel: { navigationPath.append("Omnichannel") }
                                 )
                             }
                             .padding(.horizontal, 24)
@@ -609,9 +609,9 @@ private struct QuickActionsSection: View {
 
     let columnsCount: Int
     let onNewClient: () -> Void
-    let onNewSale: () -> Void
-    let onLookBuilder: () -> Void
-    let onOmnichannel: () -> Void
+//    let onNewSale: () -> Void
+//    let onLookBuilder: () -> Void
+//    let onOmnichannel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -628,26 +628,26 @@ private struct QuickActionsSection: View {
                     onTap: onNewClient
                 )
                 
-                QuickActionCard(
-                    icon: "cart.badge.plus",
-                    label: "New Sale",
-                    color: RSMSTheme.info,
-                    onTap: onNewSale
-                )
-                
-                QuickActionCard(
-                    icon: "wand.and.stars",
-                    label: "Look Builder",
-                    color: RSMSTheme.warning,
-                    onTap: onLookBuilder
-                )
-                
-                QuickActionCard(
-                    icon: "shippingbox.and.arrow.backward",
-                    label: "Omnichannel",
-                    color: RSMSTheme.success,
-                    onTap: onOmnichannel
-                )
+//                QuickActionCard(
+//                    icon: "cart.badge.plus",
+//                    label: "New Sale",
+//                    color: RSMSTheme.info,
+//                    onTap: onNewSale
+//                )
+//                
+//                QuickActionCard(
+//                    icon: "wand.and.stars",
+//                    label: "Look Builder",
+//                    color: RSMSTheme.warning,
+//                    onTap: onLookBuilder
+//                )
+//                
+//                QuickActionCard(
+//                    icon: "shippingbox.and.arrow.backward",
+//                    label: "Omnichannel",
+//                    color: RSMSTheme.success,
+//                    onTap: onOmnichannel
+//                )
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 20)
