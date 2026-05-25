@@ -1343,26 +1343,26 @@ struct NewClientSheet: View {
                 }
 
                 Section("Sizing Preferences") {
-                    HStack {
-                        Text("Ring Size"); Spacer()
-                        TextField("e.g. 52", text: $ringSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Bracelet Size"); Spacer()
-                        TextField("e.g. 17 cm", text: $braceletSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Necklace Length"); Spacer()
-                        TextField("e.g. 45 cm", text: $necklaceLength).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Wrist Size"); Spacer()
-                        TextField("e.g. 16.5 cm", text: $wristSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
+                    LuxurySizeField(
+                        title: "Ring Size",
+                        text: $ringSize,
+                        presets: LuxurySizePresets.rings
+                    )
+                    LuxurySizeField(
+                        title: "Bracelet Size",
+                        text: $braceletSize,
+                        presets: LuxurySizePresets.bracelets
+                    )
+                    LuxurySizeField(
+                        title: "Necklace Length",
+                        text: $necklaceLength,
+                        presets: LuxurySizePresets.necklaces
+                    )
+                    LuxurySizeField(
+                        title: "Wrist Size",
+                        text: $wristSize,
+                        presets: LuxurySizePresets.wristSizes
+                    )
                 }
 
                 Section {

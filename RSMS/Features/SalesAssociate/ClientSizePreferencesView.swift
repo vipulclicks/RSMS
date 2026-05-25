@@ -100,7 +100,7 @@ struct ClientSizePreferencesView: View {
     private var shoesSection: some View {
         LuxuryFormCard(title: "Shoes", icon: "shoe.fill") {
             HStack(spacing: 20) {
-                LuxuryTextField(title: "Shoe Size", text: $viewModel.shoeSize)
+                LuxurySizeField(title: "Shoe Size", text: $viewModel.shoeSize, presets: LuxurySizePresets.shoes)
                 LuxuryPicker(title: "Fit Preference", selection: $viewModel.shoeFit, options: ["Regular", "Wide", "Narrow"])
             }
         }
@@ -109,10 +109,10 @@ struct ClientSizePreferencesView: View {
     private var jewellerySection: some View {
         LuxuryFormCard(title: "Jewellery", icon: "sparkles") {
             HStack(spacing: 20) {
-                LuxuryTextField(title: "Ring Size", text: $viewModel.ringSize)
-                LuxuryTextField(title: "Bracelet Size", text: $viewModel.braceletSize)
+                LuxurySizeField(title: "Ring Size", text: $viewModel.ringSize, presets: LuxurySizePresets.rings)
+                LuxurySizeField(title: "Bracelet Size", text: $viewModel.braceletSize, presets: LuxurySizePresets.bracelets)
             }
-            LuxuryTextField(title: "Necklace Length", text: $viewModel.necklaceLength)
+            LuxurySizeField(title: "Necklace Length", text: $viewModel.necklaceLength, presets: LuxurySizePresets.necklaces)
             
             HStack(spacing: 20) {
                 LuxuryPicker(title: "Preferred Metal", selection: $viewModel.preferredMetal, options: ["Gold", "Platinum", "Silver", "Rose Gold"])
@@ -124,7 +124,7 @@ struct ClientSizePreferencesView: View {
     private var watchesSection: some View {
         LuxuryFormCard(title: "Watches & Accessories", icon: "applewatch") {
             HStack(spacing: 20) {
-                LuxuryTextField(title: "Wrist Size", text: $viewModel.wristSize)
+                LuxurySizeField(title: "Wrist Size", text: $viewModel.wristSize, presets: LuxurySizePresets.wristSizes)
                 LuxuryTextField(title: "Case Preference", text: $viewModel.watchCasePref)
             }
             LuxuryPicker(title: "Strap Material", selection: $viewModel.strapMaterial, options: ["Leather", "Metal", "Rubber"])
@@ -144,7 +144,7 @@ struct ClientSizePreferencesView: View {
     private var beltsSection: some View {
         LuxuryFormCard(title: "Belts", icon: "figure.mixed.cardio") {
             HStack(spacing: 20) {
-                LuxuryTextField(title: "Belt Size", text: $viewModel.beltSize)
+                LuxurySizeField(title: "Belt Size", text: $viewModel.beltSize, presets: LuxurySizePresets.belts)
                 LuxuryTextField(title: "Buckle Preference", text: $viewModel.bucklePref)
             }
         }

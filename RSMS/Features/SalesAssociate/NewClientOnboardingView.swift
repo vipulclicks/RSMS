@@ -147,23 +147,23 @@ struct NewClientOnboardingView: View {
         VStack(spacing: 20) {
             LuxuryFormCard(title: "Shoes & Belts", icon: "shoe.fill") {
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Shoe Size", text: $viewModel.shoeSize)
+                    LuxurySizeField(title: "Shoe Size", text: $viewModel.shoeSize, presets: LuxurySizePresets.shoes)
                     LuxuryPicker(title: "Shoe Fit", selection: $viewModel.shoeFit, options: ["Regular", "Wide", "Narrow"])
                 }
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Belt Size", text: $viewModel.beltSize)
+                    LuxurySizeField(title: "Belt Size", text: $viewModel.beltSize, presets: LuxurySizePresets.belts)
                     LuxuryTextField(title: "Buckle Pref", text: $viewModel.bucklePref)
                 }
             }
 
             LuxuryFormCard(title: "Jewellery & Watches", icon: "sparkles") {
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Ring Size", text: $viewModel.ringSize)
-                    LuxuryTextField(title: "Bracelet Size", text: $viewModel.braceletSize)
+                    LuxurySizeField(title: "Ring Size", text: $viewModel.ringSize, presets: LuxurySizePresets.rings)
+                    LuxurySizeField(title: "Bracelet Size", text: $viewModel.braceletSize, presets: LuxurySizePresets.bracelets)
                 }
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Necklace Length", text: $viewModel.necklaceLength)
-                    LuxuryTextField(title: "Wrist Size", text: $viewModel.wristSize)
+                    LuxurySizeField(title: "Necklace Length", text: $viewModel.necklaceLength, presets: LuxurySizePresets.necklaces)
+                    LuxurySizeField(title: "Wrist Size", text: $viewModel.wristSize, presets: LuxurySizePresets.wristSizes)
                 }
                 HStack(spacing: 16) {
                     LuxuryPicker(title: "Preferred Metal", selection: $viewModel.preferredMetal, options: ["", "Gold", "Platinum", "Silver", "Rose Gold"])
