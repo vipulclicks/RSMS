@@ -191,6 +191,7 @@ struct StaffShiftPlanningView: View {
 struct StaffGoalCard: View {
     let staff: UserProfile
     var viewModel: SalesGoalViewModel
+    var onNameTap: (() -> Void)? = nil
     
     @State private var selectedPeriod: GoalPeriod = .monthly
     
@@ -199,9 +200,14 @@ struct StaffGoalCard: View {
         
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(staff.fullName)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.textPrimary)
+                Button {
+                    onNameTap?()
+                } label: {
+                    Text(staff.fullName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                .buttonStyle(.plain)
                 
                 Spacer()
                 

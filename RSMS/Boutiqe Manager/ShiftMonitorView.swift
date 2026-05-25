@@ -13,6 +13,7 @@ struct ShiftMonitorView: View {
     @Environment(AppViewModel.self) private var appVM
     @State private var vm = ShiftManagementViewModel()
     @State private var showAddSheet = false
+    @State private var shiftToEdit: StaffShift? = nil
     @State private var selectedStatus: ShiftStatus? = nil
     @State private var selectedRole: String? = nil
     @Namespace private var animation
@@ -62,6 +63,7 @@ struct ShiftMonitorView: View {
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button {
+                            shiftToEdit = nil
                             showAddSheet.toggle()
                         } label: {
                             HStack {
@@ -73,7 +75,7 @@ struct ShiftMonitorView: View {
                     }
                 }
                 .sheet(isPresented: $showAddSheet) {
-                    AddShiftView(vm: vm)
+                    AddShiftView(vm: vm, shiftToEdit: shiftToEdit)
                 }
             }
         }
@@ -233,8 +235,11 @@ struct ShiftMonitorView: View {
             } else {
                 LazyVGrid(columns: columns, spacing: 24) {
                     ForEach(filteredShifts) { shift in
-                        ShiftCardView(shift: shift, vm: vm)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        ShiftCardView(shift: shift, vm: vm) {
+                            shiftToEdit = shift
+                            showAddSheet = true
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
             }
@@ -282,14 +287,18 @@ struct ShiftCardView: View {
     @Environment(AppViewModel.self) private var appVM
     let shift: StaffShift
     let vm: ShiftManagementViewModel
+    var onEdit: () -> Void
 
     var body: some View {
         let name = vm.getStaffName(for: shift.staffId, dataStore: appVM.dataStore)
         let status = vm.status(for: shift)
         let progress = vm.progress(for: shift)
 
-        VStack(spacing: 0) {
-            // Main Content
+        Button {
+            onEdit()
+        } label: {
+            VStack(spacing: 0) {
+                // Main Content
             HStack(alignment: .center, spacing: 20) {
                 // Avatar
                 ZStack {
@@ -391,6 +400,8 @@ struct ShiftCardView: View {
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: RSMSTheme.border, radius: 20, x: 0, y: 10)
+        }
+        .buttonStyle(.plain)
     }
 
     private func statusColor(for status: ShiftStatus) -> Color {
@@ -408,15 +419,28 @@ struct AddShiftView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
     let vm: ShiftManagementViewModel
+    var shiftToEdit: StaffShift? = nil
+
+    enum ShiftBlock: String, CaseIterable, Identifiable {
+        case morning = "Morning (9:00 AM - 4:00 PM)"
+        case evening = "Evening (4:00 PM - 11:00 PM)"
+        var id: String { self.rawValue }
+        var startStr: String { self == .morning ? "09:00" : "16:00" }
+        var endStr: String { self == .morning ? "16:00" : "23:00" }
+    }
 
     @State private var staffId: UUID? = nil
-    @State private var startTime: Date = Date()
-    @State private var endTime: Date = Date().addingTimeInterval(3600 * 8)
+    @State private var selectedBlock: ShiftBlock = .morning
     @State private var selectedRole: String = "floor"
     @State private var notes: String = ""
     @State private var availableStaff: [UserProfile] = []
 
     private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge", "sales_associate"]
+    
+    private var isOverlapping: Bool {
+        guard let staffId = staffId else { return false }
+        return vm.hasOverlap(for: staffId, startTimeStr: selectedBlock.startStr, endTimeStr: selectedBlock.endStr, excludingShiftId: shiftToEdit?.id)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -432,7 +456,7 @@ struct AddShiftView: View {
                 
                 Spacer()
                 
-                Text("New Shift")
+                Text(shiftToEdit == nil ? "New Shift" : "Edit Shift")
                     .font(.headline.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
@@ -463,12 +487,17 @@ struct AddShiftView: View {
                             
                             Menu {
                                 ForEach(availableStaff) { user in
-                                    Button(user.fullName) { staffId = user.id }
+                                    Button("\(user.fullName) (\(user.role.displayName))") { staffId = user.id }
                                 }
                             } label: {
                                 HStack {
-                                    Text(staffId == nil ? "Select Staff" : (availableStaff.first(where: { $0.id == staffId })?.fullName ?? ""))
-                                        .foregroundStyle(staffId == nil ? RSMSTheme.textTertiary : RSMSTheme.textPrimary)
+                                    if let user = availableStaff.first(where: { $0.id == staffId }) {
+                                        Text("\(user.fullName) (\(user.role.displayName))")
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                    } else {
+                                        Text("Select Staff")
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
                                     Spacer()
                                     Image(systemName: "chevron.down")
                                         .foregroundStyle(RSMSTheme.textTertiary)
@@ -503,32 +532,27 @@ struct AddShiftView: View {
                             }
                         }
                         
-                        // Shift Timing (Start and End)
-                        HStack(spacing: 16) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Start Time *")
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(RSMSTheme.background)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
+                        // Shift Timing
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Shift Timing *")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
                             
-                            Spacer()
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("End Time *")
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                DatePicker("", selection: $endTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(RSMSTheme.background)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            Menu {
+                                ForEach(ShiftBlock.allCases) { block in
+                                    Button(block.rawValue) { selectedBlock = block }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(selectedBlock.rawValue)
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                                .padding()
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                         }
                         
@@ -548,26 +572,34 @@ struct AddShiftView: View {
                     .background(RSMSTheme.surfacePrimary)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     
+                    if isOverlapping {
+                        Text("This staff member already has an overlapping shift.")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.danger)
+                            .padding(.horizontal, 24)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
                     // Save Button
                     Button {
                         Task { await saveShift() }
                     } label: {
                         HStack {
-                            Text("Save Shift")
+                            Text(shiftToEdit == nil ? "Save Shift" : "Update Shift")
                         }
                         .font(.headline)
                         .foregroundStyle(RSMSTheme.cream)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(
-                            staffId == nil ? 
+                            (staffId == nil || isOverlapping) ? 
                             AnyShapeStyle(RSMSTheme.textTertiary) : 
                             AnyShapeStyle(RSMSTheme.primaryGradient)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: staffId == nil ? .clear : RSMSTheme.primaryDark.opacity(0.3), radius: 10, x: 0, y: 5)
+                        .shadow(color: (staffId == nil || isOverlapping) ? .clear : RSMSTheme.primaryDark.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
-                    .disabled(staffId == nil)
+                    .disabled(staffId == nil || isOverlapping)
                 }
                 .padding(24)
             }
@@ -582,27 +614,50 @@ struct AddShiftView: View {
                     print("Failed to load staff for AddShiftView: \(error)")
                 }
             }
+            
+            if let edit = shiftToEdit {
+                staffId = edit.staffId
+                selectedRole = edit.role
+                notes = edit.notes ?? ""
+                
+                if edit.startTime == "16:00" {
+                    selectedBlock = .evening
+                } else {
+                    selectedBlock = .morning
+                }
+            }
         }
     }
 
     private func saveShift() async {
         guard let staffId = staffId else { return }
         
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
+        if let edit = shiftToEdit {
+            let updatedShift = StaffShift(
+                id: edit.id,
+                staffId: staffId,
+                storeId: edit.storeId,
+                shiftDate: edit.shiftDate,
+                startTime: selectedBlock.startStr,
+                endTime: selectedBlock.endStr,
+                role: selectedRole,
+                notes: notes.isEmpty ? nil : notes
+            )
+            await vm.updateShift(updatedShift, dataStore: appVM.dataStore)
+        } else {
+            let newShift = StaffShift(
+                id: UUID(),
+                staffId: staffId,
+                storeId: appVM.currentStoreId ?? UUID(),
+                shiftDate: Date(),
+                startTime: selectedBlock.startStr,
+                endTime: selectedBlock.endStr,
+                role: selectedRole,
+                notes: notes.isEmpty ? nil : notes
+            )
+            await vm.addShift(newShift, dataStore: appVM.dataStore)
+        }
         
-        let newShift = StaffShift(
-            id: UUID(),
-            staffId: staffId,
-            storeId: appVM.currentStoreId ?? UUID(),
-            shiftDate: Date(),
-            startTime: f.string(from: startTime),
-            endTime: f.string(from: endTime),
-            role: selectedRole,
-            notes: notes.isEmpty ? nil : notes
-        )
-        
-        await vm.addShift(newShift, dataStore: appVM.dataStore)
         dismiss()
     }
 }

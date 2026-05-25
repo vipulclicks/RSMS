@@ -181,7 +181,11 @@ struct PerformanceView: View {
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     ForEach(salesGoalVM.availableStaff) { staff in
-                        StaffGoalCard(staff: staff, viewModel: salesGoalVM)
+                        StaffGoalCard(staff: staff, viewModel: salesGoalVM) {
+                            salesGoalVM.draftSelectedStaff = staff
+                            salesGoalVM.loadPreviousGoal()
+                            navPath.append(.assignGoalForm)
+                        }
                     }
                 }
             }

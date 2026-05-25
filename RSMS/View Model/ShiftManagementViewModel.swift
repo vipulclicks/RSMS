@@ -139,4 +139,43 @@ class ShiftManagementViewModel {
             self.errorMessage = error.localizedDescription
         }
     }
+    
+    @MainActor
+    func updateShift(_ shift: StaffShift, dataStore: DataStore) async {
+        do {
+            try await dataStore.updateStaffShift(shift)
+            withAnimation {
+                if let i = shifts.firstIndex(where: { $0.id == shift.id }) {
+                    shifts[i] = shift
+                }
+            }
+        } catch {
+            print("Failed to update shift: \(error)")
+            self.errorMessage = error.localizedDescription
+        }
+    }
+    
+    // Validation
+    func hasOverlap(for staffId: UUID, startTimeStr: String, endTimeStr: String, excludingShiftId: UUID? = nil) -> Bool {
+        // Find today's shifts for this staff member (excluding the one being edited)
+        let staffsTodayShifts = shifts.filter { 
+            $0.staffId == staffId && 
+            Calendar.current.isDateInToday($0.shiftDate) && 
+            $0.id != excludingShiftId
+        }
+        
+        for shift in staffsTodayShifts {
+            // "HH:mm" strings can be compared lexicographically for overlaps 
+            // because they are zero-padded 24-hour time.
+            let existingStart = shift.startTime
+            let existingEnd = shift.endTime
+            
+            // Overlap condition:
+            // A overlaps B if (A.start < B.end) AND (A.end > B.start)
+            if startTimeStr < existingEnd && endTimeStr > existingStart {
+                return true
+            }
+        }
+        return false
+    }
 }
