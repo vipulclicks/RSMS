@@ -155,6 +155,20 @@ final class DataStore {
         try await api.update("user_profiles", id: user.id, record: user)
         if let i = users.firstIndex(where: { $0.id == user.id }) { users[i] = user }
     }
+    
+    func updateEmployeeProfile(_ profile: UserProfile) async throws {
+        // Explicitly update the user_profiles table. 
+        // The backend trigger auto-creates the row on auth.users insert.
+        // We use UPDATE instead of INSERT to avoid duplicate key errors.
+        try await api.update("user_profiles", id: profile.id, record: profile)
+        
+        // Ensure local consistency by checking if already fetched
+        if let i = users.firstIndex(where: { $0.id == profile.id }) { 
+            users[i] = profile 
+        } else {
+            users.append(profile)
+        }
+    }
 
     func deleteUser(id: UUID) async throws {
         try await api.delete("user_profiles", id: id)

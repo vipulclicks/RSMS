@@ -188,6 +188,11 @@ struct StoreDashboardView: View {
     }
     
     // MARK: - Staff Section
+    private let staffColumns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader(
@@ -195,26 +200,27 @@ struct StoreDashboardView: View {
                 subtitle: "\(dashboardVM.shifts.count) team members"
             )
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(dashboardVM.shifts.prefix(3)) { shift in
-                        staffShiftCard(shift)
-                            .frame(width: 260)
-                    }
-                    
-                    if dashboardVM.shifts.count > 3 {
-                        NavigationLink(destination: StaffView()) {
-                            HStack {
-                                Text("See All")
-                                    .font(.subheadline.weight(.semibold))
-                                Image(systemName: "chevron.right")
-                            }
-                            .foregroundStyle(RSMSTheme.primaryDark)
-                            .padding(.horizontal, 24)
-                            .frame(maxHeight: .infinity)
-                            .background(RSMSTheme.surfaceSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+            LazyVGrid(columns: staffColumns, spacing: 16) {
+                ForEach(dashboardVM.shifts.prefix(4)) { shift in
+                    staffShiftCard(shift)
+                }
+                
+                if dashboardVM.shifts.count > 4 {
+                    NavigationLink(destination: StaffView()) {
+                        VStack(spacing: 12) {
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundStyle(RSMSTheme.primaryDark)
+                            Text("See All")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.primaryDark)
+                            Text("\(dashboardVM.shifts.count - 4) more")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
                         }
+                        .frame(maxWidth: .infinity, minHeight: 180)
+                        .background(RSMSTheme.surfaceSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
                 }
             }
@@ -223,43 +229,139 @@ struct StoreDashboardView: View {
     
     private func staffShiftCard(_ shift: StaffShift) -> some View {
         let name = appVM.dataStore.userName(for: shift.staffId)
+        let status = shiftStatus(for: shift)
+        let progress = shiftProgress(for: shift)
         
-        return HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.gold.opacity(0.1))
-                    .frame(width: 44, height: 44)
-                
-                Text(String(name.prefix(1)))
-                    .font(.headline)
-                    .foregroundStyle(RSMSTheme.gold)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                
-                Text(shift.role.capitalized)
-                    .font(.caption)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(shift.startTime) – \(shift.endTime)")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.gold)
-                
-                if let notes = shift.notes {
-                    Text(notes)
-                        .font(.caption2)
-                        .foregroundStyle(RSMSTheme.textTertiary)
+        return VStack(alignment: .leading, spacing: 0) {
+            // Top section: Avatar + Name + Role badge
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(RSMSTheme.surfaceTertiary)
+                        .frame(width: 52, height: 52)
+                    
+                    // Circular progress background
+                    Circle()
+                        .stroke(RSMSTheme.border, lineWidth: 3)
+                        .frame(width: 52, height: 52)
+                    
+                    // Circular progress fill
+                    Circle()
+                        .trim(from: 0.0, to: progress)
+                        .stroke(statusColor(for: status), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .frame(width: 52, height: 52)
+                        .rotationEffect(.degrees(-90))
+                        
+                    Text(String(name.prefix(1)))
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(RSMSTheme.primaryDark)
                 }
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(name)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12))
+                        Text("\(shift.startTime) – \(shift.endTime)")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                }
+                
+                Spacer(minLength: 0)
+            }
+            .padding(18)
+            
+            // Role badge + Status
+            HStack {
+                Text(shift.role.replacingOccurrences(of: "_", with: " ").capitalized)
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(0.8)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(RSMSTheme.surfaceTertiary)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .clipShape(Capsule())
+                
+                Spacer()
+                
+                Text(status)
+                    .font(.system(size: 10, weight: .black))
+                    .tracking(1.2)
+                    .foregroundStyle(statusColor(for: status))
+            }
+            .padding(.horizontal, 18)
+            .padding(.bottom, 14)
+            
+            // Notes footer
+            if let notes = shift.notes, !notes.isEmpty {
+                Divider().overlay(RSMSTheme.border)
+                Text(notes)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .lineLimit(2)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
             }
         }
-        .rsmsCard(padding: 16)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: RSMSTheme.border, radius: 15, x: 0, y: 5)
+    }
+    
+    // MARK: - Shift Helpers
+    private func shiftStatus(for shift: StaffShift) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        guard let start = formatter.date(from: shift.startTime),
+              let end = formatter.date(from: shift.endTime) else {
+            return "UPCOMING"
+        }
+        
+        let now = Date()
+        let cal = Calendar.current
+        
+        let startToday = cal.date(bySettingHour: cal.component(.hour, from: start), minute: cal.component(.minute, from: start), second: 0, of: now) ?? now
+        let endToday = cal.date(bySettingHour: cal.component(.hour, from: end), minute: cal.component(.minute, from: end), second: 0, of: now) ?? now
+        
+        if now < startToday { return "UPCOMING" }
+        if now > endToday { return "ENDED" }
+        return "ACTIVE"
+    }
+    
+    private func shiftProgress(for shift: StaffShift) -> Double {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        guard let start = formatter.date(from: shift.startTime),
+              let end = formatter.date(from: shift.endTime) else {
+            return 0.0
+        }
+        
+        let now = Date()
+        let cal = Calendar.current
+        
+        let startToday = cal.date(bySettingHour: cal.component(.hour, from: start), minute: cal.component(.minute, from: start), second: 0, of: now) ?? now
+        let endToday = cal.date(bySettingHour: cal.component(.hour, from: end), minute: cal.component(.minute, from: end), second: 0, of: now) ?? now
+        
+        if now < startToday { return 0.0 }
+        if now > endToday { return 1.0 }
+        
+        let totalDuration = endToday.timeIntervalSince(startToday)
+        let elapsed = now.timeIntervalSince(startToday)
+        return max(0.0, min(1.0, elapsed / totalDuration))
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status {
+        case "ACTIVE": return RSMSTheme.primaryDark
+        case "UPCOMING": return RSMSTheme.primary
+        case "ENDED": return RSMSTheme.textSecondary
+        default: return RSMSTheme.textSecondary
+        }
     }
     
     private func metricRow(label: String, value: String, color: Color) -> some View {

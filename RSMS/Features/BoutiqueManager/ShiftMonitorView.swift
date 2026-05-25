@@ -60,17 +60,15 @@ struct ShiftMonitorView: View {
                 .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItem(placement: .primaryAction) {
                         Button {
                             showAddSheet.toggle()
                         } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(RSMSTheme.primaryDark)
-                                .padding(10)
-                                .background(.ultraThinMaterial, in: Circle())
-                                .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
-                                .shadow(color: RSMSTheme.textPrimary.opacity(0.1), radius: 6, x: 0, y: 3)
+                            HStack {
+                                Image(systemName: "calendar.badge.plus")
+                                Text("Add Shift")
+                            }
+                            .font(.subheadline.weight(.semibold))
                         }
                     }
                 }
@@ -145,7 +143,7 @@ struct ShiftMonitorView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(RSMSTheme.surfacePrimary)
                 .shadow(color: RSMSTheme.border, radius: 15, x: 0, y: 5)
         )
     }
@@ -225,7 +223,8 @@ struct ShiftMonitorView: View {
     // MARK: - Shifts List
     private var shiftsList: some View {
         let columns = [
-            GridItem(.adaptive(minimum: 400, maximum: .infinity), spacing: 24)
+            GridItem(.flexible(), spacing: 24),
+            GridItem(.flexible(), spacing: 24)
         ]
         
         return VStack(spacing: 20) {
@@ -297,6 +296,17 @@ struct ShiftCardView: View {
                     Circle()
                         .fill(RSMSTheme.surfaceTertiary)
                         .frame(width: 60, height: 60)
+                        
+                    Circle()
+                        .stroke(RSMSTheme.border, lineWidth: 3)
+                        .frame(width: 60, height: 60)
+                        
+                    Circle()
+                        .trim(from: 0.0, to: progress)
+                        .stroke(statusColor(for: status), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .frame(width: 60, height: 60)
+                        .rotationEffect(.degrees(-90))
+                        
                     Text(String(name.prefix(1)))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundStyle(RSMSTheme.primaryDark)
@@ -340,35 +350,7 @@ struct ShiftCardView: View {
             }
             .padding(24)
 
-            // Minimalist Progress Bar
-            if status != .upcoming {
-                VStack(spacing: 8) {
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(RSMSTheme.surfaceTertiary)
-                            Capsule()
-                                .fill(statusColor(for: status))
-                                .frame(width: max(0, geo.size.width * progress))
-                        }
-                    }
-                    .frame(height: 4)
-                    .clipShape(Capsule())
-                    
-                    HStack {
-                        Text("Progress")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                            .textCase(.uppercase)
-                        Spacer()
-                        Text("\(Int(progress * 100))%")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(statusColor(for: status))
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 20)
-            }
+            // Minimalist Progress Bar removed in favor of circular avatar progress
 
             Divider().overlay(RSMSTheme.border)
 
@@ -404,9 +386,9 @@ struct ShiftCardView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(.regularMaterial)
+            .background(RSMSTheme.surfaceTertiary)
         }
-        .background(.ultraThinMaterial)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: RSMSTheme.border, radius: 20, x: 0, y: 10)
     }
@@ -437,61 +419,167 @@ struct AddShiftView: View {
     private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge", "sales_associate"]
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Staff Member") {
-                    Picker("Select Staff", selection: $staffId) {
-                        Text("Select...").tag(UUID?.none)
-                        ForEach(availableStaff) { user in
-                            Text(user.fullName).tag(Optional(user.id))
-                        }
-                    }
-                    .tint(RSMSTheme.primaryDark)
-                }
-
-                Section("Shift Timing") {
-                    DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
-                    DatePicker("End Time", selection: $endTime, displayedComponents: .hourAndMinute)
-                }
-
-                Section("Role") {
-                    Picker("Assigned Role", selection: $selectedRole) {
-                        ForEach(availableRoles, id: \.self) { role in
-                            Text(role.replacingOccurrences(of: "_", with: " ").capitalized).tag(role)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(RSMSTheme.primaryDark)
-                }
-
-                Section("Notes") {
-                    TextField("Optional instructions...", text: $notes)
-                }
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(Capsule())
+                
+                Spacer()
+                
+                Text("New Shift")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                Spacer()
+                
+                // Invisible placeholder for balance
+                Button("Cancel") {}.opacity(0)
+                    .padding(.horizontal, 16)
             }
-            .navigationTitle("New Shift")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        Task { await saveShift() }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Form Card
+                    VStack(alignment: .leading, spacing: 24) {
+                        Label("SHIFT DETAILS", systemImage: "clock.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .tracking(1)
+                        
+                        // Staff Member
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Staff Member *")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            
+                            Menu {
+                                ForEach(availableStaff) { user in
+                                    Button(user.fullName) { staffId = user.id }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(staffId == nil ? "Select Staff" : (availableStaff.first(where: { $0.id == staffId })?.fullName ?? ""))
+                                        .foregroundStyle(staffId == nil ? RSMSTheme.textTertiary : RSMSTheme.textPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                                .padding()
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        
+                        // Role
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Role *")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            
+                            Menu {
+                                ForEach(availableRoles, id: \.self) { role in
+                                    Button(role.replacingOccurrences(of: "_", with: " ").capitalized) { selectedRole = role }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(selectedRole.replacingOccurrences(of: "_", with: " ").capitalized)
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                                .padding()
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        
+                        // Shift Timing (Start and End)
+                        HStack(spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Start Time *")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("End Time *")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                DatePicker("", selection: $endTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        
+                        // Notes
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Notes")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            
+                            TextField("Optional instructions...", text: $notes)
+                                .padding()
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
-                    .fontWeight(.bold)
-                    .foregroundStyle(RSMSTheme.primaryDark)
+                    .padding(24)
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    
+                    // Save Button
+                    Button {
+                        Task { await saveShift() }
+                    } label: {
+                        HStack {
+                            Text("Save Shift")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.cream)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            staffId == nil ? 
+                            AnyShapeStyle(RSMSTheme.textTertiary) : 
+                            AnyShapeStyle(RSMSTheme.primaryGradient)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: staffId == nil ? .clear : RSMSTheme.primaryDark.opacity(0.3), radius: 10, x: 0, y: 5)
+                    }
                     .disabled(staffId == nil)
                 }
+                .padding(24)
             }
-            .task {
-                if let storeId = appVM.currentStoreId {
-                    do {
-                        try await appVM.dataStore.fetchUsers(storeId: storeId)
-                        availableStaff = appVM.dataStore.users
-                    } catch {
-                        print("Failed to load staff for AddShiftView: \(error)")
-                    }
+        }
+        .background(RSMSTheme.background.ignoresSafeArea())
+        .task {
+            if let storeId = appVM.currentStoreId {
+                do {
+                    try await appVM.dataStore.fetchUsers(storeId: storeId)
+                    availableStaff = appVM.dataStore.users
+                } catch {
+                    print("Failed to load staff for AddShiftView: \(error)")
                 }
             }
         }

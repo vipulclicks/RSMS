@@ -22,19 +22,19 @@ struct CreateAssociateView: View {
         NavigationStack {
             Form {
                 Section("Personal Details") {
-                    TextField("Full Name (full_name)", text: $full_name)
+                    TextField("Full Name", text: $full_name)
                         .textContentType(.name)
                     
-                    TextField("Email (email)", text: $email)
+                    TextField("Email", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .textContentType(.emailAddress)
                     
-                    TextField("Phone (phone)", text: $phone)
+                    TextField("Phone", text: $phone)
                         .keyboardType(.phonePad)
                         .textContentType(.telephoneNumber)
                         
-                    TextField("Avatar URL (avatar_url)", text: $avatar_url)
+                    TextField("Avatar URL", text: $avatar_url)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .textContentType(.URL)
@@ -49,13 +49,13 @@ struct CreateAssociateView: View {
                 }
                 
                 Section("Employment") {
-                    Picker("Role (role)", selection: $role) {
+                    Picker("Role", selection: $role) {
                         ForEach([UserRole.salesAssociate, UserRole.inventoryController]) { r in
                             Text(r.displayName).tag(r)
                         }
                     }
                     
-                    Toggle("Is Active (is_active)", isOn: $is_active)
+                    Toggle("Is Active", isOn: $is_active)
                         .tint(RSMSTheme.primaryDark)
                 }
                 
@@ -67,6 +67,8 @@ struct CreateAssociateView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Add Employee")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -108,50 +110,28 @@ struct CreateAssociateView: View {
     
     @MainActor
     private func saveAssociate() async {
-        guard let storeId = appVM.currentStoreId else {
-            errorMessage = "No active store found."
-            return
-        }
-        
         isSubmitting = true
         errorMessage = nil
         
         do {
-            // 1. Create Auth User silently with the provided password
-            let session = try await SupabaseAuth.shared.signUp(email: email, password: password)
-            let newAuthId = session.user.id
-            
-            // 2. Create Profile
-            let newProfile = UserProfile(
-                id: newAuthId,
-                email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-                fullName: full_name.trimmingCharacters(in: .whitespacesAndNewlines),
+            try await EmployeeCreationService.shared.createEmployee(
+                fullName: full_name,
+                email: email,
+                phone: phone,
                 role: role,
-                storeId: storeId,
-                avatarURL: avatar_url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : avatar_url.trimmingCharacters(in: .whitespacesAndNewlines),
-                phone: phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : phone.trimmingCharacters(in: .whitespacesAndNewlines),
+                avatarURL: avatar_url,
                 isActive: is_active,
-                createdAt: .now,
-                updatedAt: .now
+                password: password,
+                dataStore: appVM.dataStore,
+                currentStoreId: appVM.currentStoreId
             )
-            
-            do {
-                // The DB has a trigger that automatically creates a placeholder "New User" profile upon sign up.
-                // To avoid duplicate key errors, we update that existing profile instead of creating a new one.
-                try await appVM.dataStore.updateUser(newProfile)
-                
-                // Ensure the local data store has the new user since updateUser might not append it if it wasn't fetched yet.
-                if !appVM.dataStore.users.contains(where: { $0.id == newProfile.id }) {
-                    appVM.dataStore.users.append(newProfile)
-                }
-            } catch {
-                throw error
-            }
             
             onCreated?()
             dismiss()
-        } catch {
+        } catch let error as EmployeeCreationError {
             self.errorMessage = error.localizedDescription
+        } catch {
+            self.errorMessage = "An unexpected error occurred: \(error.localizedDescription)"
         }
         
         isSubmitting = false
