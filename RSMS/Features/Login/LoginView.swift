@@ -46,7 +46,7 @@ struct LoginView: View {
                 // Store info
                 HStack(spacing: 6) {
                     Image(systemName: "mappin.circle.fill")
-                    Text("Paris Vendôme · Maison Lumière")
+                    Text("Mysore Karnataka, India")
                 }
                 .font(.caption)
                 .foregroundStyle(RSMSTheme.textTertiary)
@@ -70,7 +70,7 @@ struct LoginView: View {
                 .font(.system(size: 32))
                 .foregroundStyle(RSMSTheme.goldGradient)
 
-            Text("MAISON LUMIÈRE")
+            Text("Luxora")
                 .font(.system(size: 36, weight: .light, design: .serif))
                 .tracking(8)
                 .foregroundStyle(RSMSTheme.goldGradient)
@@ -79,8 +79,8 @@ struct LoginView: View {
                 .fill(RSMSTheme.goldGradient)
                 .frame(width: 60, height: 1)
 
-            Text("RETAIL STORE MANAGEMENT")
-                .font(.system(size: 13, weight: .medium))
+            Text("Retail Store Management")
+                .font(.system(size: 15, weight: .medium))
                 .tracking(4)
                 .foregroundStyle(RSMSTheme.textSecondary)
         }
