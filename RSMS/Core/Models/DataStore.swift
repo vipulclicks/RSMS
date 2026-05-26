@@ -481,8 +481,42 @@ final class DataStore {
     }
 
     func deleteClient(id: UUID) async throws {
-        try await api.delete("client_profiles", id: id)
+        // 1. Gather all related items
+        let appts = appointments.filter { $0.clientId == id }
+        let anns = clientAnniversaries.filter { $0.clientId == id }
+        let wishlists = wishlistItems.filter { $0.clientId == id }
+        let ais = aiRecommendations.filter { $0.clientId == id }
+        let invitations = eventInvitations.filter { $0.clientId == id }
+        let carts = universalCarts.filter { $0.clientId == id }
+        let trans = transactions.filter { $0.clientId == id }
+        let orders = omnichannelOrders.filter { $0.clientId == id }
+        let outfits = lookBuilderOutfits.filter { $0.clientId == id }
+
+        // 2. Remove locally for instant UI update
         clients.removeAll { $0.id == id }
+        appointments.removeAll { $0.clientId == id }
+        clientAnniversaries.removeAll { $0.clientId == id }
+        wishlistItems.removeAll { $0.clientId == id }
+        aiRecommendations.removeAll { $0.clientId == id }
+        eventInvitations.removeAll { $0.clientId == id }
+        universalCarts.removeAll { $0.clientId == id }
+        transactions.removeAll { $0.clientId == id }
+        omnichannelOrders.removeAll { $0.clientId == id }
+        lookBuilderOutfits.removeAll { $0.clientId == id }
+
+        // 3. Delete from backend to prevent foreign key constraints from blocking the client delete
+        for a in appts { try? await api.delete("appointments", id: a.id) }
+        for a in anns { try? await api.delete("client_anniversaries", id: a.id) }
+        for w in wishlists { try? await api.delete("wishlist_items", id: w.id) }
+        for a in ais { try? await api.delete("ai_recommendations", id: a.id) }
+        for i in invitations { try? await api.delete("event_invitations", id: i.id) }
+        for c in carts { try? await api.delete("universal_carts", id: c.id) }
+        for t in trans { try? await api.delete("transactions", id: t.id) }
+        for o in orders { try? await api.delete("omnichannel_orders", id: o.id) }
+        for o in outfits { try? await api.delete("look_builder_outfits", id: o.id) }
+
+        // 4. Finally delete the client itself
+        try? await api.delete("client_profiles", id: id)
     }
 
     // ══════════════════════════════════════════════════════════

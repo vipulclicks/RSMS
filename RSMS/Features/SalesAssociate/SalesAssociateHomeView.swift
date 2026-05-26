@@ -625,6 +625,9 @@ struct SAClientBrowserView: View {
     @State private var searchText = ""
     @State private var selectedFilter = "All"
     
+    @State private var clientToDelete: ClientProfile? = nil
+    @State private var showDeleteAlert = false
+    
     let filters = ["All", "VIP", "Platinum", "Gold", "Silver"]
     
     private var filteredGroupedClients: [ClientGroup] {
@@ -662,7 +665,8 @@ struct SAClientBrowserView: View {
             RSMSTheme.background
                 .ignoresSafeArea()
             
-            ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
+                // Header, Search, and Filters stay pinned at the top
                 VStack(spacing: 24) {
                     // Header
                     HStack {
@@ -736,8 +740,11 @@ struct SAClientBrowserView: View {
                         .padding(.horizontal, 24)
                         .padding(.vertical, 4)
                     }
-                    
-                    // Client Groups
+                }
+                .padding(.bottom, 16)
+
+                // Client Groups in a List for Swipe-to-Delete
+                List {
                     if filteredGroupedClients.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "person.2.slash")
@@ -748,34 +755,59 @@ struct SAClientBrowserView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         .padding(.top, 60)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     } else {
-                        LazyVStack(alignment: .leading, spacing: 32) {
-                            ForEach(filteredGroupedClients) { group in
-                                VStack(alignment: .leading, spacing: 14) {
-                                    Text(group.letter)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                        .padding(.horizontal, 24)
-                                    
-                                    ForEach(group.clients) { client in
-                                        Button {
-                                            onSelectClient(client)
+                        ForEach(filteredGroupedClients) { group in
+                            Section {
+                                ForEach(group.clients) { client in
+                                    Button {
+                                        onSelectClient(client)
+                                    } label: {
+                                        SAClientRow(client: client)
+                                            .padding(.vertical, 4)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            clientToDelete = client
+                                            showDeleteAlert = true
                                         } label: {
-                                            SAClientRow(client: client)
-                                                .padding(.horizontal, 24)
+                                            Label("Delete", systemImage: "trash")
                                         }
-                                        .buttonStyle(.plain)
                                     }
                                 }
+                            } header: {
+                                Text(group.letter)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(RSMSTheme.textTertiary)
                             }
                         }
-                        .padding(.bottom, 32)
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
         .navigationTitle("")
         .toolbarBackground(.hidden, for: .navigationBar)
+        .alert(
+            "Confirm Delete",
+            isPresented: $showDeleteAlert,
+            presenting: clientToDelete
+        ) { client in
+            Button("Delete", role: .destructive) {
+                Task {
+                    try? await appViewModel.dataStore.deleteClient(id: client.id)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { client in
+            Text("Are you sure you want to delete \(client.fullName)? This action cannot be undone.")
+        }
     }
     
     private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
