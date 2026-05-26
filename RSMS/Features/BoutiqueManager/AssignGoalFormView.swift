@@ -2,8 +2,9 @@ import SwiftUI
 
 struct AssignGoalFormView: View {
     @Bindable var viewModel: SalesGoalViewModel
-    @Binding var navPath: [SalesGoalRoute]
+    @Binding var navPath: [StaffRoute]
     @Environment(AppViewModel.self) private var appViewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         ScrollView {
@@ -85,7 +86,7 @@ struct AssignGoalFormView: View {
                                     .clipShape(Circle())
                             }
                             
-                            Spacer()
+                            Spacer(minLength: 0)
                             
                             // Updated to use the Rupee symbol and commas!
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -97,9 +98,11 @@ struct AssignGoalFormView: View {
                                     .foregroundStyle(RSMSTheme.gold)
                                     .contentTransition(.numericText())
                                     .animation(.snappy, value: viewModel.draftAmount)
+                                    .minimumScaleFactor(0.5)
+                                    .lineLimit(1)
                             }
                             
-                            Spacer()
+                            Spacer(minLength: 0)
                             
                             Button {
                                 viewModel.draftAmount += 1000
@@ -118,11 +121,19 @@ struct AssignGoalFormView: View {
                     Divider().overlay(RSMSTheme.divider)
                     
                     // Dates
-                    HStack(spacing: 24) {
-                        DatePicker("Start Date", selection: $viewModel.draftStartDate, displayedComponents: .date)
-                        DatePicker("End Date", selection: $viewModel.draftEndDate, displayedComponents: .date)
+                    if horizontalSizeClass == .compact {
+                        VStack(spacing: 16) {
+                            DatePicker("Start Date", selection: $viewModel.draftStartDate, displayedComponents: .date)
+                            DatePicker("End Date", selection: $viewModel.draftEndDate, displayedComponents: .date)
+                        }
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    } else {
+                        HStack(spacing: 24) {
+                            DatePicker("Start Date", selection: $viewModel.draftStartDate, displayedComponents: .date)
+                            DatePicker("End Date", selection: $viewModel.draftEndDate, displayedComponents: .date)
+                        }
+                        .foregroundStyle(RSMSTheme.textPrimary)
                     }
-                    .foregroundStyle(RSMSTheme.textPrimary)
                 }
                 .rsmsCard(padding: 24)
                 
