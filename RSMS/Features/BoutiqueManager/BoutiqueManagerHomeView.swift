@@ -11,7 +11,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
     case dashboard             = "Dashboard"
     case staff                 = "Staff"
     case todaysShift           = "Today's Shift"
-    case appointmentsInventory = "Appointments & Inventory"
+    case inventory = "Inventory"
     case transfers             = "Stock Transfers"
 
     var id: String { rawValue }
@@ -21,7 +21,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         case .dashboard:             return "chart.bar.fill"
         case .staff:                 return "person.2.fill"
         case .todaysShift:           return "calendar.badge.clock"
-        case .appointmentsInventory: return "shippingbox.fill"
+        case .inventory:             return "shippingbox.fill"
         case .transfers:             return "arrow.left.arrow.right"
         }
     }
@@ -110,7 +110,7 @@ struct BoutiqueManagerHomeView: View {
             StaffView()
         case .todaysShift:
             ShiftMonitorView()
-        case .appointmentsInventory:
+        case .inventory:
             AppointmentsInventoryView()
         case .transfers:
             StockTransfersView()

@@ -29,7 +29,7 @@ struct AppointmentsInventoryView: View {
             }
         }
         .background(RSMSTheme.background.ignoresSafeArea())
-        .navigationTitle("Appointments & Inventory")
+        .navigationTitle("Inventory")
         .task {
             if let storeId = appVM.currentStoreId {
                 await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
