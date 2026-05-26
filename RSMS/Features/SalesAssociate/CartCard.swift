@@ -7,10 +7,10 @@ struct CartCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(cart.title)
-                .font(.system(.headline, design: .default))
+                .font(.system(.headline))
                 .foregroundStyle(RSMSTheme.cream)
             Text(cart.description)
-                .font(.system(.subheadline, design: .default))
+                .font(.system(.subheadline))
                 .foregroundStyle(RSMSTheme.cream.opacity(0.8))
                 .lineLimit(2)
         }

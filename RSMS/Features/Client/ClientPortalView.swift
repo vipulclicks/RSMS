@@ -90,7 +90,7 @@ struct ClientPortalView: View {
                             .font(.subheadline)
                             .foregroundStyle(RSMSTheme.primaryGradient)
                         Text("MAISON LUMIÈRE")
-                            .font(.system(size: 15, weight: .light, design: .serif))
+                            .font(.system(size: 15, weight: .light))
                             .tracking(4)
                             .foregroundStyle(RSMSTheme.textPrimary)
                     }
@@ -153,7 +153,7 @@ struct ClientPortalView: View {
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.primary)
             Text(title)
-                .font(.system(size: 18, weight: .bold, design: .serif))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Spacer()
         }
@@ -174,18 +174,18 @@ struct ClientPortalView: View {
                     .frame(width: 72, height: 72)
                 
                 Text(appViewModel.currentUser?.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased() ?? "IF")
-                    .font(.system(size: 26, weight: .bold, design: .serif))
+                    .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(.white)
             }
             
             VStack(alignment: .leading, spacing: 6) {
                 Text("\(luxuryGreeting),")
-                    .font(.system(size: 18, weight: .medium, design: .serif))
+                    .font(.system(size: 18, weight: .medium))
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .italic()
                 
                 Text(appViewModel.currentUser?.fullName ?? "Isabelle Fontaine")
-                    .font(.system(size: 32, weight: .bold, design: .serif))
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 HStack(spacing: 12) {
@@ -248,7 +248,7 @@ struct ClientPortalView: View {
                             }
                             
                             Text("FaceTime Luxury Styling Session")
-                                .font(.system(size: 20, weight: .bold, design: .serif))
+                                .font(.system(size: 20, weight: .bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         Spacer()
@@ -481,7 +481,7 @@ struct ClientPortalView: View {
                     .foregroundStyle(RSMSTheme.textSecondary)
                 
                 Text("Lucas Dubois")
-                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text("Maison Lumière Vendôme, Paris")
@@ -618,7 +618,7 @@ struct ClientPortalView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .semibold, design: .serif))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(1)
                 

@@ -250,7 +250,7 @@ struct RFIDStockManagementView: View {
                     HStack(spacing: 24) {
                         VStack(spacing: 6) {
                             Text("₹\(String(format: "%,.0f", shrinkage.totalLossValue))")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(RSMSTheme.danger)
                             Text("Total Loss Value")
                                 .font(.caption)
@@ -261,7 +261,7 @@ struct RFIDStockManagementView: View {
 
                         VStack(spacing: 6) {
                             Text("\(shrinkage.totalLossUnits)")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(RSMSTheme.warning)
                             Text("Units Lost")
                                 .font(.caption)

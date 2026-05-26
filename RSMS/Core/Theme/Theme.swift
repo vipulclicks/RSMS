@@ -25,7 +25,11 @@ enum RSMSTheme {
     // Primary palette — Luxury Burgundy
     static let primary      = magenta
     static let primaryLight = magenta.opacity(0.85)
-    static let primaryDark  = darkRed
+    static let primaryDark = Color(UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark
+            ? UIColor(red: 0x70/255.0, green: 0x1A/255.0, blue: 0x30/255.0, alpha: 1.0)
+            : UIColor(red: 0x54/255.0, green: 0x1A/255.0, blue: 0x1A/255.0, alpha: 1.0)
+    })
 
     // Legacy aliases
     static let gold = primary
@@ -53,7 +57,7 @@ enum RSMSTheme {
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
     static let primaryGradient = LinearGradient(
-        colors: [magenta, magenta.opacity(0.85), darkRed],
+        colors: [magenta, magenta.opacity(0.85), primaryDark],
         startPoint: .leading, endPoint: .trailing
     )
 }

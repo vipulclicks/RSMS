@@ -31,7 +31,7 @@ struct ScanResultSheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(navigationTitle)
-                        .font(.system(.headline, design: .serif, weight: .light))
+                        .font(.system(.headline, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }

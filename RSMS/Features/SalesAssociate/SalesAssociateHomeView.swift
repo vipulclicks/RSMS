@@ -158,12 +158,12 @@ struct SalesAssociateHomeView: View {
                         HStack(spacing: 16) {
                             Image(systemName: section.icon)
                                 .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
-                                .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                                .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
                                 .frame(width: 24)
                             
                             Text(section.rawValue)
                                 .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
-                                .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                                .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
                             
                             Spacer()
                         }
@@ -205,6 +205,8 @@ struct SalesAssociateHomeView: View {
             case .clients:
                 SAClientBrowserView(onSelectClient: { client in
                     navigationPath.append(client)
+                }, onAddClient: {
+                    showNewClientSheet = true
                 })
             case .appointments:
                 AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
@@ -232,6 +234,8 @@ struct SalesAssociateHomeView: View {
                 case "Clients":
                     SAClientBrowserView(onSelectClient: { client in
                         navigationPath.append(client)
+                    }, onAddClient: {
+                        showNewClientSheet = true
                     })
                 case "Appointments":
                     AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
@@ -337,7 +341,7 @@ private struct DashboardHeaderView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Dashboard")
-                    .font(.system(size: 34, weight: .heavy, design: .default))
+                    .font(.system(size: 34, weight: .heavy))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 HStack(spacing: 6) {
@@ -357,7 +361,7 @@ private struct DashboardHeaderView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(.white)
+                        .fill(RSMSTheme.surfacePrimary)
                         .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
                         .frame(width: 44, height: 44)
                     
@@ -608,76 +612,49 @@ private struct QuickActionsSection: View {
 
 // MARK: - Client Browser & Row for Navigation Stack
 
-struct MockClientDisplay: Identifiable {
-    let id = UUID()
-    let name: String
-    let email: String
-    let activity: String
-    let tierText: String
-    let isVIP: Bool
-    
-    var profile: ClientProfile {
-        ClientProfile(id: id, fullName: name, email: email, phone: nil, preferredStoreId: nil, vipTier: tierText == "VIP" ? .prive : .standard, privacyConsentGiven: true, consentDate: nil, notes: nil, createdAt: Date(), updatedAt: Date(), shoeSize: nil, ringSize: nil, braceletSize: nil, necklaceLength: nil, wristSize: nil, beltSize: nil, favoriteCategories: nil, favoriteMetals: nil, favoriteGemstones: nil, shoeFitPreference: nil, preferredMetal: nil, preferredGemstone: nil, watchCasePreference: nil, strapMaterialPreference: nil, preferredBagSize: nil, preferredBagStyle: nil, preferredMaterial: nil, bucklePreference: nil, fragranceFamily: nil, fragranceStrength: nil, scentPreference: nil, preferredBrands: nil, favoriteColors: nil, stylePreference: nil, giftingPreference: nil, shoppingPreference: nil)
-    }
-}
-
 struct ClientGroup: Identifiable {
     let id = UUID()
     let letter: String
-    let clients: [MockClientDisplay]
+    let clients: [ClientProfile]
 }
 
 struct SAClientBrowserView: View {
     let onSelectClient: (ClientProfile) -> Void
+    var onAddClient: () -> Void = {}
+    @Environment(AppViewModel.self) private var appViewModel
     @State private var searchText = ""
     @State private var selectedFilter = "All"
     
     let filters = ["All", "VIP", "Platinum", "Gold", "Silver"]
     
-    let groupedClients: [ClientGroup] = [
-        ClientGroup(letter: "E", clients: [
-            MockClientDisplay(name: "Esther P.", email: "esther.prm@gmail.com", activity: "2d ago", tierText: "SILVER", isVIP: false)
-        ]),
-        ClientGroup(letter: "F", clients: [
-            MockClientDisplay(name: "FHH", email: "fhh@mail.com", activity: "1m ago", tierText: "STANDARD", isVIP: false)
-        ]),
-        ClientGroup(letter: "K", clients: [
-            MockClientDisplay(name: "Kushagra", email: "kushk@gmail.com", activity: "Today", tierText: "PLATINUM", isVIP: true),
-            MockClientDisplay(name: "Kavya", email: "kavya@gmail.com", activity: "5d ago", tierText: "VIP", isVIP: true)
-        ]),
-        ClientGroup(letter: "M", clients: [
-            MockClientDisplay(name: "Maroon", email: "maroon@gmail.com", activity: "3w ago", tierText: "STANDARD", isVIP: false)
-        ]),
-        ClientGroup(letter: "S", clients: [
-            MockClientDisplay(name: "Simon Pascal", email: "simonpascal@gmail.com", activity: "1w ago", tierText: "STANDARD", isVIP: false)
-        ])
-    ]
-
     private var filteredGroupedClients: [ClientGroup] {
-        var groups = groupedClients
+        var clients = appViewModel.dataStore.clients
         
         // 1. Filter by Tier
         if selectedFilter != "All" {
-            let targetTier = selectedFilter.uppercased()
-            groups = groups.compactMap { group in
-                let filtered = group.clients.filter { $0.tierText == targetTier }
-                return filtered.isEmpty ? nil : ClientGroup(letter: group.letter, clients: filtered)
+            if selectedFilter == "VIP" {
+                clients = clients.filter { $0.vipTier == VIPTier.prive }
+            } else {
+                clients = clients.filter { $0.vipTier.rawValue.caseInsensitiveCompare(selectedFilter) == .orderedSame }
             }
         }
         
         // 2. Filter by Search Text
         let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         if !q.isEmpty {
-            groups = groups.compactMap { group in
-                let filtered = group.clients.filter {
-                    $0.name.lowercased().contains(q) ||
-                    $0.email.lowercased().contains(q)
-                }
-                return filtered.isEmpty ? nil : ClientGroup(letter: group.letter, clients: filtered)
+            clients = clients.filter {
+                $0.fullName.lowercased().contains(q) ||
+                ($0.email?.lowercased().contains(q) ?? false)
             }
         }
         
-        return groups
+        // 3. Group by first letter
+        let grouped = Dictionary(grouping: clients) { client in
+            String(client.fullName.prefix(1)).uppercased()
+        }
+        
+        let groups = grouped.map { ClientGroup(letter: $0.key, clients: $0.value.sorted(by: { $0.fullName < $1.fullName })) }
+        return groups.sorted(by: { $0.letter < $1.letter })
     }
 
     var body: some View {
@@ -691,7 +668,7 @@ struct SAClientBrowserView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Clients")
-                                .font(.system(size: 34, weight: .heavy, design: .default))
+                                .font(.system(size: 34, weight: .heavy))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             
                             Text("\(filteredGroupedClients.flatMap { $0.clients }.count) contacts")
@@ -702,8 +679,12 @@ struct SAClientBrowserView: View {
                         Spacer()
                         
                         HStack(spacing: 12) {
-                            circleButton(icon: "slider.horizontal.3")
-                            circleButton(icon: "plus")
+                            circleButton(icon: "slider.horizontal.3") {
+                                // Filter action
+                            }
+                            circleButton(icon: "plus") {
+                                onAddClient()
+                            }
                         }
                     }
                     .padding(.horizontal, 24)
@@ -720,7 +701,11 @@ struct SAClientBrowserView: View {
                     .frame(height: 52)
                     .background(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(.white)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
+                            )
                             .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
                     )
                     .padding(.horizontal, 24)
@@ -741,7 +726,7 @@ struct SAClientBrowserView: View {
                                         .padding(.vertical, 10)
                                         .background(
                                             Capsule()
-                                                .fill(selectedFilter == filter ? RSMSTheme.primary : .white)
+                                                .fill(selectedFilter == filter ? RSMSTheme.primary : RSMSTheme.surfacePrimary)
                                                 .shadow(color: .black.opacity(selectedFilter == filter ? 0.1 : 0.03), radius: 4, y: 2)
                                         )
                                 }
@@ -774,7 +759,7 @@ struct SAClientBrowserView: View {
                                     
                                     ForEach(group.clients) { client in
                                         Button {
-                                            onSelectClient(client.profile)
+                                            onSelectClient(client)
                                         } label: {
                                             SAClientRow(client: client)
                                                 .padding(.horizontal, 24)
@@ -793,13 +778,13 @@ struct SAClientBrowserView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
     }
     
-    private func circleButton(icon: String) -> some View {
+    private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
         Button {
-            // Action
+            action()
         } label: {
             ZStack {
                 Circle()
-                    .fill(.white)
+                    .fill(RSMSTheme.surfacePrimary)
                     .frame(width: 42, height: 42)
                     .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
                 
@@ -813,18 +798,20 @@ struct SAClientBrowserView: View {
 }
 
 private struct SAClientRow: View {
-    let client: MockClientDisplay
+    let client: ClientProfile
     
     private var initials: String {
-        client.name.split(separator: " ").prefix(2)
-            .compactMap { $0.first.map(String.init) }.joined().uppercased()
+        client.fullName.split(separator: " ").prefix(2)
+            .compactMap { $0.first }
+            .map { String($0) }
+            .joined().uppercased()
     }
     
     var body: some View {
         HStack(spacing: 16) {
             // Avatar
             ZStack {
-                if client.isVIP {
+                if client.vipTier == VIPTier.prive {
                     Circle()
                         .stroke(RSMSTheme.gold, lineWidth: 1.5)
                         .frame(width: 52, height: 52)
@@ -842,12 +829,12 @@ private struct SAClientRow: View {
             // Name, Badge & Email
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(client.name)
-                        .font(.system(size: 18, weight: .bold, design: .default))
+                    Text(client.fullName)
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     
-                    if client.tierText != "STANDARD" {
-                        Text(client.tierText)
+                    if client.vipTier != .standard {
+                        Text(client.vipTier.rawValue.uppercased())
                             .font(.system(size: 9, weight: .bold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
@@ -856,7 +843,7 @@ private struct SAClientRow: View {
                     }
                 }
                 
-                Text(client.email)
+                Text(client.email ?? "No Email")
                     .font(.system(size: 14))
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .lineLimit(1)
@@ -866,7 +853,7 @@ private struct SAClientRow: View {
             
             // Activity & Chevron
             VStack(alignment: .trailing, spacing: 8) {
-                Text(client.activity)
+                Text("Today")
                     .font(.system(size: 13))
                     .foregroundStyle(RSMSTheme.textTertiary)
                 
@@ -879,28 +866,29 @@ private struct SAClientRow: View {
         .padding(.vertical, 20)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.white)
+                .fill(RSMSTheme.surfacePrimary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
+                )
                 .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
         )
         .contentShape(Rectangle())
     }
     
     private var badgeBackground: Color {
-        switch client.tierText {
-        case "VIP": return .black
-        case "PLATINUM": return Color(red: 230/255, green: 230/255, blue: 245/255)
-        case "SILVER": return Color(white: 0.92)
-        case "GOLD": return Color(red: 250/255, green: 240/255, blue: 210/255)
-        default: return .clear
+        if client.vipTier == VIPTier.prive {
+            return RSMSTheme.textPrimary
         }
+        return badgeForeground.opacity(0.15)
     }
     
     private var badgeForeground: Color {
-        switch client.tierText {
-        case "VIP": return Color(red: 212/255, green: 175/255, blue: 55/255)
-        case "PLATINUM": return Color(red: 80/255, green: 60/255, blue: 120/255)
-        case "SILVER": return Color(white: 0.4)
-        case "GOLD": return Color(red: 160/255, green: 120/255, blue: 30/255)
+        switch client.vipTier {
+        case VIPTier.prive: return RSMSTheme.cream
+        case VIPTier.platinum: return .purple
+        case VIPTier.silver: return .gray
+        case VIPTier.gold: return .orange
         default: return .clear
         }
     }

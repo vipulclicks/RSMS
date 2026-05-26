@@ -43,7 +43,7 @@ struct AppointmentRemoteSellingView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Appointments")
-                            .font(.system(size: 34, weight: .heavy, design: .default))
+                            .font(.system(size: 34, weight: .heavy))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         
                         Text("\(scheduledCount) scheduled")
@@ -59,7 +59,7 @@ struct AppointmentRemoteSellingView: View {
                         } label: {
                             ZStack {
                                 Circle()
-                                    .fill(.white)
+                                    .fill(RSMSTheme.surfacePrimary)
                                     .frame(width: 42, height: 42)
                                     .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
                                 
@@ -340,13 +340,13 @@ struct AppointmentRemoteSellingView: View {
                         .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 44, height: 44)
                     Text(clientInitials(for: client))
-                        .font(.system(size: 16, weight: .bold, design: .serif))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(client?.fullName ?? "Unknown Client")
-                        .font(.system(size: 17, weight: .semibold, design: .serif))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                         .lineLimit(1)
                     
@@ -462,12 +462,12 @@ struct AppointmentRemoteSellingView: View {
         }
         .padding(16)
         .frame(height: 220, alignment: .top)
-        .background(.ultraThinMaterial)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.04), radius: 10, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                .stroke(RSMSTheme.border, lineWidth: 1)
         )
     }
 
@@ -638,14 +638,14 @@ private struct ClientSearchPickerSheet: View {
                     .fill(RSMSTheme.primary.opacity(0.12))
                     .frame(width: 50, height: 50)
                 Text(initials)
-                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 // Name (No loyalty tiers!)
                 Text(client.fullName)
-                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
 
                 // Pref categories
@@ -765,12 +765,12 @@ private struct AppointmentBookingFormSheet: View {
                                     .fill(RSMSTheme.primary.opacity(0.12))
                                     .frame(width: 44, height: 44)
                                 Text(String(client.fullName.prefix(1)))
-                                    .font(.system(size: 16, weight: .bold, design: .serif))
+                                    .font(.system(size: 16, weight: .bold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(client.fullName)
-                                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                                    .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Text(client.email ?? client.phone ?? "No contact logged")
                                     .font(.caption)

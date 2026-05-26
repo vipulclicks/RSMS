@@ -191,7 +191,7 @@ struct POSCheckoutView: View {
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 Text("₹\(Int(viewModel.cartTotal).formatted())")
-                    .font(.system(size: 24, weight: .bold, design: .serif))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 
@@ -316,7 +316,7 @@ private struct POSCartItemRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(viewModel.productName(for: item.productId))
-                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Text("Qty: \(item.quantity)")
                     .font(.caption)
@@ -327,7 +327,7 @@ private struct POSCartItemRow: View {
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text("₹\(Int(item.unitPrice ?? viewModel.productPrice(for: item.productId)).formatted())")
-                    .font(.system(size: 15, weight: .bold, design: .serif))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
                 if let discount = item.discountApplied, discount > 0 {
                     Text("-₹\(Int(discount).formatted())")
@@ -379,7 +379,7 @@ private struct POSTransactionCard: View {
                 Spacer()
 
                 Text("₹\(Int(transaction.totalAmount).formatted())")
-                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 

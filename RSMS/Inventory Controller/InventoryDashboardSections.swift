@@ -54,7 +54,7 @@ extension InventoryControllerHomeView {
                         .tracking(2)
                         .foregroundStyle(RSMSTheme.gold)
                     Text((dashVM.snapshot?.totalInventoryCount ?? 0).formatted())
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .font(.system(size: 48, weight: .bold))
                         .foregroundStyle(RSMSTheme.gold)
                 }
                 Spacer()

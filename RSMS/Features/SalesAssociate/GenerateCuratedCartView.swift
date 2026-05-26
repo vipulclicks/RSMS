@@ -246,7 +246,7 @@ struct GenerateCuratedCartView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(product.name)
-                        .font(.system(.subheadline, design: .serif))
+                        .font(.system(.subheadline))
                         .fontWeight(.bold)
                         .foregroundStyle(RSMSTheme.textPrimary)
                     

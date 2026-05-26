@@ -26,6 +26,10 @@ struct ClientProfileDetailView: View {
     
     // Edit profile state
     @State private var showEditClientSheet = false
+    
+    // Delete profile state
+    @State private var showDeleteConfirmation = false
+    @Environment(\.dismiss) private var dismiss
 
     private var currentClient: ClientProfile {
         dataStore.clients.first(where: { $0.id == client.id }) ?? client
@@ -63,6 +67,8 @@ struct ClientProfileDetailView: View {
                     .listRowBackground(RSMSTheme.surfacePrimary)
                 notesSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
+                deleteSection
+                    .listRowBackground(Color.clear)
             }
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
@@ -91,6 +97,19 @@ struct ClientProfileDetailView: View {
         .sheet(isPresented: $showEditClientSheet) {
             EditClientProfileView(client: currentClient, dataStore: dataStore)
         }
+        .confirmationDialog(
+            "Are you sure you want to delete \(currentClient.fullName)? This action cannot be undone.",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    try? await dataStore.deleteClient(id: currentClient.id)
+                    dismiss()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 
     // MARK: - Hero
@@ -103,13 +122,13 @@ struct ClientProfileDetailView: View {
                         .fill(RSMSTheme.primary.opacity(0.12))
                         .frame(width: 80, height: 80)
                     Text(viewModel.initials)
-                        .font(.system(size: 30, weight: .bold, design: .serif))
+                        .font(.system(size: 30, weight: .bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 .padding(.top, 16)
 
                 Text(currentClient.fullName)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .multilineTextAlignment(.center)
 
@@ -200,7 +219,7 @@ struct ClientProfileDetailView: View {
         Section("Purchase Summary") {
             LabeledContent("Lifetime Value") {
                 Text(viewModel.lifetimeValueFormatted)
-                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
             LabeledContent("Transactions") {
@@ -360,6 +379,19 @@ struct ClientProfileDetailView: View {
                 Text(notes)
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
+            }
+        }
+    }
+
+    // MARK: - Delete
+    
+    private var deleteSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showDeleteConfirmation = true
+            } label: {
+                Text("Delete Client")
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
     }

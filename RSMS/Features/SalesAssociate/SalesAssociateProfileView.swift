@@ -85,20 +85,20 @@ struct SalesAssociateProfileView: View {
                     .frame(width: 80, height: 80)
                 
                 Text(initials)
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .font(.system(size: 28, weight: .semibold))
                     .foregroundStyle(.white)
             }
             
             VStack(spacing: 4) {
                 Text(user.fullName)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.system(size: 22, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 let employeeId = "EMP-\(user.id.uuidString.prefix(8).uppercased())"
                 Text("ID: \(employeeId)")
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textTertiary)
-                    .fontDesign(.monospaced)
+                    
             }
             
             HStack(spacing: 12) {
@@ -137,7 +137,7 @@ struct SalesAssociateProfileView: View {
     private func performanceSnapshotSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Performance Snapshot")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             HStack(spacing: 16) {
@@ -149,7 +149,7 @@ struct SalesAssociateProfileView: View {
                         Spacer()
                     }
                     Text(viewModel.todaySales)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text("Today's Sales")
                         .font(.caption)
@@ -171,7 +171,7 @@ struct SalesAssociateProfileView: View {
                         Spacer()
                     }
                     Text("\(viewModel.appointmentsCount)")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text("Appointments Handled")
                         .font(.caption)
@@ -191,7 +191,7 @@ struct SalesAssociateProfileView: View {
     private func personalInformationSection(user: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Personal Information")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             VStack(spacing: 0) {
@@ -235,7 +235,7 @@ struct SalesAssociateProfileView: View {
     private func commissionAndGoalsSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Compensation & Targets")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             VStack(spacing: 20) {

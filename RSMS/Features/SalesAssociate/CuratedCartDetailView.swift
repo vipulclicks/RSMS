@@ -32,7 +32,7 @@ struct CuratedCartDetailView: View {
                 // Header card
                 VStack(spacing: 8) {
                     Text(cart.title)
-                        .font(.system(.title3, design: .serif))
+                        .font(.system(.title3))
                         .fontWeight(.bold)
                         .foregroundStyle(RSMSTheme.cream)
                     
@@ -89,7 +89,7 @@ struct CuratedCartDetailView: View {
                                     
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(product?.name ?? "Unknown Product")
-                                            .font(.system(.headline, design: .serif))
+                                            .font(.system(.headline))
                                             .foregroundStyle(RSMSTheme.textPrimary)
                                         
                                         Text("SKU: \(product?.sku ?? "N/A")")

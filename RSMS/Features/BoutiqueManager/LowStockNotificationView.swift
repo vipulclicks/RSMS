@@ -89,7 +89,7 @@ struct LowStockNotificationView: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Stock").font(.caption).foregroundStyle(RSMSTheme.textSecondary)
                     Text(String(format: "%02d", alert.stockItem.quantity))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(RSMSTheme.danger)
                 }
             }
