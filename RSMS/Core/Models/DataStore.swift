@@ -792,6 +792,47 @@ final class DataStore {
         return created
     }
 
+    @discardableResult
+    func receiveStock(
+        productId: UUID,
+        storeId: UUID,
+        quantity: Int,
+        location: String,
+        rfidTag: String? = nil
+    ) async throws -> StockItem {
+        let normalizedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedLocation = normalizedLocation.isEmpty ? nil : normalizedLocation
+
+        if let existing = stockItems.first(where: { $0.productId == productId && $0.storeId == storeId }) {
+            let updated = StockItem(
+                id: existing.id,
+                productId: existing.productId,
+                storeId: existing.storeId,
+                quantity: existing.quantity + max(quantity, 1),
+                rfidTag: existing.rfidTag ?? rfidTag,
+                location: resolvedLocation ?? existing.location,
+                status: .available,
+                lastScannedAt: .now,
+                updatedAt: .now
+            )
+            try await updateStockItem(updated)
+            return updated
+        }
+
+        let created = StockItem(
+            id: UUID(),
+            productId: productId,
+            storeId: storeId,
+            quantity: max(quantity, 1),
+            rfidTag: rfidTag,
+            location: resolvedLocation,
+            status: .available,
+            lastScannedAt: .now,
+            updatedAt: .now
+        )
+        return try await createStockItem(created)
+    }
+
     func updateStockItem(_ s: StockItem) async throws {
         try await api.update("stock_items", id: s.id, record: s)
         if let i = stockItems.firstIndex(where: { $0.id == s.id }) { stockItems[i] = s }

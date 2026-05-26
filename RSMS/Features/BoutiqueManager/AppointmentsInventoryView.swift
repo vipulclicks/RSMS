@@ -191,10 +191,10 @@ struct AppointmentsInventoryView: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Low Stock Alerts")
+                    Text("Inventory Operations")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
-                    Text("Items requiring immediate restock")
+                    Text("Receive inbound stock and monitor low inventory.")
                         .font(.subheadline)
                         .foregroundStyle(RSMSTheme.textSecondary)
                 }
@@ -212,6 +212,8 @@ struct AppointmentsInventoryView: View {
                     .background(Capsule().fill(RSMSTheme.danger.opacity(0.1)))
                 }
             }
+
+            receivingEntryCard
             
             if dashboardVM.lowStockAlerts.isEmpty {
                 emptyInventoryState
@@ -223,6 +225,49 @@ struct AppointmentsInventoryView: View {
                 }
             }
         }
+    }
+
+    private var receivingEntryCard: some View {
+        NavigationLink {
+            InventoryReceivingView()
+        } label: {
+            HStack(spacing: 18) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(RSMSTheme.primary.opacity(0.12))
+                        .frame(width: 68, height: 68)
+                    Image(systemName: "barcode.viewfinder")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Inventory Receiving & Put-Away")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Text("Scan inbound stock, assign storage locations, and post updated quantities.")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 26))
+                    .foregroundStyle(RSMSTheme.primary)
+            }
+            .padding(22)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(RSMSTheme.surfacePrimary)
+                    .shadow(color: Color.black.opacity(0.04), radius: 20, x: 0, y: 10)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(RSMSTheme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
     }
     
     private var emptyInventoryState: some View {
