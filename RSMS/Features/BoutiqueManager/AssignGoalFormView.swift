@@ -161,8 +161,7 @@ struct AssignGoalFormView: View {
                 }
                 .disabled(viewModel.draftSelectedStaff == nil || viewModel.draftAmount <= 0)
             }
-            .padding(32)
-            .frame(maxWidth: 680)
+            .padding(horizontalSizeClass == .compact ? 16 : 48)
             .frame(maxWidth: .infinity)
         }
         .background(RSMSTheme.background)
