@@ -62,7 +62,7 @@ struct CycleCountView: View {
                 }
             }
         }
-        .sheet(isPresented: $showScanner) {
+        .fullScreenCover(isPresented: $showScanner) {
             NavigationStack {
                 InventoryBarcodeScannerView(initialMode: .verification)
                     .navigationTitle("Verify Inventory")
@@ -433,12 +433,35 @@ struct CycleCountView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Spacer()
-                            TextField("0", text: $vm.enteredCount)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .font(.title3.bold())
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                                .frame(width: 80)
+                            HStack(spacing: 12) {
+                                Button(action: {
+                                    if let val = Int(vm.enteredCount), val > 0 {
+                                        vm.enteredCount = "\(val - 1)"
+                                    } else if vm.enteredCount.isEmpty {
+                                        vm.enteredCount = "0"
+                                    }
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                                
+                                TextField("0", text: $vm.enteredCount)
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.center)
+                                    .font(.title3.bold())
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .frame(width: 50)
+                                
+                                Button(action: {
+                                    let val = Int(vm.enteredCount) ?? 0
+                                    vm.enteredCount = "\(val + 1)"
+                                }) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)

@@ -11,6 +11,7 @@ import SwiftUI
 struct ProductLookupView: View {
 
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var searchText = ""
     @State private var selectedProduct: Product? = nil
     @State private var appeared = false
@@ -30,18 +31,53 @@ struct ProductLookupView: View {
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    headerSection
-                    kpiSection
-                    searchBar
-                    productList
+            if horizontalSizeClass == .regular {
+                HStack(alignment: .top, spacing: 24) {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            headerSection
+                            kpiSection
+                            searchBar
+                            productList
+                        }
+                        .padding(24)
+                        .padding(.bottom, 20)
+                    }
+                    
+                    VStack {
+                        InventoryBarcodeScannerView(initialMode: .stockIn)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                            .padding(.vertical, 24)
+                            .padding(.trailing, 24)
+                    }
+                    .frame(width: 380)
                 }
-                .padding(24)
-                .padding(.bottom, 20)
+            } else {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerSection
+                        kpiSection
+                        searchBar
+                        productList
+                        
+                        Text("STOCK IN")
+                            .font(.caption.weight(.semibold))
+                            .tracking(2)
+                            .foregroundStyle(RSMSTheme.gold)
+                            .padding(.top, 10)
+                        
+                        InventoryBarcodeScannerView(initialMode: .stockIn)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                            .frame(minHeight: 600)
+                    }
+                    .padding(24)
+                    .padding(.bottom, 20)
+                }
             }
         }
-        .navigationTitle("Product Lookup")
+        .navigationTitle("Lookup & Stock In")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -123,10 +159,10 @@ struct ProductLookupView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Product Lookup")
+            Text("Lookup & Stock In")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Search by name, SKU, brand, or category")
+            Text("Search products or scan to add stock")
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
