@@ -280,6 +280,7 @@ struct StaffGoalCard: View {
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .rsmsCard(padding: 16)
     }
 }
