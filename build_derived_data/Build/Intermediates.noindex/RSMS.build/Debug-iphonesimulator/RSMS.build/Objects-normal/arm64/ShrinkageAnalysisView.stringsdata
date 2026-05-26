@@ -1,0 +1,96 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/ShrinkageAnalysisView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Shrinkage Analysis",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 34
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 38
+        }
+      },
+      {
+        "comment": "",
+        "key": "TOTAL INVENTORY VALUE",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "LOSS BY CATEGORY",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "No shrinkage data available.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 133
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 163
+        }
+      },
+      {
+        "comment": "",
+        "key": "HIGHEST RISK ITEMS",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 184
+        }
+      },
+      {
+        "comment": "",
+        "key": "No items at risk.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 190
+        }
+      },
+      {
+        "comment": "",
+        "key": "-₹%@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 220
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld units missing",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 213
+        }
+      }
+    ]
+  },
+  "version": 1
+}

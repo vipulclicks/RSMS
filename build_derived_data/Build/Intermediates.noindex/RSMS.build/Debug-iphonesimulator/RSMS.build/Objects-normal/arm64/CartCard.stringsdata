@@ -1,0 +1,16 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/CartCard.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cart: %@",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 22
+        }
+      }
+    ]
+  },
+  "version": 1
+}

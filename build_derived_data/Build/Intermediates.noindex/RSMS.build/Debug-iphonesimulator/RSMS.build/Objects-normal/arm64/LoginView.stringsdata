@@ -1,0 +1,200 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/Login/LoginView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Mysore Karnataka, India",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "Luxora",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Retail Store Management",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign in to your account",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 93
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email Address",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 116
+        }
+      },
+      {
+        "comment": "",
+        "key": "Password",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Forgot Password?",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign In",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 174
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reset Your Password",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter your email and we'll send you a 6-digit code.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 281
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter Verification Code",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 286
+        }
+      },
+      {
+        "comment": "",
+        "key": "We sent a 6-digit code to **%@**",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "Set New Password",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 294
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose a strong password (minimum 6 characters).",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 297
+        }
+      },
+      {
+        "comment": "",
+        "key": "Password Updated!",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 302
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email Address",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 352
+        }
+      },
+      {
+        "comment": "",
+        "key": "6-Digit Code",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 377
+        }
+      },
+      {
+        "comment": "",
+        "key": "Didn't get the code? Resend",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 400
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Password",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 415
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm Password",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 427
+        }
+      },
+      {
+        "comment": "",
+        "key": "Passwords do not match",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 439
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your password has been updated successfully. You can now sign in with your new password.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 459
+        }
+      },
+      {
+        "comment": "",
+        "key": "Back to Sign In",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 470
+        }
+      }
+    ]
+  },
+  "version": 1
+}

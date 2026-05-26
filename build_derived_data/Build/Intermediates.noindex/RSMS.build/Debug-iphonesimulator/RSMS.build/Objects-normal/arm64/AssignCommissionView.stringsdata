@@ -1,0 +1,112 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/AssignCommissionView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Assign Commission",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "DAILY PERFORMANCE",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 51
+        }
+      },
+      {
+        "comment": "",
+        "key": "COMMISSION DETAILS",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's Total Sales",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "Amount (₹) *",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "0.00",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "Rate",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 100
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 104
+        }
+      },
+      {
+        "comment": "",
+        "key": "Status *",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assigning...",
+        "location": {
+          "startingColumn": 49,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assign Commission",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 152
+        }
+      }
+    ]
+  },
+  "version": 1
+}

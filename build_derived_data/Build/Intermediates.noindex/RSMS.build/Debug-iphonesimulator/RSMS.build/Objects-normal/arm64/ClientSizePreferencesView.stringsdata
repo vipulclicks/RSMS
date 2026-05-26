@@ -1,0 +1,80 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/ClientSizePreferencesView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Preferences",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "EC",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 62
+        }
+      },
+      {
+        "comment": "",
+        "key": "ID: CLI-8829-441",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "Personalize recommendations with client preferences",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "Eleanor Croft",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "PLATINUM VIP",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Additional Notes",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "Update Preferences",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 191
+        }
+      },
+      {
+        "comment": "",
+        "key": "Client preferences updated successfully",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 209
+        }
+      }
+    ]
+  },
+  "version": 1
+}

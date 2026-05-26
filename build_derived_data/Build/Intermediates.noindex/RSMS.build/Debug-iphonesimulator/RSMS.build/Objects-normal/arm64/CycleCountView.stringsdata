@@ -1,0 +1,216 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/CycleCountView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Cycle Counts",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "Scan to Verify",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 54
+        }
+      },
+      {
+        "comment": "",
+        "key": "Verify Inventory",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 68
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading inventory…",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cycle Counts",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "Physical verification of stock levels",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 112
+        }
+      },
+      {
+        "comment": "",
+        "key": "PENDING CHECKS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 186
+        }
+      },
+      {
+        "comment": "",
+        "key": "All clear ✓",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld items",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "Never verified",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 266
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last checked %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 262
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Expected: %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 257
+        }
+      },
+      {
+        "comment": "",
+        "key": "All products verified",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 288
+        }
+      },
+      {
+        "comment": "",
+        "key": "No cycle counts overdue",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 291
+        }
+      },
+      {
+        "comment": "",
+        "key": "VERIFIED THIS PERIOD",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 316
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "System Qty",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 418
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld units",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 422
+        }
+      },
+      {
+        "comment": "",
+        "key": "Actual Count",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 432
+        }
+      },
+      {
+        "comment": "",
+        "key": "0",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 436
+        }
+      },
+      {
+        "comment": "",
+        "key": "Variance of %lld will be logged as a mismatch",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 456
+        }
+      },
+      {
+        "comment": "",
+        "key": "Submit Count",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 483
+        }
+      },
+      {
+        "comment": "",
+        "key": "ENTER COUNT",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 501
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 507
+        }
+      }
+    ]
+  },
+  "version": 1
+}

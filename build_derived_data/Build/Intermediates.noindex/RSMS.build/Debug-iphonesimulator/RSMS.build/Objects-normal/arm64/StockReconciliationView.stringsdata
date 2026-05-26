@@ -1,0 +1,320 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/StockReconciliationView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Audit & Reconcile",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "EL",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "All",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 85
+        }
+      },
+      {
+        "comment": "",
+        "key": "Audit & Reconcile",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Resolve inventory discrepancies and review audit trail",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 169
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search products, SKUs…",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Shrinkage Analysis",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 233
+        }
+      },
+      {
+        "comment": "",
+        "key": "DISCREPANCIES",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "VIEW ALL",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 257
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 289
+        }
+      },
+      {
+        "comment": "",
+        "key": "Updated %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 292
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reconciled",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reconcile Stock",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 337
+        }
+      },
+      {
+        "comment": "",
+        "key": "AUDIT HISTORY",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 395
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reconciliation Timeline",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 418
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld recent entries",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 421
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reconciled **%@**",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 488
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reason: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 492
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 497
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 504
+        }
+      },
+      {
+        "comment": "",
+        "key": "REPORTS & EXPORT",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 524
+        }
+      },
+      {
+        "comment": "",
+        "key": "SECURITY",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 564
+        }
+      },
+      {
+        "comment": "",
+        "key": "Active",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 595
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU: %@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 634
+        }
+      },
+      {
+        "comment": "",
+        "key": "EXPECTED",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 647
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 651
+        }
+      },
+      {
+        "comment": "",
+        "key": "CURRENT",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 661
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 665
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes (optional)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 691
+        }
+      },
+      {
+        "comment": "",
+        "key": "Verify & Reconcile",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 714
+        }
+      },
+      {
+        "comment": "",
+        "key": "RECONCILE STOCK",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 732
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 738
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stock Reconciled Successfully",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 771
+        }
+      },
+      {
+        "comment": "",
+        "key": "Inventory records and audit logs updated.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 776
+        }
+      },
+      {
+        "comment": "",
+        "key": "PREVIOUS",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 785
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 789
+        }
+      },
+      {
+        "comment": "",
+        "key": "UPDATED",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 800
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 804
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 824
+        }
+      }
+    ]
+  },
+  "version": 1
+}

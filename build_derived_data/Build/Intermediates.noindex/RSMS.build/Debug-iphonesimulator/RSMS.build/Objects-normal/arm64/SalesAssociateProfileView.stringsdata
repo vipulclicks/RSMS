@@ -1,0 +1,200 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/SalesAssociateProfileView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Profile",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 53
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 55
+        }
+      },
+      {
+        "comment": "",
+        "key": "User Session Expired",
+        "location": {
+          "startingColumn": 48,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 357
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 56
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 59
+        }
+      },
+      {
+        "comment": "",
+        "key": "Are you sure you want to sign out? Your current session will be cleared securely.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 61
+        }
+      },
+      {
+        "comment": "",
+        "key": "ID: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "Performance Snapshot",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 139
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's Sales",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 173
+        }
+      },
+      {
+        "comment": "",
+        "key": "Appointments Handled",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Personal Information",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 193
+        }
+      },
+      {
+        "comment": "",
+        "key": "Compensation & Targets",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 237
+        }
+      },
+      {
+        "comment": "",
+        "key": "Commission Earned",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 249
+        }
+      },
+      {
+        "comment": "",
+        "key": "Approved By",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 259
+        }
+      },
+      {
+        "comment": "",
+        "key": "Monthly Sales Target Progress",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 273
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 277
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ achieved",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 295
+        }
+      },
+      {
+        "comment": "",
+        "key": "Target: %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 299
+        }
+      },
+      {
+        "comment": "",
+        "key": "Device",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 316
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last Login",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 322
+        }
+      },
+      {
+        "comment": "",
+        "key": "App Version",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 328
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 346
+        }
+      }
+    ]
+  },
+  "version": 1
+}

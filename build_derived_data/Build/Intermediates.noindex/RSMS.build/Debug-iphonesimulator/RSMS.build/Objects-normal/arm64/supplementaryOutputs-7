@@ -1,0 +1,51 @@
+{
+  "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/SalesAssociateHomeView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateHomeView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateHomeView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateHomeView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateHomeView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateHomeView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/SalesAssociateProfileView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateProfileView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateProfileView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateProfileView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateProfileView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateProfileView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/ShowroomCartView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomCartView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomCartView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomCartView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomCartView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomCartView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/ShowroomProductCard.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomProductCard.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomProductCard.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomProductCard.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomProductCard.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShowroomProductCard.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Inventory Controller/ScanResultSheet.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ScanResultSheet.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ScanResultSheet.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ScanResultSheet.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ScanResultSheet.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ScanResultSheet.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Inventory Controller/ShrinkageAnalysisView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShrinkageAnalysisView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShrinkageAnalysisView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShrinkageAnalysisView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShrinkageAnalysisView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShrinkageAnalysisView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Inventory Controller/StockReconciliationView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationView.swiftdeps"
+  }
+}

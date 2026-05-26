@@ -21,8 +21,10 @@ struct ClientProfileDetailView: View {
     @State private var wishlistNotes = ""
     @State private var wishlistSearchText = ""
     
-    // Curated Cart generating state
-    @State private var showGenerateCartSheet = false
+    // Curated Cart state
+    @State private var activeShowroomViewModel: DigitalShowroomViewModel? = nil
+    @State private var activeCartViewModel: DigitalShowroomViewModel? = nil
+    @State private var selectedCuratedCart: CuratedCart? = nil
     
     // Edit profile state
     @State private var showEditClientSheet = false
@@ -85,11 +87,26 @@ struct ClientProfileDetailView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $showGenerateCartSheet) {
-            GenerateCuratedCartView(client: currentClient, dataStore: dataStore, associateId: associateId)
-        }
         .sheet(isPresented: $showEditClientSheet) {
             EditClientProfileView(client: currentClient, dataStore: dataStore)
+        }
+        .navigationDestination(item: $activeShowroomViewModel) { vm in
+            DigitalShowroomView(viewModel: vm)
+        }
+        .navigationDestination(item: $activeCartViewModel) { vm in
+            ShowroomCartView(mode: .activeSession(viewModel: vm))
+        }
+        .navigationDestination(item: $selectedCuratedCart) { cart in
+            ShowroomCartView(mode: .savedCart(cart: cart, dataStore: dataStore))
+        }
+        .task {
+            activeShowroomViewModel = nil
+            activeCartViewModel = nil
+            do {
+                try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
+            } catch {
+                print("[ClientProfileDetailView] Error loading curated carts: \(error)")
+            }
         }
     }
 
@@ -262,57 +279,26 @@ struct ClientProfileDetailView: View {
 
     private var wishlistSection: some View {
         Section {
-            if viewModel.clientWishlist.isEmpty {
-                Text("No wishlist items")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            } else {
-                ForEach(viewModel.clientWishlist) { item in
-                    HStack(spacing: 10) {
-                        Image(systemName: "star.fill")
+            NavigationLink {
+                ClientWishlistWorkspaceView(viewModel: ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId))
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "sparkles.square.filled.on.square")
+                        .font(.title2)
+                        .foregroundStyle(RSMSTheme.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Private Collection")
+                            .font(.headline.weight(.regular))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Luxury Wishlist Workspace")
                             .font(.caption)
-                            .foregroundStyle(RSMSTheme.primary.opacity(0.6))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(viewModel.productName(for: item.productId))
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            if let notes = item.notes {
-                                Text(notes)
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textTertiary)
-                            }
-                        }
-                        Spacer()
-                        if !item.isAvailable {
-                            StatusBadge(text: "Out of Stock", color: RSMSTheme.warning)
-                        }
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) {
-                            Task {
-                                await viewModel.removeFromWishlist(itemId: item.id)
-                            }
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
+                            .foregroundStyle(RSMSTheme.textSecondary)
                     }
                 }
+                .padding(.vertical, 4)
             }
         } header: {
-            HStack {
-                Text("Wishlist")
-                Spacer()
-                Button {
-                    showAddWishlistSheet = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                        Text("Add Item")
-                    }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primary)
-                }
-            }
+            Text("Wishlist")
         }
     }
 
@@ -471,37 +457,130 @@ struct ClientProfileDetailView: View {
     private var curatedCartsSection: some View {
         Section {
             let carts = dataStore.curatedCarts(for: currentClient.id)
-            if carts.isEmpty {
-                Text("No curated carts for this client")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(carts) { cart in
-                            NavigationLink(destination: CuratedCartDetailView(cart: cart, dataStore: dataStore)) {
-                                CartCard(cart: cart)
+            if let cart = carts.first, !cart.items.isEmpty {
+                let displayItems = Array(cart.items.prefix(4))
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(displayItems) { item in
+                            if let product = dataStore.products.first(where: { $0.id == item.productId }) {
+                                Button {
+                                    selectedCuratedCart = cart
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                            AsyncImage(url: url) { phase in
+                                                if let image = phase.image {
+                                                    image.resizable()
+                                                        .scaledToFill()
+                                                } else {
+                                                    Color.gray.opacity(0.1)
+                                                }
+                                            }
+                                            .frame(width: 60, height: 60)
+                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+                                        } else {
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(RSMSTheme.surfaceSecondary)
+                                                .frame(width: 60, height: 60)
+                                                .overlay(Image(systemName: "bag").foregroundStyle(RSMSTheme.textTertiary))
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(product.name)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(RSMSTheme.textPrimary)
+                                                .multilineTextAlignment(.leading)
+                                                .lineLimit(1)
+                                            
+                                            HStack(spacing: 6) {
+                                                Text(product.category)
+                                                    .font(.caption)
+                                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                                Text("•")
+                                                    .font(.caption)
+                                                    .foregroundStyle(RSMSTheme.textTertiary)
+                                                Text("SKU: \(product.sku)")
+                                                    .font(.caption)
+                                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                            }
+                                            
+                                            if let note = item.note, !note.isEmpty {
+                                                if let rx = ClientReaction(rawValue: note) {
+                                                    Text(rx.rawValue.uppercased())
+                                                        .font(.system(size: 9, weight: .bold))
+                                                        .padding(.horizontal, 6)
+                                                        .padding(.vertical, 2)
+                                                        .background(rx.color.opacity(0.15))
+                                                        .foregroundStyle(rx.color)
+                                                        .clipShape(Capsule())
+                                                } else {
+                                                    Text(note)
+                                                        .font(.caption.italic())
+                                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                                        .lineLimit(1)
+                                                }
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        VStack(alignment: .trailing, spacing: 4) {
+                                            Text("₹\(Int(product.price).formatted())")
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(RSMSTheme.primary)
+                                            Text("Qty: \(item.quantity)")
+                                                .font(.caption)
+                                                .foregroundStyle(RSMSTheme.textSecondary)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                
+                                if item.id != displayItems.last?.id {
+                                    Divider().overlay(RSMSTheme.divider)
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .padding(.vertical, 4)
+                    
+                    Divider().overlay(RSMSTheme.divider)
+                    
+                    Button {
+                        selectedCuratedCart = cart
+                    } label: {
+                        HStack {
+                            Spacer()
+                            Text(cart.items.count > 4 ? "View all \(cart.items.count) items" : "View Cart Details")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.primary)
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.vertical, 6)
+            } else {
+                Text("Cart is empty")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textTertiary)
             }
         } header: {
             HStack {
                 Text("Curated Carts")
                 Spacer()
                 Button {
-                    showGenerateCartSheet = true
+                    activeShowroomViewModel = DigitalShowroomViewModel(dataStore: dataStore, client: currentClient, associateId: associateId)
                 } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "sparkles")
-                        Text("Generate Cart")
+                        Image(systemName: "sparkles.rectangle.stack.fill")
+                        Text("Digital Showroom")
                     }
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(RSMSTheme.primary)
                 }
+                .buttonStyle(.plain)
             }
         }
     }

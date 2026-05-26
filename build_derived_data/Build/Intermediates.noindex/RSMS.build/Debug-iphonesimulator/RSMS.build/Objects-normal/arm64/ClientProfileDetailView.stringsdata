@@ -1,0 +1,320 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/ClientProfileDetailView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Contact Information",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 195
+        }
+      },
+      {
+        "comment": "",
+        "key": "Purchase Summary",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 221
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sizing Preferences",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 239
+        }
+      },
+      {
+        "comment": "",
+        "key": "Style Preferences",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Detailed Preferences",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 272
+        }
+      },
+      {
+        "comment": "",
+        "key": "Important Dates",
+        "location": {
+          "startingColumn": 17,
+          "startingLine": 359
+        }
+      },
+      {
+        "comment": "",
+        "key": "Associate Notes",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 396
+        }
+      },
+      {
+        "comment": "",
+        "key": "Consented on %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 166
+        }
+      },
+      {
+        "comment": "",
+        "key": "Client data cannot be used for marketing.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 170
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Consent Given",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Consent Not Given",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 200
+        }
+      },
+      {
+        "comment": "",
+        "key": "Phone",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 207
+        }
+      },
+      {
+        "comment": "",
+        "key": "Member Since",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifetime Value",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 222
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transactions",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 227
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 228
+        }
+      },
+      {
+        "comment": "",
+        "key": "No wishlist items",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 287
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 317
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wishlist",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 324
+        }
+      },
+      {
+        "comment": "",
+        "key": "Open Studio",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Item",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 347
+        }
+      },
+      {
+        "comment": "",
+        "key": "No dates recorded",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Wishlist",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 492
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search products...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 413
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU: %@ • ₹%@",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 438
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Notes (optional)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 458
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. size/fit preference",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 461
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Wishlist",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 481
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 496
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cart is empty",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 616
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 552
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU: %@",
+        "location": {
+          "startingColumn": 54,
+          "startingLine": 555
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 581
+        }
+      },
+      {
+        "comment": "",
+        "key": "Qty: %lld",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 584
+        }
+      },
+      {
+        "comment": "",
+        "key": "View all %lld items",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 606
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Cart Details",
+        "location": {
+          "startingColumn": 96,
+          "startingLine": 606
+        }
+      },
+      {
+        "comment": "",
+        "key": "Curated Carts",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 622
+        }
+      },
+      {
+        "comment": "",
+        "key": "Digital Showroom",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 629
+        }
+      }
+    ]
+  },
+  "version": 1
+}

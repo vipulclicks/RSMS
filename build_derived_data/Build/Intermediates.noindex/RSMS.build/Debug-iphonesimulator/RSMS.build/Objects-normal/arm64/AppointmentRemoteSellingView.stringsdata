@@ -1,0 +1,624 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/AppointmentRemoteSellingView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 216
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Error",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 244
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel Appointment",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Appointments",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 45
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld scheduled",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 49
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Appointment",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 72
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's Schedule",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 90
+        }
+      },
+      {
+        "comment": "",
+        "key": "In-Store",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 101
+        }
+      },
+      {
+        "comment": "",
+        "key": "Video Consultations",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 117
+        }
+      },
+      {
+        "comment": "",
+        "key": "Other Appointments",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "In-Store",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "Video Consultations",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 196
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 245
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel Appointment",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 253
+        }
+      },
+      {
+        "comment": "",
+        "key": "Keep Appointment",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 276
+        }
+      },
+      {
+        "comment": "",
+        "key": "Are you sure you want to cancel this appointment? This action cannot be undone.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 278
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search appointments by client...",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 290
+        }
+      },
+      {
+        "comment": "",
+        "key": "• %lldm",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 356
+        }
+      },
+      {
+        "comment": "",
+        "key": "Join Call",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Start Call",
+        "location": {
+          "startingColumn": 81,
+          "startingLine": 391
+        }
+      },
+      {
+        "comment": "",
+        "key": "Client Profile",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 409
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reschedule",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 416
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Notes / Details",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 422
+        }
+      },
+      {
+        "comment": "",
+        "key": "Change Status",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 442
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel Appointment",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 451
+        }
+      },
+      {
+        "comment": "",
+        "key": "Options",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 454
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Client",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 620
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search by name, email, phone...",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 574
+        }
+      },
+      {
+        "comment": "",
+        "key": "No clients matched search",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 597
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 624
+        }
+      },
+      {
+        "comment": "",
+        "key": "No category preferences logged",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 658
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last active recently",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 669
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Appointment",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1143
+        }
+      },
+      {
+        "comment": "",
+        "key": "Booking Error",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1153
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 786
+        }
+      },
+      {
+        "comment": "",
+        "key": "In-Store Visit",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 787
+        }
+      },
+      {
+        "comment": "",
+        "key": "Video Consultation",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 788
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select Date",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 795
+        }
+      },
+      {
+        "comment": "",
+        "key": "Available Time Slots",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 801
+        }
+      },
+      {
+        "comment": "",
+        "key": "Assigned Specialist",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 827
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Apple Calendar",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 926
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. client@email.com or +33 6 1234 5678",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 858
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Contact (Email or Phone)",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 850
+        }
+      },
+      {
+        "comment": "",
+        "key": "*",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 853
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Meeting Link (Optional)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 875
+        }
+      },
+      {
+        "comment": "",
+        "key": "https://facetime.apple.com/join/...",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 880
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate",
+        "location": {
+          "startingColumn": 73,
+          "startingLine": 893
+        }
+      },
+      {
+        "comment": "",
+        "key": "Regenerate",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 893
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Notes / Instructions (Optional)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 909
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. Please join 5 mins before...",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 913
+        }
+      },
+      {
+        "comment": "",
+        "key": "Only authorized roles may manage reminder settings.",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 957
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Interest Tags",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 969
+        }
+      },
+      {
+        "comment": "",
+        "key": "Consultation Notes",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 998
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enter consultation notes...",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 1001
+        }
+      },
+      {
+        "comment": "",
+        "key": "Schedule Consultation",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1127
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1147
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1154
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reschedule",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1432
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reschedule Error",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1434
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 1214
+        }
+      },
+      {
+        "comment": "",
+        "key": "Time",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 1221
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. client@email.com or +33 6 1234 5678",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 1244
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Contact (Email or Phone)",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1236
+        }
+      },
+      {
+        "comment": "",
+        "key": "*",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 1239
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Meeting Link (Optional)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1261
+        }
+      },
+      {
+        "comment": "",
+        "key": "https://facetime.apple.com/join/...",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 1266
+        }
+      },
+      {
+        "comment": "",
+        "key": "Generate",
+        "location": {
+          "startingColumn": 73,
+          "startingLine": 1279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Regenerate",
+        "location": {
+          "startingColumn": 86,
+          "startingLine": 1279
+        }
+      },
+      {
+        "comment": "",
+        "key": "FaceTime Notes / Instructions (Optional)",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1295
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. Please join 5 mins before...",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 1299
+        }
+      },
+      {
+        "comment": "",
+        "key": "Only authorized roles may manage reminder settings.",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1338
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm Reschedule",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1420
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1435
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1453
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Notes",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1536
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save Note",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1524
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1540
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,256 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/POSCheckoutView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "POS & Checkout",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Complete Checkout?",
+        "location": {
+          "startingColumn": 16,
+          "startingLine": 46
+        }
+      },
+      {
+        "comment": "",
+        "key": "Section",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cart",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 22
+        }
+      },
+      {
+        "comment": "",
+        "key": "Transactions",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 23
+        }
+      },
+      {
+        "comment": "",
+        "key": "Returns",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 47
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total: ₹%@. This action will finalise the transaction.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search by name or SKU…",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cart is empty",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Proceed to Checkout",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% OFF",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 154
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%lld OFF",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 155
+        }
+      },
+      {
+        "comment": "",
+        "key": "Subtotal",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 172
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 175
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tax (20%)",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 183
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 189
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 193
+        }
+      },
+      {
+        "comment": "",
+        "key": "Tax-Free Purchase",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 206
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Return",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 241
+        }
+      },
+      {
+        "comment": "",
+        "key": "Qty: %lld",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 329
+        }
+      },
+      {
+        "comment": "",
+        "key": "-₹%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 333
+        }
+      },
+      {
+        "comment": "",
+        "key": "Order #%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 353
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 381
+        }
+      },
+      {
+        "comment": "",
+        "key": "Exchange",
+        "location": {
+          "startingColumn": 57,
+          "startingLine": 403
+        }
+      },
+      {
+        "comment": "",
+        "key": "Return",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 403
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ref: #%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 418
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 423
+        }
+      }
+    ]
+  },
+  "version": 1
+}

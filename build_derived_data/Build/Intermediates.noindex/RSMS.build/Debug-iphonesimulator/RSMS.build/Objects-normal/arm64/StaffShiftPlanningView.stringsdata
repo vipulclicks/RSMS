@@ -1,0 +1,112 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffShiftPlanningView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Loading Planning Data...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 14
+        }
+      },
+      {
+        "comment": "",
+        "key": "Error Loading Data",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 18
+        }
+      },
+      {
+        "comment": "",
+        "key": "Staff & Shift Planning",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Associate",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 40
+        }
+      },
+      {
+        "comment": "",
+        "key": "No sales associates available.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 98
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Goal",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 86
+        }
+      },
+      {
+        "comment": "",
+        "key": "No staff found for this store.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 118
+        }
+      },
+      {
+        "comment": "",
+        "key": "Target: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 181
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% achieved",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 268
+        }
+      },
+      {
+        "comment": "",
+        "key": "0% achieved",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 272
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹0",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 256
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Target Set",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 260
+        }
+      }
+    ]
+  },
+  "version": 1
+}

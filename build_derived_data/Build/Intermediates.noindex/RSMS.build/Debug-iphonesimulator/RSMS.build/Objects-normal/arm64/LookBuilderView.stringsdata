@@ -1,0 +1,168 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/LookBuilderView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Look Builder",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create New Look",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Looks Created",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 64
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create your first styled look by tapping the + button.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 67
+        }
+      },
+      {
+        "comment": "",
+        "key": "Created %@ ago",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 126
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit %@",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 140
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 135
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 161
+        }
+      },
+      {
+        "comment": "",
+        "key": "Edit Look",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Look",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 205
+        }
+      },
+      {
+        "comment": "",
+        "key": "No products selected. Tap products below to add.",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 223
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove %@",
+        "location": {
+          "startingColumn": 61,
+          "startingLine": 247
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 236
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search products…",
+        "location": {
+          "startingColumn": 43,
+          "startingLine": 261
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 287
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ · %@",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 282
+        }
+      },
+      {
+        "comment": "",
+        "key": "Update Look",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 301
+        }
+      },
+      {
+        "comment": "",
+        "key": "Create Look",
+        "location": {
+          "startingColumn": 83,
+          "startingLine": 301
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 325
+        }
+      }
+    ]
+  },
+  "version": 1
+}

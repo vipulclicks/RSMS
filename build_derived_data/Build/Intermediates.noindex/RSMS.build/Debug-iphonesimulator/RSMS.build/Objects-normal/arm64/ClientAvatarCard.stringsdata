@@ -1,0 +1,16 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/UI/Components/ClientAvatarCard.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%@, %@ client",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 43
+        }
+      }
+    ]
+  },
+  "version": 1
+}

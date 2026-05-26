@@ -1,0 +1,51 @@
+{
+  "/Users/vipul/RSMS/RSMS/MockData/InventoryMockData.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/InventoryMockData.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/InventoryMockData.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/InventoryMockData.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/InventoryMockData.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/InventoryMockData.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/MockData/OmnichannelMockData.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/OmnichannelMockData.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/OmnichannelMockData.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/OmnichannelMockData.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/OmnichannelMockData.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/OmnichannelMockData.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/MockData/POSMockData.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/POSMockData.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/POSMockData.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/POSMockData.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/POSMockData.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/POSMockData.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/MockData/SalesAssociateMockData.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateMockData.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateMockData.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateMockData.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateMockData.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/SalesAssociateMockData.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Sales Associate/ClientelingView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientelingView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientelingView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientelingView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientelingView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientelingView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/UI/Components/AppointmentQuickCard.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AppointmentQuickCard.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AppointmentQuickCard.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AppointmentQuickCard.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AppointmentQuickCard.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AppointmentQuickCard.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/UI/Components/CircularProgressView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CircularProgressView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CircularProgressView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CircularProgressView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CircularProgressView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CircularProgressView.swiftdeps"
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/ProductCatalogView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Product Catalog",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 32
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try adjusting your search or filters.",
+        "location": {
+          "startingColumn": 58,
+          "startingLine": 82
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading products…",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "Load Failed",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 74
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Products Found",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search by name, SKU, brand…",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 109
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filter",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 185
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld item%@ selected",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 314
+        }
+      },
+      {
+        "comment": "",
+        "key": "View →",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 318
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cart Selection (%lld)",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 368
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 372
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 376
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Details",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 406
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 410
+        }
+      },
+      {
+        "comment": "",
+        "key": "Added to Cart ✓",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 488
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Curated Cart",
+        "location": {
+          "startingColumn": 59,
+          "startingLine": 488
+        }
+      },
+      {
+        "comment": "",
+        "key": "Filter Products",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 553
+        }
+      },
+      {
+        "comment": "",
+        "key": "Collection",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 515
+        }
+      },
+      {
+        "comment": "",
+        "key": "Price Range",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 527
+        }
+      },
+      {
+        "comment": "",
+        "key": "Availability",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 541
+        }
+      },
+      {
+        "comment": "",
+        "key": "Collection",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 516
+        }
+      },
+      {
+        "comment": "",
+        "key": "All Collections",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 517
+        }
+      },
+      {
+        "comment": "",
+        "key": "Min",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 529
+        }
+      },
+      {
+        "comment": "",
+        "key": "Max",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 534
+        }
+      },
+      {
+        "comment": "",
+        "key": "In-stock only",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 542
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clear All Filters",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 546
+        }
+      },
+      {
+        "comment": "",
+        "key": "Apply",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 557
+        }
+      }
+    ]
+  },
+  "version": 1
+}

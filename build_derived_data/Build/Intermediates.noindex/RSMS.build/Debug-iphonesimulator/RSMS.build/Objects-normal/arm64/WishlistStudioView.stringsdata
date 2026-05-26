@@ -1,0 +1,328 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/WishlistStudioView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Interaction: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 152
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld Wishlist Items",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@ Est. Value",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 150
+        }
+      },
+      {
+        "comment": "",
+        "key": "Smart Styling Profile",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 180
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@:",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 213
+        }
+      },
+      {
+        "comment": "",
+        "key": "Client Wishlist",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 230
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%% Match",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 283
+        }
+      },
+      {
+        "comment": "",
+        "key": "Available",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 314
+        }
+      },
+      {
+        "comment": "",
+        "key": "Out of Stock",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 318
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Look",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 334
+        }
+      },
+      {
+        "comment": "",
+        "key": "View Premium Alternatives",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "Complementary Accessories",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 351
+        }
+      },
+      {
+        "comment": "",
+        "key": "Remove from Wishlist",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 356
+        }
+      },
+      {
+        "comment": "",
+        "key": "Styling Canvas",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 374
+        }
+      },
+      {
+        "comment": "",
+        "key": "Complete the Look Suggestions",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 445
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI Curation Advisor",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 498
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ask AI Advisor for a suggestion...",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 534
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld Items | %lld Active Look Items",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 558
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Est: ₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 562
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save Look",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 578
+        }
+      },
+      {
+        "comment": "",
+        "key": "Look Settings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 660
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add products to Look",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 620
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search products...",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 624
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 664
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Upgrade Comparison",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 756
+        }
+      },
+      {
+        "comment": "",
+        "key": "No higher-end alternatives available in this category.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 750
+        }
+      },
+      {
+        "comment": "",
+        "key": "Premium Concierge Suggestion",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 676
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current Item",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 683
+        }
+      },
+      {
+        "comment": "",
+        "key": "Upgrade",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 698
+        }
+      },
+      {
+        "comment": "",
+        "key": "Why choose this upgrade?",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 722
+        }
+      },
+      {
+        "comment": "",
+        "key": "• Limited Edition design details\n• Enhanced craftsmanship materials\n• Higher VIP matching score based on historic collections",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 725
+        }
+      },
+      {
+        "comment": "",
+        "key": "Replace with Premium Upgrade",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 741
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 760
+        }
+      },
+      {
+        "comment": "",
+        "key": "Your Wishlist is Empty",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 773
+        }
+      },
+      {
+        "comment": "",
+        "key": "Browse the catalog to add items here.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 776
+        }
+      },
+      {
+        "comment": "",
+        "key": "Look Canvas is empty",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 789
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select items from the Wishlist to construct a customized outfit.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 792
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Showroom",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 898
+        }
+      },
+      {
+        "comment": "",
+        "key": "Suggested Pairings",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 858
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dismiss",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 902
+        }
+      }
+    ]
+  },
+  "version": 1
+}

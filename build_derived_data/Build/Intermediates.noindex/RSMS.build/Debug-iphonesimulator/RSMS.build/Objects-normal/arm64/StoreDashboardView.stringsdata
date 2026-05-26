@@ -1,0 +1,120 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StoreDashboardView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Store Dashboard",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 48
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dashboard data is unavailable for this store. Start logging transactions to see insights.",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading Dashboard...",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 21
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dashboard Error",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 25
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Data",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 31
+        }
+      },
+      {
+        "comment": "",
+        "key": "Welcome back",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 102
+        }
+      },
+      {
+        "comment": "",
+        "key": "See All",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 214
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld more",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 217
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@ – %@",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 269
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today's Appointments",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 444
+        }
+      },
+      {
+        "comment": "",
+        "key": "No appointments scheduled for today.",
+        "location": {
+          "startingColumn": 47,
+          "startingLine": 431
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Appointments",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 429
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 448
+        }
+      },
+      {
+        "comment": "",
+        "key": "With %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 482
+        }
+      }
+    ]
+  },
+  "version": 1
+}

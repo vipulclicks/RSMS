@@ -1,0 +1,72 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/ScanResultSheet.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "Unrecognized Barcode",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 146
+        }
+      },
+      {
+        "comment": "",
+        "key": "This code does not match any product in the system.\nVerify the barcode and try again.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 158
+        }
+      },
+      {
+        "comment": "",
+        "key": "Already Scanned",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 184
+        }
+      },
+      {
+        "comment": "",
+        "key": "This product was already processed in this session.\nTap 'Force Add' only if you intend to add it again.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "Force Add",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 235
+        }
+      },
+      {
+        "comment": "",
+        "key": "Something Went Wrong",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 258
+        }
+      },
+      {
+        "comment": "",
+        "key": "Scan Again",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 348
+        }
+      }
+    ]
+  },
+  "version": 1
+}

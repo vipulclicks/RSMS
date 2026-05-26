@@ -1,0 +1,48 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Sales Associate/ClientelingView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Clienteling",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 33
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading clients...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 24
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Clients Found",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 27
+        }
+      },
+      {
+        "comment": "",
+        "key": "€%@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 194
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notify",
+        "location": {
+          "startingColumn": 39,
+          "startingLine": 208
+        }
+      }
+    ]
+  },
+  "version": 1
+}

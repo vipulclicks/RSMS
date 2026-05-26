@@ -1,0 +1,58 @@
+{
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/AssignGoalFormView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AssignGoalFormView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AssignGoalFormView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AssignGoalFormView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AssignGoalFormView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/AssignGoalFormView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/BoutiqueManagerHomeView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BoutiqueManagerHomeView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BoutiqueManagerHomeView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BoutiqueManagerHomeView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BoutiqueManagerHomeView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BoutiqueManagerHomeView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/CommissionManagementView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CommissionManagementView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CommissionManagementView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CommissionManagementView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CommissionManagementView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CommissionManagementView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/CreateAssociateView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CreateAssociateView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CreateAssociateView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CreateAssociateView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CreateAssociateView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CreateAssociateView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/LowStockNotificationView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/LowStockNotificationView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/LowStockNotificationView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/LowStockNotificationView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/LowStockNotificationView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/LowStockNotificationView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/ShiftMonitorView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShiftMonitorView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShiftMonitorView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShiftMonitorView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShiftMonitorView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ShiftMonitorView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffPerformanceView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPerformanceView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPerformanceView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPerformanceView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPerformanceView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPerformanceView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffPickerView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPickerView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPickerView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPickerView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPickerView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffPickerView.swiftdeps"
+  }
+}

@@ -1,0 +1,824 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/Clienteling.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Clients",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 425
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name, phone, email or ID",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 429
+        }
+      },
+      {
+        "comment": "",
+        "key": "Contact Information",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 530
+        }
+      },
+      {
+        "comment": "",
+        "key": "Purchase Summary",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 545
+        }
+      },
+      {
+        "comment": "",
+        "key": "Associate Notes",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 615
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sizing Preferences",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 621
+        }
+      },
+      {
+        "comment": "",
+        "key": "Style Preferences",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 637
+        }
+      },
+      {
+        "comment": "",
+        "key": "Purchase History",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 644
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 533
+        }
+      },
+      {
+        "comment": "",
+        "key": "Phone",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 537
+        }
+      },
+      {
+        "comment": "",
+        "key": "Member Since",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 541
+        }
+      },
+      {
+        "comment": "",
+        "key": "Lifetime Value",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 546
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Purchases",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 550
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 547
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 551
+        }
+      },
+      {
+        "comment": "",
+        "key": "No dates added yet.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 558
+        }
+      },
+      {
+        "comment": "",
+        "key": "Important Dates",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 573
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 578
+        }
+      },
+      {
+        "comment": "",
+        "key": "No items on wishlist.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 588
+        }
+      },
+      {
+        "comment": "",
+        "key": "+ %lld more items",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 595
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wishlist",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 601
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manage",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 606
+        }
+      },
+      {
+        "comment": "",
+        "key": "Ring Size",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 623
+        }
+      },
+      {
+        "comment": "",
+        "key": "Bracelet Size",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 626
+        }
+      },
+      {
+        "comment": "",
+        "key": "Necklace Length",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 629
+        }
+      },
+      {
+        "comment": "",
+        "key": "Wrist Size",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 632
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Purchases",
+        "location": {
+          "startingColumn": 44,
+          "startingLine": 646
+        }
+      },
+      {
+        "comment": "",
+        "key": "Consented on %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 682
+        }
+      },
+      {
+        "comment": "",
+        "key": "Client data cannot be used for marketing.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 686
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Consent Given",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 678
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Consent Not Given",
+        "location": {
+          "startingColumn": 77,
+          "startingLine": 678
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 784
+        }
+      },
+      {
+        "comment": "",
+        "key": "Out of Stock",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 788
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@'s Wishlist",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 850
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search by name, SKU or category",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 847
+        }
+      },
+      {
+        "comment": "",
+        "key": "Empty Wishlist",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 825
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add products from the catalogue or by entering a SKU.",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 827
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Item",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 829
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 854
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 901
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 896
+        }
+      },
+      {
+        "comment": "",
+        "key": "Available",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 910
+        }
+      },
+      {
+        "comment": "",
+        "key": "Out of Stock",
+        "location": {
+          "startingColumn": 55,
+          "startingLine": 910
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notify On",
+        "location": {
+          "startingColumn": 52,
+          "startingLine": 922
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notify Off",
+        "location": {
+          "startingColumn": 66,
+          "startingLine": 922
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Wishlist",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 989
+        }
+      },
+      {
+        "comment": "",
+        "key": "Mode",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 977
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search catalogue…",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 1054
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 993
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Products Found",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 1006
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 1030
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1036
+        }
+      },
+      {
+        "comment": "",
+        "key": "In Stock",
+        "location": {
+          "startingColumn": 60,
+          "startingLine": 1039
+        }
+      },
+      {
+        "comment": "",
+        "key": "Out of Stock",
+        "location": {
+          "startingColumn": 73,
+          "startingLine": 1039
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Details",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 1061
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notes",
+        "location": {
+          "startingColumn": 21,
+          "startingLine": 1072
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Name",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1062
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1063
+        }
+      },
+      {
+        "comment": "",
+        "key": "Category",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1066
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1068
+        }
+      },
+      {
+        "comment": "",
+        "key": "Price",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1069
+        }
+      },
+      {
+        "comment": "",
+        "key": "Any notes…",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1073
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add to Wishlist",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1076
+        }
+      },
+      {
+        "comment": "",
+        "key": "Add Important Date",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1153
+        }
+      },
+      {
+        "comment": "",
+        "key": "Missing Label",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1176
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date Type",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1120
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1135
+        }
+      },
+      {
+        "comment": "",
+        "key": "Type",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Label (e.g. First Purchase)",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 1130
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date of Birth",
+        "location": {
+          "startingColumn": 45,
+          "startingLine": 1137
+        }
+      },
+      {
+        "comment": "",
+        "key": "Date",
+        "location": {
+          "startingColumn": 63,
+          "startingLine": 1137
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enable Reminder",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1146
+        }
+      },
+      {
+        "comment": "",
+        "key": "Reminders will alert you 7 days before the occasion.",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1150
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1157
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1160
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1177
+        }
+      },
+      {
+        "comment": "",
+        "key": "Please enter a label for the custom date.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1179
+        }
+      },
+      {
+        "comment": "",
+        "key": "Order #%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1260
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@%@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1265
+        }
+      },
+      {
+        "comment": "",
+        "key": "Select a Client",
+        "location": {
+          "startingColumn": 19,
+          "startingLine": 1291
+        }
+      },
+      {
+        "comment": "",
+        "key": "Choose a client from the list to view their profile, preferences, and purchase history.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1293
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Client",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1374
+        }
+      },
+      {
+        "comment": "",
+        "key": "Missing Information",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1388
+        }
+      },
+      {
+        "comment": "",
+        "key": "Consent",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1333
+        }
+      },
+      {
+        "comment": "",
+        "key": "Associate Notes",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1340
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sizing Preferences",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 1344
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full Name",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1325
+        }
+      },
+      {
+        "comment": "",
+        "key": "Email",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1326
+        }
+      },
+      {
+        "comment": "",
+        "key": "Phone",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1329
+        }
+      },
+      {
+        "comment": "",
+        "key": "Identity",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1330
+        }
+      },
+      {
+        "comment": "",
+        "key": "Full name is required to create a profile.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 1331
+        }
+      },
+      {
+        "comment": "",
+        "key": "Privacy Consent Given",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1335
+        }
+      },
+      {
+        "comment": "",
+        "key": "Any relevant notes…",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1341
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. Rings, Necklaces, Bracelets",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1368
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. 18K Rose Gold, Platinum",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1369
+        }
+      },
+      {
+        "comment": "",
+        "key": "e.g. Diamond, Ruby, Sapphire",
+        "location": {
+          "startingColumn": 31,
+          "startingLine": 1370
+        }
+      },
+      {
+        "comment": "",
+        "key": "Style Preferences",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 1371
+        }
+      },
+      {
+        "comment": "",
+        "key": "Separate multiple values with commas.",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 1372
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1378
+        }
+      },
+      {
+        "comment": "",
+        "key": "Save",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1381
+        }
+      },
+      {
+        "comment": "",
+        "key": "OK",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1389
+        }
+      },
+      {
+        "comment": "",
+        "key": "Please enter the client's full name before saving.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1391
+        }
+      }
+    ]
+  },
+  "version": 1
+}

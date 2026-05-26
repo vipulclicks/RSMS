@@ -1,0 +1,200 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/SalesAssociate/SalesAssociateHomeView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Sales Associate",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 182
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 194
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sign Out",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 191
+        }
+      },
+      {
+        "comment": "",
+        "key": "Coming Soon",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "Retry",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 321
+        }
+      },
+      {
+        "comment": "",
+        "key": "Profile",
+        "location": {
+          "startingColumn": 33,
+          "startingLine": 376
+        }
+      },
+      {
+        "comment": "",
+        "key": "Dashboard",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 346
+        }
+      },
+      {
+        "comment": "",
+        "key": "%@, %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 351
+        }
+      },
+      {
+        "comment": "",
+        "key": "•",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 352
+        }
+      },
+      {
+        "comment": "",
+        "key": "View All",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 470
+        }
+      },
+      {
+        "comment": "",
+        "key": "No appointments today",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 508
+        }
+      },
+      {
+        "comment": "",
+        "key": "Enjoy a calm day or schedule a new consultation.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 513
+        }
+      },
+      {
+        "comment": "",
+        "key": "See All",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 541
+        }
+      },
+      {
+        "comment": "",
+        "key": "",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 798
+        }
+      },
+      {
+        "comment": "",
+        "key": "Confirm Delete",
+        "location": {
+          "startingColumn": 13,
+          "startingLine": 801
+        }
+      },
+      {
+        "comment": "",
+        "key": "Clients",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 677
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld contacts",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 681
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 704
+        }
+      },
+      {
+        "comment": "",
+        "key": "No clients found",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 756
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 51,
+          "startingLine": 782
+        }
+      },
+      {
+        "comment": "",
+        "key": "Delete",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 805
+        }
+      },
+      {
+        "comment": "",
+        "key": "Cancel",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 810
+        }
+      },
+      {
+        "comment": "",
+        "key": "Are you sure you want to delete %@? This action cannot be undone.",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 812
+        }
+      },
+      {
+        "comment": "",
+        "key": "Today",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 891
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -1,0 +1,128 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/ProductLookupView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Product Lookup",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 44
+        }
+      },
+      {
+        "comment": "",
+        "key": "Scan to Find",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 65
+        }
+      },
+      {
+        "comment": "",
+        "key": "Close",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "Product Lookup",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 126
+        }
+      },
+      {
+        "comment": "",
+        "key": "Search by name, SKU, brand, or category",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 129
+        }
+      },
+      {
+        "comment": "",
+        "key": "Name, SKU, brand, category…",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 177
+        }
+      },
+      {
+        "comment": "",
+        "key": "PRODUCTS",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 201
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld results",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 206
+        }
+      },
+      {
+        "comment": "",
+        "key": "·",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 267
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld units",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 285
+        }
+      },
+      {
+        "comment": "",
+        "key": "No products found",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 299
+        }
+      },
+      {
+        "comment": "",
+        "key": "Try a different name, SKU, or brand",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 302
+        }
+      },
+      {
+        "comment": "",
+        "key": "STOCK DETAILS",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 404
+        }
+      },
+      {
+        "comment": "",
+        "key": "PRODUCT DETAILS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 439
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 445
+        }
+      }
+    ]
+  },
+  "version": 1
+}

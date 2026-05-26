@@ -248,6 +248,7 @@ struct ProductCatalogCard: View {
                         categoryIcon
                     @unknown default:
                         categoryIcon
+                        
                     }
                 }
             } else {
@@ -618,7 +619,6 @@ extension Product {
     }
 
     var formattedPrice: String {
-        let symbol = currency == "EUR" ? "€" : (currency == "USD" ? "$" : currency + " ")
-        return "\(symbol)\(Int(price).formatted())"
+        return "₹\(Int(price).formatted())"
     }
 }

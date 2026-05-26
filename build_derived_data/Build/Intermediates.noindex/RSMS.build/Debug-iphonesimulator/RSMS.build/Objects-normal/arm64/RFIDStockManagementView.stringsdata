@@ -1,0 +1,72 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/InventoryController/RFIDStockManagementView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "RFID Stock Management",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 83
+        }
+      },
+      {
+        "comment": "",
+        "key": "RFID Active",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 96
+        }
+      },
+      {
+        "comment": "",
+        "key": "Store-wide Scan",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Performed by Emma Leroy",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 124
+        }
+      },
+      {
+        "comment": "",
+        "key": "₹%@",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 252
+        }
+      },
+      {
+        "comment": "",
+        "key": "Total Loss Value",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 255
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 263
+        }
+      },
+      {
+        "comment": "",
+        "key": "Units Lost",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 266
+        }
+      }
+    ]
+  },
+  "version": 1
+}

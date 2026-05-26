@@ -1,0 +1,88 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffPerformanceView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Loading Staff...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "Staff",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 29
+        }
+      },
+      {
+        "comment": "",
+        "key": "Error Loading Data",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 17
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Employee",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "No staff found.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 69
+        }
+      },
+      {
+        "comment": "",
+        "key": "Loading Performance Data...",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 121
+        }
+      },
+      {
+        "comment": "",
+        "key": "Performance",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 137
+        }
+      },
+      {
+        "comment": "",
+        "key": "Error Loading Data",
+        "location": {
+          "startingColumn": 25,
+          "startingLine": 125
+        }
+      },
+      {
+        "comment": "",
+        "key": "No sales associates available.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 178
+        }
+      },
+      {
+        "comment": "",
+        "key": "New Goal",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 166
+        }
+      }
+    ]
+  },
+  "version": 1
+}

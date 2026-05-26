@@ -1,0 +1,80 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/InventoryDashboardSections.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "CONTROLLER",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 19
+        }
+      },
+      {
+        "comment": "",
+        "key": "Hello, %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 26
+        }
+      },
+      {
+        "comment": "",
+        "key": "TOTAL INVENTORY",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 52
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld%%",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 80
+        }
+      },
+      {
+        "comment": "",
+        "key": "TODAY'S SCANS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 87
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 107
+        }
+      },
+      {
+        "comment": "",
+        "key": "UNITS",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 110
+        }
+      },
+      {
+        "comment": "",
+        "key": "ACTIVITY FEED",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 247
+        }
+      },
+      {
+        "comment": "",
+        "key": "VIEW ALL",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 252
+        }
+      }
+    ]
+  },
+  "version": 1
+}

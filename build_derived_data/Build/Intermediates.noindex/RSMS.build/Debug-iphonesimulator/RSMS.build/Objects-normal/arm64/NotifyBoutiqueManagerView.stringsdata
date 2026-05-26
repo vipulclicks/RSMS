@@ -1,0 +1,168 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Inventory Controller/NotifyBoutiqueManagerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Notify Manager",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 39
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notify Boutique Manager",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 70
+        }
+      },
+      {
+        "comment": "",
+        "key": "Monitor low-stock products & request replenishment",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 73
+        }
+      },
+      {
+        "comment": "",
+        "key": "Low Stock Alerts",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 159
+        }
+      },
+      {
+        "comment": "",
+        "key": "SKU: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 192
+        }
+      },
+      {
+        "comment": "",
+        "key": "Stock Level",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 205
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld / %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 209
+        }
+      },
+      {
+        "comment": "",
+        "key": "Last updated: %@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 230
+        }
+      },
+      {
+        "comment": "",
+        "key": "Manager Notified",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 245
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notify Manager",
+        "location": {
+          "startingColumn": 34,
+          "startingLine": 248
+        }
+      },
+      {
+        "comment": "",
+        "key": "Smart System Status",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 279
+        }
+      },
+      {
+        "comment": "",
+        "key": "Notification Sent Successfully",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 344
+        }
+      },
+      {
+        "comment": "",
+        "key": "Boutique Manager has been informed about the low stock item.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 347
+        }
+      },
+      {
+        "comment": "",
+        "key": "Current Stock",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 361
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 364
+        }
+      },
+      {
+        "comment": "",
+        "key": "Threshold Breached",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 370
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 373
+        }
+      },
+      {
+        "comment": "",
+        "key": "Sent at: %@",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 385
+        }
+      },
+      {
+        "comment": "",
+        "key": "Duplicate notifications prevented automatically",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 399
+        }
+      },
+      {
+        "comment": "",
+        "key": "Done",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 410
+        }
+      }
+    ]
+  },
+  "version": 1
+}

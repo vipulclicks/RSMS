@@ -559,13 +559,17 @@ final class DataStore {
     @discardableResult
     func createWishlistItem(_ w: WishlistItem) async throws -> WishlistItem {
         let created: WishlistItem = try await api.insert("wishlist_items", record: w)
-        wishlistItems.append(created)
+        await MainActor.run {
+            wishlistItems.append(created)
+        }
         return created
     }
 
     func deleteWishlistItem(id: UUID) async throws {
         try await api.delete("wishlist_items", id: id)
-        wishlistItems.removeAll { $0.id == id }
+        await MainActor.run {
+            wishlistItems.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -671,7 +675,9 @@ final class DataStore {
 
     func deleteUniversalCart(id: UUID) async throws {
         try await api.delete("universal_carts", id: id)
-        universalCarts.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCarts.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -696,7 +702,9 @@ final class DataStore {
 
     func deleteUniversalCartItem(id: UUID) async throws {
         try await api.delete("universal_cart_items", id: id)
-        universalCartItems.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCartItems.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -1055,5 +1063,48 @@ final class DataStore {
     func updateShipFromStoreSlip(_ s: ShipFromStoreSlip) async throws {
         try await api.update("ship_from_store_slips", id: s.id, record: s)
         if let i = shipFromStoreSlips.firstIndex(where: { $0.id == s.id }) { shipFromStoreSlips[i] = s }
+    }
+
+    @MainActor
+    func clearAllCaches() {
+        stores = []
+        users = []
+        dashboardSummaries = []
+        staffShifts = []
+        salesGoals = []
+        commissions = []
+        performanceMetrics = []
+        planograms = []
+        lookbooks = []
+        complianceChecks = []
+        clientEvents = []
+        eventInvitations = []
+        clients = []
+        clientAnniversaries = []
+        wishlistItems = []
+        appointments = []
+        aiRecommendations = []
+        lookBuilderOutfits = []
+        universalCarts = []
+        universalCartItems = []
+        discounts = []
+        transactions = []
+        tenders = []
+        giftReceipts = []
+        exchangeReturns = []
+        exchangeReturnItems = []
+        products = []
+        stockItems = []
+        rfidScanRecords = []
+        inventoryVariances = []
+        inventoryMovements = []
+        movementItems = []
+        cycleCounts = []
+        auditTrails = []
+        serialCaptures = []
+        authCertificates = []
+        shrinkageAnalytics = []
+        omnichannelOrders = []
+        shipFromStoreSlips = []
     }
 }

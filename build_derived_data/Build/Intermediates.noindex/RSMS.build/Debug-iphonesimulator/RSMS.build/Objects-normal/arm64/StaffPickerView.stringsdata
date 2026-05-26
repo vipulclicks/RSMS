@@ -1,0 +1,16 @@
+{
+  "source": "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffPickerView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Select Associate",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 33
+        }
+      }
+    ]
+  },
+  "version": 1
+}

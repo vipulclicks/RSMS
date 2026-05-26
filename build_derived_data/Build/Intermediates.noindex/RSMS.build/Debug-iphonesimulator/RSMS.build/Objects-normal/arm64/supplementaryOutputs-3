@@ -1,0 +1,58 @@
+{
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StaffShiftPlanningView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffShiftPlanningView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffShiftPlanningView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffShiftPlanningView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffShiftPlanningView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StaffShiftPlanningView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/BoutiqueManager/StoreDashboardView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StoreDashboardView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StoreDashboardView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StoreDashboardView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StoreDashboardView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StoreDashboardView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/Client/ClientPortalView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientPortalView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientPortalView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientPortalView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientPortalView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/ClientPortalView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/InventoryController/RFIDStockManagementView.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RFIDStockManagementView.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RFIDStockManagementView.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RFIDStockManagementView.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RFIDStockManagementView.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RFIDStockManagementView.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/InventoryController/ViewModels/BarcodeScannerViewModel.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BarcodeScannerViewModel.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BarcodeScannerViewModel.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BarcodeScannerViewModel.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BarcodeScannerViewModel.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/BarcodeScannerViewModel.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/InventoryController/ViewModels/CycleCountViewModel.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CycleCountViewModel.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CycleCountViewModel.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CycleCountViewModel.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CycleCountViewModel.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/CycleCountViewModel.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/InventoryController/ViewModels/NotifyBoutiqueManagerViewModel.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/NotifyBoutiqueManagerViewModel.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/NotifyBoutiqueManagerViewModel.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/NotifyBoutiqueManagerViewModel.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/NotifyBoutiqueManagerViewModel.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/NotifyBoutiqueManagerViewModel.swiftdeps"
+  },
+  "/Users/vipul/RSMS/RSMS/Features/InventoryController/ViewModels/StockReconciliationViewModel.swift" : {
+    "const-values" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationViewModel.swiftconstvalues",
+    "dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationViewModel.d",
+    "diagnostics" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationViewModel.dia",
+    "object" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationViewModel.o",
+    "swift-dependencies" : "/Users/vipul/RSMS/build_derived_data/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/StockReconciliationViewModel.swiftdeps"
+  }
+}
