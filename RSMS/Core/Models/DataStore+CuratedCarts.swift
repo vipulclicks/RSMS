@@ -21,4 +21,57 @@ extension DataStore {
                                items: items)
         }
     }
+
+    /// Saves a curated cart to Supabase.
+    /// Maps the local `CuratedCart` model into the `curated_carts` table.
+    func saveCuratedCart(_ cart: CuratedCart, forClient clientId: UUID) async throws {
+        struct CuratedCartInsert: Codable {
+            let id: UUID
+            let clientId: UUID
+            let title: String
+            let description: String
+            let createdAt: Date
+
+            enum CodingKeys: String, CodingKey {
+                case id, title, description
+                case clientId   = "client_id"
+                case createdAt  = "created_at"
+            }
+        }
+
+        let insert = CuratedCartInsert(
+            id: cart.id,
+            clientId: clientId,
+            title: cart.title,
+            description: cart.description,
+            createdAt: Date()
+        )
+        let _: CuratedCartInsert = try await SupabaseClient.shared.insert("curated_carts", record: insert)
+
+        struct CuratedCartItemInsert: Codable {
+            let id: UUID
+            let cartId: UUID
+            let productId: UUID
+            let quantity: Int
+            let unitPrice: Double
+
+            enum CodingKeys: String, CodingKey {
+                case id, quantity
+                case cartId     = "cart_id"
+                case productId  = "product_id"
+                case unitPrice  = "unit_price"
+            }
+        }
+
+        for item in cart.items {
+            let itemInsert = CuratedCartItemInsert(
+                id: item.id,
+                cartId: cart.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice ?? 0.0
+            )
+            let _: CuratedCartItemInsert = try await SupabaseClient.shared.insert("curated_cart_items", record: itemInsert)
+        }
+    }
 }

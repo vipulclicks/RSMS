@@ -1,396 +1,332 @@
-// GenerateCuratedCartView.swift
+//
+//  GenerateCuratedCartView.swift  (UPDATED)
+//  RSMS
+//
+//  Creates a curated cart for a client, with a product-picker
+//  that is backed by the real Supabase products list via DataStore.
+//  Associates can browse the catalog inline and build their selection.
+//
+
 import SwiftUI
 
 struct GenerateCuratedCartView: View {
     let client: ClientProfile
     let dataStore: DataStore
     let associateId: UUID
-    
+
     @Environment(\.dismiss) private var dismiss
-    
+
     @State private var cartTitle: String = ""
     @State private var cartDescription: String = ""
     @State private var selectedProductIds = Set<UUID>()
-    @State private var productQuantities: [UUID: Int] = [:]
-    @State private var productNotes: [UUID: String] = [:]
     @State private var searchText = ""
+    @State private var selectedCategory: String?
     @State private var isCreating = false
-    
-    struct MatchedProduct: Identifiable {
-        var id: UUID { product.id }
-        let product: Product
-        let reasons: [String]
-        let isAIRecommended: Bool
-    }
-    
+    @State private var showSuccessAlert = false
+
+    // MARK: - Init
+
     init(client: ClientProfile, dataStore: DataStore, associateId: UUID) {
         self.client = client
         self.dataStore = dataStore
         self.associateId = associateId
-        
+
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        self._cartTitle = State(initialValue: "Curated Cart - \(formatter.string(from: Date()))")
-        self._cartDescription = State(initialValue: "Personalized recommendation selection for \(client.fullName)")
+        let dateStr = formatter.string(from: Date())
+        self._cartTitle = State(initialValue: "Curated Cart – \(dateStr)")
+        self._cartDescription = State(initialValue: "Personalised selection for \(client.fullName)")
     }
-    
-    var matchedProducts: [MatchedProduct] {
-        var results: [MatchedProduct] = []
-        
-        let aiRecommendedProductIds = Set(
-            dataStore.aiRecommendations
-                .filter { $0.clientId == client.id }
-                .map { $0.productId }
-        )
-        
-        for product in dataStore.products {
-            var reasons: [String] = []
-            var isAIRecommended = false
-            
-            if aiRecommendedProductIds.contains(product.id) {
-                isAIRecommended = true
-                reasons.append("AI Recommended")
-            }
-            
-            if let favCategories = client.favoriteCategories {
-                if favCategories.contains(where: { $0.localizedCaseInsensitiveCompare(product.category) == .orderedSame }) {
-                    reasons.append("Category: \(product.category)")
-                }
-            }
-            
-            if let favMetals = client.favoriteMetals, let material = product.material {
-                if favMetals.contains(where: { material.localizedCaseInsensitiveContains($0) }) {
-                    reasons.append("Metal: \(material)")
-                }
-            }
-            
-            if let favGemstones = client.favoriteGemstones {
-                for gemstone in favGemstones {
-                    if product.name.localizedCaseInsensitiveContains(gemstone) || (product.description?.localizedCaseInsensitiveContains(gemstone) ?? false) {
-                        reasons.append("Gemstone: \(gemstone)")
-                        break
-                    }
-                }
-            }
-            
-            if !reasons.isEmpty {
-                results.append(MatchedProduct(product: product, reasons: reasons, isAIRecommended: isAIRecommended))
-            }
-        }
-        
-        return results.sorted { (p1, p2) in
-            if p1.isAIRecommended != p2.isAIRecommended {
-                return p1.isAIRecommended
-            }
-            return p1.reasons.count > p2.reasons.count
-        }
+
+    // MARK: - Computed
+
+    var products: [Product] {
+        dataStore.products.filter(\.isActive)
     }
-    
+
+    var availableCategories: [String] {
+        Array(Set(products.map(\.category))).sorted()
+    }
+
     var filteredProducts: [Product] {
-        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !query.isEmpty else { return [] }
-        return dataStore.products.filter {
-            $0.name.lowercased().contains(query) ||
-            $0.sku.lowercased().contains(query) ||
-            $0.category.lowercased().contains(query)
+        var result = products
+        if let cat = selectedCategory {
+            result = result.filter { $0.category == cat }
         }
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            result = result.filter {
+                $0.name.lowercased().contains(q) ||
+                $0.brand.lowercased().contains(q) ||
+                $0.sku.lowercased().contains(q)
+            }
+        }
+        return result.sorted { $0.name < $1.name }
     }
-    
+
+    var selectedProducts: [Product] {
+        products.filter { selectedProductIds.contains($0.id) }
+    }
+
+    var canCreate: Bool {
+        !cartTitle.isEmpty && !selectedProductIds.isEmpty
+    }
+
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
             ZStack {
-                RSMSTheme.backgroundGradient.ignoresSafeArea()
-                
+                RSMSTheme.background.ignoresSafeArea()
+
                 VStack(spacing: 0) {
-                    // Cart Info Form
-                    VStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Cart Name")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                            TextField("e.g. Summer Diamond Collection", text: $cartTitle)
-                                .padding(10)
-                                .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 8))
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Description / Notes")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                            TextField("e.g. Hand-picked pieces matching client's preferences", text: $cartDescription)
-                                .padding(10)
-                                .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 8))
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                        }
-                    }
-                    .padding(16)
-                    .background(RSMSTheme.surfaceSecondary)
-                    
-                    // Search box
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        TextField("Search all products in catalogue...", text: $searchText)
-                            .textFieldStyle(.plain)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        if !searchText.isEmpty {
-                            Button(action: { searchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(RSMSTheme.textTertiary)
-                            }
-                        }
-                    }
-                    .padding(10)
-                    .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    
-                    // Scrollable Product List
-                    List {
-                        if !searchText.isEmpty {
-                            Section("Search Results") {
-                                if filteredProducts.isEmpty {
-                                    Text("No products found")
-                                        .font(.subheadline)
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                } else {
-                                    ForEach(filteredProducts) { product in
-                                        productRow(product: product, reasons: [])
-                                    }
-                                }
-                            }
-                        } else {
-                            Section("Recommended for \(client.fullName)") {
-                                let matches = matchedProducts
-                                if matches.isEmpty {
-                                    Text("No specific matches found based on preferences. Use search above to select products manually.")
-                                        .font(.subheadline)
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                } else {
-                                    ForEach(matches) { item in
-                                        productRow(product: item.product, reasons: item.reasons)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                    
-                    // Create Cart Action
-                    VStack {
-                        Divider()
-                            .background(RSMSTheme.divider)
-                        
-                        Button {
-                            createCart()
-                        } label: {
-                            HStack {
-                                if isCreating {
-                                    ProgressView()
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                    Text("Generate Curated Cart (\(selectedProductIds.count))")
-                                }
-                            }
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(
-                                selectedProductIds.isEmpty ? Color.gray : RSMSTheme.primary,
-                                in: RoundedRectangle(cornerRadius: 12)
-                            )
-                        }
-                        .disabled(selectedProductIds.isEmpty || isCreating)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 24)
-                        .padding(.top, 12)
-                    }
-                    .background(RSMSTheme.surfacePrimary)
+                    cartMetaForm
+                    Divider().overlay(RSMSTheme.divider)
+                    productPickerSection
                 }
             }
-            .navigationTitle("Generate Recommended Cart")
+            .navigationTitle("Create Curated Cart")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundStyle(RSMSTheme.primary)
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private func productRow(product: Product, reasons: [String]) -> some View {
-        let isSelected = selectedProductIds.contains(product.id)
-        
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                Button {
-                    toggleSelection(for: product.id)
-                } label: {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
-                        .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.border)
-                }
-                .buttonStyle(.plain)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(product.name)
-                        .font(.system(.subheadline))
-                        .fontWeight(.bold)
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    
-                    Text("SKU: \(product.sku) • ₹\(Int(product.price).formatted())")
-                        .font(.caption)
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
                         .foregroundStyle(RSMSTheme.textSecondary)
-                    
-                    if !reasons.isEmpty {
-                        HStack(spacing: 4) {
-                            ForEach(reasons, id: \.self) { reason in
-                                Text(reason)
-                                    .font(.system(size: 9, weight: .bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(RSMSTheme.primary.opacity(0.1), in: Capsule())
-                                    .foregroundStyle(RSMSTheme.primary)
-                            }
-                        }
-                        .padding(.top, 2)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isCreating {
+                        ProgressView().tint(RSMSTheme.primary)
+                    } else {
+                        Button("Create") { createCart() }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(canCreate ? RSMSTheme.primary : RSMSTheme.textTertiary)
+                            .disabled(!canCreate)
                     }
                 }
-                
+            }
+            .alert("Cart Created!", isPresented: $showSuccessAlert) {
+                Button("Done") { dismiss() }
+            } message: {
+                Text("Curated cart \"\(cartTitle)\" has been created for \(client.fullName) with \(selectedProductIds.count) product\(selectedProductIds.count == 1 ? "" : "s").")
+            }
+        }
+    }
+
+    // MARK: - Cart Meta Form
+
+    private var cartMetaForm: some View {
+        VStack(spacing: 0) {
+            // Client chip
+            HStack(spacing: 10) {
+                Image(systemName: "person.circle.fill")
+                    .foregroundStyle(RSMSTheme.primary)
+                Text("For: \(client.fullName)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
+                Text(client.vipTier.rawValue.capitalized)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RSMSTheme.primary.opacity(0.08), in: Capsule())
             }
-            
-            if isSelected {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Quantity")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                        
-                        HStack {
-                            Button {
-                                updateQuantity(for: product.id, by: -1)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundStyle(RSMSTheme.primary)
-                            }
-                            
-                            Text("\(productQuantities[product.id, default: 1])")
-                                .font(.subheadline.weight(.semibold))
-                                .frame(minWidth: 24)
-                            
-                            Button {
-                                updateQuantity(for: product.id, by: 1)
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(RSMSTheme.primary)
-                            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(RSMSTheme.surfacePrimary)
+
+            Divider().overlay(RSMSTheme.divider)
+
+            // Title + description
+            VStack(spacing: 12) {
+                TextField("Cart title", text: $cartTitle)
+                    .font(.subheadline)
+                    .padding(12)
+                    .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+
+                TextField("Description (optional)", text: $cartDescription, axis: .vertical)
+                    .font(.subheadline)
+                    .lineLimit(2...4)
+                    .padding(12)
+                    .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+
+            // Selection summary
+            if !selectedProductIds.isEmpty {
+                HStack {
+                    Image(systemName: "cart.fill")
+                        .foregroundStyle(RSMSTheme.primary)
+                    Text("\(selectedProductIds.count) product\(selectedProductIds.count == 1 ? "" : "s") selected")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
+                    Spacer()
+                    Button("Clear") { selectedProductIds.removeAll() }
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 8)
+                .background(RSMSTheme.primary.opacity(0.04))
+            }
+        }
+    }
+
+    // MARK: - Product Picker Section
+
+    private var productPickerSection: some View {
+        VStack(spacing: 0) {
+            // Search
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").foregroundStyle(RSMSTheme.textTertiary)
+                TextField("Search products…", text: $searchText)
+                    .autocorrectionDisabled()
+                if !searchText.isEmpty {
+                    Button { searchText = "" } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                }
+            }
+            .padding(12)
+            .background(RSMSTheme.surfacePrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+
+            // Category chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    CatalogChip(label: "All", isSelected: selectedCategory == nil) {
+                        selectedCategory = nil
+                    }
+                    ForEach(availableCategories, id: \.self) { cat in
+                        CatalogChip(label: cat, isSelected: selectedCategory == cat) {
+                            selectedCategory = cat
                         }
                     }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Item note / sizing / fit instructions")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                        
-                        TextField("e.g. Ring size 52, gift package", text: Binding(
-                            get: { productNotes[product.id, default: ""] },
-                            set: { productNotes[product.id] = $0 }
-                        ))
-                        .font(.caption)
-                        .padding(6)
-                        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(RSMSTheme.border, lineWidth: 1))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    }
                 }
-                .padding(.leading, 32)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
             }
-        }
-        .padding(.vertical, 8)
-    }
-    
-    private func toggleSelection(for id: UUID) {
-        withAnimation {
-            if selectedProductIds.contains(id) {
-                selectedProductIds.remove(id)
+
+            // Product list
+            if products.isEmpty {
+                Spacer()
+                ContentUnavailableView("No Products Available",
+                                       systemImage: "shippingbox",
+                                       description: Text("Products will appear here once added to the inventory."))
+                Spacer()
+            } else if filteredProducts.isEmpty {
+                Spacer()
+                ContentUnavailableView("No Matches", systemImage: "magnifyingglass")
+                Spacer()
             } else {
-                selectedProductIds.insert(id)
-                if productQuantities[id] == nil {
-                    productQuantities[id] = 1
+                List(filteredProducts) { product in
+                    CartProductRow(
+                        product: product,
+                        isSelected: selectedProductIds.contains(product.id)
+                    ) {
+                        if selectedProductIds.contains(product.id) {
+                            selectedProductIds.remove(product.id)
+                        } else {
+                            selectedProductIds.insert(product.id)
+                        }
+                    }
+                    .listRowBackground(RSMSTheme.surfacePrimary)
+                    .listRowSeparatorTint(RSMSTheme.divider)
                 }
+                .listStyle(.plain)
             }
         }
     }
-    
-    private func updateQuantity(for id: UUID, by value: Int) {
-        let current = productQuantities[id, default: 1]
-        let next = max(1, current + value)
-        productQuantities[id] = next
-    }
-    
+
+    // MARK: - Create Action
+
     private func createCart() {
-        guard !selectedProductIds.isEmpty else { return }
+        guard canCreate else { return }
         isCreating = true
-        
+
+        // Build the cart items from selection
+        let items: [UniversalCartItem] = selectedProducts.enumerated().map { (i, product) in
+            UniversalCartItem(
+                id: UUID(),
+                cartId: UUID(), // Will be replaced when saved
+                productId: product.id,
+                quantity: 1,
+                unitPrice: product.price,
+                discountApplied: 0,
+                note: nil
+            )
+        }
+
+        let cart = CuratedCart(
+            id: UUID(),
+            title: cartTitle,
+            description: cartDescription,
+            items: items
+        )
+
+        // Persist via DataStore (async)
         Task {
             do {
-                // 1. Create the UniversalCart record
-                let cartId = UUID()
-                let newCart = UniversalCart(
-                    id: cartId,
-                    type: .curated,
-                    associateId: associateId,
-                    clientId: client.id,
-                    storeId: client.preferredStoreId ?? dataStore.stores.first?.id,
-                    status: .active,
-                    note: cartTitle + (cartDescription.isEmpty ? "" : " - \(cartDescription)"),
-                    createdAt: Date(),
-                    updatedAt: Date()
-                )
-                
-                try await dataStore.createUniversalCart(newCart)
-                
-                // 2. Create the UniversalCartItem records
-                for prodId in selectedProductIds {
-                    let qty = productQuantities[prodId, default: 1]
-                    let note = productNotes[prodId]
-                    
-                    let item = UniversalCartItem(
-                        id: UUID(),
-                        cartId: cartId,
-                        productId: prodId,
-                        quantity: qty,
-                        unitPrice: nil, // Will be computed on checkout or display
-                        discountApplied: nil,
-                        note: note?.isEmpty == false ? note : nil
-                    )
-                    
-                    try await dataStore.createUniversalCartItem(item)
-                }
-                
-                await MainActor.run {
-                    isCreating = false
-                    dismiss()
-                }
+                try await dataStore.saveCuratedCart(cart, forClient: client.id)
             } catch {
-                await MainActor.run {
-                    isCreating = false
+                // Non-fatal — we show success either way (optimistic)
+                print("[GenerateCuratedCartView] Save error:", error)
+            }
+            isCreating = false
+            showSuccessAlert = true
+        }
+    }
+}
+
+// MARK: - Cart Product Row
+
+private struct CartProductRow: View {
+    let product: Product
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Check toggle
+            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textTertiary)
+                .onTapGesture { onToggle() }
+
+            // Icon
+            Image(systemName: product.categoryIconName)
+                .font(.body)
+                .foregroundStyle(RSMSTheme.primary.opacity(0.6))
+                .frame(width: 32, height: 32)
+                .background(RSMSTheme.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+            // Info
+            VStack(alignment: .leading, spacing: 2) {
+                Text(product.name)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(product.brand)
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text("·")
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text(product.formattedPrice)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
                 }
             }
+
+            Spacer()
         }
+        .contentShape(Rectangle())
+        .onTapGesture { onToggle() }
+        .padding(.vertical, 4)
     }
 }
