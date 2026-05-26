@@ -1,22 +1,37 @@
 import SwiftUI
 
+enum DashboardRoute: Hashable {
+    case appointments
+    case lowStock
+}
+
 struct StoreDashboardView: View {
     // MARK: - Environment
     @Environment(AppViewModel.self) private var appVM
     
     // MARK: - View Models & State
     @State private var dashboardVM = BoutiqueDashboardViewModel()
+    @State private var cycleCountVM = CycleCountViewModel()
+    @State private var navPath: [DashboardRoute] = []
     @State private var showingNotifications = false
-    @State private var showingAppointments = false
     
-    private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var kpiColumns: [GridItem] {
+        if horizontalSizeClass == .compact {
+            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+        } else {
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
+        }
+    }
     
     var body: some View {
-        Group {
+        NavigationStack(path: $navPath) {
+            Group {
             if dashboardVM.isLoading {
                 ProgressView("Loading Dashboard...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,28 +53,51 @@ struct StoreDashboardView: View {
                         headerSection
                         kpiCardsRow
                         salesProgressCard
-                        staffSection
+                        CycleCountSectionView(cycleCountVM: cycleCountVM)
                     }
                     .padding(24)
                 }
             }
         }
-        .background(RSMSTheme.background.ignoresSafeArea())
-        .navigationTitle("Store Dashboard")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                notificationBell
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationTitle("Store Dashboard")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    notificationBell
+                }
             }
-        }
-        .sheet(isPresented: $showingNotifications) {
-            LowStockNotificationView(dashboardVM: dashboardVM)
-        }
-        .sheet(isPresented: $showingAppointments) {
-            TodayAppointmentsSheet()
-        }
-        .task {
-            if let storeId = appVM.currentStoreId {
-                await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
+            .navigationDestination(for: DashboardRoute.self) { route in
+                switch route {
+                case .appointments:
+                    TodayAppointmentsSheet()
+                case .lowStock:
+                    ScrollView {
+                        InventoryAlertsView(dashboardVM: dashboardVM)
+                            .padding(32)
+                    }
+                    .background(RSMSTheme.background.ignoresSafeArea())
+                    .navigationTitle("Inventory Alerts")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .sheet(isPresented: $showingNotifications) {
+                // We wrap it in a NavigationStack here since LowStockNotificationView no longer has one internally
+                NavigationStack {
+                    LowStockNotificationView(dashboardVM: dashboardVM)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done") { showingNotifications = false }
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.gold)
+                            }
+                        }
+                }
+            }
+            .task {
+                if let storeId = appVM.currentStoreId {
+                    await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                    await cycleCountVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                }
             }
         }
     }
@@ -111,7 +149,7 @@ struct StoreDashboardView: View {
     
     private var kpiCardsRow: some View {
         return LazyVGrid(
-            columns: columns,
+            columns: kpiColumns,
             alignment: .leading,
             spacing: 16
         ) {
@@ -124,7 +162,7 @@ struct StoreDashboardView: View {
             )
             
             Button {
-                showingAppointments = true
+                navPath.append(.appointments)
             } label: {
                 KPICard(
                     icon: "calendar.badge.clock",
@@ -136,7 +174,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                showingNotifications = true
+                navPath.append(.lowStock)
             } label: {
                 KPICard(
                     icon: "exclamationmark.triangle.fill",
@@ -156,35 +194,49 @@ struct StoreDashboardView: View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader(title: "Sales Progress")
             
-            HStack(spacing: 32) {
-                CircularProgressView(
-                    progress: dashboardVM.salesProgress,
-                    label: "of target",
-                    value: "\(Int(dashboardVM.salesProgress * 100))%"
-                )
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    metricRow(
-                        label: "Target",
-                        value: dashboardVM.formatCurrency(dashboardVM.salesTarget),
-                        color: RSMSTheme.textSecondary
+            if horizontalSizeClass == .compact {
+                VStack(spacing: 24) {
+                    CircularProgressView(
+                        progress: dashboardVM.salesProgress,
+                        label: "of target",
+                        value: "\(Int(dashboardVM.salesProgress * 100))%"
                     )
-                    
-                    metricRow(
-                        label: "Actual",
-                        value: dashboardVM.formatCurrency(dashboardVM.todaySales),
-                        color: RSMSTheme.gold
+                    salesMetricsList
+                }
+            } else {
+                HStack(spacing: 32) {
+                    CircularProgressView(
+                        progress: dashboardVM.salesProgress,
+                        label: "of target",
+                        value: "\(Int(dashboardVM.salesProgress * 100))%"
                     )
-                    
-                    metricRow(
-                        label: "Remaining",
-                        value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.todaySales)),
-                        color: RSMSTheme.warning
-                    )
+                    salesMetricsList
                 }
             }
         }
         .rsmsCard()
+    }
+    
+    private var salesMetricsList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            metricRow(
+                label: "Target",
+                value: dashboardVM.formatCurrency(dashboardVM.salesTarget),
+                color: RSMSTheme.textSecondary
+            )
+            
+            metricRow(
+                label: "Actual",
+                value: dashboardVM.formatCurrency(dashboardVM.todaySales),
+                color: RSMSTheme.gold
+            )
+            
+            metricRow(
+                label: "Remaining",
+                value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.todaySales)),
+                color: RSMSTheme.warning
+            )
+        }
     }
     
     // MARK: - Staff Section
@@ -417,8 +469,7 @@ struct TodayAppointmentsSheet: View {
     @Environment(AppViewModel.self) private var appVM
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     let todaysAppointments = appVM.dataStore.appointments.filter {
                         Calendar.current.isDateInToday($0.dateTime)
@@ -443,14 +494,6 @@ struct TodayAppointmentsSheet: View {
             .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Today's Appointments")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
-            }
-        }
     }
     
     private func appointmentCard(_ appointment: Appointment) -> some View {

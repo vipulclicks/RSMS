@@ -3,7 +3,7 @@ import SwiftUI
 struct StaffShiftPlanningView: View {
     @Environment(AppViewModel.self) private var appVM
     
-    @State private var navPath = [SalesGoalRoute]()
+    @State private var navPath = [StaffRoute]()
     @State private var salesGoalVM = SalesGoalViewModel()
     @State private var shiftPlanningVM = StaffManagementViewModel()
     @State private var showingNewAssociateSheet = false
@@ -43,12 +43,16 @@ struct StaffShiftPlanningView: View {
                             }
                         }
                     }
-                    .navigationDestination(for: SalesGoalRoute.self) { route in
+                    .navigationDestination(for: StaffRoute.self) { route in
                         switch route {
                         case .assignGoalForm:
                             AssignGoalFormView(viewModel: salesGoalVM, navPath: $navPath)
                         case .staffPicker:
                             StaffPickerView(viewModel: salesGoalVM, navPath: $navPath)
+                        case .allStaff:
+                            EmptyView()
+                        case .staffProfile(let staff):
+                            StaffProfileDetailView(staff: staff)
                         }
                     }
                     .sheet(isPresented: $showingNewAssociateSheet) {
@@ -219,6 +223,8 @@ struct StaffGoalCard: View {
                         } label: {
                             Text(period.rawValue.capitalized)
                                 .font(.system(size: 10, weight: .bold))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                                 .padding(.horizontal, 6) // Slightly tighter padding to fit all 4
                                 .padding(.vertical, 4)
                                 .background(selectedPeriod == period ? RSMSTheme.gold : RSMSTheme.surfaceTertiary)

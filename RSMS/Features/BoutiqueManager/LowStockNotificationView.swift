@@ -18,8 +18,7 @@ struct LowStockNotificationView: View {
     private let columns = [GridItem(.adaptive(minimum: 320), spacing: 24)]
     
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottom) {
                 // MARK: The Background Fix
                 // Placing the background color on the ZStack ensures the entire screen gets filled
                 RSMSTheme.background.ignoresSafeArea()
@@ -51,14 +50,6 @@ struct LowStockNotificationView: View {
             }
             .navigationTitle("Inventory Alerts")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
-            }
-        }
     }
     
     private var warningBanner: some View {
@@ -75,12 +66,8 @@ struct LowStockNotificationView: View {
     }
     
     private func alertCard(_ alert: LowStockAlert) -> some View {
-        VStack(spacing: 24) {
-            HStack(alignment: .top, spacing: 16) {
-                RoundedRectangle(cornerRadius: 12).fill(RSMSTheme.surfaceSecondary)
-                    .frame(width: 80, height: 80)
-                    .overlay(Image(systemName: "bag.fill").font(.title).foregroundStyle(RSMSTheme.textSecondary))
-                
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(alert.product.name).font(.title3.weight(.medium)).foregroundStyle(RSMSTheme.textPrimary).lineLimit(2)
                     Text("SKU: \(alert.product.sku)").font(.caption.weight(.bold)).foregroundStyle(RSMSTheme.textSecondary)
@@ -88,31 +75,10 @@ struct LowStockNotificationView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Stock").font(.caption).foregroundStyle(RSMSTheme.textSecondary)
-                    Text(String(format: "%02d", alert.stockItem.quantity))
+                    Text("\(alert.stockItem.quantity)")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(RSMSTheme.danger)
                 }
-            }
-            
-            Button {
-                dashboardVM.reorderItem(for: alert.product.id)
-                withAnimation(.spring(response: 0.3)) {
-                    toastMessage = "\(alert.product.name) reorder initiated"
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                    withAnimation { toastMessage = nil }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text("Reorder")
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(RSMSTheme.cream)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RSMSTheme.gold)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
             }
         }
         .rsmsCard(padding: 24)

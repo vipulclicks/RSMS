@@ -32,7 +32,7 @@ struct AppointmentsInventoryView: View {
                             .offset(y: hasAppeared ? 0 : 20)
                             .animation(.easeOut(duration: 0.5).delay(0.15), value: hasAppeared)
                         
-                        inventorySection
+                        InventoryAlertsView(dashboardVM: dashboardVM)
                             .opacity(hasAppeared ? 1 : 0)
                             .offset(y: hasAppeared ? 0 : 20)
                             .animation(.easeOut(duration: 0.5).delay(0.2), value: hasAppeared)
@@ -43,9 +43,6 @@ struct AppointmentsInventoryView: View {
         }
         .background(RSMSTheme.background.ignoresSafeArea())
         .navigationTitle("Appointments & Inventory")
-        .sheet(item: $cycleCountVM.itemToCount) { item in
-            cycleCountSheet(for: item)
-        }
         .task {
             if let storeId = appVM.currentStoreId {
                 await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
@@ -775,42 +772,29 @@ struct AppointmentsInventoryView: View {
                     HStack(spacing: 6) {
                         Text("SKU:")
                             .foregroundStyle(RSMSTheme.textTertiary)
-                        Text(alert.product.sku)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    .font(.caption)
-                }
-                Spacer()
-                
-                // Progress bar indicator
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(RSMSTheme.surfaceTertiary)
-                            .frame(height: 6)
-                        Capsule()
-                            .fill(accentColor)
-                            .frame(width: geo.size.width * CGFloat(max(0.1, Double(alert.stockItem.quantity) / 10.0)), height: 6)
                     }
                 }
-                .frame(height: 6)
-                .padding(.top, 4)
             }
-            .padding(20)
+            .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(RSMSTheme.surfacePrimary)
-                    .shadow(color: accentColor.opacity(0.08), radius: 15, x: 0, y: 8)
+                    .shadow(color: Color.black.opacity(0.04), radius: 20, x: 0, y: 10)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .stroke(accentColor.opacity(0.2), lineWidth: 1)
+                    .stroke(RSMSTheme.border, lineWidth: 1)
             )
         }
         .buttonStyle(ScaleButtonStyle())
     }
-    
+
+    // MARK: - Cycle Count Section
+    private var cycleCountSection: some View {
+        CycleCountSectionView(cycleCountVM: cycleCountVM)
+    }
+
     private func statusColor(for status: AppointmentStatus) -> Color {
         switch status {
         case .scheduled: return RSMSTheme.primary

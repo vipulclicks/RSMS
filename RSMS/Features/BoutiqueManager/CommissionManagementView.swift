@@ -47,6 +47,7 @@ struct CommissionManagementView: View {
                 staffId: associate.id,
                 staffName: associate.profile.fullName,
                 periodSales: associate.totalSales,
+                targetAmount: associate.targetAmount,
                 period: viewModel.selectedPeriod
             )
         }
@@ -220,13 +221,14 @@ struct CommissionAssignSheet: View {
     let staffId: UUID
     let staffName: String
     let periodSales: Double
+    let targetAmount: Double
     let period: GoalPeriod
     
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
     
     @State private var amount: Double? = nil
-    @State private var rate: Double = 5.0
+    @State private var rate: Double = 0.0 // Rate isn't explicitly used if amount is fixed, but let's keep for data struct
     @State private var status: CommissionStatus = .pending
     @State private var isSubmitting = false
     @State private var errorMessage: String?
@@ -296,30 +298,18 @@ struct CommissionAssignSheet: View {
                             
                         // Amount
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Amount (₹) *")
+                            Text("Auto-Calculated Amount (₹)")
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
-                            TextField("0.00", value: $amount, format: .number)
-                                .keyboardType(.decimalPad)
+                            Text(amount?.formatted(.currency(code: "INR").precision(.fractionLength(0))) ?? "₹0")
+                                .font(.title3.weight(.bold))
                                 .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(RSMSTheme.background)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         
-                        // Rate
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("Rate")
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                Spacer()
-                                Text("\(Int(rate))%")
-                                    .foregroundStyle(RSMSTheme.gold)
-                                    .fontWeight(.bold)
-                            }
-                            Slider(value: $rate, in: 1...20, step: 1)
-                                .tint(RSMSTheme.gold)
-                        }
+                        // Rate hidden or replaced since it's tiered, we don't have a single rate.
                         
                         // Status
                         VStack(alignment: .leading, spacing: 8) {
@@ -384,6 +374,25 @@ struct CommissionAssignSheet: View {
             }
         }
         .background(RSMSTheme.background.ignoresSafeArea())
+        .onAppear {
+            self.amount = calculateCommission(revenue: periodSales, target: targetAmount)
+        }
+    }
+    
+    private func calculateCommission(revenue: Double, target: Double) -> Double {
+        // Example logic for a Tiered Escalator model
+        let tier1Threshold = target * 0.8
+        let tier2Threshold = target * 1.0
+        
+        if revenue <= tier1Threshold {
+            return revenue * 0.02
+        } else if revenue <= tier2Threshold {
+            return (tier1Threshold * 0.02) + ((revenue - tier1Threshold) * 0.05)
+        } else {
+            return (tier1Threshold * 0.02) + 
+                   ((tier2Threshold - tier1Threshold) * 0.05) + 
+                   ((revenue - tier2Threshold) * 0.08)
+        }
     }
     
     @MainActor
