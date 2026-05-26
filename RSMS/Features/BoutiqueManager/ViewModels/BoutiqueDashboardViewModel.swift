@@ -39,6 +39,9 @@ final class BoutiqueDashboardViewModel {
         errorMessage = nil
         
         do {
+            // Fetch stores first so storeName lookup works
+            try await dataStore.fetchStores()
+            
             // A) Today's Sales
             try await dataStore.fetchUsers(storeId: storeId)
             let associateIds = Set(dataStore.users.filter { $0.role == .salesAssociate }.map { $0.id })

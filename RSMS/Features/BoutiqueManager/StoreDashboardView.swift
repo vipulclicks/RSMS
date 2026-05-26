@@ -8,6 +8,7 @@ struct StoreDashboardView: View {
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var showingNotifications = false
     @State private var showingAppointments = false
+    @State private var showingProfile = false
     
     private let columns = [
         GridItem(.flexible()),
@@ -48,7 +49,10 @@ struct StoreDashboardView: View {
         .navigationTitle("Store Dashboard")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                notificationBell
+                HStack(spacing: 16) {
+                    notificationBell
+                    profileButton
+                }
             }
         }
         .sheet(isPresented: $showingNotifications) {
@@ -56,6 +60,9 @@ struct StoreDashboardView: View {
         }
         .sheet(isPresented: $showingAppointments) {
             TodayAppointmentsSheet()
+        }
+        .navigationDestination(isPresented: $showingProfile) {
+            BoutiqueManagerProfileView()
         }
         .task {
             if let storeId = appVM.currentStoreId {
@@ -93,6 +100,29 @@ struct StoreDashboardView: View {
                 }
             }
             .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
+        }
+    }
+    
+    // MARK: - Profile Button
+    private var profileButton: some View {
+        Button {
+            showingProfile = true
+        } label: {
+            let initials: String = {
+                guard let name = appVM.currentUser?.fullName else { return "?" }
+                return name.split(separator: " ").prefix(2)
+                    .compactMap { $0.first.map(String.init) }.joined().uppercased()
+            }()
+
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.primaryGradient)
+                    .frame(width: 28, height: 28)
+
+                Text(initials)
+                    .font(.system(size: 10, weight: .bold, design: .serif))
+                    .foregroundStyle(.white)
+            }
         }
     }
     

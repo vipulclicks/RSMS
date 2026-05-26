@@ -82,21 +82,23 @@ struct BoutiqueManagerHomeView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        switch selectedSection {
-        case .dashboard:
-            StoreDashboardView()
-        case .staff:
-            StaffView()
-        case .performance:
-            PerformanceView()
-        case .todaysShift:
-            ShiftMonitorView()
-        case .appointmentsInventory:
-            AppointmentsInventoryView()
-        case .commissionManagement:
-            CommissionManagementView()
-        case .none:
-            StoreDashboardView()
+        NavigationStack {
+            switch selectedSection {
+            case .dashboard:
+                StoreDashboardView()
+            case .staff:
+                StaffView()
+            case .performance:
+                PerformanceView()
+            case .todaysShift:
+                ShiftMonitorView()
+            case .appointmentsInventory:
+                AppointmentsInventoryView()
+            case .commissionManagement:
+                CommissionManagementView()
+            case .none:
+                StoreDashboardView()
+            }
         }
     }
 
