@@ -159,7 +159,7 @@ struct StaffView: View {
                                 salesGoalVM.loadPreviousGoal()
                                 navPath.append(.assignGoalForm)
                             }
-                            .frame(width: horizontalSizeClass == .compact ? 320 : 380)
+                            .frame(width: horizontalSizeClass == .compact ? 340 : 380)
                         }
                     }
                 }

@@ -41,18 +41,30 @@ struct StoreDashboardView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(errorMessage)
                 )
-            } else if dashboardVM.todaySales == 0 && dashboardVM.salesTarget == 0 && dashboardVM.shifts.isEmpty {
-                ContentUnavailableView(
-                    "No Data",
-                    systemImage: "chart.pie",
-                    description: Text("Dashboard data is unavailable for this store. Start logging transactions to see insights.")
-                )
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
                         headerSection
                         kpiCardsRow
                         salesProgressCard
+                        
+                        // Debug Button to clean up Database duplicates
+                        Button(action: {
+                            Task {
+                                if let storeId = appVM.currentStoreId {
+                                    await dashboardVM.resetSalesGoals(dataStore: appVM.dataStore, storeId: storeId)
+                                }
+                            }
+                        }) {
+                            Label("Fix Database: Reset Goals to ₹7k", systemImage: "wand.and.stars")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(RSMSTheme.primaryDark)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(RSMSTheme.primaryDark.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                        
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
                     }
                     .padding(24)
@@ -192,26 +204,58 @@ struct StoreDashboardView: View {
     // MARK: - Sales Progress
     private var salesProgressCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Sales Progress")
+            HStack {
+                SectionHeader(title: "Sales Progress")
+                Spacer()
+                Picker("Period", selection: Bindable(dashboardVM).selectedPeriod) {
+                    ForEach(GoalPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue.capitalized).tag(period)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 320)
+            }
             
-            if horizontalSizeClass == .compact {
-                VStack(spacing: 24) {
-                    CircularProgressView(
-                        progress: dashboardVM.salesProgress,
-                        label: "of target",
-                        value: "\(Int(dashboardVM.salesProgress * 100))%"
-                    )
-                    salesMetricsList
+            if dashboardVM.hasGoalsForPeriod {
+                if horizontalSizeClass == .compact {
+                    VStack(spacing: 24) {
+                        CircularProgressView(
+                            progress: dashboardVM.salesProgress,
+                            label: "of target",
+                            value: "\(Int(dashboardVM.salesProgress * 100))%"
+                        )
+                        salesMetricsList
+                    }
+                } else {
+                    HStack(spacing: 32) {
+                        CircularProgressView(
+                            progress: dashboardVM.salesProgress,
+                            label: "of target",
+                            value: "\(Int(dashboardVM.salesProgress * 100))%"
+                        )
+                        salesMetricsList
+                    }
                 }
+                
+                Text("\(dashboardVM.goalAssociateCount) associate\(dashboardVM.goalAssociateCount == 1 ? "" : "s") with \(dashboardVM.selectedPeriod.rawValue) goals")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
             } else {
-                HStack(spacing: 32) {
-                    CircularProgressView(
-                        progress: dashboardVM.salesProgress,
-                        label: "of target",
-                        value: "\(Int(dashboardVM.salesProgress * 100))%"
-                    )
-                    salesMetricsList
+                // No goals empty state
+                VStack(spacing: 12) {
+                    Image(systemName: "target")
+                        .font(.system(size: 36))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text("No \(dashboardVM.selectedPeriod.rawValue) goal has been set")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    Text("Set \(dashboardVM.selectedPeriod.rawValue) sales targets for your associates to track progress here.")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .multilineTextAlignment(.center)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
             }
         }
         .rsmsCard()
@@ -226,14 +270,14 @@ struct StoreDashboardView: View {
             )
             
             metricRow(
-                label: "Actual",
-                value: dashboardVM.formatCurrency(dashboardVM.todaySales),
+                label: "Achieved",
+                value: dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount),
                 color: RSMSTheme.gold
             )
             
             metricRow(
                 label: "Remaining",
-                value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.todaySales)),
+                value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.periodAchievedAmount)),
                 color: RSMSTheme.warning
             )
         }

@@ -210,6 +210,8 @@ struct StaffGoalCard: View {
                     Text(staff.fullName)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
                 .buttonStyle(.plain)
                 
@@ -280,6 +282,7 @@ struct StaffGoalCard: View {
                     .foregroundStyle(RSMSTheme.textSecondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .rsmsCard(padding: 16)
     }
 }

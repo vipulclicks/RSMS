@@ -32,7 +32,6 @@ final class DataStore {
     var salesGoals: [SalesGoal] = []
     var commissions: [Commission] = []
     var performanceMetrics: [PerformanceMetric] = []
-    var planograms: [Planogram] = []
     var lookbooks: [Lookbook] = []
     var complianceChecks: [ComplianceCheck] = []
     var clientEvents: [ClientEvent] = []
@@ -331,30 +330,7 @@ final class DataStore {
         performanceMetrics.removeAll { $0.id == id }
     }
 
-    // ══════════════════════════════════════════════════════════
-    // MARK: - planograms
-    // ══════════════════════════════════════════════════════════
 
-    func fetchPlanograms(storeId: UUID) async throws {
-        planograms = try await api.fetch("planograms", query: ["store_id": "eq.\(storeId)"])
-    }
-
-    @discardableResult
-    func createPlanogram(_ p: Planogram) async throws -> Planogram {
-        let created: Planogram = try await api.insert("planograms", record: p)
-        planograms.append(created)
-        return created
-    }
-
-    func updatePlanogram(_ p: Planogram) async throws {
-        try await api.update("planograms", id: p.id, record: p)
-        if let i = planograms.firstIndex(where: { $0.id == p.id }) { planograms[i] = p }
-    }
-
-    func deletePlanogram(id: UUID) async throws {
-        try await api.delete("planograms", id: id)
-        planograms.removeAll { $0.id == id }
-    }
 
     // ══════════════════════════════════════════════════════════
     // MARK: - lookbooks
