@@ -9,11 +9,22 @@
 
 import SwiftUI
 
+enum ClientProfileTab: String, CaseIterable {
+    case overview = "Overview"
+    case personalInfo = "Personal Info"
+    case preferences = "Preferences"
+    case purchaseHistory = "Purchase History"
+    case notes = "Notes"
+}
+
 struct ClientProfileDetailView: View {
     let client: ClientProfile
     let dataStore: DataStore
     let associateId: UUID
     @State private var viewModel: ClientProfileDetailViewModel
+
+    // Tab state
+    @State private var selectedTab: ClientProfileTab = .overview
 
     // Wishlist adding state
     @State private var showAddWishlistSheet = false
@@ -48,32 +59,27 @@ struct ClientProfileDetailView: View {
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
-            List {
-                heroSection
-                
-                catalogSection
-                wishlistSection
-                curatedCartsSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                
-                consentSection
-                contactSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                purchaseSummarySection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                sizingSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                styleSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                detailedPreferencesSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                anniversarySection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                notesSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
+            ScrollView {
+                VStack(spacing: 24) {
+                    heroSection
+                    
+                    tabBar
+                    
+                    switch selectedTab {
+                    case .overview:
+                        overviewTabContent
+                    case .personalInfo:
+                        personalInfoTabContent
+                    case .preferences:
+                        preferencesTabContent
+                    case .purchaseHistory:
+                        purchaseHistoryTabContent
+                    case .notes:
+                        notesTabContent
+                    }
+                }
+                .padding(.bottom, 40)
             }
-            .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle(currentClient.fullName)
         .navigationBarTitleDisplayMode(.inline)
@@ -116,132 +122,245 @@ struct ClientProfileDetailView: View {
         }
     }
 
+    // MARK: - Tab Bar
+
+    private var tabBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 24) {
+                ForEach(ClientProfileTab.allCases, id: \.self) { tab in
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = tab
+                        }
+                    } label: {
+                        VStack(spacing: 8) {
+                            Text(tab.rawValue)
+                                .font(.subheadline)
+                                .fontWeight(selectedTab == tab ? .bold : .medium)
+                                .foregroundStyle(selectedTab == tab ? RSMSTheme.textPrimary : RSMSTheme.textTertiary)
+                            
+                            Rectangle()
+                                .fill(selectedTab == tab ? RSMSTheme.primary : Color.clear)
+                                .frame(height: 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.bottom, 8)
+        .overlay(
+            Divider().background(RSMSTheme.divider),
+            alignment: .bottom
+        )
+    }
+
+    // MARK: - Tab Contents
+
+    private var overviewTabContent: some View {
+        VStack(spacing: 16) {
+            catalogSection
+            wishlistSection
+            curatedCartsSection
+        }
+    }
+    
+    private var personalInfoTabContent: some View {
+        VStack(spacing: 16) {
+            consentSection
+            contactSection
+            anniversarySection
+        }
+    }
+    
+    private var preferencesTabContent: some View {
+        VStack(spacing: 16) {
+            sizingSection
+            styleSection
+            detailedPreferencesSection
+        }
+    }
+    
+    private var purchaseHistoryTabContent: some View {
+        VStack(spacing: 16) {
+            purchaseSummarySection
+        }
+    }
+    
+    private var notesTabContent: some View {
+        VStack(spacing: 16) {
+            notesSection
+        }
+    }
+
     // MARK: - Hero
 
     private var heroSection: some View {
-        Section {
-            VStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(RSMSTheme.primary.opacity(0.12))
-                        .frame(width: 80, height: 80)
-                    Text(viewModel.initials)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(RSMSTheme.primary)
-                }
-                .padding(.top, 16)
-
-                Text(currentClient.fullName)
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                    .multilineTextAlignment(.center)
-
-                StatusBadge(
-                    text: currentClient.vipTier.rawValue.uppercased(),
-                    color: viewModel.tierColor(currentClient.vipTier)
-                )
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.primary.opacity(0.12))
+                    .frame(width: 80, height: 80)
+                Text(viewModel.initials)
+                    .font(.system(size: 30, weight: .bold))
+                    .foregroundStyle(RSMSTheme.primary)
             }
-            .frame(maxWidth: .infinity)
-            .listRowBackground(Color.clear)
-            .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .listRowSeparator(.hidden)
+            .padding(.top, 16)
+
+            Text(currentClient.fullName)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .multilineTextAlignment(.center)
+
+            StatusBadge(
+                text: currentClient.vipTier.rawValue.uppercased(),
+                color: viewModel.tierColor(currentClient.vipTier)
+            )
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Catalog Access
 
     private var catalogSection: some View {
-        Section {
-            Button {
-                navigateToGuidedCatalog = true
-            } label: {
-                HStack(spacing: 16) {
-                    Image(systemName: "sparkles")
-                        .font(.title2)
-                        .foregroundStyle(RSMSTheme.primary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Guided Catalog")
-                            .font(.headline)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("Explore collections personalized for \(currentClient.fullName.components(separatedBy: " ").first ?? "")")
-                            .font(.subheadline)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
+        ProfileCard(title: nil) {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Guided Catalog")
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Button {
+                        navigateToGuidedCatalog = true
+                    } label: {
+                        Text("Explore")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Show a 4-item preview grid to match Wishlist and Curated Carts
+                let previewProducts = Array(dataStore.products.prefix(4))
+                if !previewProducts.isEmpty {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), alignment: .leading, spacing: 16) {
+                        ForEach(previewProducts) { product in
+                            Button {
+                                navigateToGuidedCatalog = true
+                            } label: {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                        Color.clear
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .overlay(
+                                                AsyncImage(url: url) { phase in
+                                                    if let image = phase.image {
+                                                        image.resizable().scaledToFill()
+                                                    } else {
+                                                        Color.gray.opacity(0.1)
+                                                    }
+                                                }
+                                            )
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
+                                            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(RSMSTheme.surfaceSecondary)
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .overlay(Image(systemName: "photo").foregroundStyle(RSMSTheme.textTertiary))
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(product.name)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                            .lineLimit(1)
+                                        
+                                        Text("₹\(Int(product.price).formatted())")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .top)
+                        }
+                    }
                 }
             }
-            .listRowBackground(RSMSTheme.surfacePrimary)
         }
     }
 
     // MARK: - Consent Banner
 
     private var consentSection: some View {
-        Section {
-            HStack(spacing: 12) {
-                Image(systemName: currentClient.privacyConsentGiven
-                      ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                    .font(.title2)
-                    .foregroundStyle(currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
+        HStack(spacing: 12) {
+            Image(systemName: currentClient.privacyConsentGiven
+                  ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+                .font(.title2)
+                .foregroundStyle(currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(currentClient.privacyConsentGiven
-                          ? "Privacy Consent Given" : "Privacy Consent Not Given")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(currentClient.privacyConsentGiven
-                                         ? RSMSTheme.success : RSMSTheme.warning)
-                    if currentClient.privacyConsentGiven, let date = currentClient.consentDate {
-                        Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    } else if !currentClient.privacyConsentGiven {
-                        Text("Client data cannot be used for marketing.")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(currentClient.privacyConsentGiven
+                      ? "Privacy Consent Given" : "Privacy Consent Not Given")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(currentClient.privacyConsentGiven
+                                     ? RSMSTheme.success : RSMSTheme.warning)
+                if currentClient.privacyConsentGiven, let date = currentClient.consentDate {
+                    Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                } else if !currentClient.privacyConsentGiven {
+                    Text("Client data cannot be used for marketing.")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
-                Spacer()
             }
-            .padding(12)
-            .background(
-                (currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
-                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke((currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
-            )
-            .listRowBackground(Color.clear)
-            .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
-            .listRowSeparator(.hidden)
+            Spacer()
         }
+        .padding(16)
+        .background(
+            (currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
+            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke((currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Contact
 
     private var contactSection: some View {
-        Section("Contact Information") {
-            if let email = currentClient.email {
-                LabeledContent {
-                    Text(email).foregroundStyle(RSMSTheme.textSecondary)
-                } label: {
-                    Label("Email", systemImage: "envelope")
+        ProfileCard(title: "Contact Information") {
+            VStack(spacing: 16) {
+                if let email = currentClient.email {
+                    HStack {
+                        Label("Email", systemImage: "envelope")
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Spacer()
+                        Text(email).foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                    Divider().overlay(RSMSTheme.divider)
                 }
-            }
-            if let phone = currentClient.phone {
-                LabeledContent {
-                    Text(phone).foregroundStyle(RSMSTheme.textSecondary)
-                } label: {
-                    Label("Phone", systemImage: "phone")
+                if let phone = currentClient.phone {
+                    HStack {
+                        Label("Phone", systemImage: "phone")
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Spacer()
+                        Text(phone).foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                    Divider().overlay(RSMSTheme.divider)
                 }
-            }
-            LabeledContent {
-                Text(currentClient.createdAt, style: .date).foregroundStyle(RSMSTheme.textSecondary)
-            } label: {
-                Label("Member Since", systemImage: "calendar")
+                HStack {
+                    Label("Member Since", systemImage: "calendar")
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Spacer()
+                    Text(currentClient.createdAt, style: .date).foregroundStyle(RSMSTheme.textSecondary)
+                }
             }
         }
     }
@@ -249,15 +368,24 @@ struct ClientProfileDetailView: View {
     // MARK: - Purchase Summary
 
     private var purchaseSummarySection: some View {
-        Section("Purchase Summary") {
-            LabeledContent("Lifetime Value") {
-                Text(viewModel.lifetimeValueFormatted)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(RSMSTheme.primary)
-            }
-            LabeledContent("Transactions") {
-                Text("\(viewModel.clientTransactions.count)")
-                    .foregroundStyle(RSMSTheme.textSecondary)
+        ProfileCard(title: "Purchase Summary") {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Lifetime Value")
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Spacer()
+                    Text(viewModel.lifetimeValueFormatted)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+                Divider().overlay(RSMSTheme.divider)
+                HStack {
+                    Text("Transactions")
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Spacer()
+                    Text("\(viewModel.clientTransactions.count)")
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
             }
         }
     }
@@ -267,10 +395,20 @@ struct ClientProfileDetailView: View {
     @ViewBuilder
     private var sizingSection: some View {
         if !viewModel.sizePreferences.isEmpty {
-            Section("Sizing Preferences") {
-                ForEach(viewModel.sizePreferences, id: \.label) { pref in
-                    LabeledContent(pref.label) {
-                        Text(pref.value).foregroundStyle(RSMSTheme.textSecondary)
+            ProfileCard(title: "Sizing Preferences") {
+                VStack(spacing: 16) {
+                    ForEach(viewModel.sizePreferences, id: \.label) { pref in
+                        HStack {
+                            Text(pref.label)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Spacer()
+                            Text(pref.value)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        if pref.label != viewModel.sizePreferences.last?.label {
+                            Divider().overlay(RSMSTheme.divider)
+                        }
                     }
                 }
             }
@@ -279,18 +417,27 @@ struct ClientProfileDetailView: View {
 
     // MARK: - Style Preferences
 
+    @ViewBuilder
     private var styleSection: some View {
-        Section("Style Preferences") {
-            if let cats = currentClient.favoriteCategories, !cats.isEmpty {
-                CPDPreferenceTagRow(title: "Categories", tags: cats, color: RSMSTheme.primary)
-            }
-            if let metals = currentClient.favoriteMetals, !metals.isEmpty {
-                CPDPreferenceTagRow(title: "Metals", tags: metals,
-                                    color: Color(red: 0.788, green: 0.659, blue: 0.298))
-            }
-            if let gems = currentClient.favoriteGemstones, !gems.isEmpty {
-                CPDPreferenceTagRow(title: "Gemstones", tags: gems,
-                                    color: Color(red: 0.357, green: 0.435, blue: 0.651))
+        let hasCats = currentClient.favoriteCategories?.isEmpty == false
+        let hasMetals = currentClient.favoriteMetals?.isEmpty == false
+        let hasGems = currentClient.favoriteGemstones?.isEmpty == false
+        
+        if hasCats || hasMetals || hasGems {
+            ProfileCard(title: "Style Preferences") {
+                VStack(spacing: 16) {
+                    if let cats = currentClient.favoriteCategories, !cats.isEmpty {
+                        CPDPreferenceTagRow(title: "Categories", tags: cats, color: RSMSTheme.primary)
+                    }
+                    if let metals = currentClient.favoriteMetals, !metals.isEmpty {
+                        CPDPreferenceTagRow(title: "Metals", tags: metals,
+                                            color: Color(red: 0.788, green: 0.659, blue: 0.298))
+                    }
+                    if let gems = currentClient.favoriteGemstones, !gems.isEmpty {
+                        CPDPreferenceTagRow(title: "Gemstones", tags: gems,
+                                            color: Color(red: 0.357, green: 0.435, blue: 0.651))
+                    }
+                }
             }
         }
     }
@@ -300,10 +447,20 @@ struct ClientProfileDetailView: View {
     @ViewBuilder
     private var detailedPreferencesSection: some View {
         if !viewModel.detailedPreferences.isEmpty {
-            Section("Detailed Preferences") {
-                ForEach(viewModel.detailedPreferences, id: \.label) { pref in
-                    LabeledContent(pref.label) {
-                        Text(pref.value).foregroundStyle(RSMSTheme.textSecondary)
+            ProfileCard(title: "Detailed Preferences") {
+                VStack(spacing: 16) {
+                    ForEach(viewModel.detailedPreferences, id: \.label) { pref in
+                        HStack {
+                            Text(pref.label)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Spacer()
+                            Text(pref.value)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        if pref.label != viewModel.detailedPreferences.last?.label {
+                            Divider().overlay(RSMSTheme.divider)
+                        }
                     }
                 }
             }
@@ -316,89 +473,87 @@ struct ClientProfileDetailView: View {
         let wishlistItems = dataStore.wishlistItems.filter { $0.clientId == currentClient.id }
         let wishlistProducts = dataStore.products.filter { p in wishlistItems.contains(where: { $0.productId == p.id }) }
         
-        return Section {
-            if wishlistProducts.isEmpty {
-                Button {
-                    activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.dashed")
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        Text("No items in wishlist")
-                            .font(.subheadline)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                        Spacer()
-                        Text("Add Products")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(RSMSTheme.primary)
-                    }
-                }
-                .buttonStyle(.plain)
-                .listRowBackground(RSMSTheme.surfacePrimary)
-            } else {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), alignment: .leading, spacing: 16) {
-                    ForEach(wishlistProducts.prefix(4)) { product in
+        return ProfileCard(title: nil) {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Wishlist")
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Spacer()
+                    if wishlistProducts.count > 0 {
                         Button {
                             activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
                         } label: {
-                            VStack(alignment: .leading, spacing: 10) {
-                                if let urlString = product.imageURL, let url = URL(string: urlString) {
-                                    Color.clear
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .overlay(
-                                            AsyncImage(url: url) { phase in
-                                                if let image = phase.image {
-                                                    image.resizable().scaledToFill()
-                                                } else {
-                                                    Color.gray.opacity(0.1)
-                                                }
-                                            }
-                                        )
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
-                                        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                } else {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(RSMSTheme.surfaceSecondary)
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .overlay(Image(systemName: "photo").foregroundStyle(RSMSTheme.textTertiary))
-                                }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(product.name)
-                                        .font(.caption.weight(.medium))
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                        .lineLimit(1)
-                                    
-                                    Text("₹\(Int(product.price).formatted())")
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(RSMSTheme.textSecondary)
-                                }
-                            }
+                            Text("See All")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.primary)
                         }
                         .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .top)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-            }
-        } header: {
-            HStack {
-                Text("Wishlist")
-                Spacer()
-                if wishlistProducts.count > 0 {
+                
+                if wishlistProducts.isEmpty {
                     Button {
                         activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
                     } label: {
-                        Text("See All")
-                            .font(.subheadline)
-                            .textCase(.none)
-                            .foregroundStyle(RSMSTheme.primary)
+                        HStack {
+                            Image(systemName: "plus.circle.dashed")
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            Text("No items in wishlist")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            Spacer()
+                            Text("Add Products")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
                     }
                     .buttonStyle(.plain)
+                } else {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), alignment: .leading, spacing: 16) {
+                        ForEach(wishlistProducts.prefix(4)) { product in
+                            Button {
+                                activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                        Color.clear
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .overlay(
+                                                AsyncImage(url: url) { phase in
+                                                    if let image = phase.image {
+                                                        image.resizable().scaledToFill()
+                                                    } else {
+                                                        Color.gray.opacity(0.1)
+                                                    }
+                                                }
+                                            )
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
+                                            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(RSMSTheme.surfaceSecondary)
+                                            .aspectRatio(1, contentMode: .fit)
+                                            .overlay(Image(systemName: "photo").foregroundStyle(RSMSTheme.textTertiary))
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(product.name)
+                                            .font(.caption.weight(.medium))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                            .lineLimit(1)
+                                        
+                                        Text("₹\(Int(product.price).formatted())")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .frame(maxWidth: .infinity, alignment: .top)
+                        }
+                    }
                 }
             }
         }
@@ -406,32 +561,34 @@ struct ClientProfileDetailView: View {
 
     // MARK: - Anniversaries
 
+    @ViewBuilder
     private var anniversarySection: some View {
-        Section("Important Dates") {
-            if viewModel.clientAnniversaries.isEmpty {
-                Text("No dates recorded")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            } else {
-                ForEach(viewModel.clientAnniversaries) { ann in
-                    HStack(spacing: 12) {
-                        Image(systemName: ann.reminderEnabled ? "bell.fill" : "bell.slash")
-                            .font(.caption)
-                            .foregroundStyle(ann.reminderEnabled ? RSMSTheme.primary : RSMSTheme.textTertiary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(ann.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Text(ann.date, format: .dateTime.day().month(.wide))
+        if !viewModel.clientAnniversaries.isEmpty {
+            ProfileCard(title: "Important Dates") {
+                VStack(spacing: 16) {
+                    ForEach(viewModel.clientAnniversaries) { ann in
+                        HStack(spacing: 12) {
+                            Image(systemName: ann.reminderEnabled ? "bell.fill" : "bell.slash")
                                 .font(.caption)
-                                .foregroundStyle(RSMSTheme.textSecondary)
+                                .foregroundStyle(ann.reminderEnabled ? RSMSTheme.primary : RSMSTheme.textTertiary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ann.title)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Text(ann.date, format: .dateTime.day().month(.wide))
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                            Spacer()
+                            if let notes = ann.notes {
+                                Text(notes)
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                                    .lineLimit(1)
+                            }
                         }
-                        Spacer()
-                        if let notes = ann.notes {
-                            Text(notes)
-                                .font(.caption)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                                .lineLimit(1)
+                        if ann.id != viewModel.clientAnniversaries.last?.id {
+                            Divider().overlay(RSMSTheme.divider)
                         }
                     }
                 }
@@ -444,10 +601,18 @@ struct ClientProfileDetailView: View {
     @ViewBuilder
     private var notesSection: some View {
         if let notes = currentClient.notes, !notes.isEmpty {
-            Section("Associate Notes") {
+            ProfileCard(title: "Associate Notes") {
                 Text(notes)
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            ProfileCard(title: "Associate Notes") {
+                Text("No notes added.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -557,122 +722,124 @@ struct ClientProfileDetailView: View {
     // MARK: - Curated Carts Section
 
     private var curatedCartsSection: some View {
-        Section {
-            let carts = dataStore.curatedCarts(for: currentClient.id)
-            if let cart = carts.first, !cart.items.isEmpty {
-                let displayItems = Array(cart.items.prefix(4))
+        let carts = dataStore.curatedCarts(for: currentClient.id)
+        
+        return ProfileCard(title: nil) {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Curated Carts")
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Spacer()
+                    if let cart = carts.first, cart.items.count > 0 {
+                        Button {
+                            selectedCuratedCart = cart
+                        } label: {
+                            Text("See Details")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
                 
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 12) {
+                if let cart = carts.first, !cart.items.isEmpty {
+                    let displayItems = Array(cart.items.prefix(4))
+                    
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), alignment: .leading, spacing: 16) {
                         ForEach(displayItems) { item in
                             if let product = dataStore.products.first(where: { $0.id == item.productId }) {
                                 Button {
                                     selectedCuratedCart = cart
                                 } label: {
-                                    HStack(spacing: 12) {
-                                        if let urlString = product.imageURL, let url = URL(string: urlString) {
-                                            AsyncImage(url: url) { phase in
-                                                if let image = phase.image {
-                                                    image.resizable()
-                                                        .scaledToFill()
-                                                } else {
-                                                    Color.gray.opacity(0.1)
-                                                }
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        ZStack(alignment: .bottomLeading) {
+                                            if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                                Color.clear
+                                                    .aspectRatio(1, contentMode: .fit)
+                                                    .overlay(
+                                                        AsyncImage(url: url) { phase in
+                                                            if let image = phase.image {
+                                                                image.resizable().scaledToFill()
+                                                            } else {
+                                                                Color.gray.opacity(0.1)
+                                                            }
+                                                        }
+                                                    )
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
+                                                    .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                                    .fill(RSMSTheme.surfaceSecondary)
+                                                    .aspectRatio(1, contentMode: .fit)
+                                                    .overlay(Image(systemName: "photo").foregroundStyle(RSMSTheme.textTertiary))
                                             }
-                                            .frame(width: 60, height: 60)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-                                        } else {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(RSMSTheme.surfaceSecondary)
-                                                .frame(width: 60, height: 60)
-                                                .overlay(Image(systemName: "bag").foregroundStyle(RSMSTheme.textTertiary))
+                                            
+                                            if let note = item.note, !note.isEmpty, let rx = ClientReaction(rawValue: note) {
+                                                Text(rx.rawValue.uppercased())
+                                                    .font(.system(size: 8, weight: .bold))
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(rx.color.opacity(0.85))
+                                                    .foregroundStyle(.white)
+                                                    .clipShape(Capsule())
+                                                    .padding(6)
+                                            }
                                         }
                                         
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(product.name)
-                                                .font(.subheadline.weight(.semibold))
+                                                .font(.caption.weight(.medium))
                                                 .foregroundStyle(RSMSTheme.textPrimary)
-                                                .multilineTextAlignment(.leading)
                                                 .lineLimit(1)
                                             
-                                            HStack(spacing: 6) {
-                                                Text(product.category)
-                                                    .font(.caption)
-                                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                                Text("•")
-                                                    .font(.caption)
-                                                    .foregroundStyle(RSMSTheme.textTertiary)
-                                                Text("SKU: \(product.sku)")
-                                                    .font(.caption)
-                                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                            }
-                                            
-                                            if let note = item.note, !note.isEmpty {
-                                                if let rx = ClientReaction(rawValue: note) {
-                                                    Text(rx.rawValue.uppercased())
-                                                        .font(.system(size: 9, weight: .bold))
-                                                        .padding(.horizontal, 6)
-                                                        .padding(.vertical, 2)
-                                                        .background(rx.color.opacity(0.15))
-                                                        .foregroundStyle(rx.color)
-                                                        .clipShape(Capsule())
-                                                } else {
-                                                    Text(note)
-                                                        .font(.caption.italic())
-                                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                                        .lineLimit(1)
-                                                }
-                                            }
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 4) {
                                             Text("₹\(Int(product.price).formatted())")
-                                                .font(.subheadline.weight(.semibold))
-                                                .foregroundStyle(RSMSTheme.primary)
-                                            Text("Qty: \(item.quantity)")
-                                                .font(.caption)
+                                                .font(.caption.weight(.semibold))
                                                 .foregroundStyle(RSMSTheme.textSecondary)
                                         }
                                     }
                                 }
                                 .buttonStyle(.plain)
-                                
-                                if item.id != displayItems.last?.id {
-                                    Divider().overlay(RSMSTheme.divider)
-                                }
+                                .frame(maxWidth: .infinity, alignment: .top)
                             }
                         }
                     }
-                    
-                    Divider().overlay(RSMSTheme.divider)
-                    
-                    Button {
-                        selectedCuratedCart = cart
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text(cart.items.count > 4 ? "View all \(cart.items.count) items" : "View Cart Details")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.primary)
-                            Spacer()
-                        }
-                    }
-                    .buttonStyle(.plain)
+                } else {
+                    Text("Cart is empty")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.vertical, 6)
-            } else {
-                Text("Cart is empty")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            }
-        } header: {
-            HStack(spacing: 12) {
-                Text("Curated Carts")
             }
         }
+    }
+}
+
+// MARK: - Reusable Profile Card Component
+
+private struct ProfileCard<Content: View>: View {
+    let title: String?
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let title = title {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+            }
+            content
+                .padding(.horizontal, 16)
+                .padding(.bottom, title == nil ? 16 : 20)
+                .padding(.top, title == nil ? 16 : 0)
+        }
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.03), radius: 6, y: 2)
+        .padding(.horizontal, 16)
     }
 }
 

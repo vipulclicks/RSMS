@@ -150,11 +150,6 @@ struct ProductCatalogView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("PRIVATE COLLECTION FOR")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                        .textCase(.uppercase)
-                        .tracking(1.5)
                     
                     Text(client.fullName)
                         .font(.system(size: 32, weight: .regular, design: .serif))
@@ -571,11 +566,24 @@ struct CartSelectionPreviewSheet: View {
                 ForEach(items) { item in
                     if let product = dataStore.product(by: item.productId) {
                         HStack(spacing: 12) {
-                            Image(systemName: product.categoryIconName)
-                                .font(.title3)
-                                .foregroundStyle(RSMSTheme.primary)
-                                .frame(width: 36, height: 36)
-                                .background(RSMSTheme.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                AsyncImage(url: url) { phase in
+                                    if let image = phase.image {
+                                        image.resizable().scaledToFill()
+                                    } else {
+                                        Color.gray.opacity(0.1)
+                                    }
+                                }
+                                .frame(width: 48, height: 48)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
+                            } else {
+                                Image(systemName: product.categoryIconName)
+                                    .font(.title3)
+                                    .foregroundStyle(RSMSTheme.primary)
+                                    .frame(width: 48, height: 48)
+                                    .background(RSMSTheme.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                            }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(product.name)
                                     .font(.subheadline.weight(.medium))
@@ -770,7 +778,6 @@ struct CatalogProductDetailSheet: View {
                         onWishlistToggle()
                     } label: {
                         HStack {
-                            Image(systemName: isWishlisted ? "heart.fill" : "heart")
                             Text(isWishlisted ? "Wishlisted" : "Add to Wishlist")
                         }
                         .font(.subheadline.weight(.semibold))
@@ -788,8 +795,7 @@ struct CatalogProductDetailSheet: View {
                     onAddToCart()
                     addedToCart = true
                 } label: {
-                    Label(addedToCart ? "Added ✓" : "Add to Cart",
-                          systemImage: addedToCart ? "checkmark.circle.fill" : "cart.badge.plus")
+                    Text(addedToCart ? "Added ✓" : "Add to Cart")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(RSMSTheme.cream)
                         .padding(.vertical, 16)

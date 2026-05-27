@@ -94,11 +94,6 @@ struct ClientWishlistWorkspaceView: View {
                 
                 // Client Info
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Private Collection For")
-                        .font(.caption2)
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                        .textCase(.uppercase)
-                        .tracking(2.0)
                     
                     Text(viewModel.clientName)
                         .font(.system(size: 28, weight: .regular, design: .serif))
