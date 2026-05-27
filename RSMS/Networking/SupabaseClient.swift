@@ -167,6 +167,31 @@ final class SupabaseClient: Sendable {
         }
         return created
     }
+
+    /// Insert multiple rows and return the created records.
+    @discardableResult
+    func insertMany<T: Codable>(_ table: String, records: [T]) async throws -> [T] {
+        guard !records.isEmpty else { return [] }
+        guard let url = URL(string: "\(SupabaseConfig.restURL)/\(table)") else {
+            throw SupabaseError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyHeaders(&request)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("return=representation", forHTTPHeaderField: "Prefer")
+        request.httpBody = try encoder.encode(records)
+
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response, data: data)
+
+        do {
+            return try decoder.decode([T].self, from: data)
+        } catch {
+            throw SupabaseError.decodingFailed(underlying: error)
+        }
+    }
     
     /// Insert or Update a row.
     func upsert<T: Decodable, U: Encodable>(_ table: String, record: U) async throws -> T {

@@ -71,7 +71,7 @@ struct LoginView: View {
                 .foregroundStyle(RSMSTheme.goldGradient)
 
             Text("Luxora")
-                .font(.system(size: 36, weight: .light, design: .serif))
+                .font(.system(size: 36, weight: .light))
                 .tracking(8)
                 .foregroundStyle(RSMSTheme.goldGradient)
 

@@ -37,18 +37,68 @@ final class AppointmentViewModel {
             try await dataStore.fetchUniversalCarts(associateId: associateId, type: .curated)
             try await dataStore.fetchSalesGoals(storeId: storeId)
             try await dataStore.fetchStaffShifts(storeId: storeId)
+            try await dataStore.fetchTransactions(storeId: storeId)
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
     }
 
-    var todaySalesGoalTarget: String {
-        let dailyGoal = dataStore.salesGoals.first { $0.staffId == associateId && $0.period == .daily }
-        if let target = dailyGoal?.targetAmount {
-            return "₹\(Int(target).formatted())"
+    var todaySalesFormatted: String {
+        let todaySales = dataStore.transactions
+            .filter {
+                $0.associateId == associateId &&
+                $0.status == .completed &&
+                Calendar.current.isDateInToday($0.createdAt)
+            }
+            .reduce(0) { $0 + $1.totalAmount }
+        
+        return "₹\(Int(todaySales).formatted())"
+    }
+
+    var todaysAppointmentsCount: String {
+        let count = appointments
+            .filter { Calendar.current.isDateInToday($0.dateTime) }
+            .count
+        return String(count)
+    }
+
+    var clientsServedTodayCount: String {
+        let completedTodayAppointments = appointments
+            .filter { Calendar.current.isDateInToday($0.dateTime) && $0.status == .completed }
+        
+        let completedTodaySales = dataStore.transactions
+            .filter {
+                $0.associateId == associateId &&
+                $0.status == .completed &&
+                Calendar.current.isDateInToday($0.createdAt)
+            }
+        
+        // Use a set of client IDs to get unique clients served, then count
+        var servedClientIds = Set<UUID>()
+        completedTodayAppointments.forEach { servedClientIds.insert($0.clientId) }
+        completedTodaySales.compactMap { $0.clientId }.forEach { servedClientIds.insert($0) }
+        
+        return String(servedClientIds.count)
+    }
+
+    var nextAppointmentDisplay: String {
+        let now = Date()
+        let nextAppt = appointments
+            .filter {
+                Calendar.current.isDateInToday($0.dateTime) &&
+                $0.dateTime > now &&
+                ($0.status == .scheduled || $0.status == .confirmed)
+            }
+            .sorted { $0.dateTime < $1.dateTime }
+            .first
+        
+        if let appt = nextAppt {
+            let timeStr = RSMSDateFormatter.timeOnly.string(from: appt.dateTime)
+            let name = clientName(for: appt.clientId)
+            return "\(timeStr) • \(name)"
         }
-        return "₹2,34,500"
+        return "No upcoming appointments"
     }
 
     // MARK: - Stores
@@ -59,8 +109,53 @@ final class AppointmentViewModel {
 
     var upcomingAppointments: [Appointment] {
         appointments
-            .filter { $0.status == .scheduled || $0.status == .confirmed }
+            .filter {
+                Calendar.current.isDateInToday($0.dateTime) &&
+                ($0.status == .scheduled || $0.status == .confirmed || $0.status == .inProgress)
+            }
             .sorted { $0.dateTime < $1.dateTime }
+    }
+
+    var todaysInStoreAppointments: [Appointment] {
+        appointments
+            .filter {
+                Calendar.current.isDateInToday($0.dateTime) &&
+                $0.type == .inStore
+            }
+            .sorted { $0.dateTime < $1.dateTime }
+    }
+
+    var todaysVideoAppointments: [Appointment] {
+        appointments
+            .filter {
+                Calendar.current.isDateInToday($0.dateTime) &&
+                $0.type == .video
+            }
+            .sorted { $0.dateTime < $1.dateTime }
+    }
+
+    func filteredOtherAppointments(statusFilter: AppointmentStatus?, searchText: String) -> [Appointment] {
+        let others = appointments.filter { !Calendar.current.isDateInToday($0.dateTime) }
+        
+        let filtered = others.filter { appt in
+            let nameMatch = searchText.isEmpty || clientName(for: appt.clientId).localizedCaseInsensitiveContains(searchText)
+            let statusMatch = statusFilter == nil || appt.status == statusFilter
+            return nameMatch && statusMatch
+        }
+        
+        // Sort: upcoming (future) nearest first, past most recent first
+        return filtered.sorted { a, b in
+            let aIsFuture = a.dateTime > Date()
+            let bIsFuture = b.dateTime > Date()
+            
+            if aIsFuture && bIsFuture {
+                return a.dateTime < b.dateTime // Nearest upcoming first
+            } else if !aIsFuture && !bIsFuture {
+                return a.dateTime > b.dateTime // Most recent past first
+            } else {
+                return aIsFuture // Future appointments before past
+            }
+        }
     }
 
     var statusCounts: [(status: AppointmentStatus, count: Int)] {

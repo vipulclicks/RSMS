@@ -216,7 +216,7 @@ private struct OCBOPISCard: View {
             }
 
             Text(viewModel.clientName(for: order.clientId))
-                .font(.system(size: 17, weight: .semibold, design: .serif))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
 
             Text(viewModel.productName(for: order.productId))
@@ -259,7 +259,7 @@ private struct OCEndlessAisleCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(viewModel.clientName(for: order.clientId))
-                    .font(.system(size: 17, weight: .semibold, design: .serif))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 StatusBadge(

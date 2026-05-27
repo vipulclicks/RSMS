@@ -44,7 +44,7 @@ struct FaceTimeVideoConsultationSheet: View {
                     }
                     Spacer()
                     Text(formattedDuration)
-                        .font(.system(.title3, design: .monospaced).weight(.medium))
+                        .font(.system(.title3).weight(.medium))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)

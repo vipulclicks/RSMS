@@ -481,8 +481,42 @@ final class DataStore {
     }
 
     func deleteClient(id: UUID) async throws {
-        try await api.delete("client_profiles", id: id)
+        // 1. Gather all related items
+        let appts = appointments.filter { $0.clientId == id }
+        let anns = clientAnniversaries.filter { $0.clientId == id }
+        let wishlists = wishlistItems.filter { $0.clientId == id }
+        let ais = aiRecommendations.filter { $0.clientId == id }
+        let invitations = eventInvitations.filter { $0.clientId == id }
+        let carts = universalCarts.filter { $0.clientId == id }
+        let trans = transactions.filter { $0.clientId == id }
+        let orders = omnichannelOrders.filter { $0.clientId == id }
+        let outfits = lookBuilderOutfits.filter { $0.clientId == id }
+
+        // 2. Remove locally for instant UI update
         clients.removeAll { $0.id == id }
+        appointments.removeAll { $0.clientId == id }
+        clientAnniversaries.removeAll { $0.clientId == id }
+        wishlistItems.removeAll { $0.clientId == id }
+        aiRecommendations.removeAll { $0.clientId == id }
+        eventInvitations.removeAll { $0.clientId == id }
+        universalCarts.removeAll { $0.clientId == id }
+        transactions.removeAll { $0.clientId == id }
+        omnichannelOrders.removeAll { $0.clientId == id }
+        lookBuilderOutfits.removeAll { $0.clientId == id }
+
+        // 3. Delete from backend to prevent foreign key constraints from blocking the client delete
+        for a in appts { try? await api.delete("appointments", id: a.id) }
+        for a in anns { try? await api.delete("client_anniversaries", id: a.id) }
+        for w in wishlists { try? await api.delete("wishlist_items", id: w.id) }
+        for a in ais { try? await api.delete("ai_recommendations", id: a.id) }
+        for i in invitations { try? await api.delete("event_invitations", id: i.id) }
+        for c in carts { try? await api.delete("universal_carts", id: c.id) }
+        for t in trans { try? await api.delete("transactions", id: t.id) }
+        for o in orders { try? await api.delete("omnichannel_orders", id: o.id) }
+        for o in outfits { try? await api.delete("look_builder_outfits", id: o.id) }
+
+        // 4. Finally delete the client itself
+        try? await api.delete("client_profiles", id: id)
     }
 
     // ══════════════════════════════════════════════════════════
@@ -524,14 +558,47 @@ final class DataStore {
 
     @discardableResult
     func createWishlistItem(_ w: WishlistItem) async throws -> WishlistItem {
-        let created: WishlistItem = try await api.insert("wishlist_items", record: w)
-        wishlistItems.append(created)
-        return created
+        // Optimistic UI update
+        await MainActor.run {
+            if !wishlistItems.contains(where: { $0.id == w.id }) {
+                wishlistItems.append(w)
+            }
+        }
+        
+        do {
+            let created: WishlistItem = try await api.insert("wishlist_items", record: w)
+            return created
+        } catch {
+            // Revert on failure
+            await MainActor.run {
+                wishlistItems.removeAll { $0.id == w.id }
+            }
+            throw error
+        }
     }
 
     func deleteWishlistItem(id: UUID) async throws {
-        try await api.delete("wishlist_items", id: id)
-        wishlistItems.removeAll { $0.id == id }
+        // Optimistic UI update
+        var removedItem: WishlistItem?
+        await MainActor.run {
+            if let index = wishlistItems.firstIndex(where: { $0.id == id }) {
+                removedItem = wishlistItems.remove(at: index)
+            }
+        }
+        
+        do {
+            try await api.delete("wishlist_items", id: id)
+        } catch {
+            // Revert on failure
+            if let item = removedItem {
+                await MainActor.run {
+                    if !wishlistItems.contains(where: { $0.id == id }) {
+                        wishlistItems.append(item)
+                    }
+                }
+            }
+            throw error
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -637,7 +704,9 @@ final class DataStore {
 
     func deleteUniversalCart(id: UUID) async throws {
         try await api.delete("universal_carts", id: id)
-        universalCarts.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCarts.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -662,7 +731,9 @@ final class DataStore {
 
     func deleteUniversalCartItem(id: UUID) async throws {
         try await api.delete("universal_cart_items", id: id)
-        universalCartItems.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCartItems.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -1062,5 +1133,48 @@ final class DataStore {
     func updateShipFromStoreSlip(_ s: ShipFromStoreSlip) async throws {
         try await api.update("ship_from_store_slips", id: s.id, record: s)
         if let i = shipFromStoreSlips.firstIndex(where: { $0.id == s.id }) { shipFromStoreSlips[i] = s }
+    }
+
+    @MainActor
+    func clearAllCaches() {
+        stores = []
+        users = []
+        dashboardSummaries = []
+        staffShifts = []
+        salesGoals = []
+        commissions = []
+        performanceMetrics = []
+        planograms = []
+        lookbooks = []
+        complianceChecks = []
+        clientEvents = []
+        eventInvitations = []
+        clients = []
+        clientAnniversaries = []
+        wishlistItems = []
+        appointments = []
+        aiRecommendations = []
+        lookBuilderOutfits = []
+        universalCarts = []
+        universalCartItems = []
+        discounts = []
+        transactions = []
+        tenders = []
+        giftReceipts = []
+        exchangeReturns = []
+        exchangeReturnItems = []
+        products = []
+        stockItems = []
+        rfidScanRecords = []
+        inventoryVariances = []
+        inventoryMovements = []
+        movementItems = []
+        cycleCounts = []
+        auditTrails = []
+        serialCaptures = []
+        authCertificates = []
+        shrinkageAnalytics = []
+        omnichannelOrders = []
+        shipFromStoreSlips = []
     }
 }

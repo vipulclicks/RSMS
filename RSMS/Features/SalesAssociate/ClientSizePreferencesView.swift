@@ -60,7 +60,7 @@ struct ClientSizePreferencesView: View {
                         .background(.ultraThinMaterial, in: Circle())
                     
                     Text("EC")
-                        .font(.system(size: 32, weight: .light, design: .serif))
+                        .font(.system(size: 32, weight: .light))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 

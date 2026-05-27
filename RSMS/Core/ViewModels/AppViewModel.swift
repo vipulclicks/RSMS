@@ -9,6 +9,7 @@
 import SwiftUI
 
 @Observable
+@MainActor
 class AppViewModel {
     let dataStore = DataStore()
     var currentUser: UserProfile?
@@ -53,6 +54,7 @@ class AppViewModel {
             currentUser = nil
             SupabaseClient.shared.accessToken = nil
         }
+        dataStore.clearAllCaches()
     }
 
     // ══════════════════════════════════════════════════════════
