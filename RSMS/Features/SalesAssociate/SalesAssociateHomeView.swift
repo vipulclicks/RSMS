@@ -835,7 +835,7 @@ private struct SAClientRow: View {
 
 #Preview("iPhone — Sales Associate") {
     let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
+    vm.currentUser = .previewAssociate
     return SalesAssociateHomeView()
         .environment(vm)
         .environment(vm.dataStore)
@@ -843,7 +843,7 @@ private struct SAClientRow: View {
 
 #Preview("iPad", traits: .fixedLayout(width: 1024, height: 768)) {
     let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
+    vm.currentUser = .previewAssociate
     return SalesAssociateHomeView()
         .environment(vm)
         .environment(vm.dataStore)

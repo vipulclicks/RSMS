@@ -164,6 +164,11 @@ final class InventoryReceivingViewModel {
 
     @MainActor
     func finalize(dataStore: DataStore, user: UserProfile) async {
+        guard SupabaseClient.shared.accessToken != nil else {
+            feedback = .error("No active Supabase session. Sign in with email and password first.")
+            return
+        }
+
         guard let storeId = user.storeId else {
             feedback = .error("Missing store context for this user.")
             return
@@ -189,7 +194,7 @@ final class InventoryReceivingViewModel {
                 id: UUID(),
                 type: .dcReplenishment,
                 sourceId: "RECEIVING",
-                destinationId: storeId.uuidString,
+                destinationId: storeId.uuidString.lowercased(),
                 status: .completed,
                 requestedBy: user.id,
                 approvedBy: user.id,
@@ -202,37 +207,61 @@ final class InventoryReceivingViewModel {
                 reason: "Boutique receiving",
                 notes: "Received \(totalUnits) units across \(draftItems.count) SKUs."
             )
-            _ = try await dataStore.createInventoryMovement(movement)
+            print("[RSMS] inventory_movements insert", [
+                "source_id": movement.sourceId,
+                "destination_id": movement.destinationId,
+                "requested_by": movement.requestedBy?.uuidString ?? "nil",
+                "status": movement.status.rawValue,
+                "type": movement.type.rawValue
+            ])
+            let createdMovement: InventoryMovement
+            do {
+                createdMovement = try await dataStore.createInventoryMovement(movement)
+            } catch {
+                feedback = .error("Inventory movement insert failed: \(error.localizedDescription)")
+                return
+            }
 
             for line in draftItems {
                 let movementItem = MovementItem(
                     id: UUID(),
-                    movementId: movement.id,
+                    movementId: createdMovement.id,
                     productId: line.product.id,
                     quantity: line.quantity,
                     reason: "Put away to \(line.location)"
                 )
-                _ = try await dataStore.createMovementItem(movementItem)
-                _ = try await dataStore.receiveStock(
-                    productId: line.product.id,
-                    storeId: storeId,
-                    quantity: line.quantity,
-                    location: line.location,
-                    rfidTag: line.rfidTag
-                )
+                do {
+                    _ = try await dataStore.createMovementItem(movementItem)
+                } catch {
+                    feedback = .error("Movement item insert failed: \(error.localizedDescription)")
+                    return
+                }
+
+                do {
+                    _ = try await dataStore.receiveStock(
+                        productId: line.product.id,
+                        storeId: storeId,
+                        quantity: line.quantity,
+                        location: line.location,
+                        rfidTag: line.rfidTag
+                    )
+                } catch {
+                    feedback = .error("Stock update failed: \(error.localizedDescription)")
+                    return
+                }
             }
 
             dataStore.logAudit(
                 storeId: storeId,
                 action: "Inventory Receiving Completed",
                 entityType: "InventoryMovement",
-                entityId: movement.id,
+                entityId: createdMovement.id,
                 performedBy: user.id,
                 details: "Received \(totalUnits) units across \(draftItems.count) SKUs into \(assignedLocations.joined(separator: ", "))."
             )
 
             completionSummary = ReceivingCompletionSummary(
-                movement: movement,
+                movement: createdMovement,
                 totalUnits: totalUnits,
                 totalSKUs: draftItems.count,
                 locations: assignedLocations
