@@ -205,6 +205,192 @@ final class ClientWishlistWorkspaceViewModel {
     func isProductAvailable(_ product: Product) -> Bool {
         return product.isActive
     }
+    
+    // MARK: - Smart Recommendation Engine
+    
+    /// Products to exclude from all recommendations (already wishlisted or in cart)
+    private var excludedProductIds: Set<UUID> {
+        let wishlistIds = Set(allWishlistProducts.map { $0.id })
+        let cartIds: Set<UUID> = {
+            guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated }) else { return [] }
+            return Set(dataStore.universalCartItems.filter { $0.cartId == cart.id }.map { $0.productId })
+        }()
+        return wishlistIds.union(cartIds)
+    }
+    
+    /// All active products not in wishlist or cart
+    private var candidateProducts: [Product] {
+        let excluded = excludedProductIds
+        return dataStore.products.filter { $0.isActive && !excluded.contains($0.id) }
+    }
+    
+    /// Whether the wishlist has enough items to generate contextual (cross-sell) recommendations
+    var hasWishlistItems: Bool {
+        !allWishlistProducts.isEmpty
+    }
+    
+    // MARK: - Empty Wishlist: Preference-Based Recommendations
+    
+    /// "Recommended For Client" — scored by client preference profile
+    var recommendedForClient: [Product] {
+        let candidates = candidateProducts
+        
+        let scored = candidates.map { product -> (Product, Int) in
+            var score = 0
+            
+            // Favorite categories (+3)
+            if let favCats = client.favoriteCategories {
+                if favCats.contains(where: {
+                    $0.caseInsensitiveCompare(product.category) == .orderedSame ||
+                    $0.caseInsensitiveCompare(product.subcategory ?? "") == .orderedSame
+                }) {
+                    score += 3
+                }
+            }
+            
+            // Preferred metals (+2)
+            if let favMetals = client.favoriteMetals, let mat = product.material {
+                if favMetals.contains(where: { mat.localizedCaseInsensitiveContains($0) }) {
+                    score += 2
+                }
+            }
+            if let prefMetal = client.preferredMetal, let mat = product.material {
+                if mat.localizedCaseInsensitiveContains(prefMetal) {
+                    score += 2
+                }
+            }
+            
+            // Gemstones (+2)
+            if let favGems = client.favoriteGemstones {
+                if let desc = product.description, favGems.contains(where: { desc.localizedCaseInsensitiveContains($0) }) {
+                    score += 2
+                }
+                if let mat = product.material, favGems.contains(where: { mat.localizedCaseInsensitiveContains($0) }) {
+                    score += 2
+                }
+            }
+            if let prefGem = client.preferredGemstone {
+                if let desc = product.description, desc.localizedCaseInsensitiveContains(prefGem) {
+                    score += 2
+                }
+            }
+            
+            // Brand matching (+2)
+            if let prefBrands = client.preferredBrands {
+                if prefBrands.localizedCaseInsensitiveContains(product.brand) {
+                    score += 2
+                }
+            }
+            
+            // Style preference (+1)
+            if let style = client.stylePreference, let desc = product.description {
+                if desc.localizedCaseInsensitiveContains(style) { score += 1 }
+            }
+            
+            // Favorite colors (+1)
+            if let colors = client.favoriteColors, let mat = product.material {
+                for color in colors.components(separatedBy: ",").map({ $0.trimmingCharacters(in: .whitespaces) }) {
+                    if mat.localizedCaseInsensitiveContains(color) || product.name.localizedCaseInsensitiveContains(color) {
+                        score += 1
+                        break
+                    }
+                }
+            }
+            
+            // VIP tier boost — higher-priced items for Platinum/Privé
+            if (client.vipTier == .platinum || client.vipTier == .prive) && product.price > 5000 {
+                score += 1
+            }
+            
+            return (product, score)
+        }
+        
+        return scored
+            .filter { $0.1 > 0 }
+            .sorted { $0.1 > $1.1 }
+            .prefix(6)
+            .map { $0.0 }
+    }
+    
+    // MARK: - Wishlist-Based: Contextual Recommendations
+    
+    /// Cross-category pairing map for luxury clienteling
+    private static let complementaryCategories: [String: [String]] = [
+        "watches": ["accessories", "jewelry", "leather goods"],
+        "jewelry": ["watches", "accessories", "fragrances"],
+        "handbags": ["accessories", "scarves", "jewelry", "leather goods"],
+        "shoes": ["belts", "leather goods", "accessories"],
+        "belts": ["shoes", "leather goods", "accessories"],
+        "fragrances": ["jewelry", "accessories"],
+        "accessories": ["jewelry", "watches", "handbags"],
+        "leather goods": ["accessories", "belts", "shoes"],
+        "scarves": ["handbags", "jewelry", "accessories"],
+        "eyewear": ["accessories", "jewelry"],
+    ]
+    
+    /// "Complete The Look" — cross-category complements based on wishlist items
+    var completeTheLook: [Product] {
+        let wishlistCats = Set(allWishlistProducts.map { $0.category.lowercased() })
+        
+        // Gather all complementary categories
+        var targetCats = Set<String>()
+        for cat in wishlistCats {
+            if let complements = Self.complementaryCategories[cat] {
+                targetCats.formUnion(complements)
+            }
+        }
+        // Remove categories already in wishlist
+        targetCats.subtract(wishlistCats)
+        
+        guard !targetCats.isEmpty else { return [] }
+        
+        let candidates = candidateProducts.filter { product in
+            targetCats.contains(product.category.lowercased())
+        }
+        
+        // Score by preference affinity
+        let scored = candidates.map { product -> (Product, Int) in
+            var score = 1
+            if let favCats = client.favoriteCategories {
+                if favCats.contains(where: { $0.caseInsensitiveCompare(product.category) == .orderedSame }) { score += 2 }
+            }
+            if let prefBrands = client.preferredBrands, prefBrands.localizedCaseInsensitiveContains(product.brand) { score += 1 }
+            // Prefer products from the same brands already in wishlist
+            let wishlistBrands = Set(allWishlistProducts.map { $0.brand.lowercased() })
+            if wishlistBrands.contains(product.brand.lowercased()) { score += 2 }
+            return (product, score)
+        }
+        
+        return scored
+            .sorted { $0.1 > $1.1 }
+            .prefix(6)
+            .map { $0.0 }
+    }
+    
+    /// "Premium Alternatives" — same category, higher price tier
+    var premiumAlternatives: [Product] {
+        let wishlistCats = Set(allWishlistProducts.map { $0.category.lowercased() })
+        guard !wishlistCats.isEmpty else { return [] }
+        
+        let candidates = candidateProducts.filter { product in
+            wishlistCats.contains(product.category.lowercased())
+        }
+        
+        // Sort by price descending to surface the most premium options available in those categories
+        return candidates
+            .sorted { $0.price > $1.price }
+            .prefix(6)
+            .map { $0 }
+    }
+    
+    /// Whether we have any recommendations to show at all
+    var hasRecommendations: Bool {
+        if hasWishlistItems {
+            return !completeTheLook.isEmpty || !premiumAlternatives.isEmpty
+        } else {
+            return !recommendedForClient.isEmpty
+        }
+    }
 }
 
 struct StylingChip: Identifiable, Hashable {

@@ -37,17 +37,20 @@ struct ClientWishlistWorkspaceView: View {
                         wishlistProductGrid
                     }
                     
-                    if !viewModel.availableCatalogProducts.isEmpty {
-                        catalogDiscoverySection
+                    // Smart Recommendations
+                    if viewModel.hasRecommendations {
+                        recommendationSections
                     }
                     
                     Spacer(minLength: 120)
                 }
             }
             
-            floatingActionBar
+            if viewModel.wishlistCount > 0 {
+                floatingActionBar
+            }
             
-            if viewModel.isLoading && viewModel.wishlistProducts.isEmpty && viewModel.availableCatalogProducts.isEmpty {
+            if viewModel.isLoading && viewModel.wishlistProducts.isEmpty {
                 ProgressView()
                     .tint(RSMSTheme.primary)
                     .scaleEffect(1.5)
@@ -193,7 +196,7 @@ struct ClientWishlistWorkspaceView: View {
                     .font(.system(size: 24, weight: .light, design: .serif))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
-                Text("Scroll down to discover and save luxury pieces to the client's personal collection.")
+                Text("Explore curated recommendations below to begin building this client's personal collection.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(RSMSTheme.textSecondary)
@@ -202,26 +205,59 @@ struct ClientWishlistWorkspaceView: View {
         }
     }
     
-    private var catalogDiscoverySection: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Discover")
-                    .font(.system(size: 24, weight: .light, design: .serif))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                Text("Add items to the client's Wishlist.")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
+    // MARK: - Recommendation Sections
+    
+    @ViewBuilder
+    private var recommendationSections: some View {
+        VStack(spacing: 40) {
+            // Divider before recommendations
+            HStack {
+                Rectangle()
+                    .fill(RSMSTheme.border)
+                    .frame(height: 0.5)
+                Image(systemName: "sparkles")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.primary.opacity(0.5))
+                Rectangle()
+                    .fill(RSMSTheme.border)
+                    .frame(height: 0.5)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 32)
+            .padding(.horizontal, 40)
+            .padding(.top, 16)
             
-            LazyVGrid(columns: columns, spacing: 32) {
-                ForEach(viewModel.availableCatalogProducts) { product in
-                    CatalogProductEditorialCard(product: product, viewModel: viewModel)
+            if viewModel.hasWishlistItems {
+                // Contextual recommendations when wishlist has items
+                if !viewModel.completeTheLook.isEmpty {
+                    RecommendationCarousel(
+                        title: "Complete The Look",
+                        subtitle: "Pieces that pair beautifully with your selections",
+                        icon: "wand.and.stars",
+                        products: viewModel.completeTheLook,
+                        viewModel: viewModel
+                    )
+                }
+                
+                if !viewModel.premiumAlternatives.isEmpty {
+                    RecommendationCarousel(
+                        title: "Premium Alternatives",
+                        subtitle: "Elevated options in a similar style",
+                        icon: "arrow.up.right.circle",
+                        products: viewModel.premiumAlternatives,
+                        viewModel: viewModel
+                    )
+                }
+            } else {
+                // Preference-based recommendations when wishlist is empty
+                if !viewModel.recommendedForClient.isEmpty {
+                    RecommendationCarousel(
+                        title: "Recommended For \(viewModel.client.fullName.components(separatedBy: " ").first ?? "Client")",
+                        subtitle: "Handpicked based on preferences and style profile",
+                        icon: "person.crop.square.filled.and.at.rectangle",
+                        products: viewModel.recommendedForClient,
+                        viewModel: viewModel
+                    )
                 }
             }
-            .padding(.horizontal, 24)
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.availableCatalogProducts)
         }
     }
     
@@ -273,7 +309,140 @@ struct ClientWishlistWorkspaceView: View {
     }
 }
 
-// MARK: - Editorial Product Card
+// MARK: - Recommendation Carousel
+
+struct RecommendationCarousel: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let products: [Product]
+    let viewModel: ClientWishlistWorkspaceViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Section Header
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                        .foregroundStyle(RSMSTheme.primary)
+                    
+                    Text(title)
+                        .font(.system(size: 20, weight: .regular, design: .serif))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+            .padding(.horizontal, 24)
+            
+            // Horizontal Scroll Cards
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(products) { product in
+                        RecommendationProductCard(product: product, viewModel: viewModel)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+    }
+}
+
+// MARK: - Recommendation Product Card
+
+struct RecommendationProductCard: View {
+    let product: Product
+    let viewModel: ClientWishlistWorkspaceViewModel
+    @State private var isAdding = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Image Area
+            ZStack(alignment: .topTrailing) {
+                if let urlString = product.imageURL, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().scaledToFill()
+                        } else {
+                            placeholderView
+                        }
+                    }
+                    .frame(width: 200, height: 260)
+                    .clipped()
+                } else {
+                    placeholderView
+                        .frame(width: 200, height: 260)
+                }
+                
+                // Add to Wishlist Button
+                Button {
+                    Task {
+                        isAdding = true
+                        await viewModel.addToWishlist(product: product)
+                        isAdding = false
+                    }
+                } label: {
+                    Image(systemName: "heart")
+                        .font(.system(size: 14))
+                        .foregroundStyle(RSMSTheme.primary)
+                        .padding(8)
+                        .background(Circle().fill(Color.white.opacity(0.9)))
+                        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(10)
+                .disabled(isAdding)
+            }
+            
+            // Product Details Area
+            VStack(alignment: .leading, spacing: 4) {
+                Text(product.brand.uppercased())
+                    .font(.system(size: 9, weight: .bold))
+                    .tracking(1.2)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                
+                Text(product.name)
+                    .font(.system(size: 14, weight: .regular, design: .serif))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .lineLimit(2)
+                    .frame(width: 176, alignment: .leading) // 200 - padding
+                
+                Text(product.formattedPrice)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .padding(.top, 2)
+            }
+            .padding(12)
+            .frame(width: 200, alignment: .leading)
+        }
+        .background(RSMSTheme.surfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+    
+    private var placeholderView: some View {
+        ZStack {
+            Rectangle()
+                .fill(RSMSTheme.surfaceSecondary)
+            
+            VStack(spacing: 8) {
+                Image(systemName: product.categoryIconName)
+                    .font(.system(size: 32, weight: .ultraLight))
+                    .foregroundStyle(RSMSTheme.textTertiary.opacity(0.5))
+                
+                Text(product.category.uppercased())
+                    .font(.system(size: 8, weight: .bold))
+                    .tracking(1.5)
+                    .foregroundStyle(RSMSTheme.textTertiary.opacity(0.4))
+            }
+        }
+    }
+}
+
+// MARK: - Editorial Product Card (Wishlist)
 
 struct WishlistProductEditorialCard: View {
     let product: Product
@@ -281,7 +450,8 @@ struct WishlistProductEditorialCard: View {
     @State private var showOptions = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Image Area
             ZStack(alignment: .topTrailing) {
                 if let urlString = product.imageURL, let url = URL(string: urlString) {
                     AsyncImage(url: url) { phase in
@@ -292,9 +462,9 @@ struct WishlistProductEditorialCard: View {
                         }
                     }
                     .frame(height: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipped()
                 } else {
-                    RoundedRectangle(cornerRadius: 16)
+                    Rectangle()
                         .fill(RSMSTheme.surfaceSecondary)
                         .frame(height: 240)
                         .overlay(
@@ -303,16 +473,9 @@ struct WishlistProductEditorialCard: View {
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         )
                 }
-                
-                // Match score badge or luxury flag
-                Text("98% Match")
-                    .font(.caption2.weight(.bold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .padding(12)
             }
             
+            // Product Details Area
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.brand.uppercased())
                     .font(.caption2.weight(.bold))
@@ -325,7 +488,7 @@ struct WishlistProductEditorialCard: View {
                     .lineLimit(2)
                 
                 HStack {
-                    Text("\(product.currency) \(Int(product.price).formatted())")
+                    Text(product.formattedPrice)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.primary)
                     Spacer()
@@ -353,79 +516,11 @@ struct WishlistProductEditorialCard: View {
                 }
                 .padding(.top, 4)
             }
-            .padding(.horizontal, 4)
+            .padding(16)
         }
-    }
-}
-
-// MARK: - Catalog Editorial Card
-
-struct CatalogProductEditorialCard: View {
-    let product: Product
-    let viewModel: ClientWishlistWorkspaceViewModel
-    @State private var isAdding = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ZStack(alignment: .topTrailing) {
-                if let urlString = product.imageURL, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        if let image = phase.image {
-                            image.resizable().scaledToFill()
-                        } else {
-                            Color.gray.opacity(0.1)
-                        }
-                    }
-                    .frame(height: 240)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                } else {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(RSMSTheme.surfaceSecondary)
-                        .frame(height: 240)
-                        .overlay(
-                            Image(systemName: "bag")
-                                .font(.largeTitle)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                        )
-                }
-                
-                Button {
-                    Task {
-                        isAdding = true
-                        await viewModel.addToWishlist(product: product)
-                        isAdding = false
-                    }
-                } label: {
-                    Image(systemName: "heart")
-                        .font(.system(size: 15))
-                        .foregroundStyle(RSMSTheme.primary)
-                        .padding(8)
-                        .background(Circle().fill(Color.white.opacity(0.85)))
-                        .shadow(color: .black.opacity(0.08), radius: 3)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(12)
-                .disabled(isAdding)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(product.brand.uppercased())
-                    .font(.caption2.weight(.bold))
-                    .tracking(1.0)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                
-                Text(product.name)
-                    .font(.system(size: 16, weight: .regular, design: .serif))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                    .lineLimit(2)
-                
-                Text("\(product.currency) \(Int(product.price).formatted())")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primary)
-                    .padding(.top, 4)
-            }
-            .padding(.horizontal, 4)
-        }
+        .background(RSMSTheme.surfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
     }
 }
 

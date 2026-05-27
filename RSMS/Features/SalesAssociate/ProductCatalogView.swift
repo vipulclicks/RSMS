@@ -443,7 +443,7 @@ struct ProductCatalogCard: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
         }
-        .background(RSMSTheme.surfacePrimary)
+        .background(RSMSTheme.surfaceSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
         .overlay(
