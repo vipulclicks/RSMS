@@ -26,6 +26,9 @@ struct ClientProfileDetailView: View {
     @State private var activeCartViewModel: DigitalShowroomViewModel? = nil
     @State private var selectedCuratedCart: CuratedCart? = nil
     
+    // Wishlist navigation state
+    @State private var activeWishlistViewModel: ClientWishlistWorkspaceViewModel? = nil
+    
     // Edit profile state
     @State private var showEditClientSheet = false
 
@@ -58,7 +61,6 @@ struct ClientProfileDetailView: View {
                 detailedPreferencesSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
                 wishlistSection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
                 anniversarySection
                     .listRowBackground(RSMSTheme.surfacePrimary)
                 curatedCartsSection
@@ -99,13 +101,18 @@ struct ClientProfileDetailView: View {
         .navigationDestination(item: $selectedCuratedCart) { cart in
             ShowroomCartView(mode: .savedCart(cart: cart, dataStore: dataStore))
         }
+        .navigationDestination(item: $activeWishlistViewModel) { vm in
+            ClientWishlistWorkspaceView(viewModel: vm)
+        }
         .task {
             activeShowroomViewModel = nil
             activeCartViewModel = nil
             do {
+                try await dataStore.fetchProducts()
+                try await dataStore.fetchWishlistItems(clientId: client.id)
                 try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
             } catch {
-                print("[ClientProfileDetailView] Error loading curated carts: \(error)")
+                print("[ClientProfileDetailView] Error loading data: \(error)")
             }
         }
     }
@@ -278,27 +285,94 @@ struct ClientProfileDetailView: View {
     // MARK: - Wishlist
 
     private var wishlistSection: some View {
-        Section {
-            NavigationLink {
-                ClientWishlistWorkspaceView(viewModel: ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId))
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "sparkles.square.filled.on.square")
-                        .font(.title2)
-                        .foregroundStyle(RSMSTheme.primary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Private Collection")
-                            .font(.headline.weight(.regular))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("Luxury Wishlist Workspace")
-                            .font(.caption)
+        let wishlistItems = dataStore.wishlistItems.filter { $0.clientId == currentClient.id }
+        let wishlistProducts = dataStore.products.filter { p in wishlistItems.contains(where: { $0.productId == p.id }) }
+        
+        return Section {
+            if wishlistProducts.isEmpty {
+                Button {
+                    activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.dashed")
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                        Text("No items in wishlist")
+                            .font(.subheadline)
                             .foregroundStyle(RSMSTheme.textSecondary)
+                        Spacer()
+                        Text("Add Products")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.primary)
                     }
                 }
-                .padding(.vertical, 4)
+                .buttonStyle(.plain)
+                .listRowBackground(RSMSTheme.surfacePrimary)
+            } else {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), alignment: .leading, spacing: 16) {
+                    ForEach(wishlistProducts.prefix(4)) { product in
+                        Button {
+                            activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 10) {
+                                if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                    Color.clear
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .overlay(
+                                            AsyncImage(url: url) { phase in
+                                                if let image = phase.image {
+                                                    image.resizable().scaledToFill()
+                                                } else {
+                                                    Color.gray.opacity(0.1)
+                                                }
+                                            }
+                                        )
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(RSMSTheme.border.opacity(0.5), lineWidth: 1))
+                                        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(RSMSTheme.surfaceSecondary)
+                                        .aspectRatio(1, contentMode: .fit)
+                                        .overlay(Image(systemName: "photo").foregroundStyle(RSMSTheme.textTertiary))
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(product.name)
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .lineLimit(1)
+                                    
+                                    Text("₹\(Int(product.price).formatted())")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .top)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
             }
         } header: {
-            Text("Wishlist")
+            HStack {
+                Text("Wishlist")
+                Spacer()
+                if wishlistProducts.count > 0 {
+                    Button {
+                        activeWishlistViewModel = ClientWishlistWorkspaceViewModel(client: viewModel.currentClient, dataStore: viewModel.dataStore, associateId: associateId)
+                    } label: {
+                        Text("See All")
+                            .font(.subheadline)
+                            .textCase(.none)
+                            .foregroundStyle(RSMSTheme.primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 

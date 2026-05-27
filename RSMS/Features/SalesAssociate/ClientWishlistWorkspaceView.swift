@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ClientWishlistWorkspaceView: View {
-    @State var viewModel: ClientWishlistWorkspaceViewModel
+    let viewModel: ClientWishlistWorkspaceViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var sizeClass
     
@@ -55,7 +55,7 @@ struct ClientWishlistWorkspaceView: View {
                     .background(RSMSTheme.background.opacity(0.4))
             }
         }
-        .navigationTitle("Private Collection")
+        .navigationTitle("Wishlist")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -208,7 +208,7 @@ struct ClientWishlistWorkspaceView: View {
                 Text("Discover")
                     .font(.system(size: 24, weight: .light, design: .serif))
                     .foregroundStyle(RSMSTheme.textPrimary)
-                Text("Add items to the client's private collection.")
+                Text("Add items to the client's Wishlist.")
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
             }

@@ -558,17 +558,46 @@ final class DataStore {
 
     @discardableResult
     func createWishlistItem(_ w: WishlistItem) async throws -> WishlistItem {
-        let created: WishlistItem = try await api.insert("wishlist_items", record: w)
+        // Optimistic UI update
         await MainActor.run {
-            wishlistItems.append(created)
+            if !wishlistItems.contains(where: { $0.id == w.id }) {
+                wishlistItems.append(w)
+            }
         }
-        return created
+        
+        do {
+            let created: WishlistItem = try await api.insert("wishlist_items", record: w)
+            return created
+        } catch {
+            // Revert on failure
+            await MainActor.run {
+                wishlistItems.removeAll { $0.id == w.id }
+            }
+            throw error
+        }
     }
 
     func deleteWishlistItem(id: UUID) async throws {
-        try await api.delete("wishlist_items", id: id)
+        // Optimistic UI update
+        var removedItem: WishlistItem?
         await MainActor.run {
-            wishlistItems.removeAll { $0.id == id }
+            if let index = wishlistItems.firstIndex(where: { $0.id == id }) {
+                removedItem = wishlistItems.remove(at: index)
+            }
+        }
+        
+        do {
+            try await api.delete("wishlist_items", id: id)
+        } catch {
+            // Revert on failure
+            if let item = removedItem {
+                await MainActor.run {
+                    if !wishlistItems.contains(where: { $0.id == id }) {
+                        wishlistItems.append(item)
+                    }
+                }
+            }
+            throw error
         }
     }
 
