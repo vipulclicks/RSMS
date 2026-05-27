@@ -14,9 +14,12 @@ import SwiftUI
 
 struct ProductCatalogView: View {
     @Environment(AppViewModel.self) private var appViewModel
+    var activeClient: ClientProfile? = nil
+    
     @State private var viewModel: ProductCatalogViewModel?
     @State private var selectedProduct: Product?
     @State private var showFilterSheet = false
+    @State private var showClientPickerSheet = false
 
     var body: some View {
         ZStack {
@@ -29,19 +32,16 @@ struct ProductCatalogView: View {
                     .tint(RSMSTheme.primary)
             }
         }
-        .navigationTitle("Product Catalog")
+        .navigationTitle(activeClient != nil ? "Guided Catalog" : "Product Catalog")
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if let vm = viewModel {
-                    filterButton(vm)
-                }
-            }
-        }
         .task {
             guard viewModel == nil else { return }
-            let vm = ProductCatalogViewModel(dataStore: appViewModel.dataStore,
-                                            storeId: appViewModel.currentUser?.storeId)
+            let vm = ProductCatalogViewModel(
+                dataStore: appViewModel.dataStore,
+                storeId: appViewModel.currentUser?.storeId,
+                activeClient: activeClient,
+                associateId: appViewModel.currentUser?.id
+            )
             await vm.load()
             viewModel = vm
         }
@@ -50,9 +50,36 @@ struct ProductCatalogView: View {
                 CatalogProductDetailSheet(
                     product: product,
                     stockQuantity: vm.stockQuantity(for: product.id),
-                    onAddToCart: { vm.addToCart(product) }
+                    onAddToCart: { vm.addToCart(product) },
+                    activeClient: vm.activeClient,
+                    isWishlisted: vm.isProductInWishlist(product.id),
+                    sizeLabel: vm.clientSizeLabel(for: product),
+                    isPreferenceMatch: vm.activeClient != nil ? vm.hasPreferenceMatch(for: product, client: vm.activeClient!) : false,
+                    onWishlistToggle: {
+                        Task {
+                            await vm.toggleWishlist(for: product)
+                        }
+                    }
                 )
             }
+        }
+        .sheet(isPresented: $showClientPickerSheet) {
+            ClientSelectionSheet(onSelect: { client in
+                if let vm = viewModel {
+                    vm.activeClient = client
+                    Task {
+                        vm.isLoading = true
+                        do {
+                            try await appViewModel.dataStore.fetchWishlistItems(clientId: client.id)
+                            try await appViewModel.dataStore.fetchClientAnniversaries(clientId: client.id)
+                        } catch {
+                            print("[ProductCatalogView] Error fetching client data: \(error)")
+                        }
+                        vm.isLoading = false
+                    }
+                }
+                showClientPickerSheet = false
+            })
         }
     }
 
@@ -61,6 +88,12 @@ struct ProductCatalogView: View {
     @ViewBuilder
     private func catalogContent(_ vm: ProductCatalogViewModel) -> some View {
         VStack(spacing: 0) {
+            clientContextBanner(vm)
+            
+            if vm.activeClient != nil && !vm.recommendedProducts.isEmpty {
+                curatedRecommendationsCarousel(vm)
+            }
+            
             searchBar(vm)
             categoryFilters(vm)
 
@@ -93,11 +126,153 @@ struct ProductCatalogView: View {
                 CatalogCartBadge(count: vm.cartItems.count,
                                  dataStore: appViewModel.dataStore,
                                  items: vm.cartItems,
-                                 onClear: { vm.clearCart() })
+                                 onClear: { vm.clearCart() },
+                                 viewModel: vm)
                     .padding(.bottom, 16)
                     .padding(.horizontal, 24)
             }
         }
+    }
+
+    // MARK: - Client Context Banner
+
+    @ViewBuilder
+    private func clientContextBanner(_ vm: ProductCatalogViewModel) -> some View {
+        if let client = vm.activeClient {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(RSMSTheme.primary.opacity(0.12))
+                        .frame(width: 64, height: 64)
+                    Text(client.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased())
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("PRIVATE COLLECTION FOR")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .textCase(.uppercase)
+                        .tracking(1.5)
+                    
+                    Text(client.fullName)
+                        .font(.system(size: 32, weight: .regular, design: .serif))
+                        .foregroundStyle(RSMSTheme.primary)
+                    
+                    Text("UPDATED \(Date().formatted(date: .abbreviated, time: .omitted).uppercased())")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .tracking(1.0)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private func nextMilestoneText(for client: ClientProfile) -> String {
+        let anns = appViewModel.dataStore.clientAnniversaries.filter { $0.clientId == client.id }
+        guard !anns.isEmpty else {
+            if let notes = client.notes, notes.localizedCaseInsensitiveContains("anniversary") || notes.localizedCaseInsensitiveContains("gala") {
+                return notes
+            }
+            return ""
+        }
+        
+        let cal = Calendar.current
+        let now = Date.now
+        
+        let soonest = anns.compactMap { ann -> (ClientAnniversary, Int)? in
+            let components = cal.dateComponents([.month, .day], from: ann.date)
+            guard let next = cal.nextDate(after: now, matching: components, matchingPolicy: .nextTime) else { return nil }
+            let diff = cal.dateComponents([.day], from: cal.startOfDay(for: now), to: cal.startOfDay(for: next)).day ?? 999
+            return (ann, diff)
+        }
+        .sorted { $0.1 < $1.1 }
+        .first
+        
+        if let (ann, days) = soonest {
+            if days == 0 {
+                return "🎁 \(ann.title) is TODAY!"
+            } else if days == 1 {
+                return "🎁 \(ann.title) is tomorrow"
+            } else if days <= 30 {
+                return "🎁 \(ann.title) in \(days) days"
+            }
+        }
+        return ""
+    }
+
+    // MARK: - Curated Recommendations Carousel
+
+    @ViewBuilder
+    private func curatedRecommendationsCarousel(_ vm: ProductCatalogViewModel) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Recommended For This Client")
+                .font(.system(size: 16, weight: .semibold, design: .serif))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .padding(.horizontal, 24)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(vm.recommendedProducts) { product in
+                        VStack(alignment: .leading, spacing: 8) {
+                            ZStack(alignment: .topTrailing) {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(RSMSTheme.primary.opacity(0.04))
+                                    .frame(width: 140, height: 100)
+                                
+                                if let urlString = product.imageURL, let url = URL(string: urlString) {
+                                    AsyncImage(url: url) { phase in
+                                        if let img = phase.image {
+                                            img.resizable()
+                                                .scaledToFill()
+                                                .frame(width: 140, height: 100)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        } else {
+                                            Image(systemName: product.categoryIconName)
+                                                .font(.title2)
+                                                .foregroundStyle(RSMSTheme.primary.opacity(0.2))
+                                                .frame(width: 140, height: 100)
+                                        }
+                                    }
+                                } else {
+                                    Image(systemName: product.categoryIconName)
+                                        .font(.title2)
+                                        .foregroundStyle(RSMSTheme.primary.opacity(0.2))
+                                        .frame(width: 140, height: 100)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(product.name)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .lineLimit(1)
+                                
+                                Text(product.brand)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                                
+                                Text("₹\(Int(product.price).formatted())")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(RSMSTheme.primary)
+                            }
+                            .frame(width: 140, alignment: .leading)
+                        }
+                        .onTapGesture {
+                            selectedProduct = product
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Search Bar
@@ -122,7 +297,7 @@ struct ProductCatalogView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
         .padding(.horizontal, 24)
-        .padding(.top, 12)
+        .padding(.top, 16)
     }
 
     // MARK: - Category Filter Chips
@@ -148,18 +323,27 @@ struct ProductCatalogView: View {
 
     private func productGrid(_ vm: ProductCatalogViewModel) -> some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 240), spacing: 16)],
-                      spacing: 16) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 220, maximum: 320), spacing: 24)],
+                      spacing: 24) {
                 ForEach(vm.filteredProducts) { product in
                     ProductCatalogCard(
                         product: product,
                         stockQty: vm.stockQuantity(for: product.id),
-                        isInCart: vm.isInCart(product.id)
+                        isInCart: vm.isInCart(product.id),
+                        activeClient: vm.activeClient,
+                        isWishlisted: vm.isProductInWishlist(product.id),
+                        sizeLabel: vm.clientSizeLabel(for: product),
+                        isPreferenceMatch: vm.activeClient != nil ? vm.hasPreferenceMatch(for: product, client: vm.activeClient!) : false,
+                        onWishlistToggle: {
+                            Task {
+                                await vm.toggleWishlist(for: product)
+                            }
+                        }
                     )
                     .onTapGesture { selectedProduct = product }
                     .overlay(alignment: .topTrailing) {
                         Button {
-                            vm.addToCart(product)
+                            vm.toggleCartItem(product)
                         } label: {
                             Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
                                 .font(.title3)
@@ -176,19 +360,7 @@ struct ProductCatalogView: View {
         }
     }
 
-    // MARK: - Filter Button
-
-    private func filterButton(_ vm: ProductCatalogViewModel) -> some View {
-        Button {
-            showFilterSheet = true
-        } label: {
-            Label("Filter", systemImage: vm.hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                .foregroundStyle(vm.hasActiveFilters ? RSMSTheme.primary : RSMSTheme.textPrimary)
-        }
-        .sheet(isPresented: $showFilterSheet) {
-            CatalogFilterSheet(viewModel: vm)
-        }
-    }
+    // Filter functionality has been removed in favor of a minimal UI
 }
 
 // MARK: - Product Catalog Card
@@ -197,32 +369,83 @@ struct ProductCatalogCard: View {
     let product: Product
     let stockQty: Int
     let isInCart: Bool
+    
+    let activeClient: ClientProfile?
+    let isWishlisted: Bool
+    let sizeLabel: String?
+    let isPreferenceMatch: Bool
+    let onWishlistToggle: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Product image
-            productImage
+            ZStack(alignment: .topLeading) {
+                productImage
+                
+                if activeClient != nil {
+                    Button {
+                        onWishlistToggle()
+                    } label: {
+                        Image(systemName: isWishlisted ? "heart.fill" : "heart")
+                            .font(.system(size: 15))
+                            .foregroundStyle(isWishlisted ? Color.red : RSMSTheme.primary)
+                            .padding(8)
+                            .background(Circle().fill(Color.white.opacity(0.85)))
+                            .shadow(color: .black.opacity(0.08), radius: 3)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(8)
+                }
+            }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 15, weight: .medium, design: .serif))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
                 Text(product.brand)
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textTertiary)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+
+                if activeClient != nil {
+                    HStack(spacing: 6) {
+                        if let size = sizeLabel {
+                            Text(size)
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(RSMSTheme.surfaceSecondary, in: Capsule())
+                        }
+                        
+                        if isPreferenceMatch {
+                            Text("✦ STYLE MATCH")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(RSMSTheme.primary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(RSMSTheme.primary.opacity(0.08), in: Capsule())
+                        }
+                    }
+                }
 
                 HStack {
                     Text(product.formattedPrice)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(RSMSTheme.primary)
                     Spacer()
                     StockBadge(quantity: stockQty)
                 }
             }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
         }
-        .rsmsCard()
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isInCart ? Color.green.opacity(0.5) : Color.clear, lineWidth: 2)
@@ -232,9 +455,9 @@ struct ProductCatalogCard: View {
     @ViewBuilder
     private var productImage: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(RSMSTheme.primary.opacity(0.06))
-                .frame(height: 110)
+            Rectangle()
+                .fill(RSMSTheme.surfaceSecondary)
+                .frame(height: 220)
 
             if let urlString = product.imageURL, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
@@ -242,8 +465,8 @@ struct ProductCatalogCard: View {
                     case .success(let image):
                         image.resizable()
                             .scaledToFill()
-                            .frame(height: 110)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .frame(height: 220)
+                            .clipped()
                     case .failure, .empty:
                         categoryIcon
                     @unknown default:
@@ -273,9 +496,9 @@ struct StockBadge: View {
         HStack(spacing: 3) {
             Circle()
                 .fill(statusColor)
-                .frame(width: 6, height: 6)
+                .frame(width: 5, height: 5)
             Text(statusText)
-                .font(.caption2.weight(.medium))
+                .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(statusColor)
         }
         .padding(.horizontal, 6)
@@ -290,9 +513,9 @@ struct StockBadge: View {
     }
 
     private var statusText: String {
-        if quantity == 0 { return "Out of stock" }
-        if quantity <= 3 { return "Low stock" }
-        return "In stock"
+        if quantity == 0 { return "No Stock" }
+        if quantity <= 3 { return "Low Stock" }
+        return "In Boutique"
     }
 }
 
@@ -303,6 +526,7 @@ struct CatalogCartBadge: View {
     let dataStore: DataStore
     let items: [CartSelectionItem]
     let onClear: () -> Void
+    var viewModel: ProductCatalogViewModel? = nil
 
     @State private var showSheet = false
 
@@ -327,7 +551,7 @@ struct CatalogCartBadge: View {
         }
         .buttonStyle(ScaleButtonStyle())
         .sheet(isPresented: $showSheet) {
-            CartSelectionPreviewSheet(items: items, dataStore: dataStore, onClear: onClear)
+            CartSelectionPreviewSheet(items: items, dataStore: dataStore, onClear: onClear, viewModel: viewModel)
         }
     }
 }
@@ -338,6 +562,7 @@ struct CartSelectionPreviewSheet: View {
     let items: [CartSelectionItem]
     let dataStore: DataStore
     let onClear: () -> Void
+    var viewModel: ProductCatalogViewModel? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -360,20 +585,32 @@ struct CartSelectionPreviewSheet: View {
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             Spacer()
+                            
+                            // Remove individual item
+                            if let vm = viewModel {
+                                Button {
+                                    vm.removeFromCart(product.id)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                         .padding(.vertical, 4)
                     }
                 }
             }
-            .navigationTitle("Cart Selection (\(items.count))")
+            .navigationTitle("Curated Cart (\(items.count))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Clear") { onClear(); dismiss() }
+                    Button("Clear All") { onClear() }
                         .foregroundStyle(.red)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
                 }
             }
         }
@@ -387,6 +624,13 @@ struct CatalogProductDetailSheet: View {
     let product: Product
     let stockQuantity: Int
     let onAddToCart: () -> Void
+    
+    let activeClient: ClientProfile?
+    let isWishlisted: Bool
+    let sizeLabel: String?
+    let isPreferenceMatch: Bool
+    let onWishlistToggle: () -> Void
+    
     @Environment(\.dismiss) private var dismiss
     @State private var addedToCart = false
 
@@ -397,6 +641,11 @@ struct CatalogProductDetailSheet: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         heroImage
+                        
+                        if activeClient != nil {
+                            clientellingContextBox
+                        }
+                        
                         productInfo
                         actions
                     }
@@ -443,6 +692,40 @@ struct CatalogProductDetailSheet: View {
         .padding(.horizontal, 24)
     }
 
+    private var clientellingContextBox: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Clientelling Insights")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                
+            HStack(spacing: 12) {
+                if let size = sizeLabel {
+                    Label(size, systemImage: "ruler")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RSMSTheme.surfaceSecondary, in: Capsule())
+                }
+                
+                if isPreferenceMatch {
+                    Label("Style Match", systemImage: "sparkles")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(RSMSTheme.primary.opacity(0.08), in: Capsule())
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
+        .padding(.horizontal, 24)
+    }
+
     private var productInfo: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -481,23 +764,103 @@ struct CatalogProductDetailSheet: View {
 
     private var actions: some View {
         VStack(spacing: 12) {
-            Button {
-                onAddToCart()
-                addedToCart = true
-            } label: {
-                Label(addedToCart ? "Added to Cart ✓" : "Add to Curated Cart",
-                      systemImage: addedToCart ? "checkmark.circle.fill" : "cart.badge.plus")
-                    .font(.headline)
-                    .foregroundStyle(RSMSTheme.cream)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            HStack(spacing: 12) {
+                if activeClient != nil {
+                    Button {
+                        onWishlistToggle()
+                    } label: {
+                        HStack {
+                            Image(systemName: isWishlisted ? "heart.fill" : "heart")
+                            Text(isWishlisted ? "Wishlisted" : "Add to Wishlist")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isWishlisted ? Color.red : RSMSTheme.primary)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(isWishlisted ? Color.red.opacity(0.3) : RSMSTheme.primary.opacity(0.3), lineWidth: 1))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                
+                Button {
+                    onAddToCart()
+                    addedToCart = true
+                } label: {
+                    Label(addedToCart ? "Added ✓" : "Add to Cart",
+                          systemImage: addedToCart ? "checkmark.circle.fill" : "cart.badge.plus")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(addedToCart)
             }
-            .buttonStyle(ScaleButtonStyle())
-            .disabled(addedToCart)
         }
         .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - Client Selection Sheet
+
+struct ClientSelectionSheet: View {
+    @Environment(AppViewModel.self) private var appViewModel
+    @Environment(\.dismiss) private var dismiss
+    let onSelect: (ClientProfile) -> Void
+    @State private var searchText = ""
+    
+    var filteredClients: [ClientProfile] {
+        let clients = appViewModel.dataStore.clients
+        guard !searchText.isEmpty else { return clients }
+        return clients.filter { $0.fullName.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(filteredClients) { client in
+                    Button {
+                        onSelect(client)
+                    } label: {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(RSMSTheme.primary.opacity(0.12))
+                                    .frame(width: 40, height: 40)
+                                Text(client.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased())
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(RSMSTheme.primary)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(client.fullName)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Text(client.vipTier.rawValue.uppercased())
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .navigationTitle("Select Client")
+            .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $searchText, prompt: "Search clients...")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 

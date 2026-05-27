@@ -22,9 +22,10 @@ struct ClientProfileDetailView: View {
     @State private var wishlistSearchText = ""
     
     // Curated Cart state
-    @State private var activeShowroomViewModel: DigitalShowroomViewModel? = nil
-    @State private var activeCartViewModel: DigitalShowroomViewModel? = nil
     @State private var selectedCuratedCart: CuratedCart? = nil
+    
+    // Guided Catalog navigation state
+    @State private var navigateToGuidedCatalog = false
     
     // Wishlist navigation state
     @State private var activeWishlistViewModel: ClientWishlistWorkspaceViewModel? = nil
@@ -49,6 +50,12 @@ struct ClientProfileDetailView: View {
 
             List {
                 heroSection
+                
+                catalogSection
+                wishlistSection
+                curatedCartsSection
+                    .listRowBackground(RSMSTheme.surfacePrimary)
+                
                 consentSection
                 contactSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
@@ -60,10 +67,7 @@ struct ClientProfileDetailView: View {
                     .listRowBackground(RSMSTheme.surfacePrimary)
                 detailedPreferencesSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
-                wishlistSection
                 anniversarySection
-                    .listRowBackground(RSMSTheme.surfacePrimary)
-                curatedCartsSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
                 notesSection
                     .listRowBackground(RSMSTheme.surfacePrimary)
@@ -92,21 +96,16 @@ struct ClientProfileDetailView: View {
         .sheet(isPresented: $showEditClientSheet) {
             EditClientProfileView(client: currentClient, dataStore: dataStore)
         }
-        .navigationDestination(item: $activeShowroomViewModel) { vm in
-            DigitalShowroomView(viewModel: vm)
-        }
-        .navigationDestination(item: $activeCartViewModel) { vm in
-            ShowroomCartView(mode: .activeSession(viewModel: vm))
-        }
         .navigationDestination(item: $selectedCuratedCart) { cart in
             ShowroomCartView(mode: .savedCart(cart: cart, dataStore: dataStore))
         }
         .navigationDestination(item: $activeWishlistViewModel) { vm in
             ClientWishlistWorkspaceView(viewModel: vm)
         }
+        .navigationDestination(isPresented: $navigateToGuidedCatalog) {
+            ProductCatalogView(activeClient: currentClient)
+        }
         .task {
-            activeShowroomViewModel = nil
-            activeCartViewModel = nil
             do {
                 try await dataStore.fetchProducts()
                 try await dataStore.fetchWishlistItems(clientId: client.id)
@@ -146,6 +145,35 @@ struct ClientProfileDetailView: View {
             .listRowBackground(Color.clear)
             .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
             .listRowSeparator(.hidden)
+        }
+    }
+
+    // MARK: - Catalog Access
+
+    private var catalogSection: some View {
+        Section {
+            Button {
+                navigateToGuidedCatalog = true
+            } label: {
+                HStack(spacing: 16) {
+                    Image(systemName: "sparkles")
+                        .font(.title2)
+                        .foregroundStyle(RSMSTheme.primary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Guided Catalog")
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Explore collections personalized for \(currentClient.fullName.components(separatedBy: " ").first ?? "")")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+            }
+            .listRowBackground(RSMSTheme.surfacePrimary)
         }
     }
 
@@ -641,20 +669,8 @@ struct ClientProfileDetailView: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
             }
         } header: {
-            HStack {
+            HStack(spacing: 12) {
                 Text("Curated Carts")
-                Spacer()
-                Button {
-                    activeShowroomViewModel = DigitalShowroomViewModel(dataStore: dataStore, client: currentClient, associateId: associateId)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "sparkles.rectangle.stack.fill")
-                        Text("Digital Showroom")
-                    }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primary)
-                }
-                .buttonStyle(.plain)
             }
         }
     }

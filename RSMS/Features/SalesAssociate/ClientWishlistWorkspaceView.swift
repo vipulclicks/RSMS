@@ -396,13 +396,14 @@ struct CatalogProductEditorialCard: View {
                         isAdding = false
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.cream)
-                        .frame(width: 44, height: 44)
-                        .background(RSMSTheme.primary, in: Circle())
-                        .shadow(color: .black.opacity(0.1), radius: 5, y: 3)
+                    Image(systemName: "heart")
+                        .font(.system(size: 15))
+                        .foregroundStyle(RSMSTheme.primary)
+                        .padding(8)
+                        .background(Circle().fill(Color.white.opacity(0.85)))
+                        .shadow(color: .black.opacity(0.08), radius: 3)
                 }
+                .buttonStyle(PlainButtonStyle())
                 .padding(12)
                 .disabled(isAdding)
             }

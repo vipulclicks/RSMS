@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ShowroomProductDetailView: View {
     let product: Product
-    let viewModel: DigitalShowroomViewModel
+    let viewModel: ProductCatalogViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var wishlistAdded = false
     
@@ -124,7 +124,7 @@ struct ShowroomProductDetailView: View {
                 HStack(spacing: 16) {
                     Button {
                         Task {
-                            await viewModel.addToWishlist(product)
+                            await viewModel.toggleWishlist(for: product)
                             withAnimation {
                                 wishlistAdded = true
                             }

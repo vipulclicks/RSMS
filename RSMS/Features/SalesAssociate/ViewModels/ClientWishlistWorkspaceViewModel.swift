@@ -168,50 +168,14 @@ final class ClientWishlistWorkspaceViewModel {
     }
     
     func moveToCuratedCart(product: Product) async {
-        let existingCarts = dataStore.curatedCarts(for: client.id)
-        
-        let cartId: UUID
-        var items: [UniversalCartItem] = []
-        let title: String
-        let description: String
-        
-        if let firstCart = existingCarts.first {
-            cartId = firstCart.id
-            title = firstCart.title
-            description = firstCart.description
-            items = firstCart.items
-        } else {
-            cartId = UUID()
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .short
-            title = "Curated Cart - \(formatter.string(from: Date()))"
-            description = "Created from Wishlist"
-        }
-        
-        // Add the product if it's not already in the cart items
-        if !items.contains(where: { $0.productId == product.id }) {
-            let newItem = UniversalCartItem(
-                id: UUID(),
-                cartId: cartId,
+        do {
+            try await dataStore.addItemToCuratedCart(
                 productId: product.id,
-                quantity: 1,
-                unitPrice: product.price,
-                discountApplied: 0,
+                price: product.price,
+                forClient: client.id,
+                associateId: associateId,
                 note: "Moved from Wishlist"
             )
-            items.append(newItem)
-        }
-        
-        let updatedCart = CuratedCart(
-            id: cartId,
-            title: title,
-            description: description,
-            items: items
-        )
-        
-        do {
-            try await dataStore.saveCuratedCart(updatedCart, forClient: client.id, associateId: associateId)
             // Remove from wishlist after successful move
             await removeFromWishlist(product: product)
         } catch {
@@ -220,59 +184,21 @@ final class ClientWishlistWorkspaceViewModel {
     }
     
     func createCartFromWishlist() async {
-        let existingCarts = dataStore.curatedCarts(for: client.id)
-        
-        let cartId: UUID
-        var items: [UniversalCartItem] = []
-        let title: String
-        let description: String
-        
-        if let firstCart = existingCarts.first {
-            cartId = firstCart.id
-            title = firstCart.title
-            description = firstCart.description
-            items = firstCart.items
-        } else {
-            cartId = UUID()
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .short
-            title = "Curated Cart - \(formatter.string(from: Date()))"
-            description = "Created from Wishlist"
-        }
-        
-        // Add all wishlist products to items
         let currentWishlistProducts = wishlistProducts
+        
         for product in currentWishlistProducts {
-            if !items.contains(where: { $0.productId == product.id }) {
-                let newItem = UniversalCartItem(
-                    id: UUID(),
-                    cartId: cartId,
+            do {
+                try await dataStore.addItemToCuratedCart(
                     productId: product.id,
-                    quantity: 1,
-                    unitPrice: product.price,
-                    discountApplied: 0,
+                    price: product.price,
+                    forClient: client.id,
+                    associateId: associateId,
                     note: "Moved from Wishlist"
                 )
-                items.append(newItem)
-            }
-        }
-        
-        let updatedCart = CuratedCart(
-            id: cartId,
-            title: title,
-            description: description,
-            items: items
-        )
-        
-        do {
-            try await dataStore.saveCuratedCart(updatedCart, forClient: client.id, associateId: associateId)
-            // Remove all wishlist products that were moved
-            for product in currentWishlistProducts {
                 await removeFromWishlist(product: product)
+            } catch {
+                print("[ClientWishlistWorkspaceViewModel] Error adding \(product.name) to cart: \(error)")
             }
-        } catch {
-            print("[ClientWishlistWorkspaceViewModel] Error creating cart from wishlist: \(error)")
         }
     }
     

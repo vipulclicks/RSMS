@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum ShowroomCartMode {
-    case activeSession(viewModel: DigitalShowroomViewModel)
+    case activeSession(viewModel: ProductCatalogViewModel)
     case savedCart(cart: CuratedCart, dataStore: DataStore)
 }
 
@@ -211,15 +211,14 @@ struct ShowroomCartView: View {
     }
     
     @ViewBuilder
-    private func activeSessionItemsList(vm: DigitalShowroomViewModel) -> some View {
-        @Bindable var viewModel = vm
-        ForEach($viewModel.cartItems) { $item in
+    private func activeSessionItemsList(vm: ProductCatalogViewModel) -> some View {
+        ForEach(vm.cartItems) { item in
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top, spacing: 16) {
                     // Product image
                     productImageView(imageURL: item.product.imageURL, categoryIconName: item.product.categoryIconName)
                     
-                    // Product Info & Quantity / Note controls
+                    // Product Info
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(item.product.name)
@@ -229,7 +228,7 @@ struct ShowroomCartView: View {
                             Spacer()
                             Button {
                                 withAnimation {
-                                    viewModel.toggleCartItem(item.product)
+                                    vm.toggleCartItem(item.product)
                                 }
                             } label: {
                                 Image(systemName: "trash")
@@ -249,63 +248,12 @@ struct ShowroomCartView: View {
                             .foregroundStyle(RSMSTheme.primary)
                             .padding(.vertical, 2)
                         
-                        // Client Reaction Selector & Quantity Selector
-                        HStack {
-                            HStack(spacing: 8) {
-                                Text("Reaction:")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                
-                                Picker("Reaction", selection: $item.reaction) {
-                                    Text("Select").tag(ClientReaction?.none)
-                                    ForEach(ClientReaction.allCases) { reaction in
-                                        Text(reaction.rawValue).tag(ClientReaction?.some(reaction))
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .tint(item.reaction?.color ?? RSMSTheme.textSecondary)
-                                .scaleEffect(0.9)
-                                .padding(.horizontal, -8)
-                            }
-                            
-                            Spacer()
-                            
-                            HStack(spacing: 12) {
-                                Button {
-                                    if item.quantity > 1 {
-                                        item.quantity -= 1
-                                    }
-                                } label: {
-                                    Image(systemName: "minus.circle")
-                                        .font(.title3)
-                                        .foregroundStyle(RSMSTheme.primary)
-                                }
-                                
-                                Text("\(item.quantity)")
-                                    .font(.body.weight(.bold))
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                    .frame(minWidth: 24, alignment: .center)
-                                
-                                Button {
-                                    item.quantity += 1
-                                } label: {
-                                    Image(systemName: "plus.circle")
-                                        .font(.title3)
-                                        .foregroundStyle(RSMSTheme.primary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        Text(item.product.brand.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .tracking(1.0)
+                            .foregroundStyle(RSMSTheme.textTertiary)
                     }
                 }
-                
-                // Styling/SA Note Textfield
-                TextField("Add styling note / feedback...", text: $item.saNote)
-                    .font(.subheadline)
-                    .padding(10)
-                    .background(RSMSTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-                    .foregroundStyle(RSMSTheme.textPrimary)
             }
             .padding()
             .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))

@@ -22,6 +22,94 @@ extension DataStore {
         }
     }
 
+    // MARK: - Get or Create the single curated cart for a client
+    
+    /// Returns the existing curated cart for a client, or creates a new empty one.
+    /// This ensures there is always exactly one curated cart per client.
+    func getOrCreateCuratedCart(forClient clientId: UUID, associateId: UUID) async throws -> UniversalCart {
+        // Check local state first
+        if let existing = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated }) {
+            return existing
+        }
+        
+        // Check database
+        let fetched: [UniversalCart] = try await SupabaseClient.shared.fetch("universal_carts", query: [
+            "client_id": "eq.\(clientId)",
+            "type": "eq.curated"
+        ])
+        
+        if let existing = fetched.first {
+            await MainActor.run {
+                if !self.universalCarts.contains(where: { $0.id == existing.id }) {
+                    self.universalCarts.append(existing)
+                }
+            }
+            return existing
+        }
+        
+        // Create a new cart
+        let newCart = UniversalCart(
+            id: UUID(),
+            type: .curated,
+            associateId: associateId,
+            clientId: clientId,
+            storeId: nil,
+            status: .active,
+            note: "Curated Cart",
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        let created: UniversalCart = try await SupabaseClient.shared.insert("universal_carts", record: newCart)
+        await MainActor.run {
+            self.universalCarts.append(created)
+        }
+        return created
+    }
+    
+    // MARK: - Add a single item (non-destructive append)
+    
+    /// Adds a single product to the client's curated cart.
+    /// If the product is already in the cart, this is a no-op.
+    /// This does NOT remove any existing items.
+    func addItemToCuratedCart(productId: UUID, price: Double, forClient clientId: UUID, associateId: UUID, note: String? = nil) async throws {
+        let cart = try await getOrCreateCuratedCart(forClient: clientId, associateId: associateId)
+        
+        // Check if item already exists in this cart
+        let alreadyExists = universalCartItems.contains { $0.cartId == cart.id && $0.productId == productId }
+        guard !alreadyExists else { return }
+        
+        let newItem = UniversalCartItem(
+            id: UUID(),
+            cartId: cart.id,
+            productId: productId,
+            quantity: 1,
+            unitPrice: price,
+            discountApplied: 0,
+            note: note
+        )
+        
+        let inserted: UniversalCartItem = try await SupabaseClient.shared.insert("universal_cart_items", record: newItem)
+        await MainActor.run {
+            self.universalCartItems.append(inserted)
+        }
+    }
+    
+    // MARK: - Remove a single item
+    
+    /// Removes a single product from the client's curated cart.
+    func removeItemFromCuratedCart(productId: UUID, forClient clientId: UUID) async throws {
+        guard let cart = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated }) else { return }
+        guard let item = universalCartItems.first(where: { $0.cartId == cart.id && $0.productId == productId }) else { return }
+        
+        try await SupabaseClient.shared.delete("universal_cart_items", id: item.id)
+        await MainActor.run {
+            self.universalCartItems.removeAll { $0.id == item.id }
+        }
+    }
+    
+    // MARK: - Full cart replace (used by Guided Catalog save)
+
     func saveCuratedCart(_ cart: CuratedCart, forClient clientId: UUID, associateId: UUID) async throws {
         // Enforce one curated cart per client: delete any existing ones first
         let existing = self.universalCarts.filter { $0.clientId == clientId && $0.type == .curated }
@@ -103,23 +191,16 @@ extension DataStore {
             }
         }
         
-        // 3. Merge into local store arrays safely on MainActor
+        // 3. Replace local state for this client's curated carts cleanly
         await MainActor.run {
-            for cart in carts {
-                if let idx = self.universalCarts.firstIndex(where: { $0.id == cart.id }) {
-                    self.universalCarts[idx] = cart
-                } else {
-                    self.universalCarts.append(cart)
-                }
-            }
+            // Remove old local data for this client's curated carts
+            let oldCartIds = Set(self.universalCarts.filter { $0.clientId == clientId && $0.type == .curated }.map { $0.id })
+            self.universalCarts.removeAll { $0.clientId == clientId && $0.type == .curated }
+            self.universalCartItems.removeAll { oldCartIds.contains($0.cartId) }
             
-            for item in allItems {
-                if let idx = self.universalCartItems.firstIndex(where: { $0.id == item.id }) {
-                    self.universalCartItems[idx] = item
-                } else {
-                    self.universalCartItems.append(item)
-                }
-            }
+            // Add fresh data
+            self.universalCarts.append(contentsOf: carts)
+            self.universalCartItems.append(contentsOf: allItems)
         }
     }
 }
