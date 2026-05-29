@@ -24,6 +24,12 @@ enum RSMSDateFormatter {
         return f
     }()
 
+    static let timeOnly: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
+
     static func timeAgo(from date: Date) -> String {
         let mins = Int(-date.timeIntervalSinceNow / 60)
         if mins < 60 { return "\(mins)m ago" }

@@ -92,7 +92,7 @@ struct ShiftMonitorView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Today's Shifts")
-                .font(.system(size: 34, weight: .heavy, design: .default))
+                .font(.system(size: 34, weight: .heavy))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             HStack(spacing: 8) {

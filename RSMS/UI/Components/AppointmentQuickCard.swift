@@ -25,7 +25,7 @@ struct AppointmentQuickCard: View {
 
                 Text(clientName)
                     .font(.headline)
-                    .fontDesign(.serif)
+                    
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                     .frame(height: 44, alignment: .topLeading)

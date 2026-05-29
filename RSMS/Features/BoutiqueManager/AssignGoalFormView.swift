@@ -94,7 +94,7 @@ struct AssignGoalFormView: View {
                                     .font(.title.weight(.bold))
                                     .foregroundStyle(RSMSTheme.gold)
                                 Text(viewModel.draftAmount.formatted(.number.precision(.fractionLength(0))))
-                                    .font(.system(size: 48, weight: .medium, design: .rounded))
+                                    .font(.system(size: 48, weight: .medium))
                                     .foregroundStyle(RSMSTheme.gold)
                                     .contentTransition(.numericText())
                                     .animation(.snappy, value: viewModel.draftAmount)

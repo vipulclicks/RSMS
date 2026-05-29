@@ -124,7 +124,7 @@ struct ProductLookupView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Product Lookup")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text("Search by name, SKU, brand, or category")
                 .font(.subheadline)
@@ -152,7 +152,7 @@ struct ProductLookupView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(color)
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text(label)
                 .font(.caption.weight(.medium))
@@ -437,7 +437,7 @@ struct ProductDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("PRODUCT DETAILS")
-                        .font(.system(.caption, design: .serif, weight: .light))
+                        .font(.system(.caption, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
