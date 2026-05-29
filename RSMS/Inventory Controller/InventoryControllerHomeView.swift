@@ -40,15 +40,43 @@ struct InventoryControllerHomeView: View {
 
     @State var dashVM = InventoryDashboardViewModel()
     @State var selectedDestination: InventoryDestination? = .dashboard
-    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
-        } detail: {
-            detailView
+        if horizontalSizeClass == .compact {
+            TabView(selection: $selectedDestination) {
+                ForEach(InventoryDestination.allCases) { destination in
+                    NavigationStack {
+                        detailViewFor(destination)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button {
+                                        selectedDestination = .profile
+                                    } label: {
+                                        SidebarAvatarButton(user: viewModel.currentUser)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                    }
+                    .tabItem {
+                        Label(destination.rawValue, systemImage: destination.icon)
+                    }
+                    .tag(destination as InventoryDestination?)
+                }
+            }
+            .tint(RSMSTheme.gold)
+        } else {
+            NavigationSplitView(columnVisibility: $columnVisibility) {
+                sidebar
+            } detail: {
+                NavigationStack {
+                    detailView
+                }
+            }
+            .tint(RSMSTheme.gold)
+            .navigationSplitViewStyle(.prominentDetail)
         }
-        .tint(RSMSTheme.gold)
     }
     
     // MARK: - Sidebar
@@ -115,8 +143,17 @@ struct InventoryControllerHomeView: View {
 
     @ViewBuilder
     private var detailContent: some View {
-        switch selectedDestination {
-        case .dashboard, .none:
+        if let destination = selectedDestination {
+            detailViewFor(destination)
+        } else {
+            detailViewFor(.dashboard)
+        }
+    }
+
+    @ViewBuilder
+    private func detailViewFor(_ destination: InventoryDestination) -> some View {
+        switch destination {
+        case .dashboard:
             dashboardView
         case .productLookup:
             ProductLookupView()
