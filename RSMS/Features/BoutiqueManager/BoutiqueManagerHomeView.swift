@@ -12,6 +12,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
     case staff                 = "Staff"
     case transfers             = "Stock Transfers"
     case planograms            = "Planograms"
+    case compliance            = "Store Compliance"
 
     var id: String { rawValue }
 
@@ -21,6 +22,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         case .staff:                 return "person.2.fill"
         case .transfers:             return "arrow.left.arrow.right"
         case .planograms:            return "photo.artframe"
+        case .compliance:            return "checkmark.shield.fill"
         }
     }
 }
@@ -105,6 +107,8 @@ struct BoutiqueManagerHomeView: View {
             StockTransfersView()
         case .planograms:
             StoreLayoutOverviewView()
+        case .compliance:
+            ComplianceDashboardView()
         }
     }
 }
