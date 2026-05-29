@@ -34,6 +34,8 @@ final class POSCheckoutViewModel {
             try await dataStore.fetchClients()
             try await dataStore.fetchUniversalCarts(associateId: associateId, type: .pos)
             try await dataStore.fetchDiscounts()
+            try? await dataStore.fetchDiscountApprovalRequests()
+            try? await dataStore.fetchAppNotifications()
             try await dataStore.fetchTransactions(storeId: storeId)
             try await dataStore.fetchExchangeReturns(storeId: storeId)
         } catch {

@@ -15,6 +15,7 @@ enum ShowroomCartMode {
 struct ShowroomCartView: View {
     let mode: ShowroomCartMode
     
+    @Environment(AppViewModel.self) private var appVM
     @Environment(\.dismiss) private var dismiss
     @State private var showShareToast = false
     @State private var navigateToCheckout = false
@@ -23,6 +24,9 @@ struct ShowroomCartView: View {
     @State private var isSharing = false
     @State private var shareSuccess = false
     @State private var currentStatus: CartStatus = .active
+    
+    // Discount State
+    @State private var showDiscountSheet = false
     
     // Compute or check mode
     private var isEditMode: Bool {
@@ -90,8 +94,15 @@ struct ShowroomCartView: View {
                                     itemsSection
                                         .frame(maxWidth: .infinity)
                                     
-                                    amountSummarySection
-                                        .frame(width: 320)
+                                    VStack(spacing: 16) {
+                                        amountSummarySection
+                                        
+                                        // Approval Request Banner — driven by DB record, not cart note
+                                        if let req = activeApprovalRequest, req.status != .approved {
+                                            approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
+                                        }
+                                    }
+                                    .frame(width: 320)
                                 }
                                 .padding(.horizontal, 24)
                             } else {
@@ -100,6 +111,11 @@ struct ShowroomCartView: View {
                                     itemsSection
                                     
                                     amountSummarySection
+                                    
+                                    // Approval Request Banner — driven by DB record, not cart note
+                                    if let req = activeApprovalRequest, req.status != .approved {
+                                        approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
+                                    }
                                 }
                                 .padding(.horizontal, 16)
                             }
@@ -133,6 +149,14 @@ struct ShowroomCartView: View {
                 }
             }
         }
+        .task {
+            // Always re-fetch approval requests from DB so we see the latest manager decisions
+            try? await appVM.dataStore.fetchDiscountApprovalRequests()
+            // Also re-fetch carts so the discount note field is current
+            if let associateId = appVM.currentUser?.id {
+                try? await appVM.dataStore.fetchUniversalCarts(associateId: associateId, type: .curated)
+            }
+        }
         .alert("Saved", isPresented: isEditModeSuccessPresented) {
             Button("Done") { dismiss() }
         } message: {
@@ -145,6 +169,32 @@ struct ShowroomCartView: View {
         .navigationDestination(isPresented: $navigateToCheckout) {
             POSCheckoutView()
         }
+        .sheet(isPresented: $showDiscountSheet) {
+            CartDiscountSheet(
+                cartId: currentCart?.id ?? UUID(),
+                clientId: currentCart?.clientId ?? UUID(),
+                cartSubtotal: subtotalAmount,
+                associateId: getAssociateId(),
+                appliedDiscount: Binding(
+                    get: { currentCart?.appliedDiscount },
+                    set: { newDiscount in
+                        updateDiscount(newDiscount)
+                    }
+                )
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+    }
+    
+    // MARK: - Cart & Discount Helpers
+    
+    private var activeApprovalRequest: DiscountApprovalRequest? {
+        guard let cartId = currentCart?.id else { return nil }
+        return appVM.dataStore.discountApprovalRequests
+            .filter { $0.cartId == cartId }
+            .sorted { $0.createdAt > $1.createdAt }
+            .first
     }
     
     // MARK: - Helpers for Mode Checks
@@ -448,14 +498,27 @@ struct ShowroomCartView: View {
     // MARK: - Amount Summary Section
     private var amountSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Amount Summary")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(RSMSTheme.textPrimary)
+            HStack {
+                Text("Amount Summary")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Spacer()
+                if currentCartDiscount == nil {
+                    Button {
+                        showDiscountSheet = true
+                    } label: {
+                        Text("Apply Discount")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RSMSTheme.primary.opacity(0.1), in: Capsule())
+                    }
+                }
+            }
             
             VStack(alignment: .leading, spacing: 16) {
                 let subtotal = subtotalAmount
-                let tax = subtotal * 0.20
-                let total = subtotal + tax
                 
                 HStack {
                     Text("Subtotal")
@@ -466,6 +529,42 @@ struct ShowroomCartView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
+                
+                if let discount = currentCartDiscount {
+                    let effectiveStatus = activeApprovalRequest?.status ?? .approved
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Discount (\(discount.type.rawValue.capitalized))")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.danger)
+                            
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(effectiveStatus == .approved ? RSMSTheme.success : (effectiveStatus == .rejected ? RSMSTheme.danger : .orange))
+                                    .frame(width: 6, height: 6)
+                                Text(effectiveStatus.rawValue.capitalized)
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                            }
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("- ₹\(Int(calculatedDiscountValue(discount)).formatted())")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.danger)
+                            
+                            Button("Edit") {
+                                showDiscountSheet = true
+                            }
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(RSMSTheme.primary)
+                        }
+                    }
+                }
+                
+                let postDiscountSubtotal = max(0, subtotal - (currentCartDiscount.map { calculatedDiscountValue($0) } ?? 0))
+                let tax = postDiscountSubtotal * 0.20
+                let total = postDiscountSubtotal + tax
                 
                 HStack {
                     Text("Tax (20%)")
@@ -508,7 +607,39 @@ struct ShowroomCartView: View {
         }
     }
     
-    // MARK: - Bottom Action Bar
+    // MARK: - Discount Status Banner
+    
+    @ViewBuilder
+    private func approvalStatusBanner(status: DiscountApprovalStatus, managerNotes: String?) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: status == .pending ? "clock.fill" : (status == .approved ? "checkmark.seal.fill" : "xmark.octagon.fill"))
+                .font(.system(size: 20))
+                .foregroundStyle(status == .pending ? .orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger))
+                
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Discount \(status.rawValue.capitalized)")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                if status == .pending {
+                    Text("Awaiting Boutique Manager approval before checkout can proceed.")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                } else if status == .rejected, let notes = managerNotes {
+                    Text("Reason: \(notes)")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+            }
+            Spacer()
+        }
+        .padding()
+        .background((status == .pending ? Color.orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger)).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Bottom Actions Bar
     private var bottomActionBar: some View {
         VStack(spacing: 12) {
             Divider().overlay(RSMSTheme.divider)
@@ -589,28 +720,74 @@ struct ShowroomCartView: View {
                         )
                 }
                 
-                // Proceed to Checkout
+                // Proceed to Checkout — blocked only if a real DB approval request is pending or rejected
+                let isCheckoutBlocked = (activeApprovalRequest?.status == .pending) || (activeApprovalRequest?.status == .rejected)
+                
                 Button {
                     navigateToCheckout = true
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "creditcard.fill")
-                        Text("Checkout")
+                        Image(systemName: isCheckoutBlocked ? "lock.fill" : "creditcard.fill")
+                        Text(isCheckoutBlocked ? "Checkout Locked" : "Checkout")
                     }
                     .font(.headline)
-                    .foregroundStyle(isEmpty ? RSMSTheme.textTertiary : RSMSTheme.cream)
+                    .foregroundStyle((isEmpty || isCheckoutBlocked) ? RSMSTheme.textTertiary : RSMSTheme.cream)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(isEmpty ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                    .background((isEmpty || isCheckoutBlocked) ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isEmpty)
+                .disabled(isEmpty || isCheckoutBlocked)
             }
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
         .padding(.top, 12)
         .background(RSMSTheme.surfacePrimary)
+    }
+    
+    // MARK: - Discount Logic
+    
+    private var currentCartDiscount: CartDiscount? {
+        currentCart?.appliedDiscount
+    }
+    
+    private var currentCart: UniversalCart? {
+        switch mode {
+        case .activeSession(let vm):
+            return vm.activeUniversalCart
+        case .savedCart(let cart, let ds):
+            return ds.universalCarts.first(where: { $0.id == cart.id })
+        }
+    }
+    
+    private func getAssociateId() -> UUID {
+        switch mode {
+        case .activeSession(let vm):
+            return vm.associateId ?? UUID()
+        case .savedCart(let cart, let ds):
+            return ds.universalCarts.first(where: { $0.id == cart.id })?.associateId ?? UUID()
+        }
+    }
+    
+    private func updateDiscount(_ discount: CartDiscount?) {
+        switch mode {
+        case .activeSession(let vm):
+            Task { await vm.updateCartDiscount(discount) }
+        case .savedCart(let cart, let ds):
+            guard let dbCart = ds.universalCarts.first(where: { $0.id == cart.id }) else { return }
+            let updated = dbCart.applyingDiscount(discount)
+            Task { try? await ds.updateUniversalCart(updated) }
+        }
+    }
+    
+    private func calculatedDiscountValue(_ discount: CartDiscount) -> Double {
+        switch discount.type {
+        case .percentage, .vip:
+            return subtotalAmount * (discount.value / 100.0)
+        case .promotional:
+            return discount.value
+        }
     }
     
     private var isSavingFromViewModel: Bool {
