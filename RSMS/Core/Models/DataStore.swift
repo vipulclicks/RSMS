@@ -347,9 +347,11 @@ final class DataStore {
         return created
     }
 
-    func updateLookbook(_ l: Lookbook) async throws {
-        try await api.update("lookbooks", id: l.id, record: l)
-        if let i = lookbooks.firstIndex(where: { $0.id == l.id }) { lookbooks[i] = l }
+    @discardableResult
+    func updateLookbook(_ l: Lookbook) async throws -> Lookbook {
+        let updated: Lookbook = try await api.update("lookbooks", id: l.id, record: l)
+        if let i = lookbooks.firstIndex(where: { $0.id == updated.id }) { lookbooks[i] = updated }
+        return updated
     }
 
     func deleteLookbook(id: UUID) async throws {

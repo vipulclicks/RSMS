@@ -147,24 +147,28 @@ struct PerformanceMetric: Codable, Identifiable, Hashable {
 
 // MARK: - Lookbook
 
-/// A digital collection of images and guidelines to show how products should be presented according to the brand's standards.
+/// A published lookbook document stored in Supabase.
 struct Lookbook: Codable, Identifiable, Hashable {
     let id: UUID
     let title: String
-    let season: String
-    let description: String?
-    let imageURLs: [String]
-    let brandGuideline: String?
     let isActive: Bool
     let createdAt: Date
+    let pdfStoragePath: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, season, description
-        case imageURLs      = "image_urls"
-        case brandGuideline = "brand_guideline"
-        case isActive       = "is_active"
-        case createdAt      = "created_at"
+        case id, title
+        case isActive        = "is_active"
+        case createdAt       = "created_at"
+        case pdfStoragePath  = "pdf_storage_path"
     }
+
+    static let preview = Lookbook(
+        id: UUID(uuidString: "30000000-0000-0000-0000-0000000000C0")!,
+        title: "Maison Lumiere Summer 2026",
+        isActive: true,
+        createdAt: .now,
+        pdfStoragePath: "lookbooks/summer-2026.pdf"
+    )
 }
 
 // MARK: - Compliance Check
@@ -257,5 +261,4 @@ enum RSVPStatus: String, Codable, CaseIterable {
     case attended  = "attended"
     case noShow    = "no_show"
 }
-
 
