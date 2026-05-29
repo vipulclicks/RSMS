@@ -199,7 +199,7 @@ extension InventoryControllerHomeView {
             LazyVGrid(columns: columns, spacing: 16) {
 
                 lowStockCard
-                
+                transferCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -209,7 +209,7 @@ extension InventoryControllerHomeView {
             VStack(spacing: 16) {
 
                 lowStockCard
-                
+                transferCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -322,6 +322,19 @@ extension InventoryControllerHomeView {
             badgeText: "Audit"
         ) {
             selectedDestination = .auditReconcile
+        }
+    }
+
+    var transferCard: some View {
+
+        actionCard(
+            title: "Transfers",
+            subtitle: "STORE TRANSFERS",
+            icon: "arrow.left.arrow.right",
+            accentColor: RSMSTheme.info,
+            badgeText: "Manage"
+        ) {
+            selectedDestination = .transfer
         }
     }
 

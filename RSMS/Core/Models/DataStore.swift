@@ -767,8 +767,12 @@ final class DataStore {
     // MARK: - stock_items
     // ══════════════════════════════════════════════════════════
 
-    func fetchStockItems(storeId: UUID) async throws {
-        stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(storeId)"])
+    func fetchStockItems(storeId: UUID? = nil) async throws {
+        if let id = storeId {
+            stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
+        } else {
+            stockItems = try await api.fetch("stock_items")
+        }
     }
 
     @discardableResult

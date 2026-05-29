@@ -13,6 +13,7 @@ import SwiftUI
 enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case dashboard      = "Dashboard"
     case productLookup  = "Lookup & Stock In"
+    case transfer       = "Transfer Inventory"
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
     case notify         = "Notify Manager"
@@ -23,6 +24,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .dashboard:       return "chart.bar.fill"
         case .productLookup:   return "magnifyingglass.circle.fill"
+        case .transfer:        return "arrow.left.arrow.right"
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
         case .notify:          return "paperplane.fill"
@@ -62,6 +64,12 @@ struct InventoryControllerHomeView: View {
             }
 
             Section {
+                Label(InventoryDestination.transfer.rawValue,
+                      systemImage: InventoryDestination.transfer.icon)
+                    .tag(InventoryDestination.transfer)
+            }
+
+            Section {
                 Label(InventoryDestination.cycleCounts.rawValue,
                       systemImage: InventoryDestination.cycleCounts.icon)
                     .tag(InventoryDestination.cycleCounts)
@@ -98,6 +106,8 @@ struct InventoryControllerHomeView: View {
             dashboardView
         case .productLookup:
             ProductLookupView()
+        case .transfer:
+            InventoryTransferView()
         case .cycleCounts:
             CycleCountView()
         case .auditReconcile:
