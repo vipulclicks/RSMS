@@ -27,7 +27,7 @@ extension ScanMode {
 
 // MARK: - Scan State
 
-enum ScanState {
+enum ScanState: Equatable {
     case idle
     case loading
     case found(product: Product, stockItem: StockItem?)

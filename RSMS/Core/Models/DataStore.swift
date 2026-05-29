@@ -855,7 +855,17 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
 
     func fetchMovementItems(movementId: UUID) async throws {
-        movementItems = try await api.fetch("movement_items", query: ["movement_id": "eq.\(movementId)"])
+        let fetched: [MovementItem] = try await api.fetch("movement_items", query: ["movement_id": "eq.\(movementId)"])
+        // Merge fetched items into cache (don't wipe items for other movements)
+        let fetchedIds = Set(fetched.map { $0.id })
+        movementItems.removeAll { $0.movementId == movementId && !fetchedIds.contains($0.id) }
+        for item in fetched {
+            if let i = movementItems.firstIndex(where: { $0.id == item.id }) {
+                movementItems[i] = item
+            } else {
+                movementItems.append(item)
+            }
+        }
     }
 
     @discardableResult

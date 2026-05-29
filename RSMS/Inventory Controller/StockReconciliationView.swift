@@ -100,12 +100,13 @@ struct StockReconciliationView: View {
                 shrinkagePercentage: viewModel.shrinkagePercentage,
                 shrinkageValue: viewModel.shrinkageValue,
                 totalInventoryValue: viewModel.totalStoreInventoryValue,
-                highRiskItems: viewModel.discrepancyItems.filter { $0.actualQty < $0.expectedQty }
+                highRiskItems: viewModel.discrepancyItems.filter { $0.actualQty < $0.expectedQty },
+                shrinkageRecord: viewModel.shrinkageRecord
             )
         }
-        .onAppear {
+        .task {
             if let storeId = appVM.currentStoreId {
-                viewModel.load(from: appVM.dataStore, storeId: storeId)
+                await viewModel.load(from: appVM.dataStore, storeId: storeId)
             }
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
@@ -598,7 +599,11 @@ struct StockReconciliationView: View {
 
                     // CTA
                     Button {
-                        viewModel.reconcile(item: item)
+                        viewModel.reconcile(
+                            item: item,
+                            currentUser: appVM.currentUser,
+                            dataStore: appVM.dataStore
+                        )
                         selectedItem = nil
                     } label: {
                         HStack(spacing: 8) {
