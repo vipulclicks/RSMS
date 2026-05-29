@@ -260,4 +260,28 @@ final class SupabaseClient: Sendable {
             throw SupabaseError.httpError(statusCode: http.statusCode, body: body)
         }
     }
+    
+    // ══════════════════════════════════════════════════════════
+    // MARK: - STORAGE
+    // ══════════════════════════════════════════════════════════
+    
+    /// Upload a file to a Supabase Storage bucket.
+    /// Returns the path string.
+    func uploadStorage(bucket: String, path: String, data: Data, contentType: String) async throws -> String {
+        let storageEndpoint = SupabaseConfig.restURL.replacingOccurrences(of: "/rest/v1", with: "/storage/v1")
+        guard let url = URL(string: "\(storageEndpoint)/object/\(bucket)/\(path)") else {
+            throw SupabaseError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyHeaders(&request)
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+        
+        let (responseData, response) = try await session.data(for: request)
+        try validateResponse(response, data: responseData)
+        
+        return "\(bucket)/\(path)"
+    }
 }

@@ -147,23 +147,19 @@ struct PerformanceMetric: Codable, Identifiable, Hashable {
 
 // MARK: - Lookbook
 
-/// A digital collection of images and guidelines to show how products should be presented according to the brand's standards.
+/// A digital lookbook document stored as a PDF.
 struct Lookbook: Codable, Identifiable, Hashable {
     let id: UUID
     let title: String
-    let season: String
-    let description: String?
-    let imageURLs: [String]
-    let brandGuideline: String?
     let isActive: Bool
     let createdAt: Date
+    let pdfStoragePath: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, season, description
-        case imageURLs      = "image_urls"
-        case brandGuideline = "brand_guideline"
+        case id, title
         case isActive       = "is_active"
         case createdAt      = "created_at"
+        case pdfStoragePath = "pdf_storage_path"
     }
 }
 

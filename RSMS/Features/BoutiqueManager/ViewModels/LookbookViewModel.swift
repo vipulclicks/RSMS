@@ -14,21 +14,15 @@ final class LookbookViewModel {
 
     private(set) var allLookbooks: [Lookbook] = []
     var isLoading = false
+    var isUploading = false
     var errorMessage: String?
 
     // MARK: - Filters
 
     var searchText = ""
-    var selectedSeason: String? = nil
     var showArchived = false
 
     // MARK: - Computed
-
-    /// All distinct seasons from the fetched lookbooks, sorted.
-    var availableSeasons: [String] {
-        let seasons = Set(allLookbooks.map { $0.season })
-        return seasons.sorted()
-    }
 
     /// Filtered lookbooks based on search, season, and active/archived toggle.
     var filteredLookbooks: [Lookbook] {
@@ -39,19 +33,11 @@ final class LookbookViewModel {
             result = result.filter { $0.isActive }
         }
 
-        // Season filter
-        if let season = selectedSeason, !season.isEmpty {
-            result = result.filter { $0.season.lowercased() == season.lowercased() }
-        }
-
         // Search
         if !searchText.isEmpty {
             let query = searchText.lowercased()
             result = result.filter {
-                $0.title.lowercased().contains(query) ||
-                $0.season.lowercased().contains(query) ||
-                ($0.description?.lowercased().contains(query) ?? false) ||
-                ($0.brandGuideline?.lowercased().contains(query) ?? false)
+                $0.title.lowercased().contains(query)
             }
         }
 
@@ -95,6 +81,34 @@ final class LookbookViewModel {
         } catch {
             self.errorMessage = error.localizedDescription
         }
+    }
+    
+    // MARK: - Uploading
+    
+    @MainActor
+    func uploadLookbook(title: String, fileURL: URL, dataStore: DataStore) async {
+        isUploading = true
+        errorMessage = nil
+        
+        let accessed = fileURL.startAccessingSecurityScopedResource()
+        defer { if accessed { fileURL.stopAccessingSecurityScopedResource() } }
+        
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let fileName = "\(UUID().uuidString).pdf"
+            
+            // Upload to Supabase Storage
+            let storagePath = try await SupabaseClient.shared.uploadStorage(bucket: "lookbooks", path: fileName, data: data, contentType: "application/pdf")
+            
+            let lookbook = Lookbook(id: UUID(), title: title, isActive: true, createdAt: .now, pdfStoragePath: storagePath)
+            try await dataStore.createLookbook(lookbook)
+            
+            // Refresh
+            self.allLookbooks = dataStore.lookbooks
+        } catch {
+            self.errorMessage = "Upload failed: \(error.localizedDescription)"
+        }
+        isUploading = false
     }
 
     // MARK: - Formatting
