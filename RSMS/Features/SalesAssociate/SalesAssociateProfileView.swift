@@ -362,7 +362,7 @@ struct SalesAssociateProfileView: View {
 
 #Preview {
     let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
+    vm.currentUser = .previewAssociate
     return NavigationStack {
         SalesAssociateProfileView()
             .environment(vm)
