@@ -6,268 +6,167 @@
 import SwiftUI
 
 struct ComplianceDashboardView: View {
-    @State private var viewModel = ComplianceDashboardViewModel()
+    @State private var viewModel = ComplianceViewModel()
     @Environment(AppViewModel.self) private var appViewModel
     
-    // Navigation state
-    @State private var showAuditTemplates = false
-    @State private var showIssueTracker = false
-    
-    // Colors
-    private let textPrimary = Color.black.opacity(0.85)
-    private let textSecondary = Color.gray
-    private let backgroundGray = Color(white: 0.96)
+    // Navigation routes
+    @State private var navPath = NavigationPath()
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    headerView
+        NavigationStack(path: $navPath) {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Store Compliance Heatmap")
+                            .font(.system(size: 28, weight: .bold, design: .default))
+                        Text("Monitor your store's merchandising compliance.")
+                            .font(.system(size: 16))
+                            .foregroundColor(RSMSTheme.textSecondary)
+                    }
+                    Spacer()
                     
-                    if viewModel.isLoading {
-                        ProgressView("Loading Dashboard...")
-                            .padding(.top, 40)
-                    } else {
-                        kpiGrid
-                        quickActions
-                        
-                        HStack(alignment: .top, spacing: 24) {
-                            openIssuesPanel
-                            recentAuditsPanel
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            navPath.append(ComplianceRoute.needsReviewQueue)
+                        }) {
+                            Label("Issue Board", systemImage: "square.split.2x1")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(RSMSTheme.primaryDark)
+                                .cornerRadius(10)
                         }
                     }
                 }
+                .padding(.horizontal, 32)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
+                
+                // KPI Row
+                let checks = viewModel.complianceChecks
+                let total = checks.count
+                let compliant = checks.filter { $0.status == .compliant }.count
+                let complianceRate = total > 0 ? Int((Double(compliant) / Double(total)) * 100) : 0
+                let openIssues = checks.filter { $0.status == .nonCompliant || $0.status == .needsReview }.count
+                
+                HStack(spacing: 16) {
+                    kpiCard(title: "Compliance Rate", value: "\(complianceRate)%", icon: "percent", color: complianceRate >= 90 ? RSMSTheme.success : RSMSTheme.warning)
+                    
+                    Button(action: {
+                        navPath.append(ComplianceRoute.needsReviewQueue)
+                    }) {
+                        kpiCard(title: "Open Issues", value: "\(openIssues)", icon: "exclamationmark.triangle.fill", color: openIssues > 0 ? RSMSTheme.danger : RSMSTheme.success)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    kpiCard(title: "Total Checks", value: "\(total)", icon: "checklist", color: RSMSTheme.info)
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 16)
+                
+                // Legend
+                HStack(spacing: 24) {
+                    legendItem(color: RSMSTheme.info, title: "Compliant", subtitle: "Matches guidelines exactly")
+                    legendItem(color: RSMSTheme.danger, title: "Non-Compliant", subtitle: "Requires immediate fixes")
+                    legendItem(color: RSMSTheme.warning, title: "Needs Review", subtitle: "Manager review needed")
+                    Spacer()
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 24)
+                
+                Divider()
+                
+                // Heatmap
+                ComplianceHeatmapView(complianceVM: viewModel) { zone, latestCheck in
+                    navPath.append(ComplianceRoute.zoneReference(zone))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(32)
             }
-            .background(backgroundGray)
+            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Store Compliance")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                if let storeId = appViewModel.currentStoreId {
-                    Task {
-                        await viewModel.loadDashboard(for: storeId)
-                    }
+                Task {
+                    await viewModel.fetchChecks(for: appViewModel.currentStoreId)
                 }
             }
-            .navigationDestination(isPresented: $showAuditTemplates) {
-                ChecklistLibraryView()
-            }
-            .navigationDestination(isPresented: $showIssueTracker) {
-                Text("Issue Tracker View Coming Soon")
+            .navigationDestination(for: ComplianceRoute.self) { route in
+                switch route {
+                case .checkList:
+                    ComplianceCheckListView(viewModel: viewModel)
+                case .createCheck:
+                    CreateComplianceCheckView(viewModel: viewModel)
+                case .details(let check):
+                    ComplianceCheckDetailsView(viewModel: viewModel, check: check)
+                case .nonCompliantQueue:
+                    NonCompliantFindingsView(viewModel: viewModel)
+                case .needsReviewQueue:
+                    ComplianceIssueBoardView(viewModel: viewModel)
+                case .history:
+                    ComplianceHistoryView(viewModel: viewModel)
+                case .reports:
+                    ComplianceReportView(viewModel: viewModel)
+                case .inspectionWorkspace:
+                    ComplianceInspectionSplitView(viewModel: viewModel)
+                case .zoneReference(let zone):
+                    ZoneReferenceView(viewModel: viewModel, zone: zone)
+                case .inspectionForm(let zone):
+                    InspectionWorkspaceView(viewModel: viewModel, zone: zone)
+                }
             }
         }
     }
     
-    // MARK: - Subviews
-    
-    private var headerView: some View {
-        HStack {
+    private func kpiCard(title: String, value: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle().fill(color.opacity(0.15)).frame(width: 48, height: 48)
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(color)
+            }
+            
             VStack(alignment: .leading, spacing: 4) {
-                Text("Compliance Overview")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(textPrimary)
-                Text("Track adherence to VM guidelines and operational standards.")
-                    .font(.system(size: 15))
-                    .foregroundColor(textSecondary)
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundColor(RSMSTheme.textSecondary)
+                Text(value)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(RSMSTheme.textPrimary)
             }
             Spacer()
-            
-            Button(action: {
-                showAuditTemplates = true
-            }) {
-                HStack {
-                    Image(systemName: "play.circle.fill")
-                    Text("Start Audit")
-                        .fontWeight(.semibold)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(RSMSTheme.primary)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
-            }
         }
-    }
-    
-    private var kpiGrid: some View {
-        HStack(spacing: 20) {
-            ComplianceKPICard(title: "Overall Score", value: String(format: "%.1f%%", viewModel.overallScore), icon: "chart.bar.fill", color: .green)
-            ComplianceKPICard(title: "Open Issues", value: "\(viewModel.openIssuesCount)", icon: "exclamationmark.triangle.fill", color: .orange)
-            ComplianceKPICard(title: "Audits Due Today", value: "\(viewModel.auditsDueTodayCount)", icon: "calendar.badge.exclamationmark", color: .red)
-            
-            let dateStr = viewModel.lastAuditDate?.formatted(date: .abbreviated, time: .omitted) ?? "N/A"
-            ComplianceKPICard(title: "Last Audit", value: dateStr, icon: "clock.fill", color: .blue)
-        }
-    }
-    
-    private var quickActions: some View {
-        HStack(spacing: 20) {
-            QuickActionButton(title: "Issue Tracker", icon: "list.bullet.rectangle", color: .orange) {
-                showIssueTracker = true
-            }
-            QuickActionButton(title: "Reports", icon: "doc.text.fill", color: .blue) {}
-            QuickActionButton(title: "Schedule", icon: "calendar", color: .purple) {}
-            QuickActionButton(title: "Analytics", icon: "chart.pie.fill", color: .green) {}
-        }
-    }
-    
-    private var openIssuesPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Recent Issues")
-                    .font(.headline)
-                Spacer()
-                Button("View All") { showIssueTracker = true }
-                    .font(.subheadline)
-                    .foregroundColor(RSMSTheme.primary)
-            }
-            
-            VStack(spacing: 12) {
-                if viewModel.openIssues.isEmpty {
-                    Text("No open issues!")
-                        .foregroundColor(.gray)
-                        .padding(.vertical, 20)
-                } else {
-                    ForEach(viewModel.openIssues.prefix(4)) { issue in
-                        HStack {
-                            Circle()
-                                .fill(issue.severity.color)
-                                .frame(width: 12, height: 12)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(issue.title)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                Text(issue.location)
-                                    .font(.caption)
-                                    .foregroundColor(textSecondary)
-                            }
-                            Spacer()
-                            Text(issue.status.rawValue)
-                                .font(.caption2)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.gray.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                        .padding(12)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .shadow(color: .black.opacity(0.02), radius: 2)
-                    }
-                }
-            }
-            .padding(16)
-            .background(Color.white)
-            .cornerRadius(12)
-        }
-    }
-    
-    private var recentAuditsPanel: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Recent Audits")
-                    .font(.headline)
-                Spacer()
-                Button("History") { }
-                    .font(.subheadline)
-                    .foregroundColor(RSMSTheme.primary)
-            }
-            
-            VStack(spacing: 12) {
-                if viewModel.recentActivity.isEmpty {
-                    Text("No recent audits.")
-                        .foregroundColor(.gray)
-                        .padding(.vertical, 20)
-                } else {
-                    ForEach(viewModel.recentActivity.prefix(4)) { audit in
-                        HStack {
-                            Image(systemName: "doc.text")
-                                .foregroundColor(.gray)
-                                .font(.title3)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Audit Completed")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                Text(audit.startedAt.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption)
-                                    .foregroundColor(textSecondary)
-                            }
-                            Spacer()
-                            if let score = audit.score {
-                                Text(String(format: "%.0f%%", score))
-                                    .font(.subheadline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(score >= 90 ? .green : (score >= 70 ? .orange : .red))
-                            }
-                        }
-                        .padding(12)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .shadow(color: .black.opacity(0.02), radius: 2)
-                    }
-                }
-            }
-            .padding(16)
-            .background(Color.white)
-            .cornerRadius(12)
-        }
-    }
-}
-
-// MARK: - Shared Components
-
-struct ComplianceKPICard: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
-                    .font(.title2)
-                Spacer()
-            }
-            
-            Text(value)
-                .font(.system(size: 28, weight: .bold))
-            
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.gray)
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
+        .padding()
+        .background(RSMSTheme.surfacePrimary)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.04), radius: 8, y: 4)
+        .shadow(color: Color.black.opacity(0.03), radius: 10, y: 4)
+    }
+    
+    private func legendItem(color: Color, title: String, subtitle: String) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            Circle().fill(color).frame(width: 12, height: 12)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.bold()).foregroundColor(RSMSTheme.textPrimary)
+                Text(subtitle).font(.caption).foregroundColor(RSMSTheme.textSecondary)
+            }
+        }
     }
 }
 
-struct QuickActionButton: View {
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
-                Text(title)
-                    .fontWeight(.medium)
-                    .foregroundColor(.black.opacity(0.8))
-            }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.03), radius: 4)
-        }
-    }
+// MARK: - Navigation Routes
+
+enum ComplianceRoute: Hashable {
+    case checkList
+    case createCheck
+    case details(ComplianceCheck)
+    case nonCompliantQueue
+    case needsReviewQueue
+    case history
+    case reports
+    case inspectionWorkspace
+    case zoneReference(MerchandisingZone)
+    case inspectionForm(MerchandisingZone)
 }

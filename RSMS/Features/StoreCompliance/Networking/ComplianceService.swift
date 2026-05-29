@@ -5,53 +5,58 @@
 
 import Foundation
 
-/// A mock networking service to manage Compliance data.
-/// Once Supabase tables are ready, this will be swapped to use `SupabaseClient.shared`.
 @MainActor
 final class ComplianceService {
     static let shared = ComplianceService()
     
-    // MARK: - Templates
+    private init() {}
     
-    func fetchTemplates() async throws -> [AuditTemplate] {
-        return try await SupabaseClient.shared.fetch("audit_templates")
+    // MARK: - CRUD Operations for compliance_checks
+    
+    func fetchComplianceChecks(storeId: UUID? = nil) async throws -> [ComplianceCheck] {
+        if let storeId = storeId {
+            return try await SupabaseClient.shared.fetch(
+                "compliance_checks",
+                query: ["store_id": "eq.\(storeId.uuidString)"]
+            )
+        } else {
+            return try await SupabaseClient.shared.fetch("compliance_checks")
+        }
     }
     
-    func fetchChecklistItems(for templateId: UUID) async throws -> [ChecklistItem] {
+    func createComplianceCheck(_ check: ComplianceCheck) async throws -> ComplianceCheck {
+        return try await SupabaseClient.shared.insert("compliance_checks", record: check)
+    }
+    
+    func updateComplianceCheck(id: UUID, check: ComplianceCheck) async throws -> ComplianceCheck {
+        return try await SupabaseClient.shared.update("compliance_checks", id: id, record: check)
+    }
+    
+    
+    func deleteComplianceCheck(id: UUID) async throws {
+        try await SupabaseClient.shared.delete("compliance_checks", id: id)
+    }
+    
+    // MARK: - Planograms Integration
+    
+    func fetchPlanograms(storeId: UUID) async throws -> [Planogram] {
         return try await SupabaseClient.shared.fetch(
-            "checklist_items",
-            query: ["template_id": "eq.\(templateId.uuidString)"]
-        )
-    }
-    
-    // MARK: - Audits
-    
-    func createAudit(_ audit: Audit) async throws -> Audit {
-        return try await SupabaseClient.shared.insert("audits", record: audit)
-    }
-    
-    func fetchAudits(storeId: UUID) async throws -> [Audit] {
-        return try await SupabaseClient.shared.fetch(
-            "audits",
+            "planograms",
             query: ["store_id": "eq.\(storeId.uuidString)"]
         )
     }
     
-    func saveResponses(_ newResponses: [AuditChecklistResponse]) async throws {
-        _ = try await SupabaseClient.shared.insertMany("audit_checklist_responses", records: newResponses)
-    }
+    // MARK: - Storage
     
-    // MARK: - Issues
-    
-    func reportIssue(_ issue: ComplianceIssue) async throws -> ComplianceIssue {
-        return try await SupabaseClient.shared.insert("compliance_issues", record: issue)
-    }
-    
-    func fetchIssues(storeId: UUID) async throws -> [ComplianceIssue] {
-        // Technically this should be a join, but for MVP we fetch audits and then fetch issues
-        // or we just fetch issues where audit_id in (...)
-        // As a shortcut, if the app just needs to show all issues we could fetch them all.
-        // Let's implement it with a simple fetch for now.
-        return try await SupabaseClient.shared.fetch("compliance_issues")
+    func uploadEvidencePhoto(data: Data, fileName: String) async throws -> String {
+        let path = try await SupabaseClient.shared.uploadStorage(
+            bucket: "evidence",
+            path: "checks/\(fileName)",
+            data: data,
+            contentType: "image/jpeg"
+        )
+        
+        let publicEndpoint = SupabaseConfig.restURL.replacingOccurrences(of: "/rest/v1", with: "/storage/v1/object/public")
+        return "\(publicEndpoint)/\(path)"
     }
 }

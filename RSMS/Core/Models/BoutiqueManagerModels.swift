@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Dashboard Summary
 
@@ -167,14 +168,14 @@ struct Lookbook: Codable, Identifiable, Hashable {
 
 /// Records the results of checking whether a store's display matches the required planogram.
 struct ComplianceCheck: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let planogramId: UUID
-    let checkedBy: UUID
-    let status: ComplianceStatus
-    let notes: String?
-    let photoURLs: [String]?
-    let checkedAt: Date
+    var id: UUID
+    var storeId: UUID
+    var planogramId: UUID
+    var checkedBy: UUID
+    var status: ComplianceStatus
+    var notes: String?
+    var photoURLs: [String]?
+    var checkedAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, status, notes
@@ -190,6 +191,30 @@ enum ComplianceStatus: String, Codable, CaseIterable {
     case compliant    = "compliant"
     case nonCompliant = "non_compliant"
     case needsReview  = "needs_review"
+    
+    var displayName: String {
+        switch self {
+        case .compliant: return "Compliant"
+        case .nonCompliant: return "Non-Compliant"
+        case .needsReview: return "Needs Review"
+        }
+    }
+    
+    var color: SwiftUI.Color {
+        switch self {
+        case .compliant: return RSMSTheme.info
+        case .nonCompliant: return RSMSTheme.danger
+        case .needsReview: return RSMSTheme.warning
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .compliant: return "checkmark.circle.fill"
+        case .nonCompliant: return "xmark.octagon.fill"
+        case .needsReview: return "exclamationmark.triangle.fill"
+        }
+    }
 }
 
 // MARK: - Client Event
