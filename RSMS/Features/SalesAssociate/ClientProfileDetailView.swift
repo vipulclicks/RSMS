@@ -43,6 +43,9 @@ struct ClientProfileDetailView: View {
     
     // Edit profile state
     @State private var showEditClientSheet = false
+    
+    // AI Look Builder state
+    @State private var showAILookBuilder = false
 
     private var currentClient: ClientProfile {
         dataStore.clients.first(where: { $0.id == client.id }) ?? client
@@ -101,6 +104,9 @@ struct ClientProfileDetailView: View {
         }
         .sheet(isPresented: $showEditClientSheet) {
             EditClientProfileView(client: currentClient, dataStore: dataStore)
+        }
+        .sheet(isPresented: $showAILookBuilder) {
+            AILookBuilderView(client: currentClient, dataStore: dataStore, associateId: associateId)
         }
         .navigationDestination(item: $selectedCuratedCart) { cart in
             ShowroomCartView(mode: .savedCart(cart: cart, dataStore: dataStore))
@@ -163,6 +169,7 @@ struct ClientProfileDetailView: View {
             catalogSection
             wishlistSection
             curatedCartsSection
+            aiLookBuilderSection
         }
     }
     
@@ -191,6 +198,38 @@ struct ClientProfileDetailView: View {
     private var notesTabContent: some View {
         VStack(spacing: 16) {
             notesSection
+        }
+    }
+
+    // MARK: - AI Look Builder
+
+    private var aiLookBuilderSection: some View {
+        ProfileCard(title: nil) {
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("AI Look Builder")
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Text("Generate personalized looks based on client history")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+                Spacer()
+                Button {
+                    showAILookBuilder = true
+                } label: {
+                    HStack {
+                        Image(systemName: "sparkles")
+                        Text("Create")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.primary)
+                    .clipShape(Capsule())
+                }
+            }
         }
     }
 
