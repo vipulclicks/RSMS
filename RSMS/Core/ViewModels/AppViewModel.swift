@@ -57,6 +57,22 @@ class AppViewModel {
         dataStore.clearAllCaches()
     }
 
+    /// Re-fetch the current user's profile from Supabase and update `currentUser`.
+    /// Call this on profile page appear to get the latest avatar URL and details.
+    func refreshCurrentUser() async {
+        guard let id = currentUser?.id else { return }
+        do {
+            let fresh: UserProfile = try await dataStore.fetchUser(id: id)
+            await MainActor.run {
+                withAnimation(.smooth(duration: 0.3)) {
+                    self.currentUser = fresh
+                }
+            }
+        } catch {
+            print("[RSMS] refreshCurrentUser failed: \(error.localizedDescription)")
+        }
+    }
+
     // ══════════════════════════════════════════════════════════
     // MARK: - Password Reset (OTP Flow)
     // ══════════════════════════════════════════════════════════
