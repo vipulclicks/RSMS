@@ -17,6 +17,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
     case notify         = "Notify Manager"
+    case profile        = "My Profile"
 
     var id: String { rawValue }
 
@@ -28,6 +29,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
         case .notify:          return "paperplane.fill"
+        case .profile:         return "person.crop.circle.fill"
         }
     }
 }
@@ -82,25 +84,37 @@ struct InventoryControllerHomeView: View {
                       systemImage: InventoryDestination.notify.icon)
                     .tag(InventoryDestination.notify)
             }
+
+            Section {
+                Label(InventoryDestination.profile.rawValue,
+                      systemImage: InventoryDestination.profile.icon)
+                    .tag(InventoryDestination.profile)
+            }
         }
         .listStyle(.sidebar)
         .navigationTitle("Inventory")
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                Button {
-                    viewModel.logout()
-                } label: {
-                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                        .foregroundStyle(RSMSTheme.danger)
-                }
-            }
-        }
     }
 
     // MARK: - Detail
 
-    @ViewBuilder
+    /// Wraps detailContent and injects the avatar toolbar button
+    /// into the top-right corner of the main screen.
     private var detailView: some View {
+        detailContent
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        selectedDestination = .profile
+                    } label: {
+                        SidebarAvatarButton(user: viewModel.currentUser)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var detailContent: some View {
         switch selectedDestination {
         case .dashboard, .none:
             dashboardView
@@ -114,6 +128,8 @@ struct InventoryControllerHomeView: View {
             StockReconciliationView()
         case .notify:
             NotifyBoutiqueManagerView()
+        case .profile:
+            InventoryControllerProfileView()
         }
     }
 
@@ -136,6 +152,62 @@ struct InventoryControllerHomeView: View {
             if dashVM.snapshot == nil {
                 await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
             }
+        }
+    }
+}
+
+// MARK: - Sidebar Avatar Button
+
+/// A compact 36 pt circular avatar for the sidebar toolbar.
+/// Loads the user photo from `avatarURL` (Supabase Storage) via AsyncImage
+/// and falls back to a gradient initials circle when no URL is available.
+struct SidebarAvatarButton: View {
+    let user: UserProfile?
+
+    private var initials: String {
+        guard let name = user?.fullName else { return "?" }
+        let parts = name.components(separatedBy: " ")
+        let f = parts.first?.prefix(1) ?? ""
+        let l = parts.dropFirst().first?.prefix(1) ?? ""
+        return "\(f)\(l)".uppercased()
+    }
+
+    private var avatarURL: URL? {
+        guard let raw = user?.avatarURL, !raw.isEmpty else { return nil }
+        return URL(string: raw)
+    }
+
+    var body: some View {
+        Group {
+            if let url = avatarURL {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable()
+                            .scaledToFill()
+                    default:
+                        fallbackCircle
+                    }
+                }
+            } else {
+                fallbackCircle
+            }
+        }
+        .frame(width: 36, height: 36)
+        .clipShape(Circle())
+        .overlay(
+            Circle()
+                .stroke(RSMSTheme.gold.opacity(0.6), lineWidth: 1.5)
+        )
+        .shadow(color: RSMSTheme.primary.opacity(0.25), radius: 6, x: 0, y: 2)
+    }
+
+    private var fallbackCircle: some View {
+        ZStack {
+            Circle().fill(RSMSTheme.primaryGradient)
+            Text(initials)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(RSMSTheme.cream)
         }
     }
 }
