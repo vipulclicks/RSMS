@@ -441,6 +441,23 @@ final class ProductCatalogViewModel {
             }
         }
     }
+    
+    var activeUniversalCart: UniversalCart? {
+        guard let client = activeClient else { return nil }
+        return dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated })
+    }
+
+    func updateCartDiscount(_ discount: CartDiscount?) async {
+        guard let client = activeClient else { return }
+        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated }) else { return }
+        
+        let updatedCart = cart.applyingDiscount(discount)
+        do {
+            try await dataStore.updateUniversalCart(updatedCart)
+        } catch {
+            print("[ProductCatalogViewModel] Error updating cart discount: \(error)")
+        }
+    }
 
     func addToCart(_ product: Product) {
         guard let client = activeClient, let assocId = associateId else { return }

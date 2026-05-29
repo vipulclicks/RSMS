@@ -32,6 +32,52 @@ struct UniversalCart: Codable, Identifiable, Hashable {
         case createdAt   = "created_at"
         case updatedAt   = "updated_at"
     }
+    
+    // MARK: - Cart Discount Helpers
+    
+    /// Parses the applied discount from the note field (as a fallback since DB columns are missing)
+    var appliedDiscount: CartDiscount? {
+        guard let note = note, note.contains("||DISCOUNT:"),
+              let range = note.range(of: "||DISCOUNT:") else {
+            return nil
+        }
+        let jsonString = String(note[range.upperBound...])
+        if let data = jsonString.data(using: .utf8) {
+            return try? JSONDecoder().decode(CartDiscount.self, from: data)
+        }
+        return nil
+    }
+    
+    /// Returns a new UniversalCart with the updated discount embedded in the note field
+    func applyingDiscount(_ discount: CartDiscount?) -> UniversalCart {
+        var baseNote = note ?? ""
+        if let range = baseNote.range(of: "||DISCOUNT:") {
+            baseNote = String(baseNote[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+        
+        var newNote: String? = baseNote.isEmpty ? nil : baseNote
+        
+        if let discount = discount, let data = try? JSONEncoder().encode(discount), let json = String(data: data, encoding: .utf8) {
+            let discountString = "||DISCOUNT:\(json)"
+            if let existing = newNote {
+                newNote = existing + " " + discountString
+            } else {
+                newNote = discountString
+            }
+        }
+        
+        return UniversalCart(
+            id: id,
+            type: type,
+            associateId: associateId,
+            clientId: clientId,
+            storeId: storeId,
+            status: status,
+            note: newNote,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
 }
 
 enum CartType: String, Codable, CaseIterable {
@@ -97,8 +143,27 @@ struct Discount: Codable, Identifiable, Hashable {
 }
 
 enum DiscountType: String, Codable, CaseIterable {
-    case percentage = "percentage"
-    case fixed      = "fixed"
+    case percentage  = "percentage"
+    case vip         = "vip"
+    case promotional = "promotional"
+}
+
+// MARK: - Cart Discount (Applied)
+
+enum DiscountApprovalStatus: String, Codable, CaseIterable {
+    case pending  = "pending"
+    case approved = "approved"
+    case rejected = "rejected"
+}
+
+/// Represents a discount applied to a specific cart.
+/// Temporarily serialized into the cart's note field until DB schema is updated.
+struct CartDiscount: Codable, Hashable {
+    let type: DiscountType
+    let value: Double
+    let status: DiscountApprovalStatus
+    let appliedBy: UUID
+    let appliedAt: Date
 }
 
 // MARK: - Transaction

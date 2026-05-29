@@ -24,6 +24,9 @@ struct ShowroomCartView: View {
     @State private var shareSuccess = false
     @State private var currentStatus: CartStatus = .active
     
+    // Discount State
+    @State private var showDiscountSheet = false
+    
     // Compute or check mode
     private var isEditMode: Bool {
         if case .activeSession = mode { return true }
@@ -145,7 +148,23 @@ struct ShowroomCartView: View {
         .navigationDestination(isPresented: $navigateToCheckout) {
             POSCheckoutView()
         }
+        .sheet(isPresented: $showDiscountSheet) {
+            CartDiscountSheet(
+                cartSubtotal: subtotalAmount,
+                associateId: getAssociateId(),
+                appliedDiscount: Binding(
+                    get: { currentCart?.appliedDiscount },
+                    set: { newDiscount in
+                        updateDiscount(newDiscount)
+                    }
+                )
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
     }
+    
+    // MARK: - Cart & Discount Helpers
     
     // MARK: - Helpers for Mode Checks
     private var isEmpty: Bool {
@@ -448,14 +467,27 @@ struct ShowroomCartView: View {
     // MARK: - Amount Summary Section
     private var amountSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Amount Summary")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(RSMSTheme.textPrimary)
+            HStack {
+                Text("Amount Summary")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Spacer()
+                if currentCartDiscount == nil {
+                    Button {
+                        showDiscountSheet = true
+                    } label: {
+                        Text("Apply Discount")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(RSMSTheme.primary.opacity(0.1), in: Capsule())
+                    }
+                }
+            }
             
             VStack(alignment: .leading, spacing: 16) {
                 let subtotal = subtotalAmount
-                let tax = subtotal * 0.20
-                let total = subtotal + tax
                 
                 HStack {
                     Text("Subtotal")
@@ -466,6 +498,41 @@ struct ShowroomCartView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
+                
+                if let discount = currentCartDiscount {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Discount (\(discount.type.rawValue.capitalized))")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.danger)
+                            
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(discount.status == .approved ? RSMSTheme.success : .orange)
+                                    .frame(width: 6, height: 6)
+                                Text(discount.status.rawValue.capitalized)
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                            }
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("- ₹\(Int(calculatedDiscountValue(discount)).formatted())")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.danger)
+                            
+                            Button("Edit") {
+                                showDiscountSheet = true
+                            }
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(RSMSTheme.primary)
+                        }
+                    }
+                }
+                
+                let postDiscountSubtotal = max(0, subtotal - (currentCartDiscount.map { calculatedDiscountValue($0) } ?? 0))
+                let tax = postDiscountSubtotal * 0.20
+                let total = postDiscountSubtotal + tax
                 
                 HStack {
                     Text("Tax (20%)")
@@ -611,6 +678,50 @@ struct ShowroomCartView: View {
         .padding(.bottom, 24)
         .padding(.top, 12)
         .background(RSMSTheme.surfacePrimary)
+    }
+    
+    // MARK: - Discount Logic
+    
+    private var currentCartDiscount: CartDiscount? {
+        currentCart?.appliedDiscount
+    }
+    
+    private var currentCart: UniversalCart? {
+        switch mode {
+        case .activeSession(let vm):
+            return vm.activeUniversalCart
+        case .savedCart(let cart, let ds):
+            return ds.universalCarts.first(where: { $0.id == cart.id })
+        }
+    }
+    
+    private func getAssociateId() -> UUID {
+        switch mode {
+        case .activeSession(let vm):
+            return vm.associateId ?? UUID()
+        case .savedCart(let cart, let ds):
+            return ds.universalCarts.first(where: { $0.id == cart.id })?.associateId ?? UUID()
+        }
+    }
+    
+    private func updateDiscount(_ discount: CartDiscount?) {
+        switch mode {
+        case .activeSession(let vm):
+            Task { await vm.updateCartDiscount(discount) }
+        case .savedCart(let cart, let ds):
+            guard let dbCart = ds.universalCarts.first(where: { $0.id == cart.id }) else { return }
+            let updated = dbCart.applyingDiscount(discount)
+            Task { try? await ds.updateUniversalCart(updated) }
+        }
+    }
+    
+    private func calculatedDiscountValue(_ discount: CartDiscount) -> Double {
+        switch discount.type {
+        case .percentage, .vip:
+            return subtotalAmount * (discount.value / 100.0)
+        case .promotional:
+            return discount.value
+        }
     }
     
     private var isSavingFromViewModel: Bool {
