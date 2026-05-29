@@ -32,9 +32,14 @@ struct StaffView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 32) {
                         allStaffSection
+                            .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
+                            
                         salesGoalsSection
+                            .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
+                        
+                        ShiftMonitorView()
                     }
-                    .padding(horizontalSizeClass == .compact ? 16 : 32)
+                    .padding(.vertical, horizontalSizeClass == .compact ? 16 : 32)
                 }
                 .background(RSMSTheme.background.ignoresSafeArea())
                 .navigationTitle("Staff")
@@ -57,9 +62,8 @@ struct StaffView: View {
                         } label: {
                             HStack {
                                 Image(systemName: "person.badge.plus")
-                                Text("New Employee")
+                                
                             }
-                            .font(.subheadline.weight(.semibold))
                         }
                     }
                 }
@@ -138,10 +142,10 @@ struct StaffView: View {
                         Text("New Goal")
                     }
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.gold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RSMSTheme.gold.opacity(0.1))
+                    .foregroundStyle(RSMSTheme.cream)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.primaryDark)
                     .clipShape(Capsule())
                 }
             }

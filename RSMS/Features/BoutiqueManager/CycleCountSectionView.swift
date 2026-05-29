@@ -3,7 +3,24 @@ import SwiftUI
 struct CycleCountSectionView: View {
     @Bindable var cycleCountVM: CycleCountViewModel
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     @State private var showCheckedItems = false
+    @State private var showDiscrepancySheet = false
+    @State private var discrepancyVM = DiscrepancyReportViewModel()
+
+    private var columns: [GridItem] {
+        if horizontalSizeClass == .compact {
+            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+        } else {
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -38,12 +55,18 @@ struct CycleCountSectionView: View {
         .sheet(item: $cycleCountVM.itemToCount) { item in
             cycleCountSheet(for: item)
         }
+        .sheet(isPresented: $showDiscrepancySheet) {
+            ReportDiscrepancyView(viewModel: discrepancyVM)
+                .presentationDragIndicator(.visible)
+        }
+        .task {
+            await discrepancyVM.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+        }
     }
 
     // MARK: Cycle Count KPI Row
     private var cycleCountKPIRow: some View {
-        let columns = [GridItem(.adaptive(minimum: 150), spacing: 14)]
-        return LazyVGrid(columns: columns, spacing: 14) {
+        LazyVGrid(columns: columns, spacing: 16) {
             cycleCountKPICard(
                 icon: "shippingbox.fill",
                 value: "\(cycleCountVM.totalInventory)",
@@ -62,35 +85,88 @@ struct CycleCountSectionView: View {
                 label: "Mismatches",
                 color: cycleCountVM.openMismatches > 0 ? RSMSTheme.danger : RSMSTheme.success
             )
+            
+            // Reported Issues — tappable card
+            Button {
+                showDiscrepancySheet = true
+            } label: {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .center) {
+                        Image(systemName: "exclamationmark.bubble.fill")
+                            .font(.title3)
+                            .foregroundStyle(RSMSTheme.danger)
+                        Spacer()
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(RSMSTheme.danger.opacity(0.5))
+                    }
+                    
+                    Spacer(minLength: 0)
+                    
+                    Text("\(discrepancyVM.submittedReports.filter { $0.status == .open }.count)")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                    
+                    Text("Reported Issues")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 100)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(RSMSTheme.surfacePrimary)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(RSMSTheme.danger.opacity(0.2), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
+            }
+            .buttonStyle(.plain)
         }
     }
 
     private func cycleCountKPICard(icon: String, value: String, label: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.title3)
                     .foregroundStyle(color)
                 Spacer()
             }
+            
+            Spacer(minLength: 0)
+            
             Text(value)
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 24, weight: .bold, design: .rounded))
                 .foregroundStyle(RSMSTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+            
             Text(label)
-                .font(.caption.weight(.semibold))
+                .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textSecondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
         }
-        .padding(16)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 100)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(RSMSTheme.surfacePrimary)
-                .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
                 .stroke(color.opacity(0.2), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
     }
 
     // MARK: Cycle Count Pending List
@@ -222,7 +298,7 @@ struct CycleCountSectionView: View {
                 }
             } label: {
                 HStack {
-                    Text("VERIFIED THIS PERIOD")
+                    Text("Verified this period")
                         .font(.caption.weight(.semibold))
                         .tracking(1.5)
                         .foregroundStyle(RSMSTheme.gold)
