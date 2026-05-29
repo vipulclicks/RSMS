@@ -200,11 +200,11 @@ struct BoutiqueManagerProfileView: View {
 
 }
 
-#Preview {
-    let vm = AppViewModel()
-    vm.login(as: .boutiqueManager)
-    return NavigationStack {
-        BoutiqueManagerProfileView()
-            .environment(vm)
-    }
-}
+//#Preview {
+//    let vm = AppViewModel()
+//    vm.login(as: .boutiqueManager)
+//    return NavigationStack {
+//        BoutiqueManagerProfileView()
+//            .environment(vm)
+//    }
+//}

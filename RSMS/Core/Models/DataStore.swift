@@ -1120,7 +1120,7 @@ final class DataStore {
         salesGoals = []
         commissions = []
         performanceMetrics = []
-        planograms = []
+       // planograms = []
         lookbooks = []
         complianceChecks = []
         clientEvents = []
