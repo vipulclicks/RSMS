@@ -3,6 +3,7 @@ import SwiftUI
 enum DashboardRoute: Hashable {
     case appointments
     case lowStock
+    case approvals
 }
 
 struct StoreDashboardView: View {
@@ -97,6 +98,8 @@ struct StoreDashboardView: View {
                     .background(RSMSTheme.background.ignoresSafeArea())
                     .navigationTitle("Inventory Alerts")
                     .navigationBarTitleDisplayMode(.inline)
+                case .approvals:
+                    ApprovalDashboardView()
                 }
             }
             .navigationDestination(for: Lookbook.self) { lookbook in
@@ -106,9 +109,8 @@ struct StoreDashboardView: View {
                 BoutiqueManagerProfileView()
             }
             .sheet(isPresented: $showingNotifications) {
-                // We wrap it in a NavigationStack here since LowStockNotificationView no longer has one internally
                 NavigationStack {
-                    LowStockNotificationView(dashboardVM: dashboardVM)
+                    ManagerNotificationSheet(dashboardVM: dashboardVM)
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button("Done") { showingNotifications = false }
@@ -138,8 +140,8 @@ struct StoreDashboardView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
-                if !dashboardVM.lowStockAlerts.isEmpty {
-                    let count = dashboardVM.lowStockAlerts.count
+                if !dashboardVM.lowStockAlerts.isEmpty || pendingApprovalsCount > 0 {
+                    let count = dashboardVM.lowStockAlerts.count + pendingApprovalsCount
                     let displayText = count > 99 ? "99+" : "\(count)"
                     
                     Text(displayText)
@@ -156,8 +158,12 @@ struct StoreDashboardView: View {
                         .transition(.scale)
                 }
             }
-            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
+            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count + pendingApprovalsCount)
         }
+    }
+    
+    private var pendingApprovalsCount: Int {
+        appVM.dataStore.discountApprovalRequests.filter { $0.status == .pending }.count
     }
     
     // MARK: - Profile Button
@@ -242,6 +248,20 @@ struct StoreDashboardView: View {
                     iconColor: dashboardVM.lowStockAlerts.isEmpty
                     ? RSMSTheme.success
                     : RSMSTheme.warning
+                )
+            }
+            .buttonStyle(.plain)
+            
+            Button {
+                navPath.append(.approvals)
+            } label: {
+                KPICard(
+                    icon: "tag.fill",
+                    value: "\(pendingApprovalsCount)",
+                    label: "Pending Approvals",
+                    iconColor: pendingApprovalsCount == 0
+                    ? RSMSTheme.success
+                    : .orange
                 )
             }
             .buttonStyle(.plain)

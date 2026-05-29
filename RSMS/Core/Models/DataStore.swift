@@ -16,7 +16,7 @@ import SwiftUI
 @Observable
 final class DataStore {
 
-    private let api = SupabaseClient.shared
+    let api = SupabaseClient.shared
 
     // ══════════════════════════════════════════════════════════
     // MARK: - Local Caches
@@ -48,6 +48,10 @@ final class DataStore {
     // ── POS / Carts ────────────────────────────────────
     var universalCarts: [UniversalCart] = []
     var universalCartItems: [UniversalCartItem] = []
+    
+    // ── Approval Workflow ──────────────────────────────
+    var discountApprovalRequests: [DiscountApprovalRequest] = []
+    var appNotifications: [AppNotification] = []
     var discounts: [Discount] = []
     var transactions: [Transaction] = []
     var tenders: [Tender] = []
@@ -1120,7 +1124,7 @@ final class DataStore {
         salesGoals = []
         commissions = []
         performanceMetrics = []
-        planograms = []
+        //planograms = []
         lookbooks = []
         complianceChecks = []
         clientEvents = []
@@ -1152,5 +1156,7 @@ final class DataStore {
         shrinkageAnalytics = []
         omnichannelOrders = []
         shipFromStoreSlips = []
+        discountApprovalRequests = []
+        appNotifications = []
     }
 }

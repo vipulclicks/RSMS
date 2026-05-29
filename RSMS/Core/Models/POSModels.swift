@@ -161,9 +161,66 @@ enum DiscountApprovalStatus: String, Codable, CaseIterable {
 struct CartDiscount: Codable, Hashable {
     let type: DiscountType
     let value: Double
-    let status: DiscountApprovalStatus
+    var status: DiscountApprovalStatus
     let appliedBy: UUID
     let appliedAt: Date
+}
+
+// MARK: - Approval Workflow
+
+struct DiscountApprovalRequest: Codable, Identifiable, Hashable {
+    let id: UUID
+    let cartId: UUID
+    let clientId: UUID
+    let associateId: UUID
+    var managerId: UUID?
+    let discountType: DiscountType
+    let discountValue: Double
+    let cartTotal: Double
+    let reasonForDiscount: String?
+    var status: DiscountApprovalStatus
+    let createdAt: Date
+    var decisionDate: Date?
+    var managerNotes: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, status
+        case cartId = "cart_id"
+        case clientId = "client_id"
+        case associateId = "associate_id"
+        case managerId = "manager_id"
+        case discountType = "discount_type"
+        case discountValue = "discount_value"
+        case cartTotal = "cart_total"
+        case reasonForDiscount = "reason_for_discount"
+        case createdAt = "created_at"
+        case decisionDate = "decision_date"
+        case managerNotes = "manager_notes"
+    }
+}
+
+enum NotificationType: String, Codable, CaseIterable {
+    case approvalRequest = "approval_request"
+    case approvalDecision = "approval_decision"
+}
+
+struct AppNotification: Codable, Identifiable, Hashable {
+    let id: UUID
+    let recipientId: UUID
+    let title: String
+    let message: String
+    let type: NotificationType
+    let relatedEntityId: UUID
+    var isRead: Bool
+    let createdAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id, title, message, type
+        case recipientId = "recipient_id"
+        case relatedEntityId = "related_entity_id"
+        case isRead = "is_read"
+        case createdAt = "created_at"
+    }
 }
 
 // MARK: - Transaction

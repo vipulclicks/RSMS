@@ -15,6 +15,7 @@ enum ShowroomCartMode {
 struct ShowroomCartView: View {
     let mode: ShowroomCartMode
     
+    @Environment(AppViewModel.self) private var appVM
     @Environment(\.dismiss) private var dismiss
     @State private var showShareToast = false
     @State private var navigateToCheckout = false
@@ -93,8 +94,15 @@ struct ShowroomCartView: View {
                                     itemsSection
                                         .frame(maxWidth: .infinity)
                                     
-                                    amountSummarySection
-                                        .frame(width: 320)
+                                    VStack(spacing: 16) {
+                                        amountSummarySection
+                                        
+                                        // Approval Request Banner — driven by DB record, not cart note
+                                        if let req = activeApprovalRequest, req.status != .approved {
+                                            approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
+                                        }
+                                    }
+                                    .frame(width: 320)
                                 }
                                 .padding(.horizontal, 24)
                             } else {
@@ -103,6 +111,11 @@ struct ShowroomCartView: View {
                                     itemsSection
                                     
                                     amountSummarySection
+                                    
+                                    // Approval Request Banner — driven by DB record, not cart note
+                                    if let req = activeApprovalRequest, req.status != .approved {
+                                        approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
+                                    }
                                 }
                                 .padding(.horizontal, 16)
                             }
@@ -136,6 +149,14 @@ struct ShowroomCartView: View {
                 }
             }
         }
+        .task {
+            // Always re-fetch approval requests from DB so we see the latest manager decisions
+            try? await appVM.dataStore.fetchDiscountApprovalRequests()
+            // Also re-fetch carts so the discount note field is current
+            if let associateId = appVM.currentUser?.id {
+                try? await appVM.dataStore.fetchUniversalCarts(associateId: associateId, type: .curated)
+            }
+        }
         .alert("Saved", isPresented: isEditModeSuccessPresented) {
             Button("Done") { dismiss() }
         } message: {
@@ -150,6 +171,8 @@ struct ShowroomCartView: View {
         }
         .sheet(isPresented: $showDiscountSheet) {
             CartDiscountSheet(
+                cartId: currentCart?.id ?? UUID(),
+                clientId: currentCart?.clientId ?? UUID(),
                 cartSubtotal: subtotalAmount,
                 associateId: getAssociateId(),
                 appliedDiscount: Binding(
@@ -165,6 +188,14 @@ struct ShowroomCartView: View {
     }
     
     // MARK: - Cart & Discount Helpers
+    
+    private var activeApprovalRequest: DiscountApprovalRequest? {
+        guard let cartId = currentCart?.id else { return nil }
+        return appVM.dataStore.discountApprovalRequests
+            .filter { $0.cartId == cartId }
+            .sorted { $0.createdAt > $1.createdAt }
+            .first
+    }
     
     // MARK: - Helpers for Mode Checks
     private var isEmpty: Bool {
@@ -500,6 +531,7 @@ struct ShowroomCartView: View {
                 }
                 
                 if let discount = currentCartDiscount {
+                    let effectiveStatus = activeApprovalRequest?.status ?? .approved
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Discount (\(discount.type.rawValue.capitalized))")
@@ -508,9 +540,9 @@ struct ShowroomCartView: View {
                             
                             HStack(spacing: 4) {
                                 Circle()
-                                    .fill(discount.status == .approved ? RSMSTheme.success : .orange)
+                                    .fill(effectiveStatus == .approved ? RSMSTheme.success : (effectiveStatus == .rejected ? RSMSTheme.danger : .orange))
                                     .frame(width: 6, height: 6)
-                                Text(discount.status.rawValue.capitalized)
+                                Text(effectiveStatus.rawValue.capitalized)
                                     .font(.caption2.weight(.medium))
                                     .foregroundStyle(RSMSTheme.textTertiary)
                             }
@@ -575,7 +607,39 @@ struct ShowroomCartView: View {
         }
     }
     
-    // MARK: - Bottom Action Bar
+    // MARK: - Discount Status Banner
+    
+    @ViewBuilder
+    private func approvalStatusBanner(status: DiscountApprovalStatus, managerNotes: String?) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: status == .pending ? "clock.fill" : (status == .approved ? "checkmark.seal.fill" : "xmark.octagon.fill"))
+                .font(.system(size: 20))
+                .foregroundStyle(status == .pending ? .orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger))
+                
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Discount \(status.rawValue.capitalized)")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                if status == .pending {
+                    Text("Awaiting Boutique Manager approval before checkout can proceed.")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                } else if status == .rejected, let notes = managerNotes {
+                    Text("Reason: \(notes)")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+            }
+            Spacer()
+        }
+        .padding()
+        .background((status == .pending ? Color.orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger)).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Bottom Actions Bar
     private var bottomActionBar: some View {
         VStack(spacing: 12) {
             Divider().overlay(RSMSTheme.divider)
@@ -656,22 +720,24 @@ struct ShowroomCartView: View {
                         )
                 }
                 
-                // Proceed to Checkout
+                // Proceed to Checkout — blocked only if a real DB approval request is pending or rejected
+                let isCheckoutBlocked = (activeApprovalRequest?.status == .pending) || (activeApprovalRequest?.status == .rejected)
+                
                 Button {
                     navigateToCheckout = true
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "creditcard.fill")
-                        Text("Checkout")
+                        Image(systemName: isCheckoutBlocked ? "lock.fill" : "creditcard.fill")
+                        Text(isCheckoutBlocked ? "Checkout Locked" : "Checkout")
                     }
                     .font(.headline)
-                    .foregroundStyle(isEmpty ? RSMSTheme.textTertiary : RSMSTheme.cream)
+                    .foregroundStyle((isEmpty || isCheckoutBlocked) ? RSMSTheme.textTertiary : RSMSTheme.cream)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(isEmpty ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                    .background((isEmpty || isCheckoutBlocked) ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isEmpty)
+                .disabled(isEmpty || isCheckoutBlocked)
             }
         }
         .padding(.horizontal, 24)

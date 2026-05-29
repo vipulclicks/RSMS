@@ -454,6 +454,9 @@ final class ProductCatalogViewModel {
         let updatedCart = cart.applyingDiscount(discount)
         do {
             try await dataStore.updateUniversalCart(updatedCart)
+            
+            // Re-fetch to guarantee cache freshness
+            try await dataStore.fetchUniversalCarts(associateId: updatedCart.associateId, type: .curated)
         } catch {
             print("[ProductCatalogViewModel] Error updating cart discount: \(error)")
         }

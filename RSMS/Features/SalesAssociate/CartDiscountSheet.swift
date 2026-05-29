@@ -8,13 +8,17 @@
 import SwiftUI
 
 struct CartDiscountSheet: View {
+    let cartId: UUID
+    let clientId: UUID
     let cartSubtotal: Double
     let associateId: UUID
     @Binding var appliedDiscount: CartDiscount?
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppViewModel.self) private var appVM
     
     @State private var selectedType: DiscountType = .percentage
     @State private var discountValueText: String = ""
+    @State private var reasonForDiscount: String = ""
     @State private var errorMessage: String? = nil
     
     // Limits
@@ -97,6 +101,27 @@ struct CartDiscountSheet: View {
                             }
                         }
                         
+                        // Reason Input (only if approval might be needed, or always)
+                        LuxuryFormCard(title: "Context", icon: "text.quote") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Reason for Discount")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                
+                                TextField("e.g. Client Birthday, Service Recovery", text: $reasonForDiscount, axis: .vertical)
+                                    .lineLimit(3...5)
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 16)
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(RSMSTheme.border, lineWidth: 1)
+                                    )
+                            }
+                        }
+                        
                         // Summary Preview
                         LuxuryFormCard(title: "Financial Summary", icon: "chart.bar.doc.horizontal") {
                             VStack(spacing: 12) {
@@ -139,6 +164,13 @@ struct CartDiscountSheet: View {
                 if appliedDiscount != nil {
                     ToolbarItem(placement: .destructiveAction) {
                         Button("Remove") {
+                            // Find and delete the pending request if it exists
+                            if let pendingRequest = appVM.dataStore.discountApprovalRequests.first(where: { $0.cartId == cartId && $0.status == .pending }) {
+                                Task {
+                                    try? await appVM.dataStore.deleteApprovalRequest(id: pendingRequest.id)
+                                }
+                            }
+                            
                             appliedDiscount = nil
                             dismiss()
                         }
@@ -148,7 +180,9 @@ struct CartDiscountSheet: View {
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
-                    applyDiscount()
+                    Task {
+                        await applyDiscount()
+                    }
                 } label: {
                     Text("Apply Discount")
                         .font(.headline)
@@ -250,7 +284,7 @@ struct CartDiscountSheet: View {
         }
     }
     
-    private func applyDiscount() {
+    private func applyDiscount() async {
         let status: DiscountApprovalStatus = requiresApproval ? .pending : .approved
         
         let newDiscount = CartDiscount(
@@ -260,6 +294,22 @@ struct CartDiscountSheet: View {
             appliedBy: associateId,
             appliedAt: Date()
         )
+        
+        if requiresApproval {
+            do {
+                _ = try await appVM.dataStore.createApprovalRequest(
+                    cartId: cartId,
+                    clientId: clientId,
+                    associateId: associateId,
+                    discountType: selectedType,
+                    discountValue: numericValue,
+                    cartTotal: cartSubtotal,
+                    reason: reasonForDiscount.isEmpty ? nil : reasonForDiscount
+                )
+            } catch {
+                print("Failed to create approval request: \(error)")
+            }
+        }
         
         appliedDiscount = newDiscount
         dismiss()
