@@ -12,8 +12,10 @@ struct StoreDashboardView: View {
     // MARK: - View Models & State
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var cycleCountVM = CycleCountViewModel()
+    @State private var lookbookVM = LookbookViewModel()
     @State private var navPath: [DashboardRoute] = []
     @State private var showingNotifications = false
+    @State private var showingProfile = false
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -66,6 +68,8 @@ struct StoreDashboardView: View {
                         }
                         
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
+                        
+                        LookbookSectionView(lookbookVM: lookbookVM)
                     }
                     .padding(24)
                 }
@@ -75,7 +79,10 @@ struct StoreDashboardView: View {
             .navigationTitle("Store Dashboard")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    notificationBell
+                    HStack(spacing: 16) {
+                        notificationBell
+                        profileButton
+                    }
                 }
             }
             .navigationDestination(for: DashboardRoute.self) { route in
@@ -91,6 +98,12 @@ struct StoreDashboardView: View {
                     .navigationTitle("Inventory Alerts")
                     .navigationBarTitleDisplayMode(.inline)
                 }
+            }
+            .navigationDestination(for: Lookbook.self) { lookbook in
+                LookbookDetailView(lookbook: lookbook)
+            }
+            .navigationDestination(isPresented: $showingProfile) {
+                BoutiqueManagerProfileView()
             }
             .sheet(isPresented: $showingNotifications) {
                 // We wrap it in a NavigationStack here since LowStockNotificationView no longer has one internally
@@ -110,6 +123,7 @@ struct StoreDashboardView: View {
                     await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
                     await cycleCountVM.load(dataStore: appVM.dataStore, storeId: storeId)
                 }
+                await lookbookVM.load(dataStore: appVM.dataStore)
             }
         }
     }
@@ -144,6 +158,39 @@ struct StoreDashboardView: View {
             }
             .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
         }
+    }
+    
+    // MARK: - Profile Button
+    private var profileButton: some View {
+        Button {
+            showingProfile = true
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.primaryGradient)
+                    .frame(width: 32, height: 32)
+                
+                if let user = appVM.currentUser {
+                    Text(getInitials(from: user.fullName))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(RSMSTheme.cream)
+                }
+            }
+        }
+    }
+    
+    private func getInitials(from name: String) -> String {
+        let components = name.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if components.count >= 2 {
+            return String(components[0].prefix(1) + components[1].prefix(1)).uppercased()
+        } else if let first = components.first {
+            return String(first.prefix(2)).uppercased()
+        }
+        return ""
     }
     
     // MARK: - Header
