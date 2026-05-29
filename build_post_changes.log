@@ -1,0 +1,84 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project RSMS.xcodeproj -scheme RSMS -destination "platform=iOS Simulator,name=iPhone 17" build
+
+2026-05-27 15:22:00.940 xcodebuild[6319:124631] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'RSMS' in project 'RSMS' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/mohddanish/Documents/GitHub/RSMS/RSMS/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: e05c390f2f6c794a28006ba6b76b50c1
+Build description path: /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/XCBuildData/e05c390f2f6c794a28006ba6b76b50c1.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /Users/mohddanish/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-6cfe768891a92b912361537c460fe42b.sdkstatcache
+    cd /Users/mohddanish/Documents/GitHub/RSMS/RSMS.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /Users/mohddanish/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-6cfe768891a92b912361537c460fe42b.sdkstatcache
+
+WriteAuxiliaryFile /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.LinkFileList (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    write-file /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.LinkFileList
+
+WriteAuxiliaryFile /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.SwiftFileList (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    write-file /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.SwiftFileList
+
+WriteAuxiliaryFile /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.SwiftConstValuesFileList (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    write-file /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.SwiftConstValuesFileList
+
+CompileAssetCatalogVariant thinned /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator/RSMS.app /Users/mohddanish/Documents/GitHub/RSMS/RSMS/Assets.xcassets (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/mohddanish/Documents/GitHub/RSMS/RSMS/Assets.xcassets --compile /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone18,3 --filter-for-device-os-version 26.5 --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 26.0 --platform iphonesimulator
+/Users/mohddanish/Documents/GitHub/RSMS/RSMS/Inventory Controller/ASNMatchingView.swift:147:62: error: expected ',' separator
+                            Text("No in-transit ASN matches "\(vm.asnQuery)" for this store.")
+                                                             ^
+                                                             ,
+/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/DerivedSources/GeneratedAssetSymbols.swift:119:14: warning: The "magenta" color asset name resolves to a conflicting UIColor symbol "magenta". Try renaming the asset.
+    #warning("The \"magenta\" color asset name resolves to a conflicting UIColor symbol \"magenta\". Try renaming the asset.")
+             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Ld /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator/RSMS.app/__preview.dylib normal (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator -F/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator -install_name @rpath/RSMS.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS_dependency_info.dat -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS.app-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator/RSMS.app/__preview.dylib
+
+SwiftDriver RSMS normal arm64 com.apple.xcode.tools.swift.compiler (in target 'RSMS' from project 'RSMS')
+    cd /Users/mohddanish/Documents/GitHub/RSMS
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name RSMS -Onone @/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator -F /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/mohddanish/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.5-23F73-6cfe768891a92b912361537c460fe42b.sdkstatcache -output-file-map /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/mohddanish/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS_const_extract_protocols.json -Xcc -iquote -Xcc /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS-generated-files.hmap -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS-own-target-headers.hmap -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS-all-target-headers.hmap -Xcc -iquote -Xcc /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/RSMS-project-headers.hmap -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/DerivedSources-normal/arm64 -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/DerivedSources/arm64 -Xcc -I/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/Objects-normal/arm64/RSMS-Swift.h -working-directory /Users/mohddanish/Documents/GitHub/RSMS -experimental-emit-module-separately -disable-cmo
+/Users/mohddanish/Documents/GitHub/RSMS/RSMS/Inventory Controller/ASNMatchingView.swift:147:62: error: Expected ',' separator
+                            Text("No in-transit ASN matches "\(vm.asnQuery)" for this store.")
+                                                             ^
+                                                             , (in target 'RSMS' from project 'RSMS')
+/Users/mohddanish/Library/Developer/Xcode/DerivedData/RSMS-fmvpufvodyekypfhiahkmfufoszb/Build/Intermediates.noindex/RSMS.build/Debug-iphonesimulator/RSMS.build/DerivedSources/GeneratedAssetSymbols.swift:119:14: warning: The "magenta" color asset name resolves to a conflicting UIColor symbol "magenta". Try renaming the asset.
+    #warning("The \"magenta\" color asset name resolves to a conflicting UIColor symbol \"magenta\". Try renaming the asset.")
+             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (in target 'RSMS' from project 'RSMS')
+
+** BUILD FAILED **
+
+
+The following build commands failed:
+	SwiftDriver RSMS normal arm64 com.apple.xcode.tools.swift.compiler (in target 'RSMS' from project 'RSMS')
+	Building project RSMS with scheme RSMS
+(2 failures)
