@@ -143,50 +143,23 @@ struct PerformanceMetric: Codable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Planogram
 
-/// Represents the visual plan for how products should be displayed in a specific section of the store.
-struct Planogram: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let name: String
-    let section: String
-    let imageURL: String?
-    let isCompliant: Bool
-    let lastCheckedAt: Date?
-    let createdAt: Date
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, name, section
-        case storeId       = "store_id"
-        case imageURL      = "image_url"
-        case isCompliant   = "is_compliant"
-        case lastCheckedAt = "last_checked_at"
-        case createdAt     = "created_at"
-        case updatedAt     = "updated_at"
-    }
-}
 
 // MARK: - Lookbook
 
-/// A digital collection of images and guidelines to show how products should be presented according to the brand's standards.
+/// A digital lookbook document stored as a PDF.
 struct Lookbook: Codable, Identifiable, Hashable {
     let id: UUID
     let title: String
-    let season: String
-    let description: String?
-    let imageURLs: [String]
-    let brandGuideline: String?
     let isActive: Bool
     let createdAt: Date
+    let pdfStoragePath: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, season, description
-        case imageURLs      = "image_urls"
-        case brandGuideline = "brand_guideline"
+        case id, title
         case isActive       = "is_active"
         case createdAt      = "created_at"
+        case pdfStoragePath = "pdf_storage_path"
     }
 }
 

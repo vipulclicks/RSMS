@@ -1,22 +1,39 @@
 import SwiftUI
 
+enum DashboardRoute: Hashable {
+    case appointments
+    case lowStock
+}
+
 struct StoreDashboardView: View {
     // MARK: - Environment
     @Environment(AppViewModel.self) private var appVM
     
     // MARK: - View Models & State
     @State private var dashboardVM = BoutiqueDashboardViewModel()
+    @State private var cycleCountVM = CycleCountViewModel()
+    @State private var lookbookVM = LookbookViewModel()
+    @State private var navPath: [DashboardRoute] = []
     @State private var showingNotifications = false
-    @State private var showingAppointments = false
+    @State private var showingProfile = false
     
-    private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
+    private var kpiColumns: [GridItem] {
+        if horizontalSizeClass == .compact {
+            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+        } else {
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
+        }
+    }
     
     var body: some View {
-        Group {
+        NavigationStack(path: $navPath) {
+            Group {
             if dashboardVM.isLoading {
                 ProgressView("Loading Dashboard...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -26,40 +43,87 @@ struct StoreDashboardView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(errorMessage)
                 )
-            } else if dashboardVM.todaySales == 0 && dashboardVM.salesTarget == 0 && dashboardVM.shifts.isEmpty {
-                ContentUnavailableView(
-                    "No Data",
-                    systemImage: "chart.pie",
-                    description: Text("Dashboard data is unavailable for this store. Start logging transactions to see insights.")
-                )
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 28) {
                         headerSection
                         kpiCardsRow
                         salesProgressCard
-                        staffSection
+                        
+                        // Debug Button to clean up Database duplicates
+                        Button(action: {
+                            Task {
+                                if let storeId = appVM.currentStoreId {
+                                    await dashboardVM.resetSalesGoals(dataStore: appVM.dataStore, storeId: storeId)
+                                }
+                            }
+                        }) {
+                            Label("Fix Database: Reset Goals to ₹7k", systemImage: "wand.and.stars")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(RSMSTheme.primaryDark)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(RSMSTheme.primaryDark.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                        
+                        CycleCountSectionView(cycleCountVM: cycleCountVM)
+                        
+                        LookbookSectionView(lookbookVM: lookbookVM)
                     }
                     .padding(24)
                 }
             }
         }
-        .background(RSMSTheme.background.ignoresSafeArea())
-        .navigationTitle("Store Dashboard")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                notificationBell
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationTitle("Store Dashboard")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 16) {
+                        notificationBell
+                        profileButton
+                    }
+                }
             }
-        }
-        .sheet(isPresented: $showingNotifications) {
-            LowStockNotificationView(dashboardVM: dashboardVM)
-        }
-        .sheet(isPresented: $showingAppointments) {
-            TodayAppointmentsSheet()
-        }
-        .task {
-            if let storeId = appVM.currentStoreId {
-                await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
+            .navigationDestination(for: DashboardRoute.self) { route in
+                switch route {
+                case .appointments:
+                    TodayAppointmentsSheet()
+                case .lowStock:
+                    ScrollView {
+                        InventoryAlertsView(dashboardVM: dashboardVM)
+                            .padding(32)
+                    }
+                    .background(RSMSTheme.background.ignoresSafeArea())
+                    .navigationTitle("Inventory Alerts")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+            .navigationDestination(for: Lookbook.self) { lookbook in
+                LookbookDetailView(lookbook: lookbook)
+            }
+            .navigationDestination(isPresented: $showingProfile) {
+                BoutiqueManagerProfileView()
+            }
+            .sheet(isPresented: $showingNotifications) {
+                // We wrap it in a NavigationStack here since LowStockNotificationView no longer has one internally
+                NavigationStack {
+                    LowStockNotificationView(dashboardVM: dashboardVM)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done") { showingNotifications = false }
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.gold)
+                            }
+                        }
+                }
+            }
+            .task {
+                if let storeId = appVM.currentStoreId {
+                    await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                    await cycleCountVM.load(dataStore: appVM.dataStore, storeId: storeId)
+                }
+                await lookbookVM.load(dataStore: appVM.dataStore)
             }
         }
     }
@@ -96,6 +160,39 @@ struct StoreDashboardView: View {
         }
     }
     
+    // MARK: - Profile Button
+    private var profileButton: some View {
+        Button {
+            showingProfile = true
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.primaryGradient)
+                    .frame(width: 32, height: 32)
+                
+                if let user = appVM.currentUser {
+                    Text(getInitials(from: user.fullName))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(RSMSTheme.cream)
+                }
+            }
+        }
+    }
+    
+    private func getInitials(from name: String) -> String {
+        let components = name.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if components.count >= 2 {
+            return String(components[0].prefix(1) + components[1].prefix(1)).uppercased()
+        } else if let first = components.first {
+            return String(first.prefix(2)).uppercased()
+        }
+        return ""
+    }
+    
     // MARK: - Header
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -111,7 +208,7 @@ struct StoreDashboardView: View {
     
     private var kpiCardsRow: some View {
         return LazyVGrid(
-            columns: columns,
+            columns: kpiColumns,
             alignment: .leading,
             spacing: 16
         ) {
@@ -124,7 +221,7 @@ struct StoreDashboardView: View {
             )
             
             Button {
-                showingAppointments = true
+                navPath.append(.appointments)
             } label: {
                 KPICard(
                     icon: "calendar.badge.clock",
@@ -136,7 +233,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                showingNotifications = true
+                navPath.append(.lowStock)
             } label: {
                 KPICard(
                     icon: "exclamationmark.triangle.fill",
@@ -154,37 +251,83 @@ struct StoreDashboardView: View {
     // MARK: - Sales Progress
     private var salesProgressCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Sales Progress")
-            
-            HStack(spacing: 32) {
-                CircularProgressView(
-                    progress: dashboardVM.salesProgress,
-                    label: "of target",
-                    value: "\(Int(dashboardVM.salesProgress * 100))%"
-                )
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    metricRow(
-                        label: "Target",
-                        value: dashboardVM.formatCurrency(dashboardVM.salesTarget),
-                        color: RSMSTheme.textSecondary
-                    )
-                    
-                    metricRow(
-                        label: "Actual",
-                        value: dashboardVM.formatCurrency(dashboardVM.todaySales),
-                        color: RSMSTheme.gold
-                    )
-                    
-                    metricRow(
-                        label: "Remaining",
-                        value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.todaySales)),
-                        color: RSMSTheme.warning
-                    )
+            HStack {
+                SectionHeader(title: "Sales Progress")
+                Spacer()
+                Picker("Period", selection: Bindable(dashboardVM).selectedPeriod) {
+                    ForEach(GoalPeriod.allCases, id: \.self) { period in
+                        Text(period.rawValue.capitalized).tag(period)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 320)
+            }
+            
+            if dashboardVM.hasGoalsForPeriod {
+                if horizontalSizeClass == .compact {
+                    VStack(spacing: 24) {
+                        CircularProgressView(
+                            progress: dashboardVM.salesProgress,
+                            label: "of target",
+                            value: "\(Int(dashboardVM.salesProgress * 100))%"
+                        )
+                        salesMetricsList
+                    }
+                } else {
+                    HStack(spacing: 32) {
+                        CircularProgressView(
+                            progress: dashboardVM.salesProgress,
+                            label: "of target",
+                            value: "\(Int(dashboardVM.salesProgress * 100))%"
+                        )
+                        salesMetricsList
+                    }
+                }
+                
+                Text("\(dashboardVM.goalAssociateCount) associate\(dashboardVM.goalAssociateCount == 1 ? "" : "s") with \(dashboardVM.selectedPeriod.rawValue) goals")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            } else {
+                // No goals empty state
+                VStack(spacing: 12) {
+                    Image(systemName: "target")
+                        .font(.system(size: 36))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text("No \(dashboardVM.selectedPeriod.rawValue) goal has been set")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    Text("Set \(dashboardVM.selectedPeriod.rawValue) sales targets for your associates to track progress here.")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
             }
         }
         .rsmsCard()
+    }
+    
+    private var salesMetricsList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            metricRow(
+                label: "Target",
+                value: dashboardVM.formatCurrency(dashboardVM.salesTarget),
+                color: RSMSTheme.textSecondary
+            )
+            
+            metricRow(
+                label: "Achieved",
+                value: dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount),
+                color: RSMSTheme.gold
+            )
+            
+            metricRow(
+                label: "Remaining",
+                value: dashboardVM.formatCurrency(max(0, dashboardVM.salesTarget - dashboardVM.periodAchievedAmount)),
+                color: RSMSTheme.warning
+            )
+        }
     }
     
     // MARK: - Staff Section
@@ -417,8 +560,7 @@ struct TodayAppointmentsSheet: View {
     @Environment(AppViewModel.self) private var appVM
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     let todaysAppointments = appVM.dataStore.appointments.filter {
                         Calendar.current.isDateInToday($0.dateTime)
@@ -443,14 +585,6 @@ struct TodayAppointmentsSheet: View {
             .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Today's Appointments")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
-            }
-        }
     }
     
     private func appointmentCard(_ appointment: Appointment) -> some View {

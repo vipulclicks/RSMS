@@ -32,7 +32,6 @@ final class DataStore {
     var salesGoals: [SalesGoal] = []
     var commissions: [Commission] = []
     var performanceMetrics: [PerformanceMetric] = []
-    var planograms: [Planogram] = []
     var lookbooks: [Lookbook] = []
     var complianceChecks: [ComplianceCheck] = []
     var clientEvents: [ClientEvent] = []
@@ -331,30 +330,7 @@ final class DataStore {
         performanceMetrics.removeAll { $0.id == id }
     }
 
-    // ══════════════════════════════════════════════════════════
-    // MARK: - planograms
-    // ══════════════════════════════════════════════════════════
 
-    func fetchPlanograms(storeId: UUID) async throws {
-        planograms = try await api.fetch("planograms", query: ["store_id": "eq.\(storeId)"])
-    }
-
-    @discardableResult
-    func createPlanogram(_ p: Planogram) async throws -> Planogram {
-        let created: Planogram = try await api.insert("planograms", record: p)
-        planograms.append(created)
-        return created
-    }
-
-    func updatePlanogram(_ p: Planogram) async throws {
-        try await api.update("planograms", id: p.id, record: p)
-        if let i = planograms.firstIndex(where: { $0.id == p.id }) { planograms[i] = p }
-    }
-
-    func deletePlanogram(id: UUID) async throws {
-        try await api.delete("planograms", id: id)
-        planograms.removeAll { $0.id == id }
-    }
 
     // ══════════════════════════════════════════════════════════
     // MARK: - lookbooks
@@ -861,6 +837,47 @@ final class DataStore {
         let created: StockItem = try await api.insert("stock_items", record: s)
         stockItems.append(created)
         return created
+    }
+
+    @discardableResult
+    func receiveStock(
+        productId: UUID,
+        storeId: UUID,
+        quantity: Int,
+        location: String,
+        rfidTag: String? = nil
+    ) async throws -> StockItem {
+        let normalizedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedLocation = normalizedLocation.isEmpty ? nil : normalizedLocation
+
+        if let existing = stockItems.first(where: { $0.productId == productId && $0.storeId == storeId }) {
+            let updated = StockItem(
+                id: existing.id,
+                productId: existing.productId,
+                storeId: existing.storeId,
+                quantity: existing.quantity + max(quantity, 1),
+                rfidTag: existing.rfidTag ?? rfidTag,
+                location: resolvedLocation ?? existing.location,
+                status: .available,
+                lastScannedAt: .now,
+                updatedAt: .now
+            )
+            try await updateStockItem(updated)
+            return updated
+        }
+
+        let created = StockItem(
+            id: UUID(),
+            productId: productId,
+            storeId: storeId,
+            quantity: max(quantity, 1),
+            rfidTag: rfidTag,
+            location: resolvedLocation,
+            status: .available,
+            lastScannedAt: .now,
+            updatedAt: .now
+        )
+        return try await createStockItem(created)
     }
 
     func updateStockItem(_ s: StockItem) async throws {

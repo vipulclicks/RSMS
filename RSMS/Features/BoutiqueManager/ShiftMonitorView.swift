@@ -32,6 +32,8 @@ struct ShiftMonitorView: View {
         return result
     }
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     var body: some View {
         Group {
             if vm.isLoading {
@@ -55,7 +57,7 @@ struct ShiftMonitorView: View {
                         
                         shiftsList
                     }
-                    .padding(.horizontal, 48)
+                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 48)
                     .padding(.bottom, 60)
                 }
                 .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
@@ -141,8 +143,10 @@ struct ShiftMonitorView: View {
                 .font(.system(size: 11, weight: .bold))
                 .tracking(1.2)
                 .foregroundStyle(RSMSTheme.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-        .padding(20)
+        .padding(horizontalSizeClass == .compact ? 12 : 20)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(RSMSTheme.surfacePrimary)

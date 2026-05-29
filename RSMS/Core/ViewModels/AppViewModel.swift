@@ -49,21 +49,6 @@ class AppViewModel {
         isAuthenticating = false
     }
 
-    func login(as role: UserRole) {
-        // Fallback for seamless demo testing if desired.
-        // In a real flow, this would call login(email:password:) with hardcoded test accounts.
-        switch role {
-        case .boutiqueManager:
-            currentUser = .previewManager
-        case .salesAssociate:
-            currentUser = .previewAssociate
-        case .inventoryController:
-            currentUser = .previewInventory
-        case .client:
-            currentUser = .previewClient
-        }
-    }
-
     func logout() {
         withAnimation(.smooth(duration: 0.4)) {
             currentUser = nil
