@@ -3,6 +3,7 @@ import SwiftUI
 enum DashboardRoute: Hashable {
     case appointments
     case lowStock
+    case approvals
 }
 
 struct StoreDashboardView: View {
@@ -12,8 +13,10 @@ struct StoreDashboardView: View {
     // MARK: - View Models & State
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var cycleCountVM = CycleCountViewModel()
+    @State private var lookbookVM = LookbookViewModel()
     @State private var navPath: [DashboardRoute] = []
     @State private var showingNotifications = false
+    @State private var showingProfile = false
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -66,6 +69,8 @@ struct StoreDashboardView: View {
                         }
                         
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
+                        
+                        LookbookSectionView(lookbookVM: lookbookVM)
                     }
                     .padding(24)
                 }
@@ -75,7 +80,10 @@ struct StoreDashboardView: View {
             .navigationTitle("Store Dashboard")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    notificationBell
+                    HStack(spacing: 16) {
+                        notificationBell
+                        profileButton
+                    }
                 }
             }
             .navigationDestination(for: DashboardRoute.self) { route in
@@ -90,12 +98,19 @@ struct StoreDashboardView: View {
                     .background(RSMSTheme.background.ignoresSafeArea())
                     .navigationTitle("Inventory Alerts")
                     .navigationBarTitleDisplayMode(.inline)
+                case .approvals:
+                    ApprovalDashboardView()
                 }
             }
+            .navigationDestination(for: Lookbook.self) { lookbook in
+                LookbookDetailView(lookbook: lookbook)
+            }
+            .navigationDestination(isPresented: $showingProfile) {
+                BoutiqueManagerProfileView()
+            }
             .sheet(isPresented: $showingNotifications) {
-                // We wrap it in a NavigationStack here since LowStockNotificationView no longer has one internally
                 NavigationStack {
-                    LowStockNotificationView(dashboardVM: dashboardVM)
+                    ManagerNotificationSheet(dashboardVM: dashboardVM)
                         .toolbar {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button("Done") { showingNotifications = false }
@@ -110,6 +125,7 @@ struct StoreDashboardView: View {
                     await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
                     await cycleCountVM.load(dataStore: appVM.dataStore, storeId: storeId)
                 }
+                await lookbookVM.load(dataStore: appVM.dataStore)
             }
         }
     }
@@ -124,8 +140,8 @@ struct StoreDashboardView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
-                if !dashboardVM.lowStockAlerts.isEmpty {
-                    let count = dashboardVM.lowStockAlerts.count
+                if !dashboardVM.lowStockAlerts.isEmpty || pendingApprovalsCount > 0 {
+                    let count = dashboardVM.lowStockAlerts.count + pendingApprovalsCount
                     let displayText = count > 99 ? "99+" : "\(count)"
                     
                     Text(displayText)
@@ -142,8 +158,45 @@ struct StoreDashboardView: View {
                         .transition(.scale)
                 }
             }
-            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count)
+            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count + pendingApprovalsCount)
         }
+    }
+    
+    private var pendingApprovalsCount: Int {
+        appVM.dataStore.discountApprovalRequests.filter { $0.status == .pending }.count
+    }
+    
+    // MARK: - Profile Button
+    private var profileButton: some View {
+        Button {
+            showingProfile = true
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.primaryGradient)
+                    .frame(width: 32, height: 32)
+                
+                if let user = appVM.currentUser {
+                    Text(getInitials(from: user.fullName))
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(RSMSTheme.cream)
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(RSMSTheme.cream)
+                }
+            }
+        }
+    }
+    
+    private func getInitials(from name: String) -> String {
+        let components = name.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        if components.count >= 2 {
+            return String(components[0].prefix(1) + components[1].prefix(1)).uppercased()
+        } else if let first = components.first {
+            return String(first.prefix(2)).uppercased()
+        }
+        return ""
     }
     
     // MARK: - Header
@@ -195,6 +248,20 @@ struct StoreDashboardView: View {
                     iconColor: dashboardVM.lowStockAlerts.isEmpty
                     ? RSMSTheme.success
                     : RSMSTheme.warning
+                )
+            }
+            .buttonStyle(.plain)
+            
+            Button {
+                navPath.append(.approvals)
+            } label: {
+                KPICard(
+                    icon: "tag.fill",
+                    value: "\(pendingApprovalsCount)",
+                    label: "Pending Approvals",
+                    iconColor: pendingApprovalsCount == 0
+                    ? RSMSTheme.success
+                    : .orange
                 )
             }
             .buttonStyle(.plain)

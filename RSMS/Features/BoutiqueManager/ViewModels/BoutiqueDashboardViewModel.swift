@@ -46,6 +46,9 @@ final class BoutiqueDashboardViewModel {
         errorMessage = nil
         
         do {
+            // Fetch stores first so storeName lookup works
+            try await dataStore.fetchStores()
+            
             // A) Today's Sales
             try await dataStore.fetchUsers(storeId: storeId)
             let associateIds = Set(dataStore.users.filter { $0.role == .salesAssociate }.map { $0.id })
@@ -91,6 +94,10 @@ final class BoutiqueDashboardViewModel {
             
             // F) Fetch Dashboard Summaries (for targets if needed)
             try await dataStore.fetchDashboardSummaries(storeId: storeId)
+            
+            // F2) Approvals & Notifications
+            try? await dataStore.fetchDiscountApprovalRequests()
+            try? await dataStore.fetchAppNotifications()
             
             // G) Top Selling Category (Client-Side Computation)
             self.topSellingCategory = try await computeTopCategory(dataStore: dataStore)

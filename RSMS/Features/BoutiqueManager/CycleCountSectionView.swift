@@ -18,19 +18,6 @@ struct CycleCountSectionView: View {
                         .foregroundStyle(RSMSTheme.textSecondary)
                 }
                 Spacer()
-
-                if cycleCountVM.openMismatches > 0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                        Text("\(cycleCountVM.openMismatches) Mismatch\(cycleCountVM.openMismatches == 1 ? "" : "es")")
-                            .font(.subheadline.weight(.bold))
-                    }
-                    .foregroundStyle(RSMSTheme.danger)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Capsule().fill(RSMSTheme.danger.opacity(0.1)))
-                }
             }
 
             // KPI Cards Row

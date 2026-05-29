@@ -147,7 +147,7 @@ struct PerformanceMetric: Codable, Identifiable, Hashable {
 
 // MARK: - Lookbook
 
-/// A published lookbook document stored in Supabase.
+/// A digital lookbook document stored as a PDF.
 struct Lookbook: Codable, Identifiable, Hashable {
     let id: UUID
     let title: String
@@ -157,18 +157,10 @@ struct Lookbook: Codable, Identifiable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case id, title
-        case isActive        = "is_active"
-        case createdAt       = "created_at"
-        case pdfStoragePath  = "pdf_storage_path"
+        case isActive       = "is_active"
+        case createdAt      = "created_at"
+        case pdfStoragePath = "pdf_storage_path"
     }
-
-    static let preview = Lookbook(
-        id: UUID(uuidString: "30000000-0000-0000-0000-0000000000C0")!,
-        title: "Maison Lumiere Summer 2026",
-        isActive: true,
-        createdAt: .now,
-        pdfStoragePath: "lookbooks/summer-2026.pdf"
-    )
 }
 
 // MARK: - Compliance Check
@@ -261,4 +253,5 @@ enum RSVPStatus: String, Codable, CaseIterable {
     case attended  = "attended"
     case noShow    = "no_show"
 }
+
 
