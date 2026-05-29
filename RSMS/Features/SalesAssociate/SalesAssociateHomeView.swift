@@ -346,10 +346,6 @@ private struct DashboardHeaderView: View {
                 
                 HStack(spacing: 6) {
                     Text("\(greeting(for: .now)), \(firstName)")
-                    Text("•")
-                    Image(systemName: "mappin.circle.fill")
-                        .foregroundStyle(RSMSTheme.primary)
-                    Text(storeName)
                 }
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(RSMSTheme.textSecondary)
@@ -683,9 +679,6 @@ struct SAClientBrowserView: View {
                         Spacer()
                         
                         HStack(spacing: 12) {
-                            circleButton(icon: "slider.horizontal.3") {
-                                // Filter action
-                            }
                             circleButton(icon: "plus") {
                                 onAddClient()
                             }

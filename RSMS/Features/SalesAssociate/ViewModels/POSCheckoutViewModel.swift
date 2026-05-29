@@ -88,7 +88,7 @@ final class POSCheckoutViewModel {
     }
 
     // MARK: - Checkout
-    func checkout(cart: UniversalCart, totalAmount: Double, taxAmount: Double, tenderMethod: TenderMethod, isTaxFree: Bool = false) async throws {
+    func checkout(cart: UniversalCart, totalAmount: Double, taxAmount: Double, tenderMethod: TenderMethod, isTaxFree: Bool = false, razorpayPaymentId: String? = nil) async throws {
         // 1. Create transaction
         let txn = Transaction(
             id: UUID(), cartId: cart.id, storeId: storeId, associateId: associateId,
@@ -100,7 +100,7 @@ final class POSCheckoutViewModel {
         // 2. Create tender
         let tender = Tender(
             id: UUID(), transactionId: txn.id, method: tenderMethod,
-            amount: totalAmount, reference: nil
+            amount: totalAmount, reference: razorpayPaymentId
         )
         try await dataStore.createTender(tender)
 
