@@ -50,23 +50,6 @@ struct StoreDashboardView: View {
                         kpiCardsRow
                         salesProgressCard
                         
-                        // Debug Button to clean up Database duplicates
-                        Button(action: {
-                            Task {
-                                if let storeId = appVM.currentStoreId {
-                                    await dashboardVM.resetSalesGoals(dataStore: appVM.dataStore, storeId: storeId)
-                                }
-                            }
-                        }) {
-                            Label("Fix Database: Reset Goals to ₹7k", systemImage: "wand.and.stars")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(RSMSTheme.primaryDark)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(RSMSTheme.primaryDark.opacity(0.1))
-                                .clipShape(Capsule())
-                        }
-                        
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
                         
                         LookbookSectionView(lookbookVM: lookbookVM)

@@ -46,10 +46,9 @@ struct ShiftMonitorView: View {
                     description: Text(error)
                 )
             } else {
-                ScrollView {
+                Group {
                     VStack(alignment: .leading, spacing: 32) {
                         headerSection
-                            .padding(.top, 16)
                         
                         summaryStrip
                         
@@ -57,25 +56,10 @@ struct ShiftMonitorView: View {
                         
                         shiftsList
                     }
-                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 48)
+                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
                     .padding(.bottom, 60)
                 }
-                .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            shiftToEdit = nil
-                            showAddSheet.toggle()
-                        } label: {
-                            HStack {
-                                Image(systemName: "calendar.badge.plus")
-                                Text("Add Shift")
-                            }
-                            .font(.subheadline.weight(.semibold))
-                        }
-                    }
-                }
                 .sheet(isPresented: $showAddSheet) {
                     AddShiftView(vm: vm, shiftToEdit: shiftToEdit)
                 }
@@ -90,30 +74,27 @@ struct ShiftMonitorView: View {
 
     // MARK: - Header Section
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Today's Shifts")
-                .font(.system(size: 34, weight: .heavy, design: .default))
-                .foregroundStyle(RSMSTheme.textPrimary)
+        HStack(alignment: .bottom) {
+            SectionHeader(title: "Today's Schedule", subtitle: dateString)
             
-            HStack(spacing: 8) {
-                Text(dateString)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(RSMSTheme.textSecondary)
-                
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(RSMSTheme.primary)
-                        .frame(width: 6, height: 6)
-                        .opacity(isBlinking ? 1.0 : 0.4)
-                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isBlinking)
-                    
-                    Text("LIVE · \(clockString)")
-                        .font(.caption.weight(.bold))
-                        .tracking(1.5)
-                        .foregroundStyle(RSMSTheme.primary)
+            Spacer()
+            
+            Button {
+                shiftToEdit = nil
+                showAddSheet.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar.badge.plus")
+                    Text("Add Shift")
                 }
-                .onAppear { isBlinking = true }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(RSMSTheme.cream)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(RSMSTheme.primaryDark)
+                .clipShape(Capsule())
             }
+            .padding(.bottom, 8)
         }
     }
     
