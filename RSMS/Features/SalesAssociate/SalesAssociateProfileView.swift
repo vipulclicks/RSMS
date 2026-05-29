@@ -26,6 +26,9 @@ struct SalesAssociateProfileView: View {
                         // 1. Profile Header Card
                         profileHeaderCard(user: user)
                         
+                        // 1.5 Shift Timing Banner
+                        shiftTimingBanner()
+                        
                         // 2. Performance Snapshot
                         performanceSnapshotSection()
                         
@@ -134,6 +137,32 @@ struct SalesAssociateProfileView: View {
         .shadow(color: Color.black.opacity(0.04), radius: 12, y: 4)
     }
     
+    private func shiftTimingBanner() -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "clock.fill")
+                .font(.title2)
+                .foregroundStyle(RSMSTheme.primary)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Current Shift")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                
+                Text(viewModel.shiftTiming)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(RSMSTheme.surfacePrimary)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 1))
+        )
+        .shadow(color: RSMSTheme.primary.opacity(0.1), radius: 8, y: 2)
+    }
+    
     private func performanceSnapshotSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Performance Snapshot")
@@ -142,48 +171,60 @@ struct SalesAssociateProfileView: View {
             
             HStack(spacing: 16) {
                 // Today's Sales
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Image(systemName: "indianrupeesign.circle.fill")
-                            .foregroundStyle(RSMSTheme.primary)
-                        Spacer()
+                NavigationLink(destination: SalesAssociateDailySalesView(transactions: viewModel.todayTransactionsList)) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Image(systemName: "indianrupeesign.circle.fill")
+                                .foregroundStyle(RSMSTheme.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                        }
+                        Text(viewModel.todaySales)
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Today's Sales")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
                     }
-                    Text(viewModel.todaySales)
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    Text("Today's Sales")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                    )
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(RSMSTheme.surfacePrimary)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
-                )
+                .buttonStyle(.plain)
                 
                 // Appointments
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Image(systemName: "calendar.circle.fill")
-                            .foregroundStyle(RSMSTheme.info)
-                        Spacer()
+                NavigationLink(destination: SalesAssociateDailyAppointmentsView(appointments: viewModel.todayAppointmentsList)) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Image(systemName: "calendar.circle.fill")
+                                .foregroundStyle(RSMSTheme.info)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                        }
+                        Text("\(viewModel.appointmentsCount)")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Appointments Handled")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
                     }
-                    Text("\(viewModel.appointmentsCount)")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    Text("Appointments Handled")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                    )
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(RSMSTheme.surfacePrimary)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
-                )
+                .buttonStyle(.plain)
             }
         }
     }
@@ -200,8 +241,6 @@ struct SalesAssociateProfileView: View {
                 infoRow(label: "Phone", value: user.phone ?? "Not Provided", icon: "phone")
                 Divider().background(RSMSTheme.divider)
                 infoRow(label: "Department", value: viewModel.department, icon: "briefcase")
-                Divider().background(RSMSTheme.divider)
-                infoRow(label: "Shift Timing", value: viewModel.shiftTiming, icon: "clock")
                 Divider().background(RSMSTheme.divider)
                 infoRow(label: "Reporting Manager", value: viewModel.reportingManager, icon: "person.2")
             }
@@ -313,21 +352,9 @@ struct SalesAssociateProfileView: View {
     private func deviceAndSessionSection() -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Device")
-                Spacer()
-                Text(viewModel.currentDevice)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-            }
-            HStack {
                 Text("Last Login")
                 Spacer()
                 Text(viewModel.lastLoginTime)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-            }
-            HStack {
-                Text("App Version")
-                Spacer()
-                Text(viewModel.appVersion)
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
         }
@@ -350,8 +377,8 @@ struct SalesAssociateProfileView: View {
             .font(.subheadline)
             .foregroundStyle(.white)
             .padding(.vertical, 16)
-            .background(RSMSTheme.danger, in: RoundedRectangle(cornerRadius: 16))
-            .shadow(color: RSMSTheme.danger.opacity(0.15), radius: 10, y: 4)
+            .background(RSMSTheme.primary, in: RoundedRectangle(cornerRadius: 16))
+            .shadow(color: RSMSTheme.primary.opacity(0.15), radius: 10, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
         .accessibilityLabel("Sign Out")

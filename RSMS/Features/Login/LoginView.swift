@@ -196,6 +196,7 @@ struct LoginView: View {
                 )
         )
         .shadow(color: Color.black.opacity(0.2), radius: 30, y: 15)
+        .padding(.horizontal, 24)
         .sheet(isPresented: $showForgotPassword, onDismiss: {
             viewModel.clearResetState()
             otpCode = ""
