@@ -17,8 +17,10 @@ import VisionKit
 struct InventoryBarcodeScannerView: View {
 
     var initialMode: ScanMode = .stockIn
+    var onProductFound: ((Product) -> Void)? = nil
 
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.dismiss) private var dismiss
     @State private var scannerVM = BarcodeScannerViewModel()
     @State private var rawScannedCode: String? = nil
     @State private var manualInput: String = ""
@@ -89,9 +91,15 @@ struct InventoryBarcodeScannerView: View {
                 )
             }
         }
+        .onChange(of: scannerVM.state) { _, newState in
+            if case .found(let product, _) = newState, let handler = onProductFound {
+                handler(product)
+                scannerVM.resetState()
+            }
+        }
         .sheet(
             isPresented: Binding(
-                get: { scannerVM.state.isResultState },
+                get: { scannerVM.state.isResultState && onProductFound == nil },
                 set: { if !$0 { scannerVM.resetState() } }
             )
         ) {

@@ -12,12 +12,11 @@ import SwiftUI
 
 enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case dashboard      = "Dashboard"
-    case productLookup  = "Product Lookup"
-    case stockIn        = "Stock In"
+    case productLookup  = "Lookup & Stock In"
+    case transfer       = "Transfer Inventory"
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
     case notify         = "Notify Manager"
-    case rfidStock      = "RFID Stock Management"
 
     var id: String { rawValue }
 
@@ -25,11 +24,10 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         switch self {
         case .dashboard:       return "chart.bar.fill"
         case .productLookup:   return "magnifyingglass.circle.fill"
-        case .stockIn:         return "plus.viewfinder"
+        case .transfer:        return "arrow.left.arrow.right"
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
         case .notify:          return "paperplane.fill"
-        case .rfidStock:       return "sensor.tag.radiowaves.forward.fill"
         }
     }
 }
@@ -66,13 +64,9 @@ struct InventoryControllerHomeView: View {
             }
 
             Section {
-                Label(InventoryDestination.stockIn.rawValue,
-                      systemImage: InventoryDestination.stockIn.icon)
-                    .tag(InventoryDestination.stockIn)
-                
-                Label(InventoryDestination.rfidStock.rawValue,
-                      systemImage: InventoryDestination.rfidStock.icon)
-                    .tag(InventoryDestination.rfidStock)
+                Label(InventoryDestination.transfer.rawValue,
+                      systemImage: InventoryDestination.transfer.icon)
+                    .tag(InventoryDestination.transfer)
             }
 
             Section {
@@ -112,16 +106,14 @@ struct InventoryControllerHomeView: View {
             dashboardView
         case .productLookup:
             ProductLookupView()
-        case .stockIn:
-            InventoryBarcodeScannerView(initialMode: .stockIn)
+        case .transfer:
+            InventoryTransferView()
         case .cycleCounts:
             CycleCountView()
         case .auditReconcile:
             StockReconciliationView()
         case .notify:
             NotifyBoutiqueManagerView()
-        case .rfidStock:
-            RFIDStockManagementView()
         }
     }
 

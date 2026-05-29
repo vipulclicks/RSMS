@@ -11,6 +11,7 @@ import SwiftUI
 struct ProductLookupView: View {
 
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var searchText = ""
     @State private var selectedProduct: Product? = nil
     @State private var appeared = false
@@ -30,15 +31,28 @@ struct ProductLookupView: View {
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    headerSection
-                    kpiSection
-                    searchBar
-                    productList
+            if horizontalSizeClass == .regular {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerSection
+                        kpiSection
+                        searchBar
+                        productList
+                    }
+                    .padding(24)
+                    .padding(.bottom, 20)
                 }
-                .padding(24)
-                .padding(.bottom, 20)
+            } else {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerSection
+                        kpiSection
+                        searchBar
+                        productList
+                    }
+                    .padding(24)
+                    .padding(.bottom, 20)
+                }
             }
         }
         .navigationTitle("Product Lookup")
@@ -53,7 +67,7 @@ struct ProductLookupView: View {
                 }
             }
         }
-        .sheet(item: $selectedProduct) { product in
+        .fullScreenCover(item: $selectedProduct) { product in
             ProductDetailSheet(
                 product: product,
                 stockItem: stockItem(for: product)
@@ -61,15 +75,22 @@ struct ProductLookupView: View {
         }
         .sheet(isPresented: $showScanner) {
             NavigationStack {
-                InventoryBarcodeScannerView(initialMode: .verification)
-                    .navigationTitle("Scan to Find")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Close") { showScanner = false }
-                                .foregroundStyle(RSMSTheme.gold)
-                        }
+                InventoryBarcodeScannerView(initialMode: .verification) { product in
+                    // When a product is found via barcode, dismiss scanner and show detail sheet
+                    showScanner = false
+                    // Slight delay to allow scanner sheet to dismiss before presenting full screen cover
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        selectedProduct = product
                     }
+                }
+                .navigationTitle("Scan to Find")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close") { showScanner = false }
+                            .foregroundStyle(RSMSTheme.gold)
+                    }
+                }
             }
             .environment(appVM)
         }
@@ -126,7 +147,7 @@ struct ProductLookupView: View {
             Text("Product Lookup")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Search by name, SKU, brand, or category")
+            Text("Search and browse all products with live stock status")
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
@@ -339,116 +360,212 @@ struct ProductDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Icon header
-                    ZStack {
-                        Circle()
-                            .fill(RSMSTheme.gold.opacity(0.12))
-                            .frame(width: 80, height: 80)
-                        Image(systemName: "tag.fill")
-                            .font(.system(size: 36))
-                            .foregroundStyle(RSMSTheme.gold)
-                    }
-                    .padding(.top, 8)
+            ZStack {
+                RSMSTheme.background.ignoresSafeArea()
 
-                    VStack(spacing: 4) {
-                        Text(product.name)
-                            .font(.title3.bold())
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                            .multilineTextAlignment(.center)
-                        Text(product.sku)
-                            .font(.subheadline.monospaced())
-                            .foregroundStyle(RSMSTheme.gold)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            .background(RSMSTheme.gold.opacity(0.08))
-                            .clipShape(Capsule())
-                    }
-
-                    // Status badge
-                    Text(statusLabel)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(statusColor)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(statusColor.opacity(0.12))
-                        .clipShape(Capsule())
-
-                    // Product info card
-                    VStack(spacing: 0) {
-                        detailRow("Brand", product.brand)
-                        divider
-                        detailRow("Category", product.category)
-                        if let sub = product.subcategory {
-                            divider
-                            detailRow("Subcategory", sub)
-                        }
-                        divider
-                        detailRow("Price", "\(product.currency) \(Int(product.price).formatted())")
-                        if let col = product.collection {
-                            divider
-                            detailRow("Collection", col)
-                        }
-                        if let mat = product.material {
-                            divider
-                            detailRow("Material", mat)
-                        }
-                    }
-                    .background(RSMSTheme.surfacePrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
-
-                    // Stock info card
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("STOCK DETAILS")
-                            .font(.caption.weight(.semibold))
-                            .tracking(2)
-                            .foregroundStyle(RSMSTheme.gold)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 14)
-
-                        VStack(spacing: 0) {
-                            detailRow("Quantity", "\(qty) units")
-                            if let loc = stockItem?.location {
-                                divider
-                                detailRow("Location", loc.capitalized)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        
+                        // Product image card (premium luxury standard)
+                        if let urlString = product.imageURL, let url = URL(string: urlString) {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                progressPlaceholder
                             }
-                            if let status = stockItem?.status {
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
+                            )
+                        } else {
+                            // High-end placeholder when no image URL exists
+                            fallbackImagePlaceholder
+                        }
+
+                        // Product Title & SKU
+                        VStack(spacing: 6) {
+                            Text(product.brand.uppercased())
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(3)
+                                .foregroundStyle(RSMSTheme.gold)
+
+                            Text(product.name)
+                                .font(.system(size: 24, weight: .bold, design: .serif))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .multilineTextAlignment(.center)
+
+                            Text(product.sku)
+                                .font(.system(.subheadline, design: .monospaced))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 4)
+                                .background(RSMSTheme.surfacePrimary)
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 0.5))
+                        }
+
+                        // Status Badge
+                        HStack {
+                            Text(statusLabel)
+                                .font(.caption.weight(.bold))
+                                .tracking(0.5)
+                                .foregroundStyle(statusColor)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 6)
+                                .background(statusColor.opacity(0.12))
+                                .clipShape(Capsule())
+                        }
+
+                        // Product Details Card
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("SPECIFICATIONS")
+                                .font(.caption.weight(.bold))
+                                .tracking(2)
+                                .foregroundStyle(RSMSTheme.gold)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 14)
+
+                            VStack(spacing: 0) {
+                                detailRow("Category", product.category)
                                 divider
-                                detailRow("Status", status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                            }
-                            if let scanned = stockItem?.lastScannedAt {
+                                if let sub = product.subcategory {
+                                    detailRow("Subcategory", sub)
+                                    divider
+                                }
+                                detailRow("Retail Price", "\(product.currency) \(Int(product.price).formatted())")
                                 divider
-                                detailRow("Last Scanned", scanned.formatted(date: .abbreviated, time: .shortened))
+                                if let col = product.collection {
+                                    detailRow("Collection", col)
+                                    divider
+                                }
+                                if let mat = product.material {
+                                    detailRow("Material", mat)
+                                    divider
+                                }
+                                if let desc = product.description, !desc.isEmpty {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Description")
+                                            .font(.caption)
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                        Text(desc)
+                                            .font(.subheadline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 13)
+                                }
                             }
                         }
-                    }
-                    .background(RSMSTheme.surfacePrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
 
-                    Spacer(minLength: 20)
+                        // Stock Info Card
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("BOUTIQUE INVENTORY STATUS")
+                                .font(.caption.weight(.bold))
+                                .tracking(2)
+                                .foregroundStyle(RSMSTheme.gold)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 14)
+
+                            VStack(spacing: 0) {
+                                detailRow("Current Stock Level", "\(qty) units")
+                                divider
+                                if let loc = stockItem?.location {
+                                    detailRow("Display Location", loc.uppercased())
+                                    divider
+                                }
+                                if let status = stockItem?.status {
+                                    detailRow("Inventory Status", status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                                    divider
+                                }
+                                if let scanned = stockItem?.lastScannedAt {
+                                    detailRow("Last Scanned / Verified", scanned.formatted(date: .abbreviated, time: .shortened))
+                                }
+                            }
+                        }
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+
+                        Spacer(minLength: 40)
+                    }
+                    .padding(24)
                 }
-                .padding(20)
             }
-            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .foregroundStyle(RSMSTheme.gold)
+                    }
+                }
                 ToolbarItem(placement: .principal) {
                     Text("PRODUCT DETAILS")
                         .font(.system(.caption, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(RSMSTheme.gold)
-                }
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Premium Placeholders
+
+    private var progressPlaceholder: some View {
+        ZStack {
+            RSMSTheme.surfacePrimary
+            ProgressView()
+                .tint(RSMSTheme.gold)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 300)
+    }
+
+    private var fallbackImagePlaceholder: some View {
+        ZStack {
+            RSMSTheme.surfacePrimary
+
+            VStack(spacing: 12) {
+                Image(systemName: categoryIcon(product.category))
+                    .font(.system(size: 48))
+                    .foregroundStyle(RSMSTheme.gold.opacity(0.8))
+                
+                Text("Luxury Collection Asset")
+                    .font(.system(.caption, design: .serif))
+                    .tracking(2)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 300)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(RSMSTheme.border, lineWidth: 1)
+        )
+    }
+
+    private func categoryIcon(_ category: String) -> String {
+        switch category.lowercased() {
+        case "handbags", "bags":   return "handbag.fill"
+        case "watches":             return "watch.analog"
+        case "shoes", "heels":      return "shoe.fill"
+        case "jewelry", "jewellery": return "sparkles"
+        case "dresses", "clothing": return "figure.dress.line.vertical.figure"
+        default:                    return "tag.fill"
+        }
     }
 
     private func detailRow(_ label: String, _ value: String) -> some View {

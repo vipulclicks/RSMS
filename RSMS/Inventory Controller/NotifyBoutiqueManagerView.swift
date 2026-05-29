@@ -32,7 +32,6 @@ struct NotifyBoutiqueManagerView: View {
                     headerSection
                     summarySection
                     lowStockAlertSection
-                    monitoringStatusSection
                 }
                 .padding(24)
             }
@@ -272,59 +271,7 @@ struct NotifyBoutiqueManagerView: View {
         .shadow(color: RSMSTheme.textPrimary.opacity(0.06), radius: 10, x: 0, y: 4)
     }
     
-    // MARK: - Smart Monitoring Status
-    
-    private var monitoringStatusSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Smart System Status")
-                .font(.headline.weight(.semibold))
-                .foregroundColor(RSMSTheme.textPrimary)
-                .padding(.top, 10)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    monitoringChip(label: "Real-time Sync", dotColor: RSMSTheme.success, subtitle: "Active")
-                    monitoringChip(label: "Duplicate Prevention", dotColor: RSMSTheme.primary, subtitle: "Enabled")
-                    monitoringChip(label: "Auto Stock Monitoring", dotColor: RSMSTheme.gold, subtitle: "Enabled")
-                    monitoringChip(label: "Inventory DB", dotColor: RSMSTheme.success, subtitle: "Updated Automatically")
-                }
-            }
-        }
-        .opacity(appeared ? 1 : 0)
-    }
-    
-    private func monitoringChip(label: String, dotColor: Color, subtitle: String) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(dotColor)
-                .frame(width: 8, height: 8)
-                .overlay(
-                    Circle()
-                        .fill(dotColor.opacity(0.3))
-                        .frame(width: 16, height: 16)
-                )
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(RSMSTheme.textPrimary)
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundColor(RSMSTheme.textPrimary.opacity(0.5))
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            Capsule()
-                .fill(RSMSTheme.surfaceSecondary.opacity(0.35))
-                .overlay(
-                    Capsule()
-                        .stroke(RSMSTheme.surfaceSecondary.opacity(0.5), lineWidth: 1)
-                )
-        )
-    }
-    
+
     // MARK: - Confirmation Modal
     
     private func successModal(for item: LowStockAlertItem) -> some View {

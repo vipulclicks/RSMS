@@ -4,6 +4,7 @@
 //
 //  ViewModel for the "Stock Reconciliation" screen.
 //  Manages discrepancy items, audit history, and reconciliation state.
+//  All data sourced from Supabase via DataStore — no hardcoded values.
 //
 
 import SwiftUI
@@ -28,10 +29,10 @@ enum ReconciliationStatus: String, CaseIterable {
 // MARK: - Adjustment Reason
 
 enum AdjustmentReason: String, CaseIterable, Identifiable {
-    case damagedItem       = "Damaged item"
-    case theftLoss         = "Theft / loss"
-    case scanningError     = "Scanning error"
-    case supplierIssue     = "Supplier issue"
+    case damagedItem        = "Damaged item"
+    case theftLoss          = "Theft / loss"
+    case scanningError      = "Scanning error"
+    case supplierIssue      = "Supplier issue"
     case misplacedInventory = "Misplaced inventory"
 
     var id: String { rawValue }
@@ -49,12 +50,14 @@ struct DiscrepancyItem: Identifiable, Hashable {
     let lastUpdated: Date
 
     var icon: String {
-        switch product.category {
-        case "Watches":  return "watch.analog"
-        case "Handbags": return "handbag.fill"
-        case "Jewelry":  return "sparkles"
-        case "Heels":    return "shoe.fill"
-        default:         return "shippingbox.fill"
+        switch product.category.lowercased() {
+        case "watches":               return "watch.analog"
+        case "handbags", "leather goods": return "handbag.fill"
+        case "jewelry", "jewellery":  return "sparkles"
+        case "shoes", "heels":        return "shoe.fill"
+        case "accessories":           return "eyeglasses"
+        case "fragrances":            return "bubbles.and.sparkles"
+        default:                      return "shippingbox.fill"
         }
     }
 }
@@ -82,6 +85,11 @@ final class StockReconciliationViewModel {
     var auditEntries: [ReconciliationAuditEntry] = []
     var searchText: String = ""
     var filterStatus: ReconciliationStatus? = nil
+    var isLoading = false
+    var loadError: String? = nil
+
+    // Shrinkage from Supabase shrinkage_analytics table
+    var shrinkageRecord: ShrinkageAnalytics? = nil
 
     // Reconciliation modal state
     var correctedQty: String = ""
@@ -97,24 +105,23 @@ final class StockReconciliationViewModel {
 
     // MARK: - Computed Properties
 
-    var totalDiscrepancies: Int {
-        discrepancyItems.count
-    }
+    var totalDiscrepancies: Int { discrepancyItems.count }
 
     var pendingVerification: Int {
         discrepancyItems.filter { $0.status == .pending || $0.status == .underReview }.count
     }
 
     var resolvedToday: Int {
-        discrepancyItems.filter { $0.status == .resolved }.count
+        let startOfDay = Calendar.current.startOfDay(for: .now)
+        return discrepancyItems.filter { $0.status == .resolved && $0.lastUpdated >= startOfDay }.count
     }
 
-    var auditLogsUpdated: Int {
-        auditEntries.count
-    }
+    var auditLogsUpdated: Int { auditEntries.count }
 
     var filteredItems: [DiscrepancyItem] {
-        var items = discrepancyItems
+        // Exclude resolved items from the mismatches view
+        var items = discrepancyItems.filter { $0.status != .resolved }
+        
         if let filterStatus {
             items = items.filter { $0.status == filterStatus }
         }
@@ -127,23 +134,73 @@ final class StockReconciliationViewModel {
         return items
     }
 
-    // MARK: - Live Data Load
+    // MARK: - Computed shrinkage from live variance data
 
-    var totalStoreInventoryValue: Double = 0.0
-    var shrinkageValue: Double = 0.0
+    var baseInventoryValue: Double = 0.0
+
+    var totalStoreInventoryValue: Double {
+        return baseInventoryValue
+    }
+
+    var shrinkageValue: Double {
+        discrepancyItems.reduce(0.0) { sum, item in
+            guard item.actualQty < item.expectedQty else { return sum }
+            let missing = item.expectedQty - item.actualQty
+            return sum + (Double(missing) * item.product.price)
+        }
+    }
+
     var shrinkagePercentage: Double {
         guard totalStoreInventoryValue > 0 else { return 0 }
         return (shrinkageValue / totalStoreInventoryValue) * 100
     }
 
-    func load(from dataStore: DataStore, storeId: UUID) {
+    // MARK: - Live Data Load (async — fetches from Supabase)
+
+    @MainActor
+    func load(from dataStore: DataStore, storeId: UUID) async {
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
+
+        do {
+            // Fetch all required tables in parallel
+            async let _ = dataStore.fetchInventoryVariances(storeId: storeId)
+            async let _ = dataStore.fetchAuditTrails(storeId: storeId)
+            async let _ = dataStore.fetchShrinkageAnalytics(storeId: storeId)
+            async let _ = dataStore.fetchStockItems(storeId: storeId)
+            async let _ = dataStore.fetchProducts()
+            async let _ = dataStore.fetchUsers()
+
+            // Await all
+            try await dataStore.fetchInventoryVariances(storeId: storeId)
+            try await dataStore.fetchAuditTrails(storeId: storeId)
+            try await dataStore.fetchShrinkageAnalytics(storeId: storeId)
+            try await dataStore.fetchStockItems(storeId: storeId)
+            if dataStore.products.isEmpty {
+                try await dataStore.fetchProducts()
+            }
+            if dataStore.users.isEmpty {
+                try await dataStore.fetchUsers()
+            }
+        } catch {
+            loadError = error.localizedDescription
+        }
+
+        buildDiscrepancyItems(from: dataStore, storeId: storeId)
+        buildAuditEntries(from: dataStore, storeId: storeId)
+        buildShrinkageData(from: dataStore, storeId: storeId)
+    }
+
+    // MARK: - Private builders (run after fetch)
+
+    private func buildDiscrepancyItems(from dataStore: DataStore, storeId: UUID) {
         let variances = dataStore.inventoryVariances.filter { $0.storeId == storeId }
-        
         self.discrepancyItems = variances.compactMap { variance in
             guard let product = dataStore.product(by: variance.productId) else { return nil }
             let rStatus: ReconciliationStatus
             switch variance.status {
-            case .open: rStatus = .pending
+            case .open:          rStatus = .pending
             case .investigating: rStatus = .underReview
             case .resolved, .writeOff: rStatus = .resolved
             }
@@ -157,41 +214,73 @@ final class StockReconciliationViewModel {
                 lastUpdated: variance.reportedAt
             )
         }.sorted { $0.lastUpdated > $1.lastUpdated }
-        
-        let audits = dataStore.auditTrails.filter { $0.storeId == storeId && $0.action.contains("Reconciliation") }
+    }
+
+    private func buildAuditEntries(from dataStore: DataStore, storeId: UUID) {
+        // Filter audit trails relevant to reconciliation actions
+        let reconciliationActions: Set<String> = [
+            "Stock Adjusted", "Variance Reported", "Reconciliation"
+        ]
+        let audits = dataStore.auditTrails.filter { audit in
+            audit.storeId == storeId &&
+            reconciliationActions.contains(where: { audit.action.contains($0) })
+        }
         self.auditEntries = audits.compactMap { audit in
             let user = dataStore.user(by: audit.performedBy)
+            // Parse structured details string: "prev: X | new: Y | reason: Z" if present
+            // Otherwise default — columns will be added later to support richer data
+            let (prev, new, reason) = parseAuditDetails(audit.details)
             return ReconciliationAuditEntry(
                 id: audit.id,
-                userName: user?.fullName ?? "Unknown",
+                userName: user?.fullName ?? "Unknown User",
                 timestamp: audit.timestamp,
                 productName: dataStore.productName(for: audit.entityId),
-                previousQty: 0,
-                updatedQty: 0,
-                reason: .scanningError
+                previousQty: prev,
+                updatedQty: new,
+                reason: reason
             )
         }.sorted { $0.timestamp > $1.timestamp }
-        
-        // Shrinkage calculations
+    }
+
+    private func buildShrinkageData(from dataStore: DataStore, storeId: UUID) {
+        // Most recent shrinkage record for this store
+        self.shrinkageRecord = dataStore.shrinkageAnalytics
+            .filter { $0.storeId == storeId }
+            .sorted { $0.periodEnd > $1.periodEnd }
+            .first
+
+        // Compute live values from current stock and variances
         let storeItems = dataStore.stockItems.filter { $0.storeId == storeId }
-        self.totalStoreInventoryValue = storeItems.reduce(0.0) { sum, stock in
+        self.baseInventoryValue = storeItems.reduce(0.0) { sum, stock in
             guard let product = dataStore.product(by: stock.productId) else { return sum }
             return sum + (Double(stock.quantity) * product.price)
         }
-        
-        self.shrinkageValue = self.discrepancyItems.reduce(0.0) { sum, item in
-            if item.actualQty < item.expectedQty {
-                let missing = item.expectedQty - item.actualQty
-                return sum + (Double(missing) * item.product.price)
+    }
+
+    /// Parses a structured details string written by `reconcile()`.
+    /// Format: "SKU: X · Name | prev: P | new: N | reason: R"
+    private func parseAuditDetails(_ details: String?) -> (Int, Int, AdjustmentReason) {
+        guard let details else { return (0, 0, .scanningError) }
+        var prev = 0, new = 0
+        var reason: AdjustmentReason = .scanningError
+        let parts = details.components(separatedBy: " | ")
+        for part in parts {
+            if part.hasPrefix("prev: "), let v = Int(part.dropFirst(6)) { prev = v }
+            if part.hasPrefix("new: "),  let v = Int(part.dropFirst(5)) { new = v }
+            if part.hasPrefix("reason: ") {
+                let r = String(part.dropFirst(8))
+                reason = AdjustmentReason.allCases.first { $0.rawValue == r } ?? .scanningError
             }
-            return sum
         }
+        return (prev, new, reason)
     }
 
     // MARK: - Actions
 
-    func reconcile(item: DiscrepancyItem) {
-        guard let qty = Int(correctedQty.trimmingCharacters(in: .whitespacesAndNewlines)), let reason = selectedReason else { return }
+    /// Reconciles a discrepancy item. Requires the current user to attribute the change.
+    func reconcile(item: DiscrepancyItem, currentUser: UserProfile?, dataStore: DataStore) {
+        guard let qty = Int(correctedQty.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let reason = selectedReason else { return }
 
         isReconciling = true
         reconciledOldQty = item.actualQty
@@ -204,10 +293,11 @@ final class StockReconciliationViewModel {
             discrepancyItems[index].status = .resolved
         }
 
-        // Add audit entry
+        // Build audit entry using current user from AppViewModel
+        let userName = currentUser?.fullName ?? "Unknown User"
         let entry = ReconciliationAuditEntry(
             id: UUID(),
-            userName: "Emma Leroy",
+            userName: userName,
             timestamp: .now,
             productName: item.product.name,
             previousQty: item.actualQty,
@@ -216,12 +306,23 @@ final class StockReconciliationViewModel {
         )
         auditEntries.insert(entry, at: 0)
 
-        // Reset form
+        // Write structured details to Supabase audit trail
+        if let storeId = currentUser?.storeId {
+            let details = "SKU: \(item.product.sku) · \(item.product.name) | prev: \(item.actualQty) | new: \(qty) | reason: \(reason.rawValue)"
+            dataStore.logAudit(
+                storeId: storeId,
+                action: "Stock Adjusted",
+                entityType: "InventoryVariance",
+                entityId: item.id,
+                performedBy: currentUser!.id,
+                details: details
+            )
+        }
+
         correctedQty = ""
         selectedReason = nil
         adjustmentNotes = ""
         isReconciling = false
-
         showSuccessModal = true
     }
 
