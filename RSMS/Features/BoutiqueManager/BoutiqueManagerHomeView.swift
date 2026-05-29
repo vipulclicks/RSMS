@@ -81,11 +81,6 @@ struct BoutiqueManagerHomeView: View {
         .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
         .navigationTitle("Boutique Manager")
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                logoutButton
-            }
-        }
     }
 
     // MARK: - Detail
@@ -110,17 +105,6 @@ struct BoutiqueManagerHomeView: View {
             StockTransfersView()
         case .planograms:
             StoreLayoutOverviewView()
-        }
-    }
-
-    // MARK: - Logout
-
-    private var logoutButton: some View {
-        Button {
-            viewModel.logout()
-        } label: {
-            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                .foregroundStyle(RSMSTheme.danger)
         }
     }
 }
