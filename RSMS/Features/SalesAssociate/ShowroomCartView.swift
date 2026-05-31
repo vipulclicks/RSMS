@@ -167,7 +167,16 @@ struct ShowroomCartView: View {
             }
         }
         .navigationDestination(isPresented: $navigateToCheckout) {
-            POSCheckoutView()
+            if let cart = currentCart {
+                let checkoutVM = POSCheckoutViewModel(
+                    dataStore: appVM.dataStore,
+                    associateId: getAssociateId(),
+                    storeId: appVM.currentStoreId ?? UUID()
+                )
+                PaymentSummaryView(cart: cart, checkoutVM: checkoutVM)
+            } else {
+                Text("Error: Cart unavailable")
+            }
         }
         .sheet(isPresented: $showDiscountSheet) {
             CartDiscountSheet(
