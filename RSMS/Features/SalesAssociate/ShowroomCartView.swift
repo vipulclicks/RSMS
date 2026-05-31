@@ -666,16 +666,15 @@ struct ShowroomCartView: View {
                 } label: {
                     HStack(spacing: 8) {
                         if isSavingFromViewModel {
-                            ProgressView()
-                                .tint(RSMSTheme.cream)
+                            ProgressView().tint(RSMSTheme.cream)
                         }
                         Text(isSavingText)
-                            .font(.headline)
                     }
-                    .foregroundStyle(RSMSTheme.cream)
+                    .font(.headline)
+                    .foregroundStyle((isEmpty || isSavingFromViewModel) ? RSMSTheme.textTertiary : RSMSTheme.cream)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(isEmpty || isSavingFromViewModel ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                    .background((isEmpty || isSavingFromViewModel) ? RSMSTheme.surfaceTertiary : RSMSTheme.primaryDark)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isEmpty || isSavingFromViewModel)
@@ -691,21 +690,21 @@ struct ShowroomCartView: View {
                 } label: {
                     HStack(spacing: 8) {
                         if isSharing {
-                            ProgressView().tint(RSMSTheme.primary)
+                            ProgressView().tint(RSMSTheme.primaryDark)
                         } else {
                             Image(systemName: "square.and.arrow.up")
                             Text("Share")
                         }
                     }
                     .font(.headline)
-                    .foregroundStyle(isEmpty || isSharing ? RSMSTheme.textTertiary : RSMSTheme.primary)
+                    .foregroundStyle((isEmpty || isSharing) ? RSMSTheme.textTertiary : RSMSTheme.primaryDark)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
                     .background(Color.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isEmpty || isSharing ? RSMSTheme.border : RSMSTheme.primary, lineWidth: 1)
+                            .stroke((isEmpty || isSharing) ? RSMSTheme.border : RSMSTheme.primaryDark, lineWidth: 1)
                     )
                 }
                 .disabled(isEmpty || isSharing)
@@ -718,14 +717,14 @@ struct ShowroomCartView: View {
                 } label: {
                     Text("Continue Browsing")
                         .font(.headline)
-                        .foregroundStyle(RSMSTheme.primary)
+                        .foregroundStyle(RSMSTheme.primaryDark)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(RSMSTheme.primary, lineWidth: 1)
+                                .stroke(RSMSTheme.primaryDark, lineWidth: 1)
                         )
                 }
                 
@@ -743,7 +742,7 @@ struct ShowroomCartView: View {
                     .foregroundStyle((isEmpty || isCheckoutBlocked) ? RSMSTheme.textTertiary : RSMSTheme.cream)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background((isEmpty || isCheckoutBlocked) ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                    .background((isEmpty || isCheckoutBlocked) ? RSMSTheme.surfaceTertiary : RSMSTheme.primaryDark)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isEmpty || isCheckoutBlocked)

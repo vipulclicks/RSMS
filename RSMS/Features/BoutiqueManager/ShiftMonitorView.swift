@@ -209,10 +209,12 @@ struct ShiftMonitorView: View {
 
     // MARK: - Shifts List
     private var shiftsList: some View {
-        let columns = [
-            GridItem(.flexible(), spacing: 24),
-            GridItem(.flexible(), spacing: 24)
-        ]
+        let columns = horizontalSizeClass == .compact
+            ? [GridItem(.flexible(), spacing: 24)]
+            : [
+                GridItem(.flexible(), spacing: 24),
+                GridItem(.flexible(), spacing: 24)
+            ]
         
         return VStack(spacing: 20) {
             if filteredShifts.isEmpty {

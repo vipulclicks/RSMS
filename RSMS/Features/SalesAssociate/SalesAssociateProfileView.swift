@@ -20,7 +20,7 @@ struct SalesAssociateProfileView: View {
         ZStack {
             RSMSTheme.backgroundGradient.ignoresSafeArea()
             
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     if let user = appViewModel.currentUser {
                         // 1. Profile Header Card
@@ -33,7 +33,7 @@ struct SalesAssociateProfileView: View {
                         performanceSnapshotSection()
                         
                         // 3. Commission & Goals Progress
-                        commissionAndGoalsSection()
+                        commissionAndGoalsSection(user: user)
                         
                         // 4. Personal Information (Grouped List Style)
                         personalInformationSection(user: user)
@@ -43,6 +43,7 @@ struct SalesAssociateProfileView: View {
                         
                         // 6. Sign Out Button
                         signOutButton()
+                        
                     } else {
                         ContentUnavailableView("User Session Expired", systemImage: "person.crop.circle.badge.exclamationmark")
                     }
@@ -51,6 +52,9 @@ struct SalesAssociateProfileView: View {
                 .padding(.vertical, 24)
                 .frame(maxWidth: horizontalSizeClass == .regular ? 650 : .infinity)
                 .frame(maxWidth: .infinity)
+            }
+            .refreshable {
+                await refreshData()
             }
         }
         .navigationTitle("Profile")
@@ -63,15 +67,39 @@ struct SalesAssociateProfileView: View {
         } message: {
             Text("Are you sure you want to sign out? Your current session will be cleared securely.")
         }
+        .task {
+            await refreshData()
+        }
         .onAppear {
-            if let user = appViewModel.currentUser {
-                viewModel.setup(
-                    dataStore: appViewModel.dataStore,
-                    staffId: user.id,
-                    storeId: user.storeId ?? UUID()
-                )
+            // Re-fetch shifts each time the tab appears (lightweight)
+            // so the shift banner stays in sync even if another view
+            // has already loaded older data into the DataStore cache.
+            Task {
+                guard let user = appViewModel.currentUser else { return }
+                try? await appViewModel.dataStore.fetchStaffShifts(storeId: user.storeId ?? UUID())
             }
         }
+    }
+    
+    // MARK: - Actions
+    
+    private func refreshData() async {
+        guard let user = appViewModel.currentUser else { return }
+        let storeId = user.storeId ?? UUID()
+        
+        async let shifts: ()? = try? appViewModel.dataStore.fetchStaffShifts(storeId: storeId)
+        async let goals: ()? = try? appViewModel.dataStore.fetchSalesGoals(storeId: storeId)
+        async let comms: ()? = try? appViewModel.dataStore.fetchCommissions(staffId: user.id)
+        async let txns: ()? = try? appViewModel.dataStore.fetchTransactions(storeId: storeId)
+        async let users: ()? = try? appViewModel.dataStore.fetchUsers(storeId: storeId)
+        
+        let _ = await (shifts, goals, comms, txns, users)
+        
+        viewModel.setup(
+            dataStore: appViewModel.dataStore,
+            staffId: user.id,
+            storeId: storeId
+        )
     }
     
     // MARK: - Subviews
@@ -138,7 +166,21 @@ struct SalesAssociateProfileView: View {
     }
     
     private func shiftTimingBanner() -> some View {
-        HStack(spacing: 12) {
+        // Compute shift directly from the DataStore (reactive via @Observable)
+        // instead of a cached snapshot in the ViewModel
+        let currentShiftText: String = {
+            guard let user = appViewModel.currentUser else { return "Not Assigned" }
+            let todayShifts = appViewModel.dataStore.staffShifts.filter { shift in
+                shift.staffId == user.id && Calendar.current.isDateInToday(shift.shiftDate)
+            }
+            if let shift = todayShifts.first {
+                let roleName = shift.role.replacingOccurrences(of: "_", with: " ").capitalized
+                return "\(roleName) Shift (\(shift.startTime) - \(shift.endTime))"
+            }
+            return "Not Assigned"
+        }()
+        
+        return HStack(spacing: 12) {
             Image(systemName: "clock.fill")
                 .font(.title2)
                 .foregroundStyle(RSMSTheme.primary)
@@ -148,7 +190,7 @@ struct SalesAssociateProfileView: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(RSMSTheme.textSecondary)
                 
-                Text(viewModel.shiftTiming)
+                Text(currentShiftText)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -230,7 +272,19 @@ struct SalesAssociateProfileView: View {
     }
     
     private func personalInformationSection(user: UserProfile) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let department: String = {
+            if user.role == .salesAssociate { return "Sales Floor" }
+            return user.role.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+        }()
+        
+        let reportingManager: String = {
+            if let storeId = user.storeId, let manager = appViewModel.dataStore.users.first(where: { $0.storeId == storeId && $0.role == .boutiqueManager }) {
+                return manager.fullName
+            }
+            return "Pending Assignment"
+        }()
+        
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Personal Information")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
@@ -240,9 +294,9 @@ struct SalesAssociateProfileView: View {
                 Divider().background(RSMSTheme.divider)
                 infoRow(label: "Phone", value: user.phone ?? "Not Provided", icon: "phone")
                 Divider().background(RSMSTheme.divider)
-                infoRow(label: "Department", value: viewModel.department, icon: "briefcase")
+                infoRow(label: "Department", value: department, icon: "briefcase")
                 Divider().background(RSMSTheme.divider)
-                infoRow(label: "Reporting Manager", value: viewModel.reportingManager, icon: "person.2")
+                infoRow(label: "Reporting Manager", value: reportingManager, icon: "person.2")
             }
             .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
@@ -271,8 +325,32 @@ struct SalesAssociateProfileView: View {
         .padding(.vertical, 14)
     }
     
-    private func commissionAndGoalsSection() -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func commissionAndGoalsSection(user: UserProfile) -> some View {
+        let totalCommissions = appViewModel.dataStore.commissions.filter { $0.staffId == user.id && $0.status == .approved }.reduce(0.0) { $0 + $1.amount }
+        let commissionEarned = totalCommissions > 0 ? "₹\(Int(totalCommissions).formatted())" : "₹0"
+        
+        let commissionApprover: String = {
+            if let storeId = user.storeId, let manager = appViewModel.dataStore.users.first(where: { $0.storeId == storeId && $0.role == .boutiqueManager }) {
+                return manager.fullName
+            }
+            return "Pending Assignment"
+        }()
+        
+        let salesGoalsTarget: String
+        let salesGoalsAchieved: String
+        let salesGoalsPercentage: Double
+        
+        if let monthlyGoal = appViewModel.dataStore.salesGoals.first(where: { $0.staffId == user.id && $0.period == .monthly }) {
+            salesGoalsTarget = "₹\(Int(monthlyGoal.targetAmount).formatted())"
+            salesGoalsAchieved = "₹\(Int(monthlyGoal.achievedAmount).formatted())"
+            salesGoalsPercentage = monthlyGoal.targetAmount > 0 ? (monthlyGoal.achievedAmount / monthlyGoal.targetAmount) : 0.0
+        } else {
+            salesGoalsTarget = "₹0"
+            salesGoalsAchieved = "₹0"
+            salesGoalsPercentage = 0.0
+        }
+        
+        return VStack(alignment: .leading, spacing: 12) {
             Text("Compensation & Targets")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
@@ -288,7 +366,7 @@ struct SalesAssociateProfileView: View {
                         Text("Commission Earned")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
-                        Text(viewModel.commissionEarned)
+                        Text(commissionEarned)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                     }
@@ -298,7 +376,7 @@ struct SalesAssociateProfileView: View {
                         Text("Approved By")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
-                        Text(viewModel.commissionApprover)
+                        Text(commissionApprover)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                     }
@@ -313,7 +391,7 @@ struct SalesAssociateProfileView: View {
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(RSMSTheme.textSecondary)
                         Spacer()
-                        Text("\(Int(viewModel.salesGoalsPercentage * 100))%")
+                        Text("\(Int(salesGoalsPercentage * 100))%")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(RSMSTheme.primary)
                     }
@@ -325,17 +403,17 @@ struct SalesAssociateProfileView: View {
                                .frame(height: 10)
                             Capsule()
                                .fill(RSMSTheme.primaryGradient)
-                               .frame(width: geo.size.width * viewModel.salesGoalsPercentage, height: 10)
+                               .frame(width: geo.size.width * salesGoalsPercentage, height: 10)
                         }
                     }
                     .frame(height: 10)
                     
                     HStack {
-                        Text("\(viewModel.salesGoalsAchieved) achieved")
+                        Text("\(salesGoalsAchieved) achieved")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                         Spacer()
-                        Text("Target: \(viewModel.salesGoalsTarget)")
+                        Text("Target: \(salesGoalsTarget)")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }

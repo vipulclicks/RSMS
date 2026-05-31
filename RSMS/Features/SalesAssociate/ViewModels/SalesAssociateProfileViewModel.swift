@@ -12,24 +12,23 @@ import Foundation
 @Observable
 final class SalesAssociateProfileViewModel {
     // MARK: - Mock Performance Statistics
-    var todaySales: String = "₹2,34,500"
-    var appointmentsCount: Int = 4
-    
+    var todaySales: String = "₹0"
+    var appointmentsCount: Int = 0
     // Lists for drill-down views
     var todayTransactionsList: [Transaction] = []
     var todayAppointmentsList: [Appointment] = []
     
     // MARK: - User Information Extensions
-    var department: String = "High Jewelry & Haute Couture"
-    var shiftTiming: String = "Morning Shift (09:00 AM - 06:00 PM)"
-    var reportingManager: String = "Sophie Martin"
+    var department: String = "—"
+    var shiftTiming: String = "Not Assigned"
+    var reportingManager: String = "Loading..."
     
     // MARK: - Commission & Goals
-    var commissionEarned: String = "₹45,200"
-    var commissionApprover: String = "Sophie Martin"
-    var salesGoalsAchieved: String = "₹8,50,000"
-    var salesGoalsTarget: String = "₹10,00,000"
-    var salesGoalsPercentage: Double = 0.85
+    var commissionEarned: String = "₹0"
+    var commissionApprover: String = "Loading..."
+    var salesGoalsAchieved: String = "₹0"
+    var salesGoalsTarget: String = "₹0"
+    var salesGoalsPercentage: Double = 0.0
 
     func setup(dataStore: DataStore, staffId: UUID, storeId: UUID) {
         // Today's Sales
@@ -56,7 +55,7 @@ final class SalesAssociateProfileViewModel {
         self.appointmentsCount = todayAppointments.filter { $0.status == .completed }.count
 
         // Shift Timing from staff shifts
-        if let shift = dataStore.staffShifts.first(where: { $0.staffId == staffId }) {
+        if let shift = dataStore.staffShifts.first(where: { $0.staffId == staffId && Calendar.current.isDateInToday($0.shiftDate) }) {
             let roleName = shift.role.replacingOccurrences(of: "_", with: " ").capitalized
             self.shiftTiming = "\(roleName) Shift (\(shift.startTime) - \(shift.endTime))"
         } else {

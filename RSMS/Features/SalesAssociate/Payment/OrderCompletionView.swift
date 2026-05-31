@@ -37,6 +37,8 @@ struct OrderCompletionView: View {
                 }
                 
                 VStack(spacing: 16) {
+                    detailRow(title: "Payment ID", value: paymentId)
+                    detailRow(title: "Date", value: Date().formatted(date: .abbreviated, time: .shortened))
                     detailRow(title: "Client", value: client.fullName)
                     detailRow(title: "Amount Paid", value: "₹\(Int(order.finalAmount).formatted())")
                 }

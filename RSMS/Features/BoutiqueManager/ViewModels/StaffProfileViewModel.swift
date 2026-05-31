@@ -11,6 +11,8 @@ class StaffProfileViewModel {
     var isLoading = false
     var errorMessage: String?
     
+    var shiftTiming: String = "Not Assigned"
+    
     init(staff: UserProfile) {
         self.staff = staff
     }
@@ -26,10 +28,19 @@ class StaffProfileViewModel {
             // or maybe it does. Let's fetch transactions first which fetch commissions internally?
             try await dataStore.fetchTransactions(storeId: staff.storeId ?? UUID())
             try await dataStore.fetchCommissions(staffId: staff.id)
+            try await dataStore.fetchStaffShifts(storeId: staff.storeId ?? UUID())
             
             // Filter data for this staff
             self.salesGoals = dataStore.salesGoals.filter { $0.staffId == staff.id }
             self.commissions = dataStore.commissions.filter { $0.staffId == staff.id }
+            
+            // Current Shift
+            if let shift = dataStore.staffShifts.first(where: { $0.staffId == staff.id && Calendar.current.isDateInToday($0.shiftDate) }) {
+                let roleName = shift.role.replacingOccurrences(of: "_", with: " ").capitalized
+                self.shiftTiming = "\(roleName) Shift (\(shift.startTime) - \(shift.endTime))"
+            } else {
+                self.shiftTiming = "Not Assigned"
+            }
             
         } catch {
             print("StaffProfileViewModel load error: \(error)")

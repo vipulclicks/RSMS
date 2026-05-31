@@ -403,9 +403,11 @@ final class ProductCatalogViewModel {
 
     /// Returns the cart items from the DataStore for the active client's curated cart.
     /// This is the single source of truth — no separate transient array.
+    /// Returns the cart items from the DataStore for the active client's curated cart.
+    /// This is the single source of truth — no separate transient array.
     var cartItems: [CartSelectionItem] {
         guard let client = activeClient else { return [] }
-        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated }) else { return [] }
+        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated && $0.status == .active }) else { return [] }
         return dataStore.universalCartItems
             .filter { $0.cartId == cart.id }
             .compactMap { item in
@@ -417,7 +419,7 @@ final class ProductCatalogViewModel {
     /// Checks whether a product is in the client's curated cart by reading DataStore directly.
     func isInCart(_ productId: UUID) -> Bool {
         guard let client = activeClient else { return false }
-        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated }) else { return false }
+        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated && $0.status == .active }) else { return false }
         return dataStore.universalCartItems.contains { $0.cartId == cart.id && $0.productId == productId }
     }
 
@@ -444,7 +446,7 @@ final class ProductCatalogViewModel {
     
     var activeUniversalCart: UniversalCart? {
         guard let client = activeClient else { return nil }
-        return dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated })
+        return dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated && $0.status == .active })
     }
 
     func updateCartDiscount(_ discount: CartDiscount?) async {
