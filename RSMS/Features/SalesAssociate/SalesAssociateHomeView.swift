@@ -8,7 +8,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case appointments = "Appointments"
 //    case selling      = "Assisted Selling"
 //    case pos          = "POS & Checkout"
-//    case omnichannel  = "Omnichannel"
+    case omnichannel  = "Omnichannel"
     case profile      = "Profile"
 
     var id: String { rawValue }
@@ -20,7 +20,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
         case .appointments: return "calendar"
 //        case .selling:      return "wand.and.stars"
 //        case .pos:          return "cart.fill"
-//        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
+        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
         case .profile:      return "person.circle.fill"
         }
     }
@@ -132,10 +132,8 @@ struct SalesAssociateHomeView: View {
 
                         QuickActionsSection(
                             columnsCount: 2,
-                            onNewClient: { showNewClientSheet = true }
-//                            onNewSale: { navigationPath.append("POS") },
-//                            onLookBuilder: { navigationPath.append("LookBuilder") },
-//                            onOmnichannel: { navigationPath.append("Omnichannel") }
+                            onNewClient: { showNewClientSheet = true },
+                            onOmnichannel: { navigationPath.append("Omnichannel") }
                         )
                     }
                     .padding(.bottom, 32)
@@ -214,8 +212,8 @@ struct SalesAssociateHomeView: View {
 //                    AssistedSellingView()
 //                case .pos:
 //                    POSCheckoutView()
-//                case .omnichannel:
-//                    OmnichannelView()
+            case .omnichannel:
+                OmnichannelView()
             case .profile:
                 SalesAssociateProfileView()
             case .none:
@@ -243,8 +241,8 @@ struct SalesAssociateHomeView: View {
 //                    POSCheckoutView()
 //                case "LookBuilder":
 //                    LookBuilderView()
-//                case "Omnichannel":
-//                    OmnichannelView()
+                case "Omnichannel":
+                    OmnichannelView()
                 case "Profile":
                     SalesAssociateProfileView()
                 default:
@@ -289,10 +287,8 @@ struct SalesAssociateHomeView: View {
                                 
                                 QuickActionsSection(
                                     columnsCount: 4,
-                                    onNewClient: { showNewClientSheet = true }
-//                                    onNewSale: { navigationPath.append("POS") },
-//                                    onLookBuilder: { navigationPath.append("LookBuilder") },
-//                                    onOmnichannel: { navigationPath.append("Omnichannel") }
+                                    onNewClient: { showNewClientSheet = true },
+                                    onOmnichannel: { navigationPath.append("Omnichannel") }
                                 )
                             }
                             .padding(.horizontal, 24)
@@ -555,9 +551,7 @@ private struct QuickActionsSection: View {
 
     let columnsCount: Int
     let onNewClient: () -> Void
-//    let onNewSale: () -> Void
-//    let onLookBuilder: () -> Void
-//    let onOmnichannel: () -> Void
+    let onOmnichannel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -587,13 +581,13 @@ private struct QuickActionsSection: View {
 //                    color: RSMSTheme.warning,
 //                    onTap: onLookBuilder
 //                )
-//                
-//                QuickActionCard(
-//                    icon: "shippingbox.and.arrow.backward",
-//                    label: "Omnichannel",
-//                    color: RSMSTheme.success,
-//                    onTap: onOmnichannel
-//                )
+                
+                QuickActionCard(
+                    icon: "shippingbox.and.arrow.backward",
+                    label: "Omnichannel",
+                    color: RSMSTheme.success,
+                    onTap: onOmnichannel
+                )
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 20)
