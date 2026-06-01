@@ -282,21 +282,20 @@ struct EditSalesAssociateProfileView: View {
             var finalAvatarURL = avatarURL
             
             if let pickedImage = uiImage {
-                // Save locally first to guarantee instant offline persistence
-                if let localURL = saveImageLocally(image: pickedImage) {
-                    finalAvatarURL = localURL.absoluteString
-                }
+                // Save locally first so we always have a fallback
+                let localURL = saveImageLocally(image: pickedImage)
                 
-                // Attempt Supabase cloud upload
+                // Try Supabase cloud upload — this URL works on ALL devices
                 if let cloudURL = await uploadToSupabase(image: pickedImage) {
-                    finalAvatarURL = cloudURL
+                    // Append cache-bust so AsyncImage re-fetches after update
+                    finalAvatarURL = cloudURL + "?t=\(Int(Date().timeIntervalSince1970))"
+                    print("[EditProfile] ✅ Using cloud URL: \(finalAvatarURL)")
+                } else if let localURL = localURL {
+                    // Cloud failed — use local file URL (works on this device only)
+                    finalAvatarURL = localURL.absoluteString
+                    print("[EditProfile] ⚠️ Cloud upload failed, using local URL: \(finalAvatarURL)")
                 }
             }
-            
-            // Save local overrides in UserDefaults for robust local/offline persistence
-            let idStr = profile.id.uuidString.lowercased()
-            UserDefaults.standard.set(phone.trimmingCharacters(in: .whitespaces), forKey: "phone_\(idStr)")
-            UserDefaults.standard.set(finalAvatarURL, forKey: "avatar_\(idStr)")
 
             let updatedProfile = UserProfile(
                 id: profile.id,
