@@ -2,23 +2,47 @@
 //  ProductLookupView.swift
 //  RSMS
 //
-//  Search and browse all products with live stock status.
-//  Scan a barcode to jump directly to a product's detail card.
+//  Unified Lookup & Stock In hub.
+//  Tab 1 — Product Lookup: search / barcode-scan products with live stock status.
+//  Tab 2 — ASN Matching: receive inventory against an Advanced Shipment Notice.
 //
 
 import SwiftUI
+import VisionKit
+
+// MARK: - Tab Selection
+
+enum LookupTab: String, CaseIterable {
+    case productLookup = "Product Lookup"
+    case asnMatching   = "ASN Matching"
+
+    var icon: String {
+        switch self {
+        case .productLookup: return "magnifyingglass"
+        case .asnMatching:   return "shippingbox.fill"
+        }
+    }
+}
+
+// MARK: - ProductLookupView (Hub)
 
 struct ProductLookupView: View {
 
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @State private var selectedTab: LookupTab = .productLookup
+
+    // Product Lookup state
     @State private var searchText = ""
     @State private var selectedProduct: Product? = nil
     @State private var appeared = false
-
-    // Inline barcode scan for quick lookup
-    @State private var rawScannedCode: String? = nil
     @State private var showScanner = false
+
+    // ASN Matching state
+    @State private var asnVM = ASNMatchingViewModel()
+    @State private var rawScannedASN: String? = nil
+    @State private var showASNScanner = false
 
     private let kpiColumns = [
         GridItem(.flexible()),
@@ -31,42 +55,52 @@ struct ProductLookupView: View {
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
-            if horizontalSizeClass == .regular {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        headerSection
-                        kpiSection
-                        searchBar
-                        productList
-                    }
-                    .padding(24)
-                    .padding(.bottom, 20)
-                }
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        headerSection
-                        kpiSection
-                        searchBar
-                        productList
-                    }
-                    .padding(24)
-                    .padding(.bottom, 20)
+            VStack(spacing: 0) {
+                // ── Segmented Tab Picker ──────────────────────────────────
+                segmentedPicker
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+
+                // ── Tab Content ──────────────────────────────────────────
+                if selectedTab == .productLookup {
+                    productLookupTab
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .leading).combined(with: .opacity),
+                            removal:   .move(edge: .leading).combined(with: .opacity)
+                        ))
+                } else {
+                    asnMatchingTab
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal:   .move(edge: .trailing).combined(with: .opacity)
+                        ))
                 }
             }
         }
-        .navigationTitle("Product Lookup")
+        .navigationTitle("Lookup & Stock In")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showScanner.toggle()
-                } label: {
-                    Image(systemName: "barcode.viewfinder")
-                        .foregroundStyle(RSMSTheme.gold)
+            if selectedTab == .productLookup {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showScanner.toggle()
+                    } label: {
+                        Image(systemName: "barcode.viewfinder")
+                            .foregroundStyle(RSMSTheme.gold)
+                    }
+                }
+            } else {
+                // ASN back button when in review state
+                if asnVM.state == .matched {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Back") { asnVM.reset() }
+                            .foregroundStyle(RSMSTheme.gold)
+                    }
                 }
             }
         }
+        // ── Product Lookup sheets ────────────────────────────────────────
         .fullScreenCover(item: $selectedProduct) { product in
             ProductDetailSheet(
                 product: product,
@@ -76,9 +110,7 @@ struct ProductLookupView: View {
         .sheet(isPresented: $showScanner) {
             NavigationStack {
                 InventoryBarcodeScannerView(initialMode: .verification) { product in
-                    // When a product is found via barcode, dismiss scanner and show detail sheet
                     showScanner = false
-                    // Slight delay to allow scanner sheet to dismiss before presenting full screen cover
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         selectedProduct = product
                     }
@@ -94,6 +126,31 @@ struct ProductLookupView: View {
             }
             .environment(appVM)
         }
+        // ── ASN Scanner sheet ────────────────────────────────────────────
+        .onChange(of: rawScannedASN) { _, code in
+            guard let code else { return }
+            rawScannedASN = nil
+            asnVM.asnQuery = code
+            Task {
+                if let storeId = appVM.currentStoreId {
+                    await asnVM.fetchAndSearch(in: appVM.dataStore, storeId: storeId)
+                }
+            }
+            showASNScanner = false
+        }
+        .sheet(isPresented: $showASNScanner) {
+            NavigationStack {
+                asnScannerView
+                    .navigationTitle("Scan ASN Label")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Cancel") { showASNScanner = false }
+                                .foregroundStyle(RSMSTheme.gold)
+                        }
+                    }
+            }
+        }
         .task {
             if appVM.dataStore.products.isEmpty {
                 try? await appVM.dataStore.fetchProducts()
@@ -103,6 +160,77 @@ struct ProductLookupView: View {
             }
             withAnimation(.easeOut(duration: 0.4)) { appeared = true }
         }
+    }
+
+    // MARK: - Segmented Picker
+
+    private var segmentedPicker: some View {
+        HStack(spacing: 4) {
+            ForEach(LookupTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        selectedTab = tab
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: tab.icon)
+                            .font(.system(size: 13, weight: .semibold))
+                        Text(tab.rawValue)
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(selectedTab == tab ? RSMSTheme.background : RSMSTheme.textSecondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        selectedTab == tab
+                            ? RSMSTheme.gold
+                            : Color.clear
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(RSMSTheme.border, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Product Lookup Tab
+
+    private var productLookupTab: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 24) {
+                headerSection
+                kpiSection
+                searchBar
+                productList
+            }
+            .padding(24)
+            .padding(.bottom, 20)
+        }
+    }
+
+    // MARK: - ASN Matching Tab
+
+    private var asnMatchingTab: some View {
+        Group {
+            switch asnVM.state {
+            case .idle, .notFound:
+                asnSearchView
+            case .matched:
+                asnReviewView
+            case .confirmed:
+                asnConfirmedView
+            case .error(let msg):
+                asnErrorView(message: msg)
+            }
+        }
+        .animation(.spring(response: 0.35), value: asnVM.state)
     }
 
     // MARK: - Filtered Products
@@ -338,6 +466,422 @@ struct ProductLookupView: View {
         case "jewelry", "jewellery": return "sparkles"
         case "dresses", "clothing": return "figure.dress.line.vertical.figure"
         default:                    return "tag.fill"
+        }
+    }
+
+    // MARK: - ASN Search View
+
+    private var asnSearchView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Enter ASN Number")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Text("Type or scan the ASN label from the incoming shipment")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+
+                VStack(spacing: 14) {
+                    HStack(spacing: 10) {
+                        TextField("e.g. ASN-2026-05-987654", text: $asnVM.asnQuery)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.characters)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .font(.body.monospaced())
+                            .padding(14)
+                            .background(RSMSTheme.background)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(RSMSTheme.gold.opacity(0.3), lineWidth: 1)
+                            )
+                            .onSubmit { submitASNSearch() }
+
+                        Button(action: { showASNScanner = true }) {
+                            Image(systemName: "barcode.viewfinder")
+                                .font(.title3.weight(.medium))
+                                .foregroundStyle(RSMSTheme.background)
+                                .frame(width: 50, height: 50)
+                                .background(RSMSTheme.gold)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
+                    Button(action: submitASNSearch) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                            Text("Search Shipment")
+                                .font(.headline)
+                        }
+                        .foregroundStyle(RSMSTheme.background)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            asnVM.asnQuery.trimmingCharacters(in: .whitespaces).isEmpty
+                                ? RSMSTheme.gold.opacity(0.4)
+                                : RSMSTheme.gold
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(asnVM.asnQuery.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                .padding(20)
+                .background(RSMSTheme.surfacePrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
+                )
+
+                if asnVM.state == .notFound {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(RSMSTheme.warning)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Shipment Not Found")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("No in-transit ASN matches \"\(asnVM.asnQuery)\" for this store.")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                        }
+                    }
+                    .padding(16)
+                    .background(RSMSTheme.warning.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(RSMSTheme.warning.opacity(0.3), lineWidth: 1)
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .padding(24)
+        }
+    }
+
+    // MARK: - ASN Review View
+
+    private var asnReviewView: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if let movement = asnVM.matchedMovement {
+                    asnMovementHeaderCard(movement)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("LINE ITEMS")
+                            .font(.caption.weight(.bold))
+                            .tracking(2)
+                            .foregroundStyle(RSMSTheme.gold)
+                        Spacer()
+                        Text("\(asnVM.lineItems.count) products")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+
+                    VStack(spacing: 0) {
+                        ForEach(Array(asnVM.lineItems.enumerated()), id: \.element.id) { index, lineItem in
+                            asnLineItemRow(lineItem)
+                            if index < asnVM.lineItems.count - 1 {
+                                Rectangle()
+                                    .fill(RSMSTheme.divider)
+                                    .frame(height: 0.5)
+                                    .padding(.horizontal, 16)
+                            }
+                        }
+                    }
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(RSMSTheme.border, lineWidth: 1)
+                    )
+                }
+
+                Button {
+                    Task {
+                        if let storeId = appVM.currentStoreId, let user = appVM.currentUser {
+                            await asnVM.receive(
+                                dataStore: appVM.dataStore,
+                                user: user,
+                                storeId: storeId
+                            )
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        if asnVM.isSubmitting {
+                            ProgressView().tint(RSMSTheme.background)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("Confirm Receipt")
+                                .font(.headline)
+                        }
+                    }
+                    .foregroundStyle(RSMSTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(RSMSTheme.success)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .disabled(asnVM.isSubmitting)
+            }
+            .padding(24)
+        }
+    }
+
+    private func asnMovementHeaderCard(_ movement: InventoryMovement) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(movement.asnNumber ?? "—")
+                        .font(.title3.bold().monospaced())
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Text(movement.type.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
+                        .font(.caption.weight(.semibold))
+                        .tracking(1)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+                Spacer()
+                Text("IN TRANSIT")
+                    .font(.caption2.weight(.bold))
+                    .tracking(1.5)
+                    .foregroundStyle(RSMSTheme.warning)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(RSMSTheme.warning.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+
+            Rectangle().fill(RSMSTheme.divider).frame(height: 0.5)
+
+            HStack(spacing: 24) {
+                asnInfoChip(label: "SOURCE", value: movement.sourceId)
+                asnInfoChip(label: "EXPECTED", value: "\(movement.itemsExpected ?? asnVM.lineItems.count) items")
+                if let shipped = movement.shippedAt {
+                    asnInfoChip(label: "SHIPPED", value: shipped.formatted(date: .abbreviated, time: .omitted))
+                }
+            }
+        }
+        .padding(18)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(RSMSTheme.gold.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private func asnInfoChip(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .tracking(1)
+                .foregroundStyle(RSMSTheme.textTertiary)
+            Text(value)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .lineLimit(1)
+        }
+    }
+
+    private func asnLineItemRow(_ lineItem: ASNLineItem) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(RSMSTheme.gold.opacity(0.1))
+                    .frame(width: 44, height: 44)
+                Image(systemName: asnCategoryIcon(lineItem.product.category))
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(RSMSTheme.gold)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(lineItem.product.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .lineLimit(1)
+                Text("Expected: \(lineItem.expectedQty) units")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+
+            Spacer()
+
+            HStack(spacing: 0) {
+                Button {
+                    let current = asnVM.receivedQtys[lineItem.id] ?? lineItem.expectedQty
+                    if current > 0 { asnVM.receivedQtys[lineItem.id] = current - 1 }
+                } label: {
+                    Image(systemName: "minus")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .frame(width: 32, height: 32)
+                }
+
+                Text("\(asnVM.receivedQtys[lineItem.id] ?? lineItem.expectedQty)")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(
+                        (asnVM.receivedQtys[lineItem.id] ?? lineItem.expectedQty) == lineItem.expectedQty
+                            ? RSMSTheme.success
+                            : RSMSTheme.warning
+                    )
+                    .frame(minWidth: 28, alignment: .center)
+
+                Button {
+                    let current = asnVM.receivedQtys[lineItem.id] ?? lineItem.expectedQty
+                    asnVM.receivedQtys[lineItem.id] = current + 1
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .frame(width: 32, height: 32)
+                }
+            }
+            .background(RSMSTheme.surfaceSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - ASN Confirmed View
+
+    private var asnConfirmedView: some View {
+        VStack(spacing: 28) {
+            Spacer()
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.success.opacity(0.12))
+                    .frame(width: 100, height: 100)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 56))
+                    .foregroundStyle(RSMSTheme.success)
+                    .symbolEffect(.bounce, value: asnVM.state == .confirmed)
+            }
+            VStack(spacing: 8) {
+                Text("Shipment Received")
+                    .font(.title2.bold())
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("Inventory has been updated in Supabase")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+            VStack(spacing: 0) {
+                asnSummaryRow(label: "ASN Number", value: asnVM.matchedMovement?.asnNumber ?? "—")
+                Rectangle().fill(RSMSTheme.divider).frame(height: 0.5).padding(.horizontal, 16)
+                asnSummaryRow(label: "Items Received", value: "\(asnVM.totalReceived) / \(asnVM.totalExpected)")
+                Rectangle().fill(RSMSTheme.divider).frame(height: 0.5).padding(.horizontal, 16)
+                asnSummaryRow(
+                    label: "Variances Raised",
+                    value: "\(asnVM.varianceCount)",
+                    valueColor: asnVM.varianceCount > 0 ? RSMSTheme.warning : RSMSTheme.success
+                )
+            }
+            .background(RSMSTheme.surfacePrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+            .padding(.horizontal, 24)
+
+            Button("Receive Another Shipment") {
+                withAnimation(.spring(response: 0.35)) { asnVM.reset() }
+            }
+            .font(.headline)
+            .foregroundStyle(RSMSTheme.background)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(RSMSTheme.gold)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 24)
+            Spacer()
+        }
+    }
+
+    private func asnSummaryRow(label: String, value: String, valueColor: Color = RSMSTheme.textPrimary) -> some View {
+        HStack {
+            Text(label).font(.subheadline).foregroundStyle(RSMSTheme.textTertiary)
+            Spacer()
+            Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(valueColor)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    // MARK: - ASN Error View
+
+    private func asnErrorView(message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(RSMSTheme.danger)
+            Text("Something went wrong")
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.textPrimary)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textSecondary)
+                .multilineTextAlignment(.center)
+            Button("Try Again") { asnVM.reset() }
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.gold)
+        }
+        .padding(32)
+    }
+
+    // MARK: - ASN Camera Scanner
+
+    private var asnScannerView: some View {
+        ZStack(alignment: .bottom) {
+            RSMSTheme.background.ignoresSafeArea()
+            VStack(spacing: 0) {
+                if DataScannerViewController.isSupported {
+                    DataScannerRepresentable(scannedCode: $rawScannedASN)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(RSMSTheme.border, lineWidth: 1)
+                        )
+                        .frame(maxHeight: 360)
+                        .padding()
+                } else {
+                    Text("Camera scanner unavailable on this device")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .padding()
+                }
+                Text("Point the camera at the ASN barcode on the shipment label")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                Spacer()
+            }
+        }
+    }
+
+    // MARK: - ASN Helpers
+
+    private func submitASNSearch() {
+        Task {
+            if let storeId = appVM.currentStoreId {
+                await asnVM.fetchAndSearch(in: appVM.dataStore, storeId: storeId)
+            }
+        }
+    }
+
+    private func asnCategoryIcon(_ category: String) -> String {
+        switch category.lowercased() {
+        case "handbags", "leather goods": return "handbag.fill"
+        case "watches":                   return "watch.analog"
+        case "shoes", "heels":            return "shoe.fill"
+        case "jewelry", "jewellery":      return "sparkles"
+        case "accessories":               return "eyeglasses"
+        case "fragrances":                return "bubbles.and.sparkles"
+        default:                          return "shippingbox.fill"
         }
     }
 }
