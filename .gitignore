@@ -93,3 +93,4 @@ temp_*.rb
 debug_*.py
 debug_*.rb
 *.log
+*.py
