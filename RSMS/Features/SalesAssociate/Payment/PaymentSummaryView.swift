@@ -17,6 +17,7 @@ struct PaymentSummaryView: View {
     @State private var completedOrder: Order?
     @State private var successfulPaymentId: String?
     @State private var isProcessing = false
+    @State private var finalCartItems: [UniversalCartItem] = []
     
     // Computed states for validation
     private var cartItems: [UniversalCartItem] {
@@ -90,7 +91,7 @@ struct PaymentSummaryView: View {
                     order: completedOrder,
                     client: client!,
                     paymentId: successfulPaymentId,
-                    cartItems: cartItems
+                    cartItems: finalCartItems
                 )
             } else {
                 ScrollView {
@@ -244,6 +245,13 @@ struct PaymentSummaryView: View {
         }
         .navigationTitle("Payment Summary")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            // Only fetch sales goals so checkout() can update achievedAmount.
+            // Do NOT call checkoutVM.loadData() here — it refetches carts by type,
+            // which would overwrite the universalCarts array and wipe curated carts.
+            let storeId = checkoutVM.currentStoreId
+            try? await appVM.dataStore.fetchSalesGoals(storeId: storeId)
+        }
         .fullScreenCover(isPresented: $showPaymentSheet) {
             if let client = client {
                 RazorpayPaymentSheet(cart: cart, amount: finalAmount, client: client) { paymentId in
@@ -266,16 +274,23 @@ struct PaymentSummaryView: View {
     }
     
     private func handlePaymentSuccess(paymentId: String) {
+        // Capture amounts before checkout clears the cart items
+        let capturedSubtotal = cartSubtotal
+        let capturedDiscount = discountApplied
+        let capturedFinalAmount = finalAmount
+        let capturedItems = cartItems
+        
         // Run Phase 7 & 8: Transaction Persistence and Order Creation
         isProcessing = true
         showPaymentSheet = false
+        finalCartItems = capturedItems
         
         Task {
             do {
                 // We use checkout method to persist transaction and tender
                 try await checkoutVM.checkout(
                     cart: cart,
-                    totalAmount: finalAmount,
+                    totalAmount: capturedFinalAmount,
                     taxAmount: 0, // Simplified for sandbox
                     tenderMethod: .card, // Assumed for razorpay
                     isTaxFree: false,
@@ -294,9 +309,9 @@ struct PaymentSummaryView: View {
                     transactionId: transactionId,
                     cartId: cart.id,
                     status: .confirmed,
-                    totalAmount: cartSubtotal,
-                    discountAmount: discountApplied,
-                    finalAmount: finalAmount,
+                    totalAmount: capturedSubtotal,
+                    discountAmount: capturedDiscount,
+                    finalAmount: capturedFinalAmount,
                     createdAt: Date()
                 )
                 

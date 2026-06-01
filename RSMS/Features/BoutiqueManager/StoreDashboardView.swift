@@ -310,6 +310,41 @@ struct StoreDashboardView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
             }
+            
+            // Show individual associate sales for the period
+            if !dashboardVM.periodAssociateProgress.isEmpty {
+                Divider().overlay(RSMSTheme.divider)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Sales by Associate")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    
+                    ForEach(dashboardVM.periodAssociateProgress) { progress in
+                        HStack {
+                            Text(progress.associateName)
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            Spacer()
+                            if let target = progress.targetAmount {
+                                Text("\(dashboardVM.formatCurrency(progress.achievedAmount)) / \(dashboardVM.formatCurrency(target))")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                            } else {
+                                Text("\(dashboardVM.formatCurrency(progress.achievedAmount))")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                            }
+                        }
+                        
+                        if progress.targetAmount != nil {
+                            ProgressView(value: progress.progressPercentage)
+                                .progressViewStyle(LinearProgressViewStyle(tint: RSMSTheme.primaryDark))
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
         }
         .rsmsCard()
     }
