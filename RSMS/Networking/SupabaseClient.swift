@@ -302,9 +302,9 @@ final class SupabaseClient: Sendable {
         request.httpMethod = "POST"
         applyHeaders(&request)
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-        request.httpBody = data
+        request.setValue("close", forHTTPHeaderField: "Connection")
         
-        let (responseData, response) = try await session.data(for: request)
+        let (responseData, response) = try await session.upload(for: request, from: data)
         try validateResponse(response, data: responseData)
         
         return "\(bucket)/\(path)"
