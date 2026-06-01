@@ -16,7 +16,7 @@ import SwiftUI
 @Observable
 final class DataStore {
 
-    private let api = SupabaseClient.shared
+    let api = SupabaseClient.shared
 
     // ══════════════════════════════════════════════════════════
     // MARK: - Local Caches
@@ -32,7 +32,6 @@ final class DataStore {
     var salesGoals: [SalesGoal] = []
     var commissions: [Commission] = []
     var performanceMetrics: [PerformanceMetric] = []
-    var planograms: [Planogram] = []
     var lookbooks: [Lookbook] = []
     var complianceChecks: [ComplianceCheck] = []
     var clientEvents: [ClientEvent] = []
@@ -49,8 +48,13 @@ final class DataStore {
     // ── POS / Carts ────────────────────────────────────
     var universalCarts: [UniversalCart] = []
     var universalCartItems: [UniversalCartItem] = []
+    
+    // ── Approval Workflow ──────────────────────────────
+    var discountApprovalRequests: [DiscountApprovalRequest] = []
+    var appNotifications: [AppNotification] = []
     var discounts: [Discount] = []
     var transactions: [Transaction] = []
+    var orders: [Order] = []
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
@@ -92,7 +96,21 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
 
     func fetchStores() async throws {
-        stores = try await api.fetch("stores")
+        let fetched: [Store] = try await api.fetch("stores")
+        if fetched.isEmpty {
+            var seeded: [Store] = []
+            for store in Store.all {
+                do {
+                    let created: Store = try await api.insert("stores", record: store)
+                    seeded.append(created)
+                } catch {
+                    print("[RSMS Debug] Error seeding store \(store.name): \(error.localizedDescription)")
+                }
+            }
+            stores = seeded
+        } else {
+            stores = fetched
+        }
     }
 
     func fetchStore(id: UUID) async throws -> Store {
@@ -140,6 +158,24 @@ final class DataStore {
     func updateUser(_ user: UserProfile) async throws {
         try await api.update("user_profiles", id: user.id, record: user)
         if let i = users.firstIndex(where: { $0.id == user.id }) { users[i] = user }
+    }
+    
+    func updateEmployeeProfile(_ profile: UserProfile) async throws {
+        // Explicitly update only the allowed (editable) fields of the user_profiles table.
+        // This avoids write permissions or RLS violations on locked columns like role or store_id.
+        let payload = UserProfileUpdatePayload(
+            phone: profile.phone,
+            avatarURL: profile.avatarURL,
+            updatedAt: Date()
+        )
+        try await api.update("user_profiles", id: profile.id, record: payload)
+        
+        // Ensure local consistency by checking if already fetched
+        if let i = users.firstIndex(where: { $0.id == profile.id }) { 
+            users[i] = profile 
+        } else {
+            users.append(profile)
+        }
     }
 
     func deleteUser(id: UUID) async throws {
@@ -303,30 +339,7 @@ final class DataStore {
         performanceMetrics.removeAll { $0.id == id }
     }
 
-    // ══════════════════════════════════════════════════════════
-    // MARK: - planograms
-    // ══════════════════════════════════════════════════════════
 
-    func fetchPlanograms(storeId: UUID) async throws {
-        planograms = try await api.fetch("planograms", query: ["store_id": "eq.\(storeId)"])
-    }
-
-    @discardableResult
-    func createPlanogram(_ p: Planogram) async throws -> Planogram {
-        let created: Planogram = try await api.insert("planograms", record: p)
-        planograms.append(created)
-        return created
-    }
-
-    func updatePlanogram(_ p: Planogram) async throws {
-        try await api.update("planograms", id: p.id, record: p)
-        if let i = planograms.firstIndex(where: { $0.id == p.id }) { planograms[i] = p }
-    }
-
-    func deletePlanogram(id: UUID) async throws {
-        try await api.delete("planograms", id: id)
-        planograms.removeAll { $0.id == id }
-    }
 
     // ══════════════════════════════════════════════════════════
     // MARK: - lookbooks
@@ -343,9 +356,11 @@ final class DataStore {
         return created
     }
 
-    func updateLookbook(_ l: Lookbook) async throws {
-        try await api.update("lookbooks", id: l.id, record: l)
-        if let i = lookbooks.firstIndex(where: { $0.id == l.id }) { lookbooks[i] = l }
+    @discardableResult
+    func updateLookbook(_ l: Lookbook) async throws -> Lookbook {
+        let updated: Lookbook = try await api.update("lookbooks", id: l.id, record: l)
+        if let i = lookbooks.firstIndex(where: { $0.id == updated.id }) { lookbooks[i] = updated }
+        return updated
     }
 
     func deleteLookbook(id: UUID) async throws {
@@ -453,8 +468,42 @@ final class DataStore {
     }
 
     func deleteClient(id: UUID) async throws {
-        try await api.delete("client_profiles", id: id)
+        // 1. Gather all related items
+        let appts = appointments.filter { $0.clientId == id }
+        let anns = clientAnniversaries.filter { $0.clientId == id }
+        let wishlists = wishlistItems.filter { $0.clientId == id }
+        let ais = aiRecommendations.filter { $0.clientId == id }
+        let invitations = eventInvitations.filter { $0.clientId == id }
+        let carts = universalCarts.filter { $0.clientId == id }
+        let trans = transactions.filter { $0.clientId == id }
+        let orders = omnichannelOrders.filter { $0.clientId == id }
+        let outfits = lookBuilderOutfits.filter { $0.clientId == id }
+
+        // 2. Remove locally for instant UI update
         clients.removeAll { $0.id == id }
+        appointments.removeAll { $0.clientId == id }
+        clientAnniversaries.removeAll { $0.clientId == id }
+        wishlistItems.removeAll { $0.clientId == id }
+        aiRecommendations.removeAll { $0.clientId == id }
+        eventInvitations.removeAll { $0.clientId == id }
+        universalCarts.removeAll { $0.clientId == id }
+        transactions.removeAll { $0.clientId == id }
+        omnichannelOrders.removeAll { $0.clientId == id }
+        lookBuilderOutfits.removeAll { $0.clientId == id }
+
+        // 3. Delete from backend to prevent foreign key constraints from blocking the client delete
+        for a in appts { try? await api.delete("appointments", id: a.id) }
+        for a in anns { try? await api.delete("client_anniversaries", id: a.id) }
+        for w in wishlists { try? await api.delete("wishlist_items", id: w.id) }
+        for a in ais { try? await api.delete("ai_recommendations", id: a.id) }
+        for i in invitations { try? await api.delete("event_invitations", id: i.id) }
+        for c in carts { try? await api.delete("universal_carts", id: c.id) }
+        for t in trans { try? await api.delete("transactions", id: t.id) }
+        for o in orders { try? await api.delete("omnichannel_orders", id: o.id) }
+        for o in outfits { try? await api.delete("look_builder_outfits", id: o.id) }
+
+        // 4. Finally delete the client itself
+        try? await api.delete("client_profiles", id: id)
     }
 
     // ══════════════════════════════════════════════════════════
@@ -496,14 +545,47 @@ final class DataStore {
 
     @discardableResult
     func createWishlistItem(_ w: WishlistItem) async throws -> WishlistItem {
-        let created: WishlistItem = try await api.insert("wishlist_items", record: w)
-        wishlistItems.append(created)
-        return created
+        // Optimistic UI update
+        await MainActor.run {
+            if !wishlistItems.contains(where: { $0.id == w.id }) {
+                wishlistItems.append(w)
+            }
+        }
+        
+        do {
+            let created: WishlistItem = try await api.insert("wishlist_items", record: w)
+            return created
+        } catch {
+            // Revert on failure
+            await MainActor.run {
+                wishlistItems.removeAll { $0.id == w.id }
+            }
+            throw error
+        }
     }
 
     func deleteWishlistItem(id: UUID) async throws {
-        try await api.delete("wishlist_items", id: id)
-        wishlistItems.removeAll { $0.id == id }
+        // Optimistic UI update
+        var removedItem: WishlistItem?
+        await MainActor.run {
+            if let index = wishlistItems.firstIndex(where: { $0.id == id }) {
+                removedItem = wishlistItems.remove(at: index)
+            }
+        }
+        
+        do {
+            try await api.delete("wishlist_items", id: id)
+        } catch {
+            // Revert on failure
+            if let item = removedItem {
+                await MainActor.run {
+                    if !wishlistItems.contains(where: { $0.id == id }) {
+                        wishlistItems.append(item)
+                    }
+                }
+            }
+            throw error
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -609,7 +691,9 @@ final class DataStore {
 
     func deleteUniversalCart(id: UUID) async throws {
         try await api.delete("universal_carts", id: id)
-        universalCarts.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCarts.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -634,7 +718,9 @@ final class DataStore {
 
     func deleteUniversalCartItem(id: UUID) async throws {
         try await api.delete("universal_cart_items", id: id)
-        universalCartItems.removeAll { $0.id == id }
+        await MainActor.run {
+            universalCartItems.removeAll { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -682,6 +768,22 @@ final class DataStore {
     func updateTransaction(_ t: Transaction) async throws {
         try await api.update("transactions", id: t.id, record: t)
         if let i = transactions.firstIndex(where: { $0.id == t.id }) { transactions[i] = t }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MARK: - orders
+    // ══════════════════════════════════════════════════════════
+
+    func fetchOrders(storeId: UUID) async throws {
+        // NOTE: If orders need fetching by store, they may need to join with transactions.
+        // Assuming we fetch by client or all for now.
+    }
+
+    @discardableResult
+    func createOrder(_ o: Order) async throws -> Order {
+        let created: Order = try await api.insert("orders", record: o)
+        orders.append(created)
+        return created
     }
 
     // ══════════════════════════════════════════════════════════
@@ -753,8 +855,12 @@ final class DataStore {
     // MARK: - stock_items
     // ══════════════════════════════════════════════════════════
 
-    func fetchStockItems(storeId: UUID) async throws {
-        stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(storeId)"])
+    func fetchStockItems(storeId: UUID? = nil) async throws {
+        if let id = storeId {
+            stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
+        } else {
+            stockItems = try await api.fetch("stock_items")
+        }
     }
 
     @discardableResult
@@ -762,6 +868,47 @@ final class DataStore {
         let created: StockItem = try await api.insert("stock_items", record: s)
         stockItems.append(created)
         return created
+    }
+
+    @discardableResult
+    func receiveStock(
+        productId: UUID,
+        storeId: UUID,
+        quantity: Int,
+        location: String,
+        rfidTag: String? = nil
+    ) async throws -> StockItem {
+        let normalizedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedLocation = normalizedLocation.isEmpty ? nil : normalizedLocation
+
+        if let existing = stockItems.first(where: { $0.productId == productId && $0.storeId == storeId }) {
+            let updated = StockItem(
+                id: existing.id,
+                productId: existing.productId,
+                storeId: existing.storeId,
+                quantity: existing.quantity + max(quantity, 1),
+                rfidTag: existing.rfidTag ?? rfidTag,
+                location: resolvedLocation ?? existing.location,
+                status: .available,
+                lastScannedAt: .now,
+                updatedAt: .now
+            )
+            try await updateStockItem(updated)
+            return updated
+        }
+
+        let created = StockItem(
+            id: UUID(),
+            productId: productId,
+            storeId: storeId,
+            quantity: max(quantity, 1),
+            rfidTag: rfidTag,
+            location: resolvedLocation,
+            status: .available,
+            lastScannedAt: .now,
+            updatedAt: .now
+        )
+        return try await createStockItem(created)
     }
 
     func updateStockItem(_ s: StockItem) async throws {
@@ -841,7 +988,17 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
 
     func fetchMovementItems(movementId: UUID) async throws {
-        movementItems = try await api.fetch("movement_items", query: ["movement_id": "eq.\(movementId)"])
+        let fetched: [MovementItem] = try await api.fetch("movement_items", query: ["movement_id": "eq.\(movementId)"])
+        // Merge fetched items into cache (don't wipe items for other movements)
+        let fetchedIds = Set(fetched.map { $0.id })
+        movementItems.removeAll { $0.movementId == movementId && !fetchedIds.contains($0.id) }
+        for item in fetched {
+            if let i = movementItems.firstIndex(where: { $0.id == item.id }) {
+                movementItems[i] = item
+            } else {
+                movementItems.append(item)
+            }
+        }
     }
 
     @discardableResult
@@ -993,5 +1150,51 @@ final class DataStore {
     func updateShipFromStoreSlip(_ s: ShipFromStoreSlip) async throws {
         try await api.update("ship_from_store_slips", id: s.id, record: s)
         if let i = shipFromStoreSlips.firstIndex(where: { $0.id == s.id }) { shipFromStoreSlips[i] = s }
+    }
+
+    @MainActor
+    func clearAllCaches() {
+        stores = []
+        users = []
+        dashboardSummaries = []
+        staffShifts = []
+        salesGoals = []
+        commissions = []
+        performanceMetrics = []
+        //planograms = []
+        lookbooks = []
+        complianceChecks = []
+        clientEvents = []
+        eventInvitations = []
+        clients = []
+        clientAnniversaries = []
+        wishlistItems = []
+        appointments = []
+        aiRecommendations = []
+        lookBuilderOutfits = []
+        universalCarts = []
+        universalCartItems = []
+        discounts = []
+        transactions = []
+        tenders = []
+        giftReceipts = []
+        exchangeReturns = []
+        exchangeReturnItems = []
+        products = []
+        stockItems = []
+        rfidScanRecords = []
+        inventoryVariances = []
+        inventoryMovements = []
+        movementItems = []
+        cycleCounts = []
+        auditTrails = []
+        serialCaptures = []
+        authCertificates = []
+        shrinkageAnalytics = []
+        omnichannelOrders = []
+        shipFromStoreSlips = []
+        discountApprovalRequests = []
+        appNotifications = []
+        orders = []
     }
 }

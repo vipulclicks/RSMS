@@ -461,12 +461,12 @@ struct ClientRowView: View {
                     .fill(Color.brandCrimson.opacity(0.12))
                     .frame(width: 48, height: 48)
                 Text(initials)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.brandCrimson)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(client.fullName)
-                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
                 if let contact = client.email ?? client.phone {
                     Text(contact)
@@ -889,7 +889,7 @@ struct WishlistDetailRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.productName)
-                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                    .font(.system(size: 15, weight: .semibold))
                 HStack(spacing: 6) {
                     Text(item.sku)
                         .font(.caption).foregroundStyle(.tertiary)
@@ -1024,7 +1024,7 @@ struct AddToWishlistSheet: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(product.productName)
-                                    .font(.system(size: 15, weight: .semibold, design: .serif))
+                                    .font(.system(size: 15, weight: .semibold))
                                     .foregroundStyle(.primary)
                                 HStack(spacing: 6) {
                                     Text(product.sku).font(.caption).foregroundStyle(.tertiary)
@@ -1198,13 +1198,13 @@ struct ClientHeroCell: View {
                     .fill(Color.brandCrimson.opacity(0.12))
                     .frame(width: 80, height: 80)
                 Text(initials)
-                    .font(.system(size: 30, weight: .bold, design: .serif))
+                    .font(.system(size: 30, weight: .bold))
                     .foregroundStyle(Color.brandCrimson)
             }
             .padding(.top, 24)
 
             Text(client.fullName)
-                .font(.system(size: 22, weight: .bold, design: .serif))
+                .font(.system(size: 22, weight: .bold))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -1264,7 +1264,7 @@ struct TransactionRow: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("\(txn.currency)\(txn.totalAmount, format: .number.precision(.fractionLength(0)))")
-                        .font(.system(size: 16, weight: .bold, design: .serif))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Color.brandCrimson)
                     Text(txn.status.rawValue.capitalized)
                         .font(.caption.weight(.medium)).foregroundStyle(statusColor)
@@ -1343,26 +1343,26 @@ struct NewClientSheet: View {
                 }
 
                 Section("Sizing Preferences") {
-                    HStack {
-                        Text("Ring Size"); Spacer()
-                        TextField("e.g. 52", text: $ringSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Bracelet Size"); Spacer()
-                        TextField("e.g. 17 cm", text: $braceletSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Necklace Length"); Spacer()
-                        TextField("e.g. 45 cm", text: $necklaceLength).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
-                    HStack {
-                        Text("Wrist Size"); Spacer()
-                        TextField("e.g. 16.5 cm", text: $wristSize).multilineTextAlignment(.trailing)
-                            .foregroundStyle(.secondary).frame(maxWidth: 120)
-                    }
+                    LuxurySizeField(
+                        title: "Ring Size",
+                        text: $ringSize,
+                        presets: LuxurySizePresets.rings
+                    )
+                    LuxurySizeField(
+                        title: "Bracelet Size",
+                        text: $braceletSize,
+                        presets: LuxurySizePresets.bracelets
+                    )
+                    LuxurySizeField(
+                        title: "Necklace Length",
+                        text: $necklaceLength,
+                        presets: LuxurySizePresets.necklaces
+                    )
+                    LuxurySizeField(
+                        title: "Wrist Size",
+                        text: $wristSize,
+                        presets: LuxurySizePresets.wristSizes
+                    )
                 }
 
                 Section {

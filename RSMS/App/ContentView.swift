@@ -1,9 +1,3 @@
-//
-//  ContentView.swift
-//  RSMS
-//
-//  Created by Yashika Sharma on 19/05/26.
-//
 
 import SwiftUI
 
@@ -20,6 +14,8 @@ struct ContentView: View {
                     SalesAssociateHomeView()
                 case .inventoryController:
                     InventoryControllerHomeView()
+                case .client:
+                    ClientPortalView()
                 }
             } else {
                 LoginView()
@@ -28,34 +24,6 @@ struct ContentView: View {
         .animation(.smooth(duration: 0.6), value: viewModel.currentUser != nil)
     }
 }
-
-#Preview("Boutique Manager Dashboard") {
-    let vm = AppViewModel()
-    vm.login(as: .boutiqueManager)
-    return ContentView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
-
-#Preview("Sales Associate Dashboard") {
-    let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
-    return ContentView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
-
-#Preview("Inventory Dashboard") {
-    let vm = AppViewModel()
-    vm.login(as: .inventoryController)
-    return ContentView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
-
-#Preview("Login Screen") {
-    let vm = AppViewModel()
-    return ContentView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
+#Preview {
+    ContentView()
+    .environment(AppViewModel())}

@@ -14,24 +14,70 @@ struct RFIDStockManagementView: View {
     private let shrinkage = ShrinkageAnalytics.preview
     private let products = Product.all
 
-    private let kpiColumns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                headerSection
-                stockOverviewCards
-                HStack(alignment: .top, spacing: 16) {
-                    leftColumn
-                    rightColumn
+        GeometryReader { geometry in
+            let viewWidth = geometry.size.width
+            let padding: CGFloat = viewWidth > 550 ? 24 : 20
+            let availableWidth = viewWidth - (padding * 2)
+            let spacing: CGFloat = viewWidth > 550 ? 16 : 12
+
+            let columns: [GridItem] = {
+                let columnsCount: Int
+                if availableWidth >= 700 {
+                    columnsCount = 4
+                } else if availableWidth >= 480 {
+                    columnsCount = 3
+                } else {
+                    columnsCount = 2
                 }
+                return Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnsCount)
+            }()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    headerSection
+                    
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        KPICard(
+                            icon: "shippingbox.fill",
+                            value: "\(scanRecord.itemsScanned)",
+                            label: "Items Scanned",
+                            iconColor: RSMSTheme.gold
+                        )
+                        KPICard(
+                            icon: "checkmark.circle.fill",
+                            value: "\(scanRecord.itemsScanned - scanRecord.exceptionsFound)",
+                            label: "Verified OK",
+                            iconColor: RSMSTheme.success
+                        )
+                        KPICard(
+                            icon: "exclamationmark.triangle.fill",
+                            value: "\(scanRecord.exceptionsFound)",
+                            label: "Exceptions",
+                            iconColor: RSMSTheme.warning
+                        )
+                        KPICard(
+                            icon: "chart.line.downtrend.xyaxis",
+                            value: "₹\(String(format: "%,.0f", shrinkage.totalLossValue))",
+                            label: "Shrinkage (90d)",
+                            iconColor: RSMSTheme.danger
+                        )
+                    }
+
+                    if viewWidth > 700 {
+                        HStack(alignment: .top, spacing: 16) {
+                            leftColumn
+                            rightColumn
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 16) {
+                            leftColumn
+                            rightColumn
+                        }
+                    }
+                }
+                .padding(padding)
             }
-            .padding(24)
         }
         .background(RSMSTheme.background)
         .navigationTitle("RFID Stock Management")
@@ -55,37 +101,6 @@ struct RFIDStockManagementView: View {
             .padding(.vertical, 6)
             .background(RSMSTheme.success.opacity(0.1))
             .clipShape(Capsule())
-        }
-    }
-
-    // MARK: - Stock Overview
-
-    private var stockOverviewCards: some View {
-        LazyVGrid(columns: kpiColumns, spacing: 12) {
-            KPICard(
-                icon: "shippingbox.fill",
-                value: "\(scanRecord.itemsScanned)",
-                label: "Items Scanned",
-                iconColor: RSMSTheme.gold
-            )
-            KPICard(
-                icon: "checkmark.circle.fill",
-                value: "\(scanRecord.itemsScanned - scanRecord.exceptionsFound)",
-                label: "Verified OK",
-                iconColor: RSMSTheme.success
-            )
-            KPICard(
-                icon: "exclamationmark.triangle.fill",
-                value: "\(scanRecord.exceptionsFound)",
-                label: "Exceptions",
-                iconColor: RSMSTheme.warning
-            )
-            KPICard(
-                icon: "chart.line.downtrend.xyaxis",
-                value: "€\(String(format: "%,.0f", shrinkage.totalLossValue))",
-                label: "Shrinkage (90d)",
-                iconColor: RSMSTheme.danger
-            )
         }
     }
 
@@ -234,8 +249,8 @@ struct RFIDStockManagementView: View {
                 VStack(spacing: 12) {
                     HStack(spacing: 24) {
                         VStack(spacing: 6) {
-                            Text("€\(String(format: "%,.0f", shrinkage.totalLossValue))")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                            Text("₹\(String(format: "%,.0f", shrinkage.totalLossValue))")
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(RSMSTheme.danger)
                             Text("Total Loss Value")
                                 .font(.caption)
@@ -246,7 +261,7 @@ struct RFIDStockManagementView: View {
 
                         VStack(spacing: 6) {
                             Text("\(shrinkage.totalLossUnits)")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(RSMSTheme.warning)
                             Text("Units Lost")
                                 .font(.caption)
