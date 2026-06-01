@@ -219,7 +219,7 @@ struct StaffGoalCard: View {
                 
                 // MARK: The 4 Filter Buttons (Added Quarterly)
                 HStack(spacing: 4) {
-                    ForEach([GoalPeriod.daily, .weekly, .monthly, .quarterly], id: \.self) { period in
+                    ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
                         Button {
                             withAnimation(.snappy) { selectedPeriod = period }
                         } label: {

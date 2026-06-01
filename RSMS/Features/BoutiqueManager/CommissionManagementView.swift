@@ -66,7 +66,7 @@ struct CommissionManagementView: View {
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             HStack(spacing: 8) {
-                ForEach([GoalPeriod.daily, .weekly, .monthly, .quarterly], id: \.self) { period in
+                ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
                     Button {
                         withAnimation(.snappy) {
                             viewModel.selectedPeriod = period

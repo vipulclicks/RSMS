@@ -107,7 +107,7 @@ final class BoutiqueDashboardViewModel {
             // B) Sales Target — fetch all goals, cache them
             try await dataStore.fetchSalesGoals(storeId: storeId)
             self.allActiveGoals = dataStore.salesGoals.filter {
-                $0.storeId == storeId && $0.startDate <= now && $0.endDate >= now
+                $0.storeId == storeId
             }
             
             // C) Sales Progress
@@ -271,31 +271,31 @@ final class BoutiqueDashboardViewModel {
     }
     
     private func recalculateForPeriod() {
-        let filtered = allActiveGoals.filter { $0.period == selectedPeriod }
-        self.hasGoalsForPeriod = !filtered.isEmpty
-        self.goalAssociateCount = filtered.count
-        self.salesTarget = filtered.reduce(0.0) { $0 + $1.targetAmount }
+        let periodGoals = allActiveGoals.filter { $0.period == selectedPeriod }
         
         let periodStart = startDate(for: selectedPeriod)
         
-        let staffIdsWithGoals = Set(filtered.map { $0.staffId })
         let txsInPeriod = allTransactions.filter { $0.createdAt >= periodStart }
         
         // Sum of all transactions in this period (regardless of who made them) for the store overall progress
         self.periodAchievedAmount = txsInPeriod.reduce(0.0) { $0 + $1.totalAmount }
         
-        if salesTarget > 0 {
-            self.salesProgress = min(1.0, periodAchievedAmount / salesTarget)
-        } else {
-            self.salesProgress = 0.0
-        }
-        
         // Compute associate-level progress using actual transactions for the period
-        
         var progressList: [AssociateSalesProgress] = []
+        var validTargetsSum = 0.0
+        var associatesWithGoals = 0
+        
         for associate in allAssociates {
-            // Find if there's a goal for this period for this associate
-            let goal = filtered.first { $0.staffId == associate.id }
+            // Find the LATEST goal for this period for this associate
+            let goal = periodGoals
+                .filter { $0.staffId == associate.id }
+                .sorted { $0.createdAt > $1.createdAt }
+                .first
+            
+            if let target = goal?.targetAmount {
+                validTargetsSum += target
+                associatesWithGoals += 1
+            }
             
             // Calculate actual sales in this period
             let associateTransactions = allTransactions.filter { 
@@ -312,6 +312,16 @@ final class BoutiqueDashboardViewModel {
                     targetAmount: goal?.targetAmount
                 ))
             }
+        }
+        
+        self.hasGoalsForPeriod = associatesWithGoals > 0
+        self.goalAssociateCount = associatesWithGoals
+        self.salesTarget = validTargetsSum
+        
+        if salesTarget > 0 {
+            self.salesProgress = min(1.0, periodAchievedAmount / salesTarget)
+        } else {
+            self.salesProgress = 0.0
         }
         
         self.periodAssociateProgress = progressList.sorted { $0.achievedAmount > $1.achievedAmount }

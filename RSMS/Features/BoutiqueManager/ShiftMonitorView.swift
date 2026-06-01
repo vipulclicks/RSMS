@@ -384,8 +384,6 @@ struct AddShiftView: View {
     @State private var selectedRole: String = "floor"
     @State private var notes: String = ""
     @State private var availableStaff: [UserProfile] = []
-
-    private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge", "sales_associate"]
     
     private var isOverlapping: Bool {
         guard let staffId = staffId else { return false }
@@ -437,7 +435,10 @@ struct AddShiftView: View {
                             
                             Menu {
                                 ForEach(availableStaff) { user in
-                                    Button("\(user.fullName) (\(user.role.displayName))") { staffId = user.id }
+                                    Button("\(user.fullName) (\(user.role.displayName))") { 
+                                        staffId = user.id 
+                                        selectedRole = user.role.rawValue
+                                    }
                                 }
                             } label: {
                                 HStack {
@@ -458,30 +459,7 @@ struct AddShiftView: View {
                             }
                         }
                         
-                        // Role
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Role *")
-                                .font(.caption)
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                            
-                            Menu {
-                                ForEach(availableRoles, id: \.self) { role in
-                                    Button(role.replacingOccurrences(of: "_", with: " ").capitalized) { selectedRole = role }
-                                }
-                            } label: {
-                                HStack {
-                                    Text(selectedRole.replacingOccurrences(of: "_", with: " ").capitalized)
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                }
-                                .padding()
-                                .background(RSMSTheme.background)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                        }
-                        
+
                         // Shift Timing
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Shift Timing *")
