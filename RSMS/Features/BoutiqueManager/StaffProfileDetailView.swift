@@ -177,7 +177,7 @@ struct StaffProfileDetailView: View {
                             .animation(.easeOut(duration: 1.0), value: viewModel.goalAchievementPercentage)
                         
                         VStack {
-                            Text("\(Int(viewModel.goalAchievementPercentage * 100))%")
+                            Text("\(Int(viewModel.rawGoalAchievementPercentage * 100))%")
                                 .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.gold)
                             Text("Achieved")

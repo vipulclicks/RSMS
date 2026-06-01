@@ -339,15 +339,48 @@ struct SalesAssociateProfileView: View {
         let salesGoalsTarget: String
         let salesGoalsAchieved: String
         let salesGoalsPercentage: Double
+        let progressTextLabel: String
         
-        if let monthlyGoal = appViewModel.dataStore.salesGoals.first(where: { $0.staffId == user.id && $0.period == .monthly }) {
-            salesGoalsTarget = "₹\(Int(monthlyGoal.targetAmount).formatted())"
-            salesGoalsAchieved = "₹\(Int(monthlyGoal.achievedAmount).formatted())"
-            salesGoalsPercentage = monthlyGoal.targetAmount > 0 ? (monthlyGoal.achievedAmount / monthlyGoal.targetAmount) : 0.0
+        let now = Date()
+        if let monthlyGoal = appViewModel.dataStore.salesGoals
+            .filter({ $0.staffId == user.id && $0.period == .monthly })
+            .sorted(by: { $0.createdAt > $1.createdAt })
+            .first 
+        {
+            let cal = Calendar.current
+            let now = Date()
+            let currentMonth = cal.component(.month, from: now)
+            let currentYear = cal.component(.year, from: now)
+            
+            // Dynamically calculate achieved amount from transactions to guarantee accuracy 
+            // even if earlier DB updates were blocked by RLS
+            let existingTransactions = appViewModel.dataStore.transactions.filter {
+                $0.associateId == user.id &&
+                $0.status == .completed &&
+                cal.component(.month, from: $0.createdAt) == currentMonth &&
+                cal.component(.year, from: $0.createdAt) == currentYear
+            }
+            let computedAchievedAmount = existingTransactions.reduce(0.0) { $0 + $1.totalAmount }
+            
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.currencySymbol = "₹"
+            formatter.maximumFractionDigits = 0
+            
+            let formattedAchieved = formatter.string(from: NSNumber(value: computedAchievedAmount)) ?? "₹0"
+            let formattedTarget = formatter.string(from: NSNumber(value: monthlyGoal.targetAmount)) ?? "₹0"
+            
+            salesGoalsTarget = formattedTarget
+            salesGoalsAchieved = formattedAchieved
+            salesGoalsPercentage = monthlyGoal.targetAmount > 0 ? (computedAchievedAmount / monthlyGoal.targetAmount) : 0.0
+            
+            // Format as requested: Current sales/ sales goal acheived
+            progressTextLabel = "\(formattedAchieved) / \(formattedTarget) achieved"
         } else {
             salesGoalsTarget = "₹0"
             salesGoalsAchieved = "₹0"
             salesGoalsPercentage = 0.0
+            progressTextLabel = "₹0 / ₹0 achieved"
         }
         
         return VStack(alignment: .leading, spacing: 12) {
@@ -403,19 +436,16 @@ struct SalesAssociateProfileView: View {
                                .frame(height: 10)
                             Capsule()
                                .fill(RSMSTheme.primaryGradient)
-                               .frame(width: geo.size.width * salesGoalsPercentage, height: 10)
+                               .frame(width: geo.size.width * min(1.0, salesGoalsPercentage), height: 10)
                         }
                     }
                     .frame(height: 10)
                     
                     HStack {
-                        Text("\(salesGoalsAchieved) achieved")
+                        Text(progressTextLabel)
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                         Spacer()
-                        Text("Target: \(salesGoalsTarget)")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
                     }
                 }
             }

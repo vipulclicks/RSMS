@@ -3,8 +3,21 @@ import Observation
 
 @Observable
 class SalesGoalViewModel {
-    var activeGoals: [SalesGoal] = []
+    /// Live reference to the shared DataStore — makes `activeGoals` reactive
+    private var dataStore: DataStore?
+    private var storeId: UUID?
+    
     var availableStaff: [UserProfile] = []
+    
+    // MARK: - Reactive Goals (computed from dataStore)
+    
+    /// Reads directly from `dataStore.salesGoals` so that any update
+    /// (including optimistic writes from POSCheckoutViewModel) is
+    /// reflected immediately via @Observable observation.
+    var activeGoals: [SalesGoal] {
+        guard let ds = dataStore, let id = storeId else { return [] }
+        return ds.salesGoals.filter { $0.storeId == id }
+    }
     
     // MARK: - Draft Form State
     var draftSelectedStaff: UserProfile?
@@ -24,12 +37,14 @@ class SalesGoalViewModel {
     
     @MainActor
     func load(dataStore: DataStore, storeId: UUID) async {
+        self.dataStore = dataStore
+        self.storeId = storeId
         isLoading = true
         errorMessage = nil
         
         do {
             try await dataStore.fetchSalesGoals(storeId: storeId)
-            self.activeGoals = dataStore.salesGoals
+            try await dataStore.fetchTransactions(storeId: storeId)
             
             try await dataStore.fetchUsers(storeId: storeId)
             self.availableStaff = dataStore.users.filter { $0.role == .salesAssociate }
@@ -87,24 +102,32 @@ class SalesGoalViewModel {
             
             do {
                 try await dataStore.updateSalesGoal(updatedGoal)
-                if let i = activeGoals.firstIndex(where: { $0.id == updatedGoal.id }) {
-                    withAnimation(.spring) {
-                        activeGoals[i] = updatedGoal
-                    }
-                }
+                // No local mutation needed — computed property reads from dataStore.salesGoals
+                // which is already updated by dataStore.updateSalesGoal()
                 resetDraft()
             } catch {
                 print("Failed to update goal: \(error)")
                 self.errorMessage = "Failed to update goal: \(error.localizedDescription)"
             }
         } else {
+            // Calculate existing sales in this period for this staff
+            // so we don't start at 0 if the goal is created mid-month.
+            let existingTransactions = dataStore.transactions.filter {
+                $0.storeId == storeId &&
+                $0.associateId == staff.id &&
+                $0.status == .completed &&
+                $0.createdAt >= startDate &&
+                $0.createdAt <= endDate
+            }
+            let initialAchievedAmount = existingTransactions.reduce(0.0) { $0 + $1.totalAmount }
+            
             // Create new goal
             let newGoal = SalesGoal(
                 id: UUID(),
                 staffId: staff.id,
                 storeId: storeId,
                 targetAmount: draftAmount,
-                achievedAmount: 0.0,
+                achievedAmount: initialAchievedAmount,
                 period: draftPeriod,
                 startDate: startDate,
                 endDate: endDate,
@@ -113,9 +136,8 @@ class SalesGoalViewModel {
             
             do {
                 try await dataStore.createSalesGoal(newGoal)
-                withAnimation(.spring) {
-                    activeGoals.insert(newGoal, at: 0)
-                }
+                // No local mutation needed — computed property reads from dataStore.salesGoals
+                // which is already updated by dataStore.createSalesGoal()
                 resetDraft()
             } catch {
                 print("Failed to save goal: \(error)")
