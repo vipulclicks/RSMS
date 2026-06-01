@@ -310,7 +310,6 @@ struct ClientProfileDetailView: View {
                     showAILookBuilder = true
                 } label: {
                     HStack {
-                        Image(systemName: "sparkles")
                         Text("Create")
                     }
                     .font(.subheadline.weight(.semibold))

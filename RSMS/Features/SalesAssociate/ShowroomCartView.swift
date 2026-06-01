@@ -54,36 +54,6 @@ struct ShowroomCartView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Header section
-                        VStack(spacing: 8) {
-                            Text(isEditMode ? "Current Edit for" : "Curated Cart for")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                                .textCase(.uppercase)
-                                .tracking(1.5)
-                            
-                            Text(clientName)
-                                .font(.system(size: 28, weight: .light, design: .serif))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                                
-                            if case let .savedCart(cart, ds) = mode {
-                                HStack(spacing: 6) {
-                                    Text("Status:")
-                                        .font(.caption)
-                                        .foregroundStyle(RSMSTheme.textSecondary)
-                                    Text(currentStatus.rawValue.uppercased())
-                                        .font(.caption.weight(.bold))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 2)
-                                        .background(statusColor.opacity(0.15), in: Capsule())
-                                        .foregroundStyle(statusColor)
-                                }
-                                .padding(.top, 4)
-                            }
-                        }
-                        .padding(.top, 16)
-                        .padding(.horizontal)
-                        
                         // Main items & Layout
                         if isEmpty {
                             emptyView
@@ -139,7 +109,7 @@ struct ShowroomCartView: View {
                 .animation(.spring(), value: showShareToast || shareSuccess)
             }
         }
-        .navigationTitle("Curation Details")
+        .navigationTitle("Curated Cart")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(RSMSTheme.surfacePrimary, for: .navigationBar)
         .onAppear {
@@ -362,41 +332,6 @@ struct ShowroomCartView: View {
                             .padding(.vertical, 2)
                         
                         HStack {
-                            HStack(spacing: 8) {
-                                Text("Reaction:")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                
-                                Picker("Reaction", selection: Binding<ClientReaction?>(
-                                    get: {
-                                        ClientReaction(rawValue: currentNote)
-                                    },
-                                    set: { newRx in
-                                        let updated = UniversalCartItem(
-                                            id: item.id,
-                                            cartId: item.cartId,
-                                            productId: item.productId,
-                                            quantity: currentQty,
-                                            unitPrice: item.unitPrice,
-                                            discountApplied: item.discountApplied,
-                                            note: newRx?.rawValue ?? ""
-                                        )
-                                        Task {
-                                            try? await ds.updateUniversalCartItem(updated)
-                                        }
-                                    }
-                                )) {
-                                    Text("Select").tag(ClientReaction?.none)
-                                    ForEach(ClientReaction.allCases) { reaction in
-                                        Text(reaction.rawValue).tag(ClientReaction?.some(reaction))
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .tint(ClientReaction(rawValue: currentNote)?.color ?? RSMSTheme.textSecondary)
-                                .scaleEffect(0.9)
-                                .padding(.horizontal, -8)
-                            }
-                            
                             Spacer()
                             
                             HStack(spacing: 12) {
@@ -418,8 +353,9 @@ struct ShowroomCartView: View {
                                 } label: {
                                     Image(systemName: "minus.circle")
                                         .font(.title3)
-                                        .foregroundStyle(RSMSTheme.primary)
+                                        .foregroundStyle(currentQty > 1 ? RSMSTheme.primary : RSMSTheme.textTertiary)
                                 }
+                                .disabled(currentQty <= 1)
                                 
                                 Text("\(currentQty)")
                                     .font(.body.weight(.bold))

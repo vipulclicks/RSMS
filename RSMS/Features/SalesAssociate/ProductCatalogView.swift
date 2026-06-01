@@ -20,6 +20,29 @@ struct ProductCatalogView: View {
     @State private var selectedProduct: Product?
     @State private var showFilterSheet = false
     @State private var showClientPickerSheet = false
+    
+    // Custom premium toast states
+    @State private var toastMessage: String? = nil
+    @State private var showToast = false
+    @State private var toastTimer: Timer? = nil
+
+    private func triggerToast(message: String) {
+        toastTimer?.invalidate()
+        toastMessage = message
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            showToast = true
+        }
+        
+        // Haptic feedback
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        
+        toastTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                showToast = false
+            }
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -30,6 +53,37 @@ struct ProductCatalogView: View {
             } else {
                 ProgressView()
                     .tint(RSMSTheme.primary)
+            }
+            
+            // Premium glassmorphic toast notification
+            if showToast, let message = toastMessage {
+                VStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 20, weight: .bold))
+                        Text(message)
+                            .font(.system(size: 14, weight: .medium, design: .serif))
+                            .foregroundColor(RSMSTheme.textPrimary)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 6)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 30)
+                            .stroke(RSMSTheme.border, lineWidth: 1)
+                    )
+                    .padding(.top, 16)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    
+                    Spacer()
+                }
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+                .zIndex(100)
             }
         }
         .navigationTitle(activeClient != nil ? "Guided Catalog" : "Product Catalog")
@@ -50,7 +104,14 @@ struct ProductCatalogView: View {
                 CatalogProductDetailSheet(
                     product: product,
                     stockQuantity: vm.stockQuantity(for: product.id),
-                    onAddToCart: { vm.addToCart(product) },
+                    onAddToCart: {
+                        if vm.isInCart(product.id) {
+                            triggerToast(message: "\(product.name) already exists in the cart")
+                        } else {
+                            vm.addToCart(product)
+                            triggerToast(message: "\(product.name) added to curated cart")
+                        }
+                    },
                     activeClient: vm.activeClient,
                     isWishlisted: vm.isProductInWishlist(product.id),
                     sizeLabel: vm.clientSizeLabel(for: product),
@@ -59,7 +120,8 @@ struct ProductCatalogView: View {
                         Task {
                             await vm.toggleWishlist(for: product)
                         }
-                    }
+                    },
+                    isInCart: vm.isInCart(product.id)
                 )
             }
         }
@@ -87,51 +149,55 @@ struct ProductCatalogView: View {
 
     @ViewBuilder
     private func catalogContent(_ vm: ProductCatalogViewModel) -> some View {
-        VStack(spacing: 0) {
-            clientContextBanner(vm)
-            
-            if vm.activeClient != nil && !vm.recommendedProducts.isEmpty {
-                curatedRecommendationsCarousel(vm)
-            }
-            
-            searchBar(vm)
-            categoryFilters(vm)
+        ZStack {
+            VStack(spacing: 0) {
+                clientContextBanner(vm)
+                
+                if vm.activeClient != nil && !vm.recommendedProducts.isEmpty {
+                    curatedRecommendationsCarousel(vm)
+                }
+                
+                searchBar(vm)
+                categoryFilters(vm)
 
-            if vm.isLoading {
-                Spacer()
-                ProgressView("Loading products…")
-                    .tint(RSMSTheme.primary)
-                Spacer()
-            } else if let error = vm.errorMessage {
-                Spacer()
-                ContentUnavailableView("Load Failed",
-                                       systemImage: "exclamationmark.triangle",
-                                       description: Text(error))
-                Spacer()
-            } else if vm.filteredProducts.isEmpty {
-                Spacer()
-                ContentUnavailableView("No Products Found",
-                                       systemImage: "magnifyingglass",
-                                       description: Text("Try adjusting your search or filters."))
-                Spacer()
-            } else {
-                productGrid(vm)
+                if vm.isLoading {
+                    Spacer()
+                    ProgressView("Loading products…")
+                        .tint(RSMSTheme.primary)
+                    Spacer()
+                } else if let error = vm.errorMessage {
+                    Spacer()
+                    ContentUnavailableView("Load Failed",
+                                           systemImage: "exclamationmark.triangle",
+                                           description: Text(error))
+                    Spacer()
+                } else if vm.filteredProducts.isEmpty {
+                    Spacer()
+                    ContentUnavailableView("No Products Found",
+                                           systemImage: "magnifyingglass",
+                                           description: Text("Try adjusting your search or filters."))
+                    Spacer()
+                } else {
+                    productGrid(vm)
+                }
+            }
+
+            // Mini cart badge overlay
+            if vm.cartItems.count > 0 {
+                VStack {
+                    Spacer()
+                    CatalogCartBadge(count: vm.cartItems.count,
+                                     dataStore: appViewModel.dataStore,
+                                     items: vm.cartItems,
+                                     onClear: { vm.clearCart() },
+                                     viewModel: vm)
+                        .padding(.bottom, 16)
+                        .padding(.horizontal, 24)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-
-        // Mini cart badge overlay
-        if vm.cartItems.count > 0 {
-            VStack {
-                Spacer()
-                CatalogCartBadge(count: vm.cartItems.count,
-                                 dataStore: appViewModel.dataStore,
-                                 items: vm.cartItems,
-                                 onClear: { vm.clearCart() },
-                                 viewModel: vm)
-                    .padding(.bottom, 16)
-                    .padding(.horizontal, 24)
-            }
-        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: vm.cartItems.count)
     }
 
     // MARK: - Client Context Banner
@@ -338,12 +404,19 @@ struct ProductCatalogView: View {
                     .onTapGesture { selectedProduct = product }
                     .overlay(alignment: .topTrailing) {
                         Button {
-                            vm.toggleCartItem(product)
+                            if vm.isInCart(product.id) {
+                                triggerToast(message: "\(product.name) already exists in the cart")
+                            } else {
+                                vm.toggleCartItem(product)
+                                triggerToast(message: "\(product.name) added to curated cart")
+                            }
                         } label: {
                             Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
                                 .font(.title3)
                                 .foregroundStyle(vm.isInCart(product.id) ? Color.green : RSMSTheme.primary)
                                 .background(Circle().fill(RSMSTheme.cream))
+                                .scaleEffect(vm.isInCart(product.id) ? 1.25 : 1.0)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: vm.isInCart(product.id))
                         }
                         .buttonStyle(PlainButtonStyle())
                         .padding(10)
@@ -638,9 +711,23 @@ struct CatalogProductDetailSheet: View {
     let sizeLabel: String?
     let isPreferenceMatch: Bool
     let onWishlistToggle: () -> Void
+    let isInCart: Bool
     
     @Environment(\.dismiss) private var dismiss
-    @State private var addedToCart = false
+    @State private var addedToCart: Bool
+
+    init(product: Product, stockQuantity: Int, onAddToCart: @escaping () -> Void, activeClient: ClientProfile?, isWishlisted: Bool, sizeLabel: String?, isPreferenceMatch: Bool, onWishlistToggle: @escaping () -> Void, isInCart: Bool) {
+        self.product = product
+        self.stockQuantity = stockQuantity
+        self.onAddToCart = onAddToCart
+        self.activeClient = activeClient
+        self.isWishlisted = isWishlisted
+        self.sizeLabel = sizeLabel
+        self.isPreferenceMatch = isPreferenceMatch
+        self.onWishlistToggle = onWishlistToggle
+        self.isInCart = isInCart
+        self._addedToCart = State(initialValue: isInCart)
+    }
 
     var body: some View {
         NavigationStack {
