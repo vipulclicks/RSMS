@@ -293,6 +293,11 @@ struct EditSalesAssociateProfileView: View {
                 }
             }
             
+            // Save local overrides in UserDefaults for robust local/offline persistence
+            let idStr = profile.id.uuidString.lowercased()
+            UserDefaults.standard.set(phone.trimmingCharacters(in: .whitespaces), forKey: "phone_\(idStr)")
+            UserDefaults.standard.set(finalAvatarURL, forKey: "avatar_\(idStr)")
+
             let updatedProfile = UserProfile(
                 id: profile.id,
                 email: profile.email, // Locked and uneditable

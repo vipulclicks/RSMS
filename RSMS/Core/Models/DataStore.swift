@@ -38,7 +38,11 @@ final class DataStore {
     var eventInvitations: [EventInvitation] = []
 
     // ── Sales Associate / Clienteling ───────────────────
-    var clients: [ClientProfile] = []
+    var clients: [ClientProfile] = [] {
+            didSet {
+                recalculateVIPTiers()
+            }
+        }
     var clientAnniversaries: [ClientAnniversary] = []
     var wishlistItems: [WishlistItem] = []
     var appointments: [Appointment] = []
@@ -53,11 +57,45 @@ final class DataStore {
     var discountApprovalRequests: [DiscountApprovalRequest] = []
     var appNotifications: [AppNotification] = []
     var discounts: [Discount] = []
-    var transactions: [Transaction] = []
+    var transactions: [Transaction] = [] {
+            didSet {
+                recalculateVIPTiers()
+            }
+        }
     var orders: [Order] = []
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
+    private var isRecalculating = false
+
+        func recalculateVIPTiers() {
+            guard !isRecalculating else { return }
+            isRecalculating = true
+            defer { isRecalculating = false }
+            
+            for index in clients.indices {
+                let client = clients[index]
+                let completedTxns = transactions.filter { $0.clientId == client.id && $0.status == .completed }
+                let ltv = completedTxns.reduce(0.0) { $0 + $1.totalAmount }
+                
+                let calculatedTier: VIPTier
+                if ltv >= 1000000 {
+                    calculatedTier = .prive
+                } else if ltv >= 500000 {
+                    calculatedTier = .platinum
+                } else if ltv >= 150000 {
+                    calculatedTier = .gold
+                } else if ltv >= 50000 {
+                    calculatedTier = .silver
+                } else {
+                    calculatedTier = .standard
+                }
+                
+                if clients[index].vipTier != calculatedTier {
+                    clients[index].vipTier = calculatedTier
+                }
+            }
+        }
     var exchangeReturnItems: [ExchangeReturnItem] = []
 
     // ── Inventory ──────────────────────────────────────
@@ -141,11 +179,75 @@ final class DataStore {
     func fetchUsers(storeId: UUID? = nil) async throws {
         var query: [String: String] = [:]
         if let sid = storeId { query["store_id"] = "eq.\(sid)" }
-        users = try await api.fetch("user_profiles", query: query)
+        let fetched: [UserProfile] = try await api.fetch("user_profiles", query: query)
+        users = fetched.map { user in
+            var updated = user
+            let idStr = user.id.uuidString.lowercased()
+            if let localPhone = UserDefaults.standard.string(forKey: "phone_\(idStr)") {
+                updated = UserProfile(
+                    id: updated.id,
+                    email: updated.email,
+                    fullName: updated.fullName,
+                    role: updated.role,
+                    storeId: updated.storeId,
+                    avatarURL: updated.avatarURL,
+                    phone: localPhone,
+                    isActive: updated.isActive,
+                    createdAt: updated.createdAt,
+                    updatedAt: updated.updatedAt
+                )
+            }
+            if let localAvatar = UserDefaults.standard.string(forKey: "avatar_\(idStr)") {
+                updated = UserProfile(
+                    id: updated.id,
+                    email: updated.email,
+                    fullName: updated.fullName,
+                    role: updated.role,
+                    storeId: updated.storeId,
+                    avatarURL: localAvatar.isEmpty ? nil : localAvatar,
+                    phone: updated.phone,
+                    isActive: updated.isActive,
+                    createdAt: updated.createdAt,
+                    updatedAt: updated.updatedAt
+                )
+            }
+            return updated
+        }
     }
 
     func fetchUser(id: UUID) async throws -> UserProfile {
-        try await api.fetchById("user_profiles", id: id)
+        let fetched: UserProfile = try await api.fetchById("user_profiles", id: id)
+        var updated = fetched
+        let idStr = id.uuidString.lowercased()
+        if let localPhone = UserDefaults.standard.string(forKey: "phone_\(idStr)") {
+            updated = UserProfile(
+                id: updated.id,
+                email: updated.email,
+                fullName: updated.fullName,
+                role: updated.role,
+                storeId: updated.storeId,
+                avatarURL: updated.avatarURL,
+                phone: localPhone,
+                isActive: updated.isActive,
+                createdAt: updated.createdAt,
+                updatedAt: updated.updatedAt
+            )
+        }
+        if let localAvatar = UserDefaults.standard.string(forKey: "avatar_\(idStr)") {
+            updated = UserProfile(
+                id: updated.id,
+                email: updated.email,
+                fullName: updated.fullName,
+                role: updated.role,
+                storeId: updated.storeId,
+                avatarURL: localAvatar.isEmpty ? nil : localAvatar,
+                phone: updated.phone,
+                isActive: updated.isActive,
+                createdAt: updated.createdAt,
+                updatedAt: updated.updatedAt
+            )
+        }
+        return updated
     }
 
     @discardableResult
