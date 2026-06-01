@@ -869,17 +869,10 @@ private struct SAClientRow: View {
             }
             
             Spacer(minLength: 0)
-            
-            // Activity & Chevron
-            VStack(alignment: .trailing, spacing: 8) {
-                Text("Today")
-                    .font(.system(size: 13))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            }
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(RSMSTheme.textTertiary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 20)
