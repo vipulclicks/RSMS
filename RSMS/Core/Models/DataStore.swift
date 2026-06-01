@@ -570,42 +570,107 @@ final class DataStore {
     }
 
     func deleteClient(id: UUID) async throws {
-        // 1. Gather all related items
-        let appts = appointments.filter { $0.clientId == id }
-        let anns = clientAnniversaries.filter { $0.clientId == id }
-        let wishlists = wishlistItems.filter { $0.clientId == id }
-        let ais = aiRecommendations.filter { $0.clientId == id }
-        let invitations = eventInvitations.filter { $0.clientId == id }
-        let carts = universalCarts.filter { $0.clientId == id }
-        let trans = transactions.filter { $0.clientId == id }
-        let orders = omnichannelOrders.filter { $0.clientId == id }
-        let outfits = lookBuilderOutfits.filter { $0.clientId == id }
+        let cid = id.uuidString
 
-        // 2. Remove locally for instant UI update
-        clients.removeAll { $0.id == id }
-        appointments.removeAll { $0.clientId == id }
-        clientAnniversaries.removeAll { $0.clientId == id }
-        wishlistItems.removeAll { $0.clientId == id }
-        aiRecommendations.removeAll { $0.clientId == id }
-        eventInvitations.removeAll { $0.clientId == id }
-        universalCarts.removeAll { $0.clientId == id }
-        transactions.removeAll { $0.clientId == id }
-        omnichannelOrders.removeAll { $0.clientId == id }
-        lookBuilderOutfits.removeAll { $0.clientId == id }
+        // ── STEP 1: Fetch ALL related records directly from the backend ──────────────
+        // IMPORTANT: Do NOT filter from local in-memory arrays. Those arrays may be
+        // empty if the user has never navigated to those screens in this session.
+        // Querying the backend directly guarantees we find every FK-constrained row.
 
-        // 3. Delete from backend to prevent foreign key constraints from blocking the client delete
-        for a in appts { try? await api.delete("appointments", id: a.id) }
-        for a in anns { try? await api.delete("client_anniversaries", id: a.id) }
-        for w in wishlists { try? await api.delete("wishlist_items", id: w.id) }
-        for a in ais { try? await api.delete("ai_recommendations", id: a.id) }
-        for i in invitations { try? await api.delete("event_invitations", id: i.id) }
-        for c in carts { try? await api.delete("universal_carts", id: c.id) }
-        for t in trans { try? await api.delete("transactions", id: t.id) }
-        for o in orders { try? await api.delete("omnichannel_orders", id: o.id) }
-        for o in outfits { try? await api.delete("look_builder_outfits", id: o.id) }
+        let appts:         [Appointment]             = (try? await api.fetch("appointments",               query: ["client_id": "eq.\(cid)"])) ?? []
+        let anns:          [ClientAnniversary]        = (try? await api.fetch("client_anniversaries",       query: ["client_id": "eq.\(cid)"])) ?? []
+        let wishlists:     [WishlistItem]             = (try? await api.fetch("wishlist_items",             query: ["client_id": "eq.\(cid)"])) ?? []
+        let aiRecs:        [AIRecommendation]         = (try? await api.fetch("ai_recommendations",         query: ["client_id": "eq.\(cid)"])) ?? []
+        let invitations:   [EventInvitation]          = (try? await api.fetch("event_invitations",          query: ["client_id": "eq.\(cid)"])) ?? []
+        let dars:          [DiscountApprovalRequest]  = (try? await api.fetch("discount_approval_requests", query: ["client_id": "eq.\(cid)"])) ?? []
+        let outfits:       [LookBuilderOutfit]        = (try? await api.fetch("look_builder_outfits",       query: ["client_id": "eq.\(cid)"])) ?? []
+        let regularOrders: [Order]                   = (try? await api.fetch("orders",                     query: ["client_id": "eq.\(cid)"])) ?? []
 
-        // 4. Finally delete the client itself
-        try? await api.delete("client_profiles", id: id)
+        // Transaction chain — fetch child records using PostgREST `in` filter
+        let trans: [Transaction] = (try? await api.fetch("transactions", query: ["client_id": "eq.\(cid)"])) ?? []
+        var tnds:       [Tender]             = []
+        var greceipts:  [GiftReceipt]        = []
+        var exreturns:  [ExchangeReturn]     = []
+        var comms:      [Commission]         = []
+        var exrItems:   [ExchangeReturnItem] = []
+        if !trans.isEmpty {
+            let tList = trans.map { $0.id.uuidString }.joined(separator: ",")
+            tnds      = (try? await api.fetch("tenders",          query: ["transaction_id":          "in.(\(tList))"])) ?? []
+            greceipts = (try? await api.fetch("gift_receipts",    query: ["transaction_id":          "in.(\(tList))"])) ?? []
+            exreturns = (try? await api.fetch("exchange_returns", query: ["original_transaction_id": "in.(\(tList))"])) ?? []
+            comms     = (try? await api.fetch("commissions",      query: ["transaction_id":          "in.(\(tList))"])) ?? []
+            if !exreturns.isEmpty {
+                let erList = exreturns.map { $0.id.uuidString }.joined(separator: ",")
+                exrItems = (try? await api.fetch("exchange_return_items", query: ["exchange_return_id": "in.(\(erList))"])) ?? []
+            }
+        }
+
+        // Cart chain
+        let carts: [UniversalCart] = (try? await api.fetch("universal_carts", query: ["client_id": "eq.\(cid)"])) ?? []
+        var cartItems: [UniversalCartItem] = []
+        if !carts.isEmpty {
+            let cList = carts.map { $0.id.uuidString }.joined(separator: ",")
+            cartItems = (try? await api.fetch("universal_cart_items", query: ["cart_id": "in.(\(cList))"])) ?? []
+        }
+
+        // Omnichannel chain
+        let omniOrders: [OmnichannelOrder] = (try? await api.fetch("omnichannel_orders", query: ["client_id": "eq.\(cid)"])) ?? []
+        var slips: [ShipFromStoreSlip] = []
+        if !omniOrders.isEmpty {
+            let oList = omniOrders.map { $0.id.uuidString }.joined(separator: ",")
+            slips = (try? await api.fetch("ship_from_store_slips", query: ["order_id": "in.(\(oList))"])) ?? []
+        }
+
+        // ── STEP 2: Delete from backend in strict reverse-dependency order ────────────
+        for item in slips         { try? await api.delete("ship_from_store_slips",       id: item.id) }
+        for item in omniOrders    { try? await api.delete("omnichannel_orders",          id: item.id) }
+        for item in regularOrders { try? await api.delete("orders",                      id: item.id) }
+        for item in exrItems      { try? await api.delete("exchange_return_items",       id: item.id) }
+        for item in exreturns     { try? await api.delete("exchange_returns",            id: item.id) }
+        for item in greceipts     { try? await api.delete("gift_receipts",               id: item.id) }
+        for item in tnds          { try? await api.delete("tenders",                     id: item.id) }
+        for item in comms         { try? await api.delete("commissions",                 id: item.id) }
+        for item in trans         { try? await api.delete("transactions",                id: item.id) }
+        for item in cartItems     { try? await api.delete("universal_cart_items",        id: item.id) }
+        for item in dars          { try? await api.delete("discount_approval_requests",  id: item.id) }
+        for item in carts         { try? await api.delete("universal_carts",             id: item.id) }
+        for item in invitations   { try? await api.delete("event_invitations",           id: item.id) }
+        for item in aiRecs        { try? await api.delete("ai_recommendations",          id: item.id) }
+        for item in wishlists     { try? await api.delete("wishlist_items",              id: item.id) }
+        for item in anns          { try? await api.delete("client_anniversaries",        id: item.id) }
+        for item in appts         { try? await api.delete("appointments",                id: item.id) }
+        for item in outfits       { try? await api.delete("look_builder_outfits",        id: item.id) }
+
+        // ── STEP 3: Delete the client — throws if backend refuses ─────────────────────
+        try await api.delete("client_profiles", id: id)
+
+        // ── STEP 4: Update local cache only after confirmed backend deletion ──────────
+        await MainActor.run {
+            let tIds   = Set(trans.map      { $0.id })
+            let cIds   = Set(carts.map      { $0.id })
+            let erIds  = Set(exreturns.map  { $0.id })
+            let omniIds = Set(omniOrders.map { $0.id })
+
+            shipFromStoreSlips.removeAll       { omniIds.contains($0.orderId) }
+            omnichannelOrders.removeAll        { $0.clientId == id }
+            self.orders.removeAll              { $0.clientId == id }
+            exchangeReturnItems.removeAll      { erIds.contains($0.exchangeReturnId) }
+            exchangeReturns.removeAll          { tIds.contains($0.originalTransactionId) }
+            giftReceipts.removeAll             { tIds.contains($0.transactionId) }
+            tenders.removeAll                  { tIds.contains($0.transactionId) }
+            commissions.removeAll              { tIds.contains($0.transactionId) }
+            transactions.removeAll             { $0.clientId == id }
+            universalCartItems.removeAll       { cIds.contains($0.cartId) }
+            discountApprovalRequests.removeAll { $0.clientId == id }
+            universalCarts.removeAll           { $0.clientId == id }
+            eventInvitations.removeAll         { $0.clientId == id }
+            aiRecommendations.removeAll        { $0.clientId == id }
+            wishlistItems.removeAll            { $0.clientId == id }
+            clientAnniversaries.removeAll      { $0.clientId == id }
+            appointments.removeAll             { $0.clientId == id }
+            lookBuilderOutfits.removeAll       { $0.clientId == id }
+            clients.removeAll                  { $0.id == id }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
