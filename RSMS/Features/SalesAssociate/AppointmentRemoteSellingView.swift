@@ -45,10 +45,6 @@ struct AppointmentRemoteSellingView: View {
                         Text("Appointments")
                             .font(.system(size: 34, weight: .heavy))
                             .foregroundStyle(RSMSTheme.textPrimary)
-                        
-                        Text("\(scheduledCount) scheduled")
-                            .font(.system(size: 15, weight: .regular))
-                            .foregroundStyle(RSMSTheme.textSecondary)
                     }
                     
                     Spacer()
@@ -821,7 +817,6 @@ private struct AppointmentBookingFormSheet: View {
                                 }
                             }
 
-                            LuxuryPicker(title: "Boutique Location", selection: $selectedLocation, options: locations)
 
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Assigned Specialist")

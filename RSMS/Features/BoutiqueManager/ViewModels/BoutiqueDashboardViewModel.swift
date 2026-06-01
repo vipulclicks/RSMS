@@ -35,6 +35,10 @@ final class BoutiqueDashboardViewModel {
     /// All currently-active goals (cached after fetch so we can re-filter without a network call)
     private var allActiveGoals: [SalesGoal] = []
     
+    // Cached data for recalculation
+    private var allAssociates: [UserProfile] = []
+    private var allTransactions: [Transaction] = []
+    
     // MARK: - State
     var isLoading = false
     var errorMessage: String?
@@ -49,26 +53,31 @@ final class BoutiqueDashboardViewModel {
             // Fetch stores first so storeName lookup works
             try await dataStore.fetchStores()
             
-            // A) Today's Sales
+            // Fetch users
             try await dataStore.fetchUsers(storeId: storeId)
-            let associateIds = Set(dataStore.users.filter { $0.role == .salesAssociate }.map { $0.id })
+            self.allAssociates = dataStore.users.filter { $0.role == .salesAssociate }
+            let associateIds = Set(self.allAssociates.map { $0.id })
             
+            // Fetch all transactions
             try await dataStore.fetchTransactions(storeId: storeId)
-            self.todayTransactions = dataStore.transactions.filter {
-                $0.status == .completed && 
-                Calendar.current.isDateInToday($0.createdAt) &&
-                associateIds.contains($0.associateId)
+            self.allTransactions = dataStore.transactions.filter {
+                $0.status == .completed && associateIds.contains($0.associateId)
+            }
+            
+            // A) Today's Sales
+            self.todayTransactions = self.allTransactions.filter {
+                Calendar.current.isDateInToday($0.createdAt)
             }
             self.todaySales = self.todayTransactions.reduce(0.0) { $0 + $1.totalAmount }
             
-            // B) Sales Target — fetch all goals, cache them, then filter by selected period
+            // B) Sales Target — fetch all goals, cache them
             try await dataStore.fetchSalesGoals(storeId: storeId)
             let now = Date()
             self.allActiveGoals = dataStore.salesGoals.filter {
                 $0.storeId == storeId && $0.startDate <= now && $0.endDate >= now
             }
             
-            // C) Sales Progress — calculated for the currently selected period
+            // C) Sales Progress
             recalculateForPeriod()
             
             // D) Appointments Count & Clients
@@ -92,14 +101,12 @@ final class BoutiqueDashboardViewModel {
             }
             self.lowStockAlertCount = self.lowStockAlerts.count
             
-            // F) Fetch Dashboard Summaries (for targets if needed)
+            // F) Fetch Dashboard Summaries
             try await dataStore.fetchDashboardSummaries(storeId: storeId)
-            
-            // F2) Approvals & Notifications
             try? await dataStore.fetchDiscountApprovalRequests()
             try? await dataStore.fetchAppNotifications()
             
-            // G) Top Selling Category (Client-Side Computation)
+            // G) Top Selling Category
             self.topSellingCategory = try await computeTopCategory(dataStore: dataStore)
             
             // H) Staff On Shift Today
@@ -121,7 +128,6 @@ final class BoutiqueDashboardViewModel {
     private func computeTopCategory(dataStore: DataStore) async throws -> String? {
         guard !todayTransactions.isEmpty else { return nil }
         
-        // We need products to resolve categories
         if dataStore.products.isEmpty {
             try await dataStore.fetchProducts()
         }
@@ -130,7 +136,6 @@ final class BoutiqueDashboardViewModel {
         
         for transaction in todayTransactions {
             try await dataStore.fetchUniversalCartItems(cartId: transaction.cartId)
-            
             for item in dataStore.universalCartItems {
                 if let product = dataStore.products.first(where: { $0.id == item.productId }) {
                     categoryCounts[product.category, default: 0] += item.quantity
@@ -156,13 +161,9 @@ final class BoutiqueDashboardViewModel {
     }
     
     // MARK: - Actions
-    func simulateStockDrop() {
-        // Simulation disabled in prod environment
-    }
+    func simulateStockDrop() {}
     
     func reorderItem(for productId: UUID) {
-        // Implement reorder logic via DataStore movement request
-        // For now, optimistically remove from alerts
         self.lowStockAlerts.removeAll { $0.product.id == productId }
         self.lowStockAlertCount = self.lowStockAlerts.count
     }
@@ -171,12 +172,10 @@ final class BoutiqueDashboardViewModel {
     func resetSalesGoals(dataStore: DataStore, storeId: UUID) async {
         do {
             try await dataStore.fetchSalesGoals(storeId: storeId)
-            // 1. Delete all existing goals for this store
             for goal in dataStore.salesGoals {
                 try await dataStore.deleteSalesGoal(id: goal.id)
             }
             
-            // 2. Fetch staff to assign a fresh goal to the first associate found
             try await dataStore.fetchUsers(storeId: storeId)
             let associates = dataStore.users.filter { $0.role == .salesAssociate }
             if let firstAssociate = associates.first {
@@ -197,7 +196,6 @@ final class BoutiqueDashboardViewModel {
                 try await dataStore.createSalesGoal(newGoal)
             }
             
-            // 3. Reload everything
             await load(dataStore: dataStore, storeId: storeId)
         } catch {
             print("Failed to reset sales goals: \(error)")
@@ -207,15 +205,38 @@ final class BoutiqueDashboardViewModel {
     
     // MARK: - Period Recalculation
     
-    /// Whether any goals exist for the currently selected period
     private(set) var hasGoalsForPeriod: Bool = true
-    /// The total achieved amount across all associates for the selected period
     private(set) var periodAchievedAmount: Double = 0.0
-    /// How many associates have a goal set for this period
     private(set) var goalAssociateCount: Int = 0
     
-    /// Re-filters the cached active goals by the currently selected period
-    /// and recalculates salesTarget + salesProgress without a network call.
+    struct AssociateSalesProgress: Identifiable {
+        let id = UUID()
+        let associateId: UUID
+        let associateName: String
+        let achievedAmount: Double
+        let targetAmount: Double?
+        
+        var progressPercentage: Double {
+            guard let target = targetAmount, target > 0 else { return 0.0 }
+            return min(1.0, achievedAmount / target)
+        }
+    }
+    private(set) var periodAssociateProgress: [AssociateSalesProgress] = []
+    
+    private func startDate(for period: GoalPeriod) -> Date {
+        let cal = Calendar.current
+        let now = Date()
+        switch period {
+        case .daily: return cal.startOfDay(for: now)
+        case .weekly: return cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+        case .monthly: return cal.date(from: cal.dateComponents([.year, .month], from: now)) ?? now
+        case .quarterly: 
+            let month = cal.component(.month, from: now)
+            let quarterMonth = ((month - 1) / 3) * 3 + 1
+            return cal.date(from: DateComponents(year: cal.component(.year, from: now), month: quarterMonth, day: 1)) ?? now
+        }
+    }
+    
     private func recalculateForPeriod() {
         let filtered = allActiveGoals.filter { $0.period == selectedPeriod }
         self.hasGoalsForPeriod = !filtered.isEmpty
@@ -228,5 +249,32 @@ final class BoutiqueDashboardViewModel {
         } else {
             self.salesProgress = 0.0
         }
+        
+        // Compute associate-level progress using actual transactions for the period
+        let periodStart = startDate(for: selectedPeriod)
+        
+        var progressList: [AssociateSalesProgress] = []
+        for associate in allAssociates {
+            // Find if there's a goal for this period for this associate
+            let goal = filtered.first { $0.staffId == associate.id }
+            
+            // Calculate actual sales in this period
+            let associateTransactions = allTransactions.filter { 
+                $0.associateId == associate.id && $0.createdAt >= periodStart 
+            }
+            let actualSales = associateTransactions.reduce(0.0) { $0 + $1.totalAmount }
+            
+            // If they have a goal OR they made sales in this period, show them
+            if goal != nil || actualSales > 0 {
+                progressList.append(AssociateSalesProgress(
+                    associateId: associate.id,
+                    associateName: associate.fullName,
+                    achievedAmount: actualSales, // Use actual calculated sales for accuracy across periods
+                    targetAmount: goal?.targetAmount
+                ))
+            }
+        }
+        
+        self.periodAssociateProgress = progressList.sorted { $0.achievedAmount > $1.achievedAmount }
     }
 }

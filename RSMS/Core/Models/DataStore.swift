@@ -54,6 +54,7 @@ final class DataStore {
     var appNotifications: [AppNotification] = []
     var discounts: [Discount] = []
     var transactions: [Transaction] = []
+    var orders: [Order] = []
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
@@ -766,6 +767,22 @@ final class DataStore {
     }
 
     // ══════════════════════════════════════════════════════════
+    // MARK: - orders
+    // ══════════════════════════════════════════════════════════
+
+    func fetchOrders(storeId: UUID) async throws {
+        // NOTE: If orders need fetching by store, they may need to join with transactions.
+        // Assuming we fetch by client or all for now.
+    }
+
+    @discardableResult
+    func createOrder(_ o: Order) async throws -> Order {
+        let created: Order = try await api.insert("orders", record: o)
+        orders.append(created)
+        return created
+    }
+
+    // ══════════════════════════════════════════════════════════
     // MARK: - tenders
     // ══════════════════════════════════════════════════════════
 
@@ -1174,5 +1191,6 @@ final class DataStore {
         shipFromStoreSlips = []
         discountApprovalRequests = []
         appNotifications = []
+        orders = []
     }
 }

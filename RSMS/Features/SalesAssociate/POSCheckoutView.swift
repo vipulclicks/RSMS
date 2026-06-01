@@ -10,8 +10,9 @@ import SwiftUI
 
 struct POSCheckoutView: View {
     @State private var viewModel = POSCheckoutScreenViewModel()
-    @State private var showCheckoutConfirmation = false
+    @State private var showPaymentSummary = false
     @State private var showReturnSheet = false
+    @Environment(AppViewModel.self) private var appVM
 
     var body: some View {
         ZStack {
@@ -43,13 +44,23 @@ struct POSCheckoutView: View {
         }
         .navigationTitle("POS & Checkout")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Complete Checkout?", isPresented: $showCheckoutConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Confirm") {
-                // Process checkout
+        .fullScreenCover(isPresented: $showPaymentSummary) {
+            // Provide the active cart. If none exists, we fallback to a mock one for the preview
+            if let activeCart = appVM.dataStore.universalCarts.first(where: { $0.type == .pos && $0.status == .active }) {
+                let checkoutVM = POSCheckoutViewModel(
+                    dataStore: appVM.dataStore,
+                    associateId: appVM.currentUser?.id ?? UUID(),
+                    storeId: appVM.currentStoreId ?? UUID()
+                )
+                NavigationStack {
+                    PaymentSummaryView(cart: activeCart, checkoutVM: checkoutVM)
+                }
+            } else {
+                Text("Error: Failed to construct a fallback cart.")
             }
-        } message: {
-            Text("Total: ₹\(Int(viewModel.cartTotal).formatted()). This action will finalise the transaction.")
+        }
+        .onAppear {
+            viewModel.dataStore = appVM.dataStore
         }
     }
 
@@ -102,7 +113,8 @@ struct POSCheckoutView: View {
 
             // Checkout button
             Button {
-                showCheckoutConfirmation = true
+                prepareFallbackCartIfNeeded()
+                showPaymentSummary = true
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "creditcard.fill")
@@ -246,37 +258,107 @@ struct POSCheckoutView: View {
             }
         }
     }
+    
+    // MARK: - Helper
+    private func prepareFallbackCartIfNeeded() {
+        if !appVM.dataStore.universalCarts.contains(where: { $0.type == .pos && $0.status == .active }) {
+            // Ensure we have a dummy client for testing
+            let clientId: UUID
+            if let existing = appVM.dataStore.clients.first(where: { $0.fullName == "Sandbox User" }) {
+                clientId = existing.id
+            } else {
+                clientId = UUID()
+                let dummyClient = ClientProfile(
+                    id: clientId, fullName: "Sandbox User", email: "test@example.com", phone: "+919876543210",
+                    preferredStoreId: appVM.currentStoreId, vipTier: .standard, privacyConsentGiven: true, consentDate: Date(),
+                    notes: nil, createdAt: Date(), updatedAt: Date(), shoeSize: nil, ringSize: nil, braceletSize: nil,
+                    necklaceLength: nil, wristSize: nil, beltSize: nil, favoriteCategories: nil, favoriteMetals: nil,
+                    favoriteGemstones: nil, shoeFitPreference: nil, preferredMetal: nil, preferredGemstone: nil,
+                    watchCasePreference: nil, strapMaterialPreference: nil, preferredBagSize: nil, preferredBagStyle: nil,
+                    preferredMaterial: nil, bucklePreference: nil, fragranceFamily: nil, fragranceStrength: nil,
+                    scentPreference: nil, preferredBrands: nil, favoriteColors: nil, stylePreference: nil,
+                    giftingPreference: nil, shoppingPreference: nil
+                )
+                appVM.dataStore.clients.append(dummyClient)
+            }
+            
+            let newCart = UniversalCart(
+                id: UUID(),
+                type: .pos,
+                associateId: appVM.currentUser?.id ?? UUID(),
+                clientId: clientId,
+                storeId: appVM.currentStoreId ?? UUID(),
+                status: .active,
+                note: nil,
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            appVM.dataStore.universalCarts.append(newCart)
+            
+            // Add items from viewModel
+            for mockItem in viewModel.cartItems {
+                let newItem = UniversalCartItem(
+                    id: UUID(),
+                    cartId: newCart.id,
+                    productId: mockItem.productId,
+                    quantity: mockItem.quantity,
+                    unitPrice: mockItem.unitPrice,
+                    discountApplied: nil,
+                    note: nil
+                )
+                appVM.dataStore.universalCartItems.append(newItem)
+            }
+        }
+    }
 }
 
 // MARK: - Screen ViewModel
 
 @Observable
 private final class POSCheckoutScreenViewModel {
+    var dataStore: DataStore?
     var selectedTab = 0
     var productSearch = ""
     var selectedTenderMethod = "Card"
     var isTaxFree = false
 
-    // TODO: Replace mock data with DataStore
-    private(set) var cartItems: [UniversalCartItem] = [UniversalCartItem.previewPOSItem]
-    private(set) var availableDiscounts: [Discount] = Discount.all
-    private(set) var transactions: [Transaction] = Transaction.all
-    private(set) var exchangeReturns: [ExchangeReturn] = ExchangeReturn.all
-    private(set) var products: [Product] = Product.all
-
-    var cartSubtotal: Double {
-        cartItems.reduce(0) { $0 + (($1.unitPrice ?? 0) * Double($1.quantity)) }
+    var activeCart: UniversalCart? {
+        dataStore?.universalCarts.first(where: { $0.type == .pos && $0.status == .active })
     }
 
-    var cartTax: Double { cartSubtotal * 0.20 }
+    var cartItems: [UniversalCartItem] {
+        guard let cart = activeCart else { return [] }
+        return dataStore?.universalCartItems.filter { $0.cartId == cart.id } ?? []
+    }
+
+    var availableDiscounts: [Discount] {
+        dataStore?.discounts ?? []
+    }
+
+    var transactions: [Transaction] {
+        dataStore?.transactions.sorted(by: { $0.createdAt > $1.createdAt }) ?? []
+    }
+
+    var exchangeReturns: [ExchangeReturn] {
+        dataStore?.exchangeReturns.sorted(by: { $0.createdAt > $1.createdAt }) ?? []
+    }
+
+    var cartSubtotal: Double {
+        cartItems.reduce(0) { total, item in
+            let price = item.unitPrice ?? productPrice(for: item.productId)
+            return total + (price * Double(item.quantity))
+        }
+    }
+
+    var cartTax: Double { isTaxFree ? 0 : cartSubtotal * 0.20 }
     var cartTotal: Double { cartSubtotal + cartTax }
 
     func productName(for id: UUID) -> String {
-        products.first { $0.id == id }?.name ?? "Unknown"
+        dataStore?.product(by: id)?.name ?? "Unknown"
     }
 
     func productPrice(for id: UUID) -> Double {
-        products.first { $0.id == id }?.price ?? 0
+        dataStore?.product(by: id)?.price ?? 0
     }
 
     func transactionStatusColor(_ status: TransactionStatus) -> Color {

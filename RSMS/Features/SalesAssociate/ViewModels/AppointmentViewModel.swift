@@ -86,7 +86,6 @@ final class AppointmentViewModel {
         let now = Date()
         let nextAppt = appointments
             .filter {
-                Calendar.current.isDateInToday($0.dateTime) &&
                 $0.dateTime > now &&
                 ($0.status == .scheduled || $0.status == .confirmed)
             }
@@ -94,11 +93,17 @@ final class AppointmentViewModel {
             .first
         
         if let appt = nextAppt {
-            let timeStr = RSMSDateFormatter.timeOnly.string(from: appt.dateTime)
-            let name = clientName(for: appt.clientId)
-            return "\(timeStr) • \(name)"
+            let name = clientName(for: appt.clientId).components(separatedBy: " ").first ?? "Client"
+            if Calendar.current.isDateInToday(appt.dateTime) {
+                let timeStr = RSMSDateFormatter.timeOnly.string(from: appt.dateTime)
+                return "\(timeStr) • \(name)"
+            } else {
+                let df = DateFormatter()
+                df.dateFormat = "MMM d"
+                return "\(df.string(from: appt.dateTime)) • \(name)"
+            }
         }
-        return "No upcoming appointments"
+        return "None Scheduled"
     }
 
     // MARK: - Stores

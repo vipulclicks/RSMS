@@ -26,6 +26,7 @@ struct StaffProfileDetailView: View {
                 ScrollView {
                     VStack(spacing: 32) {
                         headerSection
+                        shiftSection
                         performanceSection
                         commissionSection
                     }
@@ -108,6 +109,36 @@ struct StaffProfileDetailView: View {
             .multilineTextAlignment(horizontalSizeClass == .compact ? .center : .leading)
     }
     
+    // MARK: - Shift Section
+    private var shiftSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionHeader(title: "Shift", subtitle: "Current Assigned Shift")
+            
+            HStack(spacing: 12) {
+                Image(systemName: "clock.fill")
+                    .font(.title2)
+                    .foregroundStyle(RSMSTheme.primary)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Today's Shift")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    
+                    Text(viewModel.shiftTiming)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                }
+                Spacer()
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(RSMSTheme.surfacePrimary)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+            )
+        }
+    }
+    
     // MARK: - Performance Section
     private var performanceSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -146,7 +177,7 @@ struct StaffProfileDetailView: View {
                             .animation(.easeOut(duration: 1.0), value: viewModel.goalAchievementPercentage)
                         
                         VStack {
-                            Text("\(Int(viewModel.goalAchievementPercentage * 100))%")
+                            Text("\(Int(viewModel.rawGoalAchievementPercentage * 100))%")
                                 .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.gold)
                             Text("Achieved")

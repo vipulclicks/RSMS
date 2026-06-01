@@ -11,7 +11,10 @@ struct CycleCountSectionView: View {
 
     private var columns: [GridItem] {
         if horizontalSizeClass == .compact {
-            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
         } else {
             return [
                 GridItem(.flexible()),

@@ -22,7 +22,10 @@ struct StoreDashboardView: View {
     
     private var kpiColumns: [GridItem] {
         if horizontalSizeClass == .compact {
-            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
         } else {
             return [
                 GridItem(.flexible()),
@@ -307,6 +310,41 @@ struct StoreDashboardView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 32)
             }
+            
+            // Show individual associate sales for the period
+            if !dashboardVM.periodAssociateProgress.isEmpty {
+                Divider().overlay(RSMSTheme.divider)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Sales by Associate")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    
+                    ForEach(dashboardVM.periodAssociateProgress) { progress in
+                        HStack {
+                            Text(progress.associateName)
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            Spacer()
+                            if let target = progress.targetAmount {
+                                Text("\(dashboardVM.formatCurrency(progress.achievedAmount)) / \(dashboardVM.formatCurrency(target))")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                            } else {
+                                Text("\(dashboardVM.formatCurrency(progress.achievedAmount))")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                            }
+                        }
+                        
+                        if progress.targetAmount != nil {
+                            ProgressView(value: progress.progressPercentage)
+                                .progressViewStyle(LinearProgressViewStyle(tint: RSMSTheme.primaryDark))
+                        }
+                    }
+                }
+                .padding(.top, 8)
+            }
         }
         .rsmsCard()
     }
@@ -334,10 +372,16 @@ struct StoreDashboardView: View {
     }
     
     // MARK: - Staff Section
-    private let staffColumns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    private var staffColumns: [GridItem] {
+        if horizontalSizeClass == .compact {
+            return [GridItem(.flexible(), spacing: 16)]
+        } else {
+            return [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ]
+        }
+    }
     
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -561,6 +605,7 @@ struct StoreDashboardView: View {
 struct TodayAppointmentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         ScrollView {
@@ -576,7 +621,8 @@ struct TodayAppointmentsSheet: View {
                             description: Text("No appointments scheduled for today.")
                         )
                     } else {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                        let cols = horizontalSizeClass == .compact ? [GridItem(.flexible())] : [GridItem(.flexible()), GridItem(.flexible())]
+                        LazyVGrid(columns: cols, spacing: 16) {
                             ForEach(todaysAppointments) { appointment in
                                 appointmentCard(appointment)
                             }
