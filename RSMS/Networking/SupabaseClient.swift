@@ -55,6 +55,7 @@ final class SupabaseClient: Sendable {
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: config)
 
         // ── Decoder ──────────────────────────────────────────

@@ -57,7 +57,7 @@ struct SalesAssociateDailySalesView: View {
     private func transactionCard(_ txn: Transaction) -> some View {
         let clientName = appViewModel.dataStore.clientName(for: txn.clientId ?? UUID())
         let timeString = txn.createdAt.formatted(date: .omitted, time: .shortened)
-        let commission = appViewModel.dataStore.commissions.first(where: { $0.transactionId == txn.id })?.amount ?? 0
+        let commission = appViewModel.dataStore.commissions.first(where: { $0.transactionId == txn.id })?.amount ?? (txn.totalAmount * 0.05)
         
         return VStack(spacing: 16) {
             HStack {

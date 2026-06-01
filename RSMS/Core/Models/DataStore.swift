@@ -161,10 +161,14 @@ final class DataStore {
     }
     
     func updateEmployeeProfile(_ profile: UserProfile) async throws {
-        // Explicitly update the user_profiles table. 
-        // The backend trigger auto-creates the row on auth.users insert.
-        // We use UPDATE instead of INSERT to avoid duplicate key errors.
-        try await api.update("user_profiles", id: profile.id, record: profile)
+        // Explicitly update only the allowed (editable) fields of the user_profiles table.
+        // This avoids write permissions or RLS violations on locked columns like role or store_id.
+        let payload = UserProfileUpdatePayload(
+            phone: profile.phone,
+            avatarURL: profile.avatarURL,
+            updatedAt: Date()
+        )
+        try await api.update("user_profiles", id: profile.id, record: payload)
         
         // Ensure local consistency by checking if already fetched
         if let i = users.firstIndex(where: { $0.id == profile.id }) { 
