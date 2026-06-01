@@ -22,7 +22,10 @@ struct StoreDashboardView: View {
     
     private var kpiColumns: [GridItem] {
         if horizontalSizeClass == .compact {
-            return [GridItem(.adaptive(minimum: 150), spacing: 16)]
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
         } else {
             return [
                 GridItem(.flexible()),
@@ -334,10 +337,16 @@ struct StoreDashboardView: View {
     }
     
     // MARK: - Staff Section
-    private let staffColumns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    private var staffColumns: [GridItem] {
+        if horizontalSizeClass == .compact {
+            return [GridItem(.flexible(), spacing: 16)]
+        } else {
+            return [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ]
+        }
+    }
     
     private var staffSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -561,6 +570,7 @@ struct StoreDashboardView: View {
 struct TodayAppointmentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         ScrollView {
@@ -576,7 +586,8 @@ struct TodayAppointmentsSheet: View {
                             description: Text("No appointments scheduled for today.")
                         )
                     } else {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                        let cols = horizontalSizeClass == .compact ? [GridItem(.flexible())] : [GridItem(.flexible()), GridItem(.flexible())]
+                        LazyVGrid(columns: cols, spacing: 16) {
                             ForEach(todaysAppointments) { appointment in
                                 appointmentCard(appointment)
                             }

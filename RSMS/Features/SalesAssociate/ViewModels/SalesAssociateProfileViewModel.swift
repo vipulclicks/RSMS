@@ -12,41 +12,54 @@ import Foundation
 @Observable
 final class SalesAssociateProfileViewModel {
     // MARK: - Mock Performance Statistics
-    var todaySales: String = "₹2,34,500"
-    var appointmentsCount: Int = 4
+    var todaySales: String = "₹0"
+    var appointmentsCount: Int = 0
+    // Lists for drill-down views
+    var todayTransactionsList: [Transaction] = []
+    var todayAppointmentsList: [Appointment] = []
     
     // MARK: - User Information Extensions
-    var department: String = "High Jewelry & Haute Couture"
-    var shiftTiming: String = "Morning Shift (09:00 AM - 06:00 PM)"
-    var reportingManager: String = "Sophie Martin"
+    var department: String = "—"
+    var shiftTiming: String = "Not Assigned"
+    var reportingManager: String = "Loading..."
     
     // MARK: - Commission & Goals
-    var commissionEarned: String = "₹45,200"
-    var commissionApprover: String = "Sophie Martin"
-    var salesGoalsAchieved: String = "₹8,50,000"
-    var salesGoalsTarget: String = "₹10,00,000"
-    var salesGoalsPercentage: Double = 0.85
+    var commissionEarned: String = "₹0"
+    var commissionApprover: String = "Loading..."
+    var salesGoalsAchieved: String = "₹0"
+    var salesGoalsTarget: String = "₹0"
+    var salesGoalsPercentage: Double = 0.0
 
     func setup(dataStore: DataStore, staffId: UUID, storeId: UUID) {
-        // Today's Sales from daily sales goal target
-        if let dailyGoal = dataStore.salesGoals.first(where: { $0.staffId == staffId && $0.period == .daily }) {
-            self.todaySales = "₹\(Int(dailyGoal.targetAmount).formatted())"
+        // Today's Sales
+        let todayTransactions = dataStore.transactions.filter {
+            $0.associateId == staffId &&
+            Calendar.current.isDateInToday($0.createdAt) &&
+            $0.status == .completed
+        }
+        self.todayTransactionsList = todayTransactions
+        
+        let todaySalesTotal = todayTransactions.reduce(0.0) { $0 + $1.totalAmount }
+        if todaySalesTotal > 0 {
+            self.todaySales = "₹\(Int(todaySalesTotal).formatted())"
         } else {
-            self.todaySales = "₹2,34,500"
+            self.todaySales = "₹0"
         }
 
-        // Appointments Handled (count of completed appointments)
-        let completedCount = dataStore.appointments.filter { $0.associateId == staffId && $0.status == .completed }.count
-        if completedCount > 0 {
-            self.appointmentsCount = completedCount
-        } else {
-            self.appointmentsCount = 4
+        // Appointments Handled (Today)
+        let todayAppointments = dataStore.appointments.filter { 
+            $0.associateId == staffId && 
+            Calendar.current.isDateInToday($0.dateTime)
         }
+        self.todayAppointmentsList = todayAppointments
+        self.appointmentsCount = todayAppointments.filter { $0.status == .completed }.count
 
         // Shift Timing from staff shifts
-        if let shift = dataStore.staffShifts.first(where: { $0.staffId == staffId }) {
+        if let shift = dataStore.staffShifts.first(where: { $0.staffId == staffId && Calendar.current.isDateInToday($0.shiftDate) }) {
             let roleName = shift.role.replacingOccurrences(of: "_", with: " ").capitalized
             self.shiftTiming = "\(roleName) Shift (\(shift.startTime) - \(shift.endTime))"
+        } else {
+            self.shiftTiming = "Not Assigned"
         }
 
         // Monthly goal target progress
@@ -54,6 +67,35 @@ final class SalesAssociateProfileViewModel {
             self.salesGoalsTarget = "₹\(Int(monthlyGoal.targetAmount).formatted())"
             self.salesGoalsAchieved = "₹\(Int(monthlyGoal.achievedAmount).formatted())"
             self.salesGoalsPercentage = monthlyGoal.targetAmount > 0 ? (monthlyGoal.achievedAmount / monthlyGoal.targetAmount) : 0.0
+        } else {
+            self.salesGoalsTarget = "₹0"
+            self.salesGoalsAchieved = "₹0"
+            self.salesGoalsPercentage = 0.0
+        }
+        
+        // Department & Reporting Manager
+        if let user = dataStore.users.first(where: { $0.id == staffId }) {
+            if user.role == .salesAssociate {
+                self.department = "Sales Floor"
+            } else {
+                self.department = user.role.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+            }
+        }
+        
+        if let manager = dataStore.users.first(where: { $0.storeId == storeId && $0.role == .boutiqueManager }) {
+            self.reportingManager = manager.fullName
+            self.commissionApprover = manager.fullName
+        } else {
+            self.reportingManager = "Pending Assignment"
+            self.commissionApprover = "Pending Assignment"
+        }
+        
+        // Commission
+        let totalCommissions = dataStore.commissions.filter { $0.staffId == staffId && $0.status == .approved }.reduce(0.0) { $0 + $1.amount }
+        if totalCommissions > 0 {
+            self.commissionEarned = "₹\(Int(totalCommissions).formatted())"
+        } else {
+            self.commissionEarned = "₹0"
         }
     }
     

@@ -55,6 +55,67 @@ struct StaffShift: Codable, Identifiable, Hashable {
         case startTime = "start_time"
         case endTime   = "end_time"
     }
+
+    /// Date-only formatter used for the Postgres `date` column.
+    /// Using the local calendar so that "2026-05-31" always means
+    /// May 31 in the device's timezone, not midnight UTC.
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current          // ← local timezone, NOT UTC
+        return f
+    }()
+
+    // Custom decoder: read shift_date as a plain "yyyy-MM-dd" string
+    // and interpret it in the device's local timezone so that
+    // Calendar.current.isDateInToday() works correctly.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id        = try c.decode(UUID.self, forKey: .id)
+        staffId   = try c.decode(UUID.self, forKey: .staffId)
+        storeId   = try c.decode(UUID.self, forKey: .storeId)
+        startTime = try c.decode(String.self, forKey: .startTime)
+        endTime   = try c.decode(String.self, forKey: .endTime)
+        role      = try c.decode(String.self, forKey: .role)
+        notes     = try c.decodeIfPresent(String.self, forKey: .notes)
+
+        let dateStr = try c.decode(String.self, forKey: .shiftDate)
+        guard let d = Self.dateOnlyFormatter.date(from: dateStr) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .shiftDate, in: c,
+                debugDescription: "Cannot decode shift_date: \(dateStr)"
+            )
+        }
+        shiftDate = d
+    }
+
+    // Custom encoder: write shift_date as "yyyy-MM-dd" so that it
+    // matches the Postgres `date` column format.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(staffId, forKey: .staffId)
+        try c.encode(storeId, forKey: .storeId)
+        try c.encode(Self.dateOnlyFormatter.string(from: shiftDate), forKey: .shiftDate)
+        try c.encode(startTime, forKey: .startTime)
+        try c.encode(endTime, forKey: .endTime)
+        try c.encode(role, forKey: .role)
+        try c.encode(notes, forKey: .notes)
+    }
+
+    // Keep the memberwise init for creating shifts in code
+    init(id: UUID, staffId: UUID, storeId: UUID, shiftDate: Date,
+         startTime: String, endTime: String, role: String, notes: String?) {
+        self.id = id
+        self.staffId = staffId
+        self.storeId = storeId
+        self.shiftDate = shiftDate
+        self.startTime = startTime
+        self.endTime = endTime
+        self.role = role
+        self.notes = notes
+    }
 }
 
 // MARK: - Sales Goal
@@ -80,6 +141,82 @@ struct SalesGoal: Codable, Identifiable, Hashable {
         case startDate      = "start_date"
         case endDate        = "end_date"
         case createdAt      = "created_at"
+    }
+
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        return f
+    }()
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        staffId = try c.decode(UUID.self, forKey: .staffId)
+        storeId = try c.decode(UUID.self, forKey: .storeId)
+        targetAmount = try c.decode(Double.self, forKey: .targetAmount)
+        achievedAmount = try c.decode(Double.self, forKey: .achievedAmount)
+        period = try c.decode(GoalPeriod.self, forKey: .period)
+
+        let startStr = try c.decode(String.self, forKey: .startDate)
+        guard let sd = Self.dateOnlyFormatter.date(from: startStr) else {
+            throw DecodingError.dataCorruptedError(forKey: .startDate, in: c, debugDescription: "Cannot decode start_date")
+        }
+        startDate = sd
+
+        let endStr = try c.decode(String.self, forKey: .endDate)
+        guard let ed = Self.dateOnlyFormatter.date(from: endStr) else {
+            throw DecodingError.dataCorruptedError(forKey: .endDate, in: c, debugDescription: "Cannot decode end_date")
+        }
+        endDate = ed
+
+        // createdAt comes as ISO8601 from Supabase
+        let createdStr = try c.decode(String.self, forKey: .createdAt)
+        if let cd = Self.isoFormatter.date(from: createdStr) {
+            createdAt = cd
+        } else {
+            // Fallback without fractional seconds
+            let fallbackFormatter = ISO8601DateFormatter()
+            fallbackFormatter.formatOptions = [.withInternetDateTime]
+            if let cd = fallbackFormatter.date(from: createdStr) {
+                createdAt = cd
+            } else {
+                throw DecodingError.dataCorruptedError(forKey: .createdAt, in: c, debugDescription: "Cannot decode created_at")
+            }
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(staffId, forKey: .staffId)
+        try c.encode(storeId, forKey: .storeId)
+        try c.encode(targetAmount, forKey: .targetAmount)
+        try c.encode(achievedAmount, forKey: .achievedAmount)
+        try c.encode(period, forKey: .period)
+        try c.encode(Self.dateOnlyFormatter.string(from: startDate), forKey: .startDate)
+        try c.encode(Self.dateOnlyFormatter.string(from: endDate), forKey: .endDate)
+        try c.encode(Self.isoFormatter.string(from: createdAt), forKey: .createdAt)
+    }
+
+    init(id: UUID, staffId: UUID, storeId: UUID, targetAmount: Double, achievedAmount: Double, period: GoalPeriod, startDate: Date, endDate: Date, createdAt: Date) {
+        self.id = id
+        self.staffId = staffId
+        self.storeId = storeId
+        self.targetAmount = targetAmount
+        self.achievedAmount = achievedAmount
+        self.period = period
+        self.startDate = startDate
+        self.endDate = endDate
+        self.createdAt = createdAt
     }
 }
 
