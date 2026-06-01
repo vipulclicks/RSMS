@@ -355,16 +355,10 @@ private struct DashboardHeaderView: View {
             Button {
                 onProfileTapped()
             } label: {
-                ZStack {
-                    Circle()
-                        .fill(RSMSTheme.surfacePrimary)
-                        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(RSMSTheme.primary)
-                }
+                let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
+                    .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
+                ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 44)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
             }
             .accessibilityLabel("Profile")
         }

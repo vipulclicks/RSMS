@@ -39,9 +39,6 @@ struct SalesAssociateProfileView: View {
                         // 4. Personal Information (Grouped List Style)
                         personalInformationSection(user: user)
                         
-                        // 5. Device & Session Metadata
-                        deviceAndSessionSection()
-                        
                         // 6. Sign Out Button
                         signOutButton()
                         
@@ -65,8 +62,8 @@ struct SalesAssociateProfileView: View {
                 Button {
                     showingEditProfileSheet = true
                 } label: {
-                    Text("Edit")
-                        .fontWeight(.semibold)
+                    Image(systemName: "pencil")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
             }
@@ -468,20 +465,7 @@ struct SalesAssociateProfileView: View {
         }
     }
     
-    private func deviceAndSessionSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Last Login")
-                Spacer()
-                Text(viewModel.lastLoginTime)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(RSMSTheme.textSecondary)
-        .padding(.horizontal, 16)
-    }
-    
+
     private func signOutButton() -> some View {
         Button {
             showLogoutConfirmation = true
