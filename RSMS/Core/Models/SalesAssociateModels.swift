@@ -18,7 +18,7 @@ struct ClientProfile: Codable, Identifiable, Hashable {
     let email: String?
     let phone: String?
     let preferredStoreId: UUID?
-    let vipTier: VIPTier
+    var vipTier: VIPTier
     let privacyConsentGiven: Bool
     let consentDate: Date?
     let notes: String?

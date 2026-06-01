@@ -624,14 +624,14 @@ struct SAClientBrowserView: View {
     @State private var clientToDelete: ClientProfile? = nil
     @State private var showDeleteAlert = false
     
-    let filters = ["All", "VIP", "Platinum", "Gold", "Silver"]
+    let filters = ["All", "Privé", "Platinum", "Gold", "Silver", "Standard"]
     
     private var filteredGroupedClients: [ClientGroup] {
         var clients = appViewModel.dataStore.clients
         
         // 1. Filter by Tier
         if selectedFilter != "All" {
-            if selectedFilter == "VIP" {
+            if selectedFilter == "Privé" || selectedFilter == "Prive" || selectedFilter == "VIP" {
                 clients = clients.filter { $0.vipTier == VIPTier.prive }
             } else {
                 clients = clients.filter { $0.vipTier.rawValue.caseInsensitiveCompare(selectedFilter) == .orderedSame }
