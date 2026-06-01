@@ -179,75 +179,11 @@ final class DataStore {
     func fetchUsers(storeId: UUID? = nil) async throws {
         var query: [String: String] = [:]
         if let sid = storeId { query["store_id"] = "eq.\(sid)" }
-        let fetched: [UserProfile] = try await api.fetch("user_profiles", query: query)
-        users = fetched.map { user in
-            var updated = user
-            let idStr = user.id.uuidString.lowercased()
-            if let localPhone = UserDefaults.standard.string(forKey: "phone_\(idStr)") {
-                updated = UserProfile(
-                    id: updated.id,
-                    email: updated.email,
-                    fullName: updated.fullName,
-                    role: updated.role,
-                    storeId: updated.storeId,
-                    avatarURL: updated.avatarURL,
-                    phone: localPhone,
-                    isActive: updated.isActive,
-                    createdAt: updated.createdAt,
-                    updatedAt: updated.updatedAt
-                )
-            }
-            if let localAvatar = UserDefaults.standard.string(forKey: "avatar_\(idStr)") {
-                updated = UserProfile(
-                    id: updated.id,
-                    email: updated.email,
-                    fullName: updated.fullName,
-                    role: updated.role,
-                    storeId: updated.storeId,
-                    avatarURL: localAvatar.isEmpty ? nil : localAvatar,
-                    phone: updated.phone,
-                    isActive: updated.isActive,
-                    createdAt: updated.createdAt,
-                    updatedAt: updated.updatedAt
-                )
-            }
-            return updated
-        }
+        users = try await api.fetch("user_profiles", query: query)
     }
 
     func fetchUser(id: UUID) async throws -> UserProfile {
-        let fetched: UserProfile = try await api.fetchById("user_profiles", id: id)
-        var updated = fetched
-        let idStr = id.uuidString.lowercased()
-        if let localPhone = UserDefaults.standard.string(forKey: "phone_\(idStr)") {
-            updated = UserProfile(
-                id: updated.id,
-                email: updated.email,
-                fullName: updated.fullName,
-                role: updated.role,
-                storeId: updated.storeId,
-                avatarURL: updated.avatarURL,
-                phone: localPhone,
-                isActive: updated.isActive,
-                createdAt: updated.createdAt,
-                updatedAt: updated.updatedAt
-            )
-        }
-        if let localAvatar = UserDefaults.standard.string(forKey: "avatar_\(idStr)") {
-            updated = UserProfile(
-                id: updated.id,
-                email: updated.email,
-                fullName: updated.fullName,
-                role: updated.role,
-                storeId: updated.storeId,
-                avatarURL: localAvatar.isEmpty ? nil : localAvatar,
-                phone: updated.phone,
-                isActive: updated.isActive,
-                createdAt: updated.createdAt,
-                updatedAt: updated.updatedAt
-            )
-        }
-        return updated
+        try await api.fetchById("user_profiles", id: id)
     }
 
     @discardableResult
@@ -270,7 +206,14 @@ final class DataStore {
             avatarURL: profile.avatarURL,
             updatedAt: Date()
         )
-        try await api.update("user_profiles", id: profile.id, record: payload)
+        
+        do {
+            try await api.update("user_profiles", id: profile.id, record: payload)
+        } catch {
+            print("[DataStore] Profile update failed (possibly because row doesn't exist). Attempting to auto-insert: \(error.localizedDescription)")
+            // Auto-create/insert the user profile in the database if it doesn't exist yet
+            try await api.insert("user_profiles", record: profile)
+        }
         
         // Ensure local consistency by checking if already fetched
         if let i = users.firstIndex(where: { $0.id == profile.id }) { 
