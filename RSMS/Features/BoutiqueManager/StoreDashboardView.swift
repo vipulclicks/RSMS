@@ -18,6 +18,7 @@ struct StoreDashboardView: View {
     @State private var navPath: [DashboardRoute] = []
     @State private var showingNotifications = false
     @State private var showingProfile = false
+    @State private var showingSalesBreakdown = false
     @State private var carouselSelection: Int = 0
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -107,6 +108,44 @@ struct StoreDashboardView: View {
                             }
                         }
                 }
+            }
+            .sheet(isPresented: $showingSalesBreakdown) {
+                NavigationStack {
+                    if dashboardVM.todaySalesByStaff.isEmpty {
+                        ContentUnavailableView("No Sales Today", systemImage: "indianrupeesign.circle", description: Text("There are no completed transactions for today yet."))
+                            .toolbar {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button("Done") { showingSalesBreakdown = false }
+                                        .font(.headline)
+                                        .foregroundStyle(RSMSTheme.gold)
+                                }
+                            }
+                    } else {
+                        List(dashboardVM.todaySalesByStaff) { staff in
+                            HStack {
+                                Text(staff.staffName)
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Spacer()
+                                Text(dashboardVM.formatCurrency(staff.totalSales))
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.primaryDark)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .listStyle(.insetGrouped)
+                        .navigationTitle("Today's Sales Breakdown")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("Done") { showingSalesBreakdown = false }
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.gold)
+                            }
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
             }
             .task {
                 if let storeId = appVM.currentStoreId {
@@ -220,13 +259,18 @@ struct StoreDashboardView: View {
             alignment: .leading,
             spacing: 16
         ) {
-            KPICard(
-                icon: "indianrupeesign.square.fill",
-                value: dashboardVM.formatCurrency(dashboardVM.todaySales),
-                label: "Today's Sales",
-                trend: "\(dashboardVM.todayTransactions.count) transactions",
-                trendColor: RSMSTheme.success
-            )
+            Button {
+                showingSalesBreakdown = true
+            } label: {
+                KPICard(
+                    icon: "indianrupeesign.square.fill",
+                    value: dashboardVM.formatCurrency(dashboardVM.todaySales),
+                    label: "Today's Sales",
+                    trend: "\(dashboardVM.todayTransactions.count) transactions",
+                    trendColor: RSMSTheme.success
+                )
+            }
+            .buttonStyle(.plain)
             
             Button {
                 navPath.append(.appointments)

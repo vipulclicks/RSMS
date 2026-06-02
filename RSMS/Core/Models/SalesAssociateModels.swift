@@ -107,6 +107,7 @@ enum VIPTier: String, Codable, CaseIterable {
     case gold     = "gold"
     case platinum = "platinum"
     case prive    = "prive"
+    case vip      = "vip"
 }
 
 // MARK: - Client Anniversary

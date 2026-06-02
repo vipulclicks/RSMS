@@ -126,13 +126,20 @@ final class POSCheckoutViewModel {
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
-        // 5. Update Sales Goal Achieved Amount
-        let now = Date()
+        // 5. Update Sales Goal Achieved Amount & Gather Goal Data
+        var previousAchieved: Double = 0.0
+        var targetAmount: Double = 0.0
+        var hasGoal = false
+
         if let currentGoal = dataStore.salesGoals
             .filter({ $0.staffId == associateId && $0.period == .monthly })
             .sorted(by: { $0.createdAt > $1.createdAt })
             .first 
         {
+            previousAchieved = currentGoal.achievedAmount
+            targetAmount = currentGoal.targetAmount
+            hasGoal = true
+            
             let updatedGoal = SalesGoal(
                 id: currentGoal.id,
                 staffId: currentGoal.staffId,
@@ -159,6 +166,51 @@ final class POSCheckoutViewModel {
         // 6. Clear in-memory cart items so UI reflects empty cart post-payment
         await MainActor.run {
             dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
+        }
+        
+        // 7. Auto-assign Commission (Static Tiered calculation based on Monthly Sales)
+        var commissionAmount: Double = 0.0
+        
+        let tier1Threshold: Double = 1_000_000
+        let tier2Threshold: Double = 2_000_000
+        
+        var remainingAmount = totalAmount
+        var currentAchieved = previousAchieved
+        
+        // Tier 1: 0 to 10,00,000 (2%)
+        if currentAchieved < tier1Threshold {
+            let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+            commissionAmount += amountInTier1 * 0.02
+            remainingAmount -= amountInTier1
+            currentAchieved += amountInTier1
+        }
+        
+        // Tier 2: 10,00,001 to 20,00,000 (3%)
+        if remainingAmount > 0 && currentAchieved < tier2Threshold {
+            let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+            commissionAmount += amountInTier2 * 0.03
+            remainingAmount -= amountInTier2
+            currentAchieved += amountInTier2
+        }
+        
+        // Tier 3: Above 20,00,000 (5%)
+        if remainingAmount > 0 {
+            commissionAmount += remainingAmount * 0.05
+        }
+        
+        let effectiveRate = totalAmount > 0 ? commissionAmount / totalAmount : 0.0
+        
+        if commissionAmount > 0 {
+            let commission = Commission(
+                id: UUID(),
+                staffId: associateId,
+                transactionId: txn.id,
+                amount: commissionAmount,
+                rate: effectiveRate,
+                status: .pending,
+                createdAt: .now
+            )
+            try? await dataStore.createCommission(commission)
         }
     }
 

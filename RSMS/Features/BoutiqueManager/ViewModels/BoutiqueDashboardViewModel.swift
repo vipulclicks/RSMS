@@ -36,6 +36,25 @@ final class BoutiqueDashboardViewModel {
     private(set) var previousDaysSales: [DailyStoreSales] = []
     private(set) var salesIncrementPercentage: Double = 0.0
     
+    struct StaffSales: Identifiable {
+        let id: UUID
+        let staffName: String
+        let totalSales: Double
+    }
+    
+    var todaySalesByStaff: [StaffSales] {
+        var salesDict: [UUID: Double] = [:]
+        for txn in todayTransactions {
+            salesDict[txn.associateId, default: 0] += txn.totalAmount
+        }
+        
+        return salesDict.map { (associateId, total) in
+            let staff = allAssociates.first { $0.id == associateId }
+            let name = staff?.fullName ?? "Unknown"
+            return StaffSales(id: associateId, staffName: name, totalSales: total)
+        }.sorted { $0.totalSales > $1.totalSales }
+    }
+    
     // Period filter for Sales Progress
     var selectedPeriod: GoalPeriod = .monthly {
         didSet { recalculateForPeriod() }

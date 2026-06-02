@@ -91,7 +91,97 @@ struct CommissionManagementView: View {
                     }
                 }
                 Spacer()
+                
+                Button {
+                    Task { await recalculateAllCommissions() }
+                } label: {
+                    Text(isRecalculating ? "Recalculating..." : "Fix History")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.danger.opacity(0.1))
+                        .foregroundStyle(RSMSTheme.danger)
+                        .clipShape(Capsule())
+                }
+                .disabled(isRecalculating)
             }
+        }
+    }
+    
+    @State private var isRecalculating = false
+    
+    @MainActor
+    private func recalculateAllCommissions() async {
+        isRecalculating = true
+        defer { isRecalculating = false }
+        
+        do {
+            // 1. Fetch all transactions and commissions
+            try await appVM.dataStore.fetchTransactions(storeId: appVM.currentStoreId)
+            let allTxns = appVM.dataStore.transactions.sorted(by: { $0.createdAt < $1.createdAt })
+            
+            // 2. Delete all existing commissions (for testing/reset purposes)
+            for commission in appVM.dataStore.commissions {
+                try? await appVM.dataStore.deleteCommission(id: commission.id)
+            }
+            
+            // 3. Recalculate
+            var staffMonthlyTotals: [UUID: [String: Double]] = [:] // staffId -> [MonthYear: Total]
+            
+            for txn in allTxns {
+                let monthYear = txn.createdAt.formatted(.dateTime.year().month())
+                let currentMonthTotal = staffMonthlyTotals[txn.associateId]?[monthYear] ?? 0.0
+                
+                let tier1Threshold: Double = 1_000_000
+                let tier2Threshold: Double = 2_000_000
+                
+                var remainingAmount = txn.totalAmount
+                var currentAchieved = currentMonthTotal
+                var commissionAmount: Double = 0.0
+                
+                if currentAchieved < tier1Threshold {
+                    let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+                    commissionAmount += amountInTier1 * 0.02
+                    remainingAmount -= amountInTier1
+                    currentAchieved += amountInTier1
+                }
+                
+                if remainingAmount > 0 && currentAchieved < tier2Threshold {
+                    let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+                    commissionAmount += amountInTier2 * 0.03
+                    remainingAmount -= amountInTier2
+                    currentAchieved += amountInTier2
+                }
+                
+                if remainingAmount > 0 {
+                    commissionAmount += remainingAmount * 0.05
+                }
+                
+                let effectiveRate = txn.totalAmount > 0 ? commissionAmount / txn.totalAmount : 0.0
+                
+                if commissionAmount > 0 {
+                    let newCommission = Commission(
+                        id: UUID(),
+                        staffId: txn.associateId,
+                        transactionId: txn.id,
+                        amount: commissionAmount,
+                        rate: effectiveRate,
+                        status: .approved,
+                        createdAt: txn.createdAt
+                    )
+                    try? await appVM.dataStore.createCommission(newCommission)
+                }
+                
+                staffMonthlyTotals[txn.associateId, default: [:]][monthYear] = currentMonthTotal + txn.totalAmount
+            }
+            
+            // Reload
+            if let storeId = appVM.currentStoreId {
+                await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
+            }
+            
+        } catch {
+            print("Error recalculating: \(error)")
         }
     }
 

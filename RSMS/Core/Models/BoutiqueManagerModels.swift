@@ -410,6 +410,7 @@ struct EventInvitation: Codable, Identifiable, Hashable {
 
 enum RSVPStatus: String, Codable, CaseIterable {
     case invited   = "invited"
+    case pending   = "pending"
     case confirmed = "confirmed"
     case declined  = "declined"
     case attended  = "attended"

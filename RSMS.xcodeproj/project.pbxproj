@@ -70,8 +70,6 @@
 				92C535972FBCA15F00E4AE68 /* RSMS */,
 			);
 			name = RSMS;
-			packageProductDependencies = (
-			);
 			productName = RSMS;
 			productReference = 92C535952FBCA15F00E4AE68 /* RSMS.app */;
 			productType = "com.apple.product-type.application";
