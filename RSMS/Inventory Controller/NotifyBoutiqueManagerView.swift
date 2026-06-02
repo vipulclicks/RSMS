@@ -72,7 +72,6 @@ struct NotifyBoutiqueManagerView: View {
                 }
             }
         }
-        }
         .task {
             await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
             withAnimation(.easeOut(duration: 0.5)) {

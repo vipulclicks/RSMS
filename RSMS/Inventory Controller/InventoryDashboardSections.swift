@@ -403,7 +403,6 @@ extension InventoryControllerHomeView {
                     }
                 }
             }
-            }
             .background(RSMSTheme.surfacePrimary)
             .clipShape(
                 RoundedRectangle(cornerRadius: 16)
