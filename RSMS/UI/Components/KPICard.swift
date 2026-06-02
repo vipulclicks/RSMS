@@ -29,7 +29,7 @@ struct KPICard: View {
             Spacer(minLength: 0)
             
             Text(value)
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)

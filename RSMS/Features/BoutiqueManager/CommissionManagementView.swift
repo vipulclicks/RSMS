@@ -47,6 +47,7 @@ struct CommissionManagementView: View {
                 staffId: associate.id,
                 staffName: associate.profile.fullName,
                 periodSales: associate.totalSales,
+                targetAmount: associate.targetAmount,
                 period: viewModel.selectedPeriod
             )
         }
@@ -220,99 +221,177 @@ struct CommissionAssignSheet: View {
     let staffId: UUID
     let staffName: String
     let periodSales: Double
+    let targetAmount: Double
     let period: GoalPeriod
     
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
     
     @State private var amount: Double? = nil
-    @State private var rate: Double = 5.0
+    @State private var rate: Double = 0.0 // Rate isn't explicitly used if amount is fixed, but let's keep for data struct
     @State private var status: CommissionStatus = .pending
     @State private var isSubmitting = false
     @State private var errorMessage: String?
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Performance Summary") {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(staffName)
-                                .font(.headline)
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Text("\(period.rawValue.capitalized) Sales")
-                                .font(.subheadline)
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                        }
-                        Spacer()
-                        Text(periodSales.formatted(.currency(code: "INR").precision(.fractionLength(0))))
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(RSMSTheme.gold)
-                    }
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button("Cancel") { dismiss() }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                }
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(Capsule())
+                    .disabled(isSubmitting)
                 
-                Section("Commission Details") {
-                    HStack {
-                        Text("Amount (₹)")
-                        Spacer()
-                        TextField("0.00", value: $amount, format: .number)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Rate")
-                            Spacer()
-                            Text("\(Int(rate))%")
-                                .foregroundStyle(RSMSTheme.gold)
-                                .fontWeight(.medium)
-                        }
-                        Slider(value: $rate, in: 1...20, step: 1)
-                            .tint(RSMSTheme.gold)
-                    }
-                    
-                    Picker("Status", selection: $status) {
-                        ForEach(CommissionStatus.allCases, id: \.self) { s in
-                            Text(s.rawValue.capitalized).tag(s)
-                        }
-                    }
-                }
+                Spacer()
                 
-                if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundStyle(RSMSTheme.danger)
-                            .font(.callout)
-                    }
-                }
+                Text("Assign Commission")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                Spacer()
+                
+                // Invisible placeholder for balance
+                Button("Cancel") {}.opacity(0)
+                    .padding(.horizontal, 16)
             }
-            .navigationTitle("Assign Commission")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .disabled(isSubmitting)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Assign") {
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Form Card
+                    VStack(alignment: .leading, spacing: 24) {
+                        Label("PERFORMANCE SUMMARY", systemImage: "chart.bar.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .tracking(1)
+                            
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(staffName)
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Text("\(period.rawValue.capitalized) Sales")
+                                    .font(.subheadline)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                            Spacer()
+                            Text(periodSales.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(RSMSTheme.gold)
+                        }
+                        .padding(16)
+                        .background(RSMSTheme.background)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        Divider().overlay(RSMSTheme.border)
+                        
+                        Label("COMMISSION DETAILS", systemImage: "banknote.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .tracking(1)
+                            
+                        // Amount
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Auto-Calculated Amount (₹)")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            Text(amount?.formatted(.currency(code: "INR").precision(.fractionLength(0))) ?? "₹0")
+                                .font(.title3.weight(.bold))
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        
+                        // Rate hidden or replaced since it's tiered, we don't have a single rate.
+                        
+                        // Status
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Status *")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            
+                            Menu {
+                                ForEach(CommissionStatus.allCases, id: \.self) { s in
+                                    Button(s.rawValue.capitalized) { status = s }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(status.rawValue.capitalized)
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                                .padding(16)
+                                .background(RSMSTheme.background)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                        }
+                        
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .foregroundStyle(RSMSTheme.danger)
+                                .font(.callout)
+                                .padding(.top, 8)
+                        }
+                    }
+                    .padding(24)
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    
+                    // Save Button
+                    Button {
                         Task { await saveCommission() }
+                    } label: {
+                        HStack {
+                            Text(isSubmitting ? "Assigning..." : "Assign Commission")
+                            if isSubmitting {
+                                ProgressView().tint(.white).padding(.leading, 4)
+                            }
+                        }
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.cream)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            (isSubmitting || amount == nil || (amount ?? 0) <= 0) ? 
+                            AnyShapeStyle(RSMSTheme.textTertiary) : 
+                            AnyShapeStyle(RSMSTheme.primaryGradient)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: (isSubmitting || amount == nil || (amount ?? 0) <= 0) ? .clear : RSMSTheme.primaryDark.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
                     .disabled(isSubmitting || amount == nil || (amount ?? 0) <= 0)
                 }
+                .padding(24)
             }
-            .overlay {
-                if isSubmitting {
-                    ZStack {
-                        Color.black.opacity(0.2).ignoresSafeArea()
-                        ProgressView()
-                            .padding()
-                            .background(RSMSTheme.surfacePrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-            }
+        }
+        .background(RSMSTheme.background.ignoresSafeArea())
+        .onAppear {
+            self.amount = calculateCommission(revenue: periodSales, target: targetAmount)
+        }
+    }
+    
+    private func calculateCommission(revenue: Double, target: Double) -> Double {
+        // Example logic for a Tiered Escalator model
+        let tier1Threshold = target * 0.8
+        let tier2Threshold = target * 1.0
+        
+        if revenue <= tier1Threshold {
+            return revenue * 0.02
+        } else if revenue <= tier2Threshold {
+            return (tier1Threshold * 0.02) + ((revenue - tier1Threshold) * 0.05)
+        } else {
+            return (tier1Threshold * 0.02) + 
+                   ((tier2Threshold - tier1Threshold) * 0.05) + 
+                   ((revenue - tier2Threshold) * 0.08)
         }
     }
     

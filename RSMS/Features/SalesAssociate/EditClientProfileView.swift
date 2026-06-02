@@ -119,11 +119,11 @@ struct EditClientProfileView: View {
                         // 2. Sizes
                         LuxuryFormCard(title: "Shoes & Belts", icon: "shoe.fill") {
                             HStack(spacing: 12) {
-                                LuxuryTextField(title: "Shoe Size", text: $shoeSize)
+                                LuxurySizeField(title: "Shoe Size", text: $shoeSize, presets: LuxurySizePresets.shoes)
                                 LuxuryPicker(title: "Shoe Fit", selection: $shoeFit, options: ["Regular", "Wide", "Narrow"])
                             }
                             HStack(spacing: 12) {
-                                LuxuryTextField(title: "Belt Size", text: $beltSize)
+                                LuxurySizeField(title: "Belt Size", text: $beltSize, presets: LuxurySizePresets.belts)
                                 LuxuryTextField(title: "Buckle Pref", text: $bucklePref)
                             }
                         }
@@ -131,12 +131,12 @@ struct EditClientProfileView: View {
                         // 3. Jewelry & Watches
                         LuxuryFormCard(title: "Jewellery & Watches", icon: "sparkles") {
                             HStack(spacing: 12) {
-                                LuxuryTextField(title: "Ring Size", text: $ringSize)
-                                LuxuryTextField(title: "Bracelet Size", text: $braceletSize)
+                                LuxurySizeField(title: "Ring Size", text: $ringSize, presets: LuxurySizePresets.rings)
+                                LuxurySizeField(title: "Bracelet Size", text: $braceletSize, presets: LuxurySizePresets.bracelets)
                             }
                             HStack(spacing: 12) {
-                                LuxuryTextField(title: "Necklace Length", text: $necklaceLength)
-                                LuxuryTextField(title: "Wrist Size", text: $wristSize)
+                                LuxurySizeField(title: "Necklace Length", text: $necklaceLength, presets: LuxurySizePresets.necklaces)
+                                LuxurySizeField(title: "Wrist Size", text: $wristSize, presets: LuxurySizePresets.wristSizes)
                             }
                             HStack(spacing: 12) {
                                 LuxuryPicker(title: "Preferred Metal", selection: $preferredMetal, options: ["", "Gold", "Platinum", "Silver", "Rose Gold"])

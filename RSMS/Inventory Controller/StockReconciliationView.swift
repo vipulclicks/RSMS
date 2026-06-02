@@ -51,8 +51,6 @@ struct StockReconciliationView: View {
                         if showSearchField { searchSection }
                         analyticsSection
                         discrepancySection
-                        exportSection
-                        securitySection
                     } else {
                         auditLogSection
                     }
@@ -90,15 +88,6 @@ struct StockReconciliationView: View {
                         Image(systemName: "line.3.horizontal.decrease.circle")
                             .foregroundStyle(RSMSTheme.gold)
                     }
-
-                    Circle()
-                        .fill(RSMSTheme.primary)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Text("EL")
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(RSMSTheme.background)
-                        )
                 }
             }
             }
@@ -111,12 +100,13 @@ struct StockReconciliationView: View {
                 shrinkagePercentage: viewModel.shrinkagePercentage,
                 shrinkageValue: viewModel.shrinkageValue,
                 totalInventoryValue: viewModel.totalStoreInventoryValue,
-                highRiskItems: viewModel.discrepancyItems.filter { $0.actualQty < $0.expectedQty }
+                highRiskItems: viewModel.discrepancyItems.filter { $0.actualQty < $0.expectedQty },
+                shrinkageRecord: viewModel.shrinkageRecord
             )
         }
-        .onAppear {
+        .task {
             if let storeId = appVM.currentStoreId {
-                viewModel.load(from: appVM.dataStore, storeId: storeId)
+                await viewModel.load(from: appVM.dataStore, storeId: storeId)
             }
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
@@ -164,7 +154,7 @@ struct StockReconciliationView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Audit & Reconcile")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text("Resolve inventory discrepancies and review audit trail")
                 .font(.subheadline)
@@ -252,10 +242,6 @@ struct StockReconciliationView: View {
                 Text("DISCREPANCIES")
                     .font(.caption.weight(.semibold))
                     .tracking(3)
-                    .foregroundStyle(RSMSTheme.gold)
-                Spacer()
-                Text("VIEW ALL")
-                    .font(.caption.weight(.semibold))
                     .foregroundStyle(RSMSTheme.gold)
             }
 
@@ -375,7 +361,7 @@ struct StockReconciliationView: View {
                 .tracking(1.2)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(color)
         }
         .frame(maxWidth: .infinity)
@@ -517,99 +503,6 @@ struct StockReconciliationView: View {
         }
     }
 
-    // MARK: - Export Section
-
-    private var exportSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("REPORTS & EXPORT")
-                .font(.caption.weight(.semibold))
-                .tracking(3)
-                .foregroundStyle(RSMSTheme.gold)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    exportChip(icon: "doc.text.fill", label: "Generate Report")
-                    exportChip(icon: "arrow.down.doc.fill", label: "Export CSV")
-                    exportChip(icon: "doc.richtext.fill", label: "Export PDF")
-                }
-            }
-        }
-        .opacity(appeared ? 1 : 0)
-    }
-
-    private func exportChip(icon: String, label: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.caption)
-            Text(label)
-                .font(.caption.weight(.semibold))
-        }
-        .foregroundStyle(RSMSTheme.textPrimary)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            Capsule()
-                .fill(RSMSTheme.surfaceSecondary)
-                .overlay(
-                    Capsule()
-                        .stroke(RSMSTheme.border, lineWidth: 1)
-                )
-        )
-    }
-
-    // MARK: - Security Section
-
-    private var securitySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SECURITY")
-                .font(.caption.weight(.semibold))
-                .tracking(3)
-                .foregroundStyle(RSMSTheme.gold)
-
-            VStack(spacing: 0) {
-                securityRow(label: "Authorized users only")
-                dashedDivider
-                securityRow(label: "Audit monitoring active")
-                dashedDivider
-                securityRow(label: "Inventory tracking enabled")
-            }
-            .background(RSMSTheme.surfaceSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(RSMSTheme.border, lineWidth: 1)
-            )
-        }
-        .opacity(appeared ? 1 : 0)
-    }
-
-    private func securityRow(label: String) -> some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(RSMSTheme.success)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(RSMSTheme.textSecondary)
-            Spacer()
-            Text("Active")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(RSMSTheme.success)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(RSMSTheme.success.opacity(0.12))
-                .clipShape(Capsule())
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-    }
-
-    private var dashedDivider: some View {
-        Rectangle()
-            .fill(RSMSTheme.divider)
-            .frame(height: 0.5)
-            .padding(.horizontal, 14)
-    }
 
     // MARK: - Reconciliation Bottom Sheet
 
@@ -649,7 +542,7 @@ struct StockReconciliationView: View {
                                 .tracking(1)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("\(item.expectedQty)")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                         .frame(maxWidth: .infinity)
@@ -663,7 +556,7 @@ struct StockReconciliationView: View {
                                 .tracking(1)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("\(item.actualQty)")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundStyle(RSMSTheme.danger)
                         }
                         .frame(maxWidth: .infinity)
@@ -706,7 +599,11 @@ struct StockReconciliationView: View {
 
                     // CTA
                     Button {
-                        viewModel.reconcile(item: item)
+                        viewModel.reconcile(
+                            item: item,
+                            currentUser: appVM.currentUser,
+                            dataStore: appVM.dataStore
+                        )
                         selectedItem = nil
                     } label: {
                         HStack(spacing: 8) {
@@ -730,7 +627,7 @@ struct StockReconciliationView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("RECONCILE STOCK")
-                        .font(.system(.headline, design: .serif, weight: .light))
+                        .font(.system(.headline, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
@@ -787,7 +684,7 @@ struct StockReconciliationView: View {
                             .tracking(1)
                             .foregroundStyle(RSMSTheme.textTertiary)
                         Text("\(viewModel.reconciledOldQty)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundStyle(RSMSTheme.danger)
                             .strikethrough()
                     }
@@ -802,7 +699,7 @@ struct StockReconciliationView: View {
                             .tracking(1)
                             .foregroundStyle(RSMSTheme.textTertiary)
                         Text("\(viewModel.reconciledNewQty)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundStyle(RSMSTheme.success)
                     }
                 }

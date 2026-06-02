@@ -91,7 +91,7 @@ private struct LBOutfitCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(outfit.name)
-                        .font(.system(size: 17, weight: .semibold, design: .serif))
+                        .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text(viewModel.clientName(for: outfit.clientId))
                         .font(.subheadline)

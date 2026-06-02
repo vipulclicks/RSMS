@@ -8,12 +8,11 @@
 import SwiftUI
 
 enum BoutiqueSection: String, CaseIterable, Identifiable {
-    case dashboard             = "Store Dashboard"
+    case dashboard             = "Dashboard"
     case staff                 = "Staff"
-    case performance           = "Performance"
-    case todaysShift           = "Today's Shift"
-    case appointmentsInventory = "Appointments & Inventory"
-    case commissionManagement  = "Commission Management"
+    case transfers             = "Stock Transfers"
+    case planograms            = "Planograms"
+    case compliance            = "Store Compliance"
 
     var id: String { rawValue }
 
@@ -21,26 +20,39 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard:             return "chart.bar.fill"
         case .staff:                 return "person.2.fill"
-        case .performance:           return "chart.line.uptrend.xyaxis"
-        case .todaysShift:           return "calendar.badge.clock"
-        case .appointmentsInventory: return "shippingbox.fill"
-        case .commissionManagement:  return "dollarsign.circle.fill"
+        case .transfers:             return "arrow.left.arrow.right"
+        case .planograms:            return "photo.artframe"
+        case .compliance:            return "checkmark.shield.fill"
         }
     }
 }
 
 struct BoutiqueManagerHomeView: View {
     @Environment(AppViewModel.self) private var viewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedSection: BoutiqueSection? = .dashboard
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detailView
+        if horizontalSizeClass == .compact {
+            TabView(selection: $selectedSection) {
+                ForEach(BoutiqueSection.allCases) { section in
+                    detailViewFor(section)
+                        .tabItem {
+                            Image(systemName: section.icon)
+                        }
+                        .tag(section as BoutiqueSection?)
+                }
+            }
+            .tint(RSMSTheme.primaryDark)
+        } else {
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                detailView
+            }
+            .tint(RSMSTheme.primaryDark)
+            .navigationSplitViewStyle(.prominentDetail)
         }
-        .tint(RSMSTheme.primaryDark)
-        .navigationSplitViewStyle(.prominentDetail)
     }
 
     // MARK: - Sidebar
@@ -71,43 +83,32 @@ struct BoutiqueManagerHomeView: View {
         .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
         .navigationTitle("Boutique Manager")
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                logoutButton
-            }
-        }
     }
 
     // MARK: - Detail
 
     @ViewBuilder
     private var detailView: some View {
-        switch selectedSection {
+        if let section = selectedSection {
+            detailViewFor(section)
+        } else {
+            detailViewFor(.dashboard)
+        }
+    }
+
+    @ViewBuilder
+    private func detailViewFor(_ section: BoutiqueSection) -> some View {
+        switch section {
         case .dashboard:
             StoreDashboardView()
         case .staff:
             StaffView()
-        case .performance:
-            PerformanceView()
-        case .todaysShift:
-            ShiftMonitorView()
-        case .appointmentsInventory:
-            AppointmentsInventoryView()
-        case .commissionManagement:
-            CommissionManagementView()
-        case .none:
-            StoreDashboardView()
-        }
-    }
-
-    // MARK: - Logout
-
-    private var logoutButton: some View {
-        Button {
-            viewModel.logout()
-        } label: {
-            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                .foregroundStyle(RSMSTheme.danger)
+        case .transfers:
+            StockTransfersView()
+        case .planograms:
+            StoreLayoutOverviewView()
+        case .compliance:
+            ComplianceDashboardView()
         }
     }
 }

@@ -24,7 +24,7 @@ struct ClientAvatarCard: View {
                     .frame(width: 52, height: 52)
                 Text(initials)
                     .font(.headline.weight(.semibold))
-                    .fontDesign(.serif)
+                    
                     .foregroundStyle(RSMSTheme.primary)
 
                 if client.vipTier != .standard {

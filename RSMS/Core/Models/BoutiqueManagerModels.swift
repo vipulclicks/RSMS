@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Dashboard Summary
 
@@ -54,6 +55,67 @@ struct StaffShift: Codable, Identifiable, Hashable {
         case startTime = "start_time"
         case endTime   = "end_time"
     }
+
+    /// Date-only formatter used for the Postgres `date` column.
+    /// Using the local calendar so that "2026-05-31" always means
+    /// May 31 in the device's timezone, not midnight UTC.
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current          // ← local timezone, NOT UTC
+        return f
+    }()
+
+    // Custom decoder: read shift_date as a plain "yyyy-MM-dd" string
+    // and interpret it in the device's local timezone so that
+    // Calendar.current.isDateInToday() works correctly.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id        = try c.decode(UUID.self, forKey: .id)
+        staffId   = try c.decode(UUID.self, forKey: .staffId)
+        storeId   = try c.decode(UUID.self, forKey: .storeId)
+        startTime = try c.decode(String.self, forKey: .startTime)
+        endTime   = try c.decode(String.self, forKey: .endTime)
+        role      = try c.decode(String.self, forKey: .role)
+        notes     = try c.decodeIfPresent(String.self, forKey: .notes)
+
+        let dateStr = try c.decode(String.self, forKey: .shiftDate)
+        guard let d = Self.dateOnlyFormatter.date(from: dateStr) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .shiftDate, in: c,
+                debugDescription: "Cannot decode shift_date: \(dateStr)"
+            )
+        }
+        shiftDate = d
+    }
+
+    // Custom encoder: write shift_date as "yyyy-MM-dd" so that it
+    // matches the Postgres `date` column format.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(staffId, forKey: .staffId)
+        try c.encode(storeId, forKey: .storeId)
+        try c.encode(Self.dateOnlyFormatter.string(from: shiftDate), forKey: .shiftDate)
+        try c.encode(startTime, forKey: .startTime)
+        try c.encode(endTime, forKey: .endTime)
+        try c.encode(role, forKey: .role)
+        try c.encode(notes, forKey: .notes)
+    }
+
+    // Keep the memberwise init for creating shifts in code
+    init(id: UUID, staffId: UUID, storeId: UUID, shiftDate: Date,
+         startTime: String, endTime: String, role: String, notes: String?) {
+        self.id = id
+        self.staffId = staffId
+        self.storeId = storeId
+        self.shiftDate = shiftDate
+        self.startTime = startTime
+        self.endTime = endTime
+        self.role = role
+        self.notes = notes
+    }
 }
 
 // MARK: - Sales Goal
@@ -79,6 +141,82 @@ struct SalesGoal: Codable, Identifiable, Hashable {
         case startDate      = "start_date"
         case endDate        = "end_date"
         case createdAt      = "created_at"
+    }
+
+    private static let dateOnlyFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        return f
+    }()
+
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        staffId = try c.decode(UUID.self, forKey: .staffId)
+        storeId = try c.decode(UUID.self, forKey: .storeId)
+        targetAmount = try c.decode(Double.self, forKey: .targetAmount)
+        achievedAmount = try c.decode(Double.self, forKey: .achievedAmount)
+        period = try c.decode(GoalPeriod.self, forKey: .period)
+
+        let startStr = try c.decode(String.self, forKey: .startDate)
+        guard let sd = Self.dateOnlyFormatter.date(from: startStr) else {
+            throw DecodingError.dataCorruptedError(forKey: .startDate, in: c, debugDescription: "Cannot decode start_date")
+        }
+        startDate = sd
+
+        let endStr = try c.decode(String.self, forKey: .endDate)
+        guard let ed = Self.dateOnlyFormatter.date(from: endStr) else {
+            throw DecodingError.dataCorruptedError(forKey: .endDate, in: c, debugDescription: "Cannot decode end_date")
+        }
+        endDate = ed
+
+        // createdAt comes as ISO8601 from Supabase
+        let createdStr = try c.decode(String.self, forKey: .createdAt)
+        if let cd = Self.isoFormatter.date(from: createdStr) {
+            createdAt = cd
+        } else {
+            // Fallback without fractional seconds
+            let fallbackFormatter = ISO8601DateFormatter()
+            fallbackFormatter.formatOptions = [.withInternetDateTime]
+            if let cd = fallbackFormatter.date(from: createdStr) {
+                createdAt = cd
+            } else {
+                throw DecodingError.dataCorruptedError(forKey: .createdAt, in: c, debugDescription: "Cannot decode created_at")
+            }
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(staffId, forKey: .staffId)
+        try c.encode(storeId, forKey: .storeId)
+        try c.encode(targetAmount, forKey: .targetAmount)
+        try c.encode(achievedAmount, forKey: .achievedAmount)
+        try c.encode(period, forKey: .period)
+        try c.encode(Self.dateOnlyFormatter.string(from: startDate), forKey: .startDate)
+        try c.encode(Self.dateOnlyFormatter.string(from: endDate), forKey: .endDate)
+        try c.encode(Self.isoFormatter.string(from: createdAt), forKey: .createdAt)
+    }
+
+    init(id: UUID, staffId: UUID, storeId: UUID, targetAmount: Double, achievedAmount: Double, period: GoalPeriod, startDate: Date, endDate: Date, createdAt: Date) {
+        self.id = id
+        self.staffId = staffId
+        self.storeId = storeId
+        self.targetAmount = targetAmount
+        self.achievedAmount = achievedAmount
+        self.period = period
+        self.startDate = startDate
+        self.endDate = endDate
+        self.createdAt = createdAt
     }
 }
 
@@ -143,50 +281,23 @@ struct PerformanceMetric: Codable, Identifiable, Hashable {
     }
 }
 
-// MARK: - Planogram
 
-/// Represents the visual plan for how products should be displayed in a specific section of the store.
-struct Planogram: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let name: String
-    let section: String
-    let imageURL: String?
-    let isCompliant: Bool
-    let lastCheckedAt: Date?
-    let createdAt: Date
-    let updatedAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id, name, section
-        case storeId       = "store_id"
-        case imageURL      = "image_url"
-        case isCompliant   = "is_compliant"
-        case lastCheckedAt = "last_checked_at"
-        case createdAt     = "created_at"
-        case updatedAt     = "updated_at"
-    }
-}
 
 // MARK: - Lookbook
 
-/// A digital collection of images and guidelines to show how products should be presented according to the brand's standards.
+/// A digital lookbook document stored as a PDF.
 struct Lookbook: Codable, Identifiable, Hashable {
     let id: UUID
     let title: String
-    let season: String
-    let description: String?
-    let imageURLs: [String]
-    let brandGuideline: String?
     let isActive: Bool
     let createdAt: Date
+    let pdfStoragePath: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, season, description
-        case imageURLs      = "image_urls"
-        case brandGuideline = "brand_guideline"
+        case id, title
         case isActive       = "is_active"
         case createdAt      = "created_at"
+        case pdfStoragePath = "pdf_storage_path"
     }
 }
 
@@ -194,14 +305,14 @@ struct Lookbook: Codable, Identifiable, Hashable {
 
 /// Records the results of checking whether a store's display matches the required planogram.
 struct ComplianceCheck: Codable, Identifiable, Hashable {
-    let id: UUID
-    let storeId: UUID
-    let planogramId: UUID
-    let checkedBy: UUID
-    let status: ComplianceStatus
-    let notes: String?
-    let photoURLs: [String]?
-    let checkedAt: Date
+    var id: UUID
+    var storeId: UUID
+    var planogramId: UUID
+    var checkedBy: UUID
+    var status: ComplianceStatus
+    var notes: String?
+    var photoURLs: [String]?
+    var checkedAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, status, notes
@@ -217,6 +328,30 @@ enum ComplianceStatus: String, Codable, CaseIterable {
     case compliant    = "compliant"
     case nonCompliant = "non_compliant"
     case needsReview  = "needs_review"
+    
+    var displayName: String {
+        switch self {
+        case .compliant: return "Compliant"
+        case .nonCompliant: return "Non-Compliant"
+        case .needsReview: return "Needs Review"
+        }
+    }
+    
+    var color: SwiftUI.Color {
+        switch self {
+        case .compliant: return RSMSTheme.info
+        case .nonCompliant: return RSMSTheme.danger
+        case .needsReview: return RSMSTheme.warning
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .compliant: return "checkmark.circle.fill"
+        case .nonCompliant: return "xmark.octagon.fill"
+        case .needsReview: return "exclamationmark.triangle.fill"
+        }
+    }
 }
 
 // MARK: - Client Event

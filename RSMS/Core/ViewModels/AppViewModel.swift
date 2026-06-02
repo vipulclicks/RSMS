@@ -9,6 +9,7 @@
 import SwiftUI
 
 @Observable
+@MainActor
 class AppViewModel {
     let dataStore = DataStore()
     var currentUser: UserProfile?
@@ -48,25 +49,27 @@ class AppViewModel {
         isAuthenticating = false
     }
 
-    func login(as role: UserRole) {
-        // Fallback for seamless demo testing if desired.
-        // In a real flow, this would call login(email:password:) with hardcoded test accounts.
-        switch role {
-        case .boutiqueManager:
-            currentUser = .previewManager
-        case .salesAssociate:
-            currentUser = .previewAssociate
-        case .inventoryController:
-            currentUser = .previewInventory
-        case .client:
-            currentUser = .previewClient
-        }
-    }
-
     func logout() {
         withAnimation(.smooth(duration: 0.4)) {
             currentUser = nil
             SupabaseClient.shared.accessToken = nil
+        }
+        dataStore.clearAllCaches()
+    }
+
+    /// Re-fetch the current user's profile from Supabase and update `currentUser`.
+    /// Call this on profile page appear to get the latest avatar URL and details.
+    func refreshCurrentUser() async {
+        guard let id = currentUser?.id else { return }
+        do {
+            let fresh: UserProfile = try await dataStore.fetchUser(id: id)
+            await MainActor.run {
+                withAnimation(.smooth(duration: 0.3)) {
+                    self.currentUser = fresh
+                }
+            }
+        } catch {
+            print("[RSMS] refreshCurrentUser failed: \(error.localizedDescription)")
         }
     }
 

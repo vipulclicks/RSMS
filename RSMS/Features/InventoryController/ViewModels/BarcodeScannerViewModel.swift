@@ -27,7 +27,7 @@ extension ScanMode {
 
 // MARK: - Scan State
 
-enum ScanState {
+enum ScanState: Equatable {
     case idle
     case loading
     case found(product: Product, stockItem: StockItem?)
@@ -120,7 +120,7 @@ final class BarcodeScannerViewModel {
 
     /// Applies the scan to Supabase: updates stock (Stock In mode) and writes an audit trail entry.
     @MainActor
-    func confirm(product: Product, stockItem: StockItem?, dataStore: DataStore, user: UserProfile) async {
+    func confirm(product: Product, stockItem: StockItem?, enteredCount: Int? = nil, dataStore: DataStore, user: UserProfile) async {
         isConfirming = true
         defer { isConfirming = false }
 
@@ -139,6 +139,37 @@ final class BarcodeScannerViewModel {
                     updatedAt: .now
                 )
                 try await dataStore.updateStockItem(updated)
+            } else if scanMode == .verification, let existing = stockItem {
+                let updated = StockItem(
+                    id: existing.id,
+                    productId: existing.productId,
+                    storeId: existing.storeId,
+                    quantity: existing.quantity, // don't change qty — just record the check
+                    rfidTag: existing.rfidTag,
+                    location: existing.location,
+                    status: existing.status,
+                    lastScannedAt: .now,
+                    updatedAt: .now
+                )
+                try await dataStore.updateStockItem(updated)
+
+                if let actualQty = enteredCount, actualQty != existing.quantity, let storeId = user.storeId {
+                    let variance = InventoryVariance(
+                        id: UUID(),
+                        storeId: storeId,
+                        productId: product.id,
+                        expectedQty: existing.quantity,
+                        actualQty: actualQty,
+                        variance: actualQty - existing.quantity,
+                        reportedBy: user.id,
+                        status: .open,
+                        cycleCountId: nil,
+                        resolution: nil,
+                        reportedAt: .now,
+                        resolvedAt: nil
+                    )
+                    try await dataStore.createInventoryVariance(variance)
+                }
             }
 
             // Fire-and-forget audit log
@@ -179,10 +210,10 @@ final class BarcodeScannerViewModel {
 
     /// Bypasses duplicate guard for a product already scanned this session.
     @MainActor
-    func forceConfirm(product: Product, stockItem: StockItem?, dataStore: DataStore, user: UserProfile) async {
+    func forceConfirm(product: Product, stockItem: StockItem?, enteredCount: Int? = nil, dataStore: DataStore, user: UserProfile) async {
         confirmedSKUs.remove(product.sku.uppercased())
         state = .found(product: product, stockItem: stockItem)
-        await confirm(product: product, stockItem: stockItem, dataStore: dataStore, user: user)
+        await confirm(product: product, stockItem: stockItem, enteredCount: enteredCount, dataStore: dataStore, user: user)
     }
 
     // MARK: Session Management

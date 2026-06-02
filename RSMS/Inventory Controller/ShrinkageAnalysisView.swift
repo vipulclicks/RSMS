@@ -3,28 +3,42 @@
 //  RSMS
 //
 //  Displays shrinkage metrics and highest risk items for the Inventory Controller.
+//  All data sourced live from Supabase:
+//   - Hero KPIs derived from live inventory_variances + stock_items
+//   - Period summary card from shrinkage_analytics table
+//   - Category breakdown derived from variance data
+//   - High-risk items ranked by missing value
 //
 
 import SwiftUI
 
 struct ShrinkageAnalysisView: View {
     @Environment(\.dismiss) var dismiss
-    
-    // Pass in the calculated values from the ViewModel
+
+    // Live-computed values from StockReconciliationViewModel
     let shrinkagePercentage: Double
     let shrinkageValue: Double
     let totalInventoryValue: Double
     let highRiskItems: [DiscrepancyItem]
-    
+
+    // Most recent record from shrinkage_analytics table (nil if not yet fetched)
+    let shrinkageRecord: ShrinkageAnalytics?
+
     var body: some View {
         NavigationStack {
             ZStack {
                 RSMSTheme.background
                     .ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         heroKPISection
+
+                        // Period summary from Supabase shrinkage_analytics — only shown when data exists
+                        if let record = shrinkageRecord {
+                            periodSummarySection(record: record)
+                        }
+
                         categoryBreakdownSection
                         highRiskItemsSection
                     }
@@ -44,9 +58,9 @@ struct ShrinkageAnalysisView: View {
             }
         }
     }
-    
+
     // MARK: - Hero KPI Section
-    
+
     private var heroKPISection: some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
@@ -56,22 +70,22 @@ struct ShrinkageAnalysisView: View {
                     icon: "chart.line.downtrend.xyaxis",
                     accentColor: shrinkagePercentage > 2.0 ? RSMSTheme.danger : RSMSTheme.warning
                 )
-                
+
                 kpiCard(
                     title: "LOSS VALUE",
-                    value: "$\(Int(shrinkageValue).formatted())",
+                    value: "\(shrinkageRecord?.currency ?? "EUR") \(Int(shrinkageValue).formatted())",
                     icon: "dollarsign.arrow.circlepath",
                     accentColor: RSMSTheme.danger
                 )
             }
-            
+
             HStack {
                 Text("TOTAL INVENTORY VALUE")
                     .font(.caption.weight(.semibold))
                     .tracking(1.5)
                     .foregroundStyle(RSMSTheme.textTertiary)
                 Spacer()
-                Text("$\(Int(totalInventoryValue).formatted())")
+                Text("\(shrinkageRecord?.currency ?? "EUR") \(Int(totalInventoryValue).formatted())")
                     .font(.subheadline.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
@@ -84,7 +98,7 @@ struct ShrinkageAnalysisView: View {
             )
         }
     }
-    
+
     private func kpiCard(title: String, value: String, icon: String, accentColor: Color) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -109,26 +123,93 @@ struct ShrinkageAnalysisView: View {
                 .stroke(accentColor.opacity(0.3), lineWidth: 1)
         )
     }
-    
+
+    // MARK: - Period Summary (from shrinkage_analytics Supabase table)
+
+    private func periodSummarySection(record: ShrinkageAnalytics) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("PERIOD SUMMARY")
+                    .font(.caption.weight(.bold))
+                    .tracking(2)
+                    .foregroundStyle(RSMSTheme.gold)
+                Spacer()
+                Text("FROM SUPABASE")
+                    .font(.caption2.weight(.semibold))
+                    .tracking(1)
+                    .foregroundStyle(RSMSTheme.textTertiary.opacity(0.6))
+            }
+
+            VStack(spacing: 0) {
+                periodRow(
+                    label: "PERIOD",
+                    value: "\(record.periodStart.formatted(date: .abbreviated, time: .omitted)) – \(record.periodEnd.formatted(date: .abbreviated, time: .omitted))"
+                )
+                Divider().background(RSMSTheme.divider).padding(.horizontal, 16)
+
+                periodRow(
+                    label: "UNITS LOST",
+                    value: "\(record.totalLossUnits) units"
+                )
+                Divider().background(RSMSTheme.divider).padding(.horizontal, 16)
+
+                periodRow(
+                    label: "TOTAL LOSS",
+                    value: "\(record.currency) \(Int(record.totalLossValue).formatted())"
+                )
+
+                if let topCategory = record.topCategory {
+                    Divider().background(RSMSTheme.divider).padding(.horizontal, 16)
+                    periodRow(label: "TOP CATEGORY", value: topCategory)
+                }
+
+                if let primaryCause = record.primaryCause {
+                    Divider().background(RSMSTheme.divider).padding(.horizontal, 16)
+                    periodRow(label: "PRIMARY CAUSE", value: primaryCause)
+                }
+            }
+            .background(RSMSTheme.surfacePrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(RSMSTheme.gold.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+
+    private func periodRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .tracking(1)
+                .foregroundStyle(RSMSTheme.textTertiary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(RSMSTheme.textPrimary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
     // MARK: - Category Breakdown
-    
+
     private var categoryBreakdownSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("LOSS BY CATEGORY")
                 .font(.caption.weight(.bold))
                 .tracking(2)
                 .foregroundStyle(RSMSTheme.gold)
-            
-            // Derive categories from highRiskItems
+
             let categoryGroups = Dictionary(grouping: highRiskItems, by: { $0.product.category })
             let categories = categoryGroups.map { (key, items) in
                 let value = items.reduce(0.0) { sum, item in
-                    let missing = item.expectedQty - item.actualQty
+                    let missing = max(0, item.expectedQty - item.actualQty)
                     return sum + (Double(missing) * item.product.price)
                 }
                 return (category: key, value: value)
-            }.sorted { $0.value > $1.value }
-            
+            }.filter { $0.value > 0 }.sorted { $0.value > $1.value }
+
             if categories.isEmpty {
                 Text("No shrinkage data available.")
                     .font(.subheadline)
@@ -150,21 +231,21 @@ struct ShrinkageAnalysisView: View {
             }
         }
     }
-    
+
     private func categoryRow(name: String, value: Double, totalValue: Double) -> some View {
         let percent = totalValue > 0 ? (value / totalValue) : 0
-        
+
         return VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(name.uppercased())
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textSecondary)
                 Spacer()
-                Text("$\(Int(value).formatted())")
+                Text("\(shrinkageRecord?.currency ?? "EUR") \(Int(value).formatted())")
                     .font(.subheadline.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
-            
+
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(RSMSTheme.surfaceSecondary)
@@ -176,16 +257,16 @@ struct ShrinkageAnalysisView: View {
             .frame(height: 6)
         }
     }
-    
+
     // MARK: - High Risk Items
-    
+
     private var highRiskItemsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("HIGHEST RISK ITEMS")
                 .font(.caption.weight(.bold))
                 .tracking(2)
                 .foregroundStyle(RSMSTheme.gold)
-            
+
             if highRiskItems.isEmpty {
                 Text("No items at risk.")
                     .font(.subheadline)
@@ -193,9 +274,9 @@ struct ShrinkageAnalysisView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(highRiskItems.prefix(5).enumerated()), id: \.element.id) { index, item in
-                        let missing = item.expectedQty - item.actualQty
+                        let missing = max(0, item.expectedQty - item.actualQty)
                         let lossValue = Double(missing) * item.product.price
-                        
+
                         HStack(spacing: 16) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 8)
@@ -204,7 +285,7 @@ struct ShrinkageAnalysisView: View {
                                 Image(systemName: item.icon)
                                     .foregroundStyle(RSMSTheme.gold)
                             }
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.product.name)
                                     .font(.subheadline.weight(.semibold))
@@ -214,15 +295,15 @@ struct ShrinkageAnalysisView: View {
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.danger)
                             }
-                            
+
                             Spacer()
-                            
-                            Text("-$\(Int(lossValue).formatted())")
+
+                            Text("-\(shrinkageRecord?.currency ?? "EUR") \(Int(lossValue).formatted())")
                                 .font(.subheadline.bold())
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         .padding(.vertical, 12)
-                        
+
                         if index < min(highRiskItems.count, 5) - 1 {
                             Rectangle()
                                 .fill(RSMSTheme.divider)

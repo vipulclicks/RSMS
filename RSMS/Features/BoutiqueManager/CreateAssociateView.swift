@@ -19,84 +19,187 @@ struct CreateAssociateView: View {
     var onCreated: (() -> Void)?
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Personal Details") {
-                    TextField("Full Name (full_name)", text: $full_name)
-                        .textContentType(.name)
-                    
-                    TextField("Email (email)", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .textContentType(.emailAddress)
-                    
-                    TextField("Phone (phone)", text: $phone)
-                        .keyboardType(.phonePad)
-                        .textContentType(.telephoneNumber)
-                        
-                    TextField("Avatar URL (avatar_url)", text: $avatar_url)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .textContentType(.URL)
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Cancel")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(Capsule())
                 }
                 
-                Section("Authentication") {
-                    SecureField("Password (min 6 characters)", text: $password)
-                        .textContentType(.newPassword)
-                    
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textContentType(.newPassword)
-                }
+                Spacer()
                 
-                Section("Employment") {
-                    Picker("Role (role)", selection: $role) {
-                        ForEach([UserRole.salesAssociate, UserRole.inventoryController]) { r in
-                            Text(r.displayName).tag(r)
+                Text("New Employee")
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                
+                Spacer()
+                
+                // Invisible placeholder to center the title perfectly
+                Color.clear.frame(width: 80, height: 1)
+            }
+            .padding()
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // EMPLOYEE DETAILS SECTION
+                    VStack(alignment: .leading, spacing: 20) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.caption.weight(.bold))
+                            Text("EMPLOYEE DETAILS")
+                                .font(.caption.weight(.bold))
+                                .tracking(1)
                         }
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        
+                        customTextField(title: "Full Name *", placeholder: "Enter employee name", text: $full_name)
+                        customTextField(title: "Email *", placeholder: "Enter email address", text: $email, keyboardType: .emailAddress)
+                        
+                        HStack(spacing: 16) {
+                            customTextField(title: "Phone", placeholder: "Phone number", text: $phone, keyboardType: .phonePad)
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Role *")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                
+                                Menu {
+                                    Picker("Role", selection: $role) {
+                                        ForEach([UserRole.salesAssociate, UserRole.inventoryController]) { r in
+                                            Text(r.displayName).tag(r)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(role.displayName)
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    }
+                                    .padding()
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                }
+                            }
+                        }
+                        
+                        customTextField(title: "Avatar URL", placeholder: "Optional avatar link", text: $avatar_url, keyboardType: .URL)
                     }
                     
-                    Toggle("Is Active (is_active)", isOn: $is_active)
-                        .tint(RSMSTheme.primaryDark)
-                }
-                
-                if let errorMessage {
-                    Section {
+                    Divider().overlay(RSMSTheme.border)
+                    
+                    // AUTHENTICATION SECTION
+                    VStack(alignment: .leading, spacing: 20) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.shield")
+                                .font(.caption.weight(.bold))
+                            Text("AUTHENTICATION")
+                                .font(.caption.weight(.bold))
+                                .tracking(1)
+                        }
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        
+                        HStack(spacing: 16) {
+                            customSecureField(title: "Password *", placeholder: "Min 6 chars", text: $password)
+                            customSecureField(title: "Confirm Password *", placeholder: "Repeat password", text: $confirmPassword)
+                        }
+                        
+                        Toggle("Active Employee", isOn: $is_active)
+                            .tint(RSMSTheme.primaryDark)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .font(.subheadline.weight(.medium))
+                            .padding(.top, 8)
+                    }
+                    
+                    if let errorMessage {
                         Text(errorMessage)
-                            .foregroundStyle(RSMSTheme.danger)
                             .font(.callout)
-                    }
-                }
-            }
-            .navigationTitle("Add Employee")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .disabled(isSubmitting)
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add Employee") {
-                        Task { await saveAssociate() }
-                    }
-                    .disabled(isSubmitting || !isValid)
-                }
-            }
-            .overlay {
-                if isSubmitting {
-                    ZStack {
-                        Color.black.opacity(0.2).ignoresSafeArea()
-                        ProgressView()
+                            .foregroundStyle(RSMSTheme.danger)
                             .padding()
-                            .background(RSMSTheme.surfacePrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RSMSTheme.danger.opacity(0.1))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    
+                    // SAVE BUTTON
+                    Button {
+                        Task { await saveAssociate() }
+                    } label: {
+                        Text("Save Employee")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(isValid ? RSMSTheme.primaryDark : RSMSTheme.textTertiary)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+                    .disabled(isSubmitting || !isValid)
+                    .padding(.top, 16)
+                }
+                .padding(24)
+                .background(RSMSTheme.surfacePrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .padding(.horizontal)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(RSMSTheme.background.ignoresSafeArea())
+        .overlay {
+            if isSubmitting {
+                ZStack {
+                    Color.black.opacity(0.2).ignoresSafeArea()
+                    ProgressView()
+                        .padding()
+                        .background(RSMSTheme.background)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
     }
+    
+    // MARK: - ViewBuilders for Custom Fields
+    
+    private func customTextField(title: String, placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(RSMSTheme.textSecondary)
+            
+            TextField(placeholder, text: text)
+                .keyboardType(keyboardType)
+                .textInputAutocapitalization(.never)
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .padding()
+                .background(RSMSTheme.background)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+    
+    private func customSecureField(title: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(RSMSTheme.textSecondary)
+            
+            SecureField(placeholder, text: text)
+                .textContentType(.newPassword)
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .padding()
+                .background(RSMSTheme.background)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+    
+    // MARK: - Logic
     
     private var isValid: Bool {
         !full_name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
@@ -108,50 +211,28 @@ struct CreateAssociateView: View {
     
     @MainActor
     private func saveAssociate() async {
-        guard let storeId = appVM.currentStoreId else {
-            errorMessage = "No active store found."
-            return
-        }
-        
         isSubmitting = true
         errorMessage = nil
         
         do {
-            // 1. Create Auth User silently with the provided password
-            let session = try await SupabaseAuth.shared.signUp(email: email, password: password)
-            let newAuthId = session.user.id
-            
-            // 2. Create Profile
-            let newProfile = UserProfile(
-                id: newAuthId,
-                email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-                fullName: full_name.trimmingCharacters(in: .whitespacesAndNewlines),
+            try await EmployeeCreationService.shared.createEmployee(
+                fullName: full_name,
+                email: email,
+                phone: phone,
                 role: role,
-                storeId: storeId,
-                avatarURL: avatar_url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : avatar_url.trimmingCharacters(in: .whitespacesAndNewlines),
-                phone: phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : phone.trimmingCharacters(in: .whitespacesAndNewlines),
+                avatarURL: avatar_url,
                 isActive: is_active,
-                createdAt: .now,
-                updatedAt: .now
+                password: password,
+                dataStore: appVM.dataStore,
+                currentStoreId: appVM.currentStoreId
             )
-            
-            do {
-                // The DB has a trigger that automatically creates a placeholder "New User" profile upon sign up.
-                // To avoid duplicate key errors, we update that existing profile instead of creating a new one.
-                try await appVM.dataStore.updateUser(newProfile)
-                
-                // Ensure the local data store has the new user since updateUser might not append it if it wasn't fetched yet.
-                if !appVM.dataStore.users.contains(where: { $0.id == newProfile.id }) {
-                    appVM.dataStore.users.append(newProfile)
-                }
-            } catch {
-                throw error
-            }
             
             onCreated?()
             dismiss()
-        } catch {
+        } catch let error as EmployeeCreationError {
             self.errorMessage = error.localizedDescription
+        } catch {
+            self.errorMessage = "An unexpected error occurred: \(error.localizedDescription)"
         }
         
         isSubmitting = false
