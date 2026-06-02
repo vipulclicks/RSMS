@@ -131,9 +131,18 @@ final class PlanogramViewModel {
         
         for zone in zones {
             if existingIds.contains(zone.id) {
-                _ = try? await api.updateZone(zone)
+                // Find original to compare
+                if let original = existingZones.first(where: { $0.id == zone.id }) {
+                    // Only update if properties changed
+                    if original.xPosition != zone.xPosition ||
+                       original.yPosition != zone.yPosition ||
+                       original.name != zone.name ||
+                       original.type != zone.type {
+                        _ = try await api.updateZone(zone)
+                    }
+                }
             } else {
-                _ = try? await api.createZone(zone)
+                _ = try await api.createZone(zone)
             }
         }
     }

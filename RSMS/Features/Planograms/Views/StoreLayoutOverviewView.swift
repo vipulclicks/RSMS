@@ -9,6 +9,11 @@ struct StoreLayoutOverviewView: View {
     @State private var viewModel = PlanogramViewModel()
     @State private var isShowingEdit = false
     @State private var isEditingLayout = false
+    @State private var showRenameAlert = false
+    @State private var zoneToRename: MerchandisingZone?
+    @State private var newName = ""
+    @State private var errorMessage: String? = nil
+    @State private var showErrorAlert = false
     @Environment(AppViewModel.self) private var appVM
     
     // Luxury Colors
@@ -37,8 +42,10 @@ struct StoreLayoutOverviewView: View {
                             Task {
                                 viewModel.zones.removeAll()
                                 await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                                await MainActor.run {
+                                    isEditingLayout = false
+                                }
                             }
-                            isEditingLayout = false
                         }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.red)
@@ -46,8 +53,17 @@ struct StoreLayoutOverviewView: View {
                         
                         Button("Save Layout") {
                             Task {
-                                try? await viewModel.saveZonesLayout(storeId: appVM.currentStoreId ?? UUID())
-                                isEditingLayout = false
+                                do {
+                                    try await viewModel.saveZonesLayout(storeId: appVM.currentStoreId ?? UUID())
+                                    await MainActor.run {
+                                        isEditingLayout = false
+                                    }
+                                } catch {
+                                    await MainActor.run {
+                                        errorMessage = error.localizedDescription
+                                        showErrorAlert = true
+                                    }
+                                }
                             }
                         }
                         .font(.system(size: 14, weight: .bold))
@@ -81,7 +97,9 @@ struct StoreLayoutOverviewView: View {
             }
             .background(Color.white)
             .task {
-                await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                if viewModel.zones.isEmpty {
+                    await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                }
             }
             .navigationDestination(isPresented: $isShowingEdit) {
                 if let zone = viewModel.selectedZone {
@@ -170,6 +188,22 @@ struct StoreLayoutOverviewView: View {
                     .padding(8)
                 }
                 .frame(width: zone.frame.width, height: zone.frame.height)
+                .overlay(
+                    Group {
+                        if isEditingLayout {
+                            Button(action: {
+                                viewModel.zones.removeAll(where: { $0.id == zone.id })
+                            }) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.red)
+                                    .background(Color.white.clipShape(Circle()))
+                            }
+                            .offset(x: -8, y: -8)
+                        }
+                    },
+                    alignment: .topLeading
+                )
                 .position(x: zone.frame.midX, y: zone.frame.midY)
                 .gesture(
                     isEditingLayout ? DragGesture()
@@ -191,7 +225,9 @@ struct StoreLayoutOverviewView: View {
                 )
                 .onTapGesture {
                     if isEditingLayout {
-                        viewModel.selectZone(zone)
+                        zoneToRename = zone
+                        newName = zone.name
+                        showRenameAlert = true
                     } else {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             viewModel.selectZone(zone)
@@ -199,21 +235,6 @@ struct StoreLayoutOverviewView: View {
                         }
                     }
                 }
-                .overlay(
-                    Group {
-                        if isEditingLayout && isSelected {
-                            Button(action: {
-                                viewModel.zones.removeAll(where: { $0.id == zone.id })
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.red)
-                                    .background(Color.white.clipShape(Circle()))
-                            }
-                            .offset(x: (zone.width / 2) - 8, y: -(zone.height / 2) + 8)
-                        }
-                    }
-                )
             }
             
             if isEditingLayout {
@@ -243,6 +264,24 @@ struct StoreLayoutOverviewView: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.05), radius: 20)
+        .alert("Rename Zone", isPresented: $showRenameAlert) {
+            TextField("Zone Name", text: $newName)
+            Button("Cancel", role: .cancel) {
+                zoneToRename = nil
+            }
+            Button("Save") {
+                if let zone = zoneToRename,
+                   let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                    viewModel.zones[idx].name = newName
+                }
+                zoneToRename = nil
+            }
+        }
+        .alert("Error Saving Layout", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage ?? "Unknown error occurred.")
+        }
     }
     
     // MARK: - Helpers
@@ -290,6 +329,8 @@ struct StoreLayoutOverviewView: View {
         )
         
         viewModel.zones.append(newZone)
-        viewModel.selectZone(newZone)
+        zoneToRename = newZone
+        newName = newZone.name
+        showRenameAlert = true
     }
 }
