@@ -15,19 +15,12 @@ struct ShiftMonitorView: View {
     @State private var showAddSheet = false
     @State private var shiftToEdit: StaffShift? = nil
     @State private var selectedStatus: ShiftStatus? = nil
-    @State private var selectedRole: String? = nil
     @Namespace private var animation
-
-    private let roles = ["Back Office", "Cashier", "Floor", "VIP Lounge", "Sales Associate"]
 
     var filteredShifts: [StaffShift] {
         var result = vm.shifts
         if let status = selectedStatus {
             result = result.filter { vm.status(for: $0) == status }
-        }
-        if let role = selectedRole {
-            let roleKey = role.replacingOccurrences(of: " ", with: "_").lowercased()
-            result = result.filter { $0.role.lowercased() == roleKey }
         }
         return result
     }
@@ -147,20 +140,6 @@ struct ShiftMonitorView: View {
                 Spacer()
             }
             .padding(.bottom, 4)
-            
-            // Role Pills
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    rolePill(title: "All Roles", isSelected: selectedRole == nil) {
-                        withAnimation { selectedRole = nil }
-                    }
-                    ForEach(roles, id: \.self) { role in
-                        rolePill(title: role, isSelected: selectedRole == role) {
-                            withAnimation { selectedRole = role }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -190,29 +169,15 @@ struct ShiftMonitorView: View {
         }
     }
 
-    private func rolePill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .padding(.horizontal, 18)
-                .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? RSMSTheme.primaryDark : RSMSTheme.surfacePrimary)
-                )
-                .foregroundStyle(isSelected ? RSMSTheme.cream : RSMSTheme.textSecondary)
-                .overlay(
-                    Capsule().stroke(isSelected ? Color.clear : RSMSTheme.border, lineWidth: 1)
-                )
-        }
-    }
 
     // MARK: - Shifts List
     private var shiftsList: some View {
-        let columns = [
-            GridItem(.flexible(), spacing: 24),
-            GridItem(.flexible(), spacing: 24)
-        ]
+        let columns = horizontalSizeClass == .compact
+            ? [GridItem(.flexible(), spacing: 24)]
+            : [
+                GridItem(.flexible(), spacing: 24),
+                GridItem(.flexible(), spacing: 24)
+            ]
         
         return VStack(spacing: 20) {
             if filteredShifts.isEmpty {

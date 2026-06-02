@@ -510,22 +510,6 @@ struct ClientDetailView: View {
 
     var body: some View {
         List {
-            // Hero
-            Section {
-                ClientHeroCell(client: client, initials: initials)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    .listRowSeparator(.hidden)
-            }
-
-            // Privacy Consent — prominent banner
-            Section {
-                ConsentBannerView(client: client)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(.init(top: 0, leading: 16, bottom: 0, trailing: 16))
-                    .listRowSeparator(.hidden)
-            }
-
             // Contact
             Section("Contact Information") {
                 if let email = client.email {
@@ -661,47 +645,6 @@ struct ClientDetailView: View {
         }
     }
 }
-
-// MARK: - Consent Banner
-
-struct ConsentBannerView: View {
-    let client: MockClientProfile
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: client.privacyConsentGiven
-                  ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                .font(.title2)
-                .foregroundStyle(client.privacyConsentGiven ? .green : .orange)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(client.privacyConsentGiven ? "Privacy Consent Given" : "Privacy Consent Not Given")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(client.privacyConsentGiven ? .green : .orange)
-                if client.privacyConsentGiven, let date = client.consentDate {
-                    Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if !client.privacyConsentGiven {
-                    Text("Client data cannot be used for marketing.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-        }
-        .padding(12)
-        .background(
-            (client.privacyConsentGiven ? Color.green : Color.orange).opacity(0.10),
-            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke((client.privacyConsentGiven ? Color.green : Color.orange).opacity(0.25), lineWidth: 1)
-        )
-    }
-}
-
 // MARK: - Anniversary Row
 
 struct AnniversaryRow: View {

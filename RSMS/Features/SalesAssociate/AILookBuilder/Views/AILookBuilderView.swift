@@ -20,27 +20,9 @@ struct AILookBuilderView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("AI Look Builder")
-                    .font(.title)
-                    .foregroundColor(RSMSTheme.textPrimary)
-                
-                Spacer()
-                
-                Button("Done") {
-                    dismiss()
-                }
-                .font(.body)
-                .foregroundColor(RSMSTheme.primary)
-            }
-            .padding()
-            .background(RSMSTheme.surfacePrimary)
-            
-            Divider().background(RSMSTheme.border)
-            
-            // View Mode Selector
+        NavigationStack {
+            VStack(spacing: 0) {
+                // View Mode Selector
             Picker("View Mode", selection: $viewMode) {
                 Text("Generate").tag(ViewMode.generate)
                 Text("Saved Looks").tag(ViewMode.saved)
@@ -120,16 +102,13 @@ struct AILookBuilderView: View {
                     if viewMode == .generate {
                         if viewModel.generatedLooks.isEmpty {
                             VStack(spacing: 8) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(RSMSTheme.textSecondary)
                                 Text("Select an occasion to generate personalized looks.")
                                     .font(.body)
                                     .foregroundColor(RSMSTheme.textSecondary)
                             }
                         } else {
                             ScrollView {
-                                LazyVStack(spacing: 24) {
+                                VStack(spacing: 24) {
                                     ForEach(viewModel.generatedLooks) { look in
                                         let isSaved = viewModel.isLookSaved(look)
                                         LookCardView(
@@ -163,7 +142,7 @@ struct AILookBuilderView: View {
                             }
                         } else {
                             ScrollView {
-                                LazyVStack(spacing: 24) {
+                                VStack(spacing: 24) {
                                     ForEach(viewModel.savedOutfits) { outfit in
                                         let look = viewModel.generatedLook(from: outfit)
                                         LookCardView(
@@ -186,6 +165,16 @@ struct AILookBuilderView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(RSMSTheme.background)
+        }
+        .navigationTitle("AI Look Builder")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Done") {
+                    dismiss()
+                }
+            }
+        }
         }
         .onAppear {
             Task {

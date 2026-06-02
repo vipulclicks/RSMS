@@ -79,4 +79,18 @@ struct UserProfile: Codable, Identifiable, Hashable {
     }
 }
 
+/// Payload sent to Supabase to update only the allowed (editable) fields of a UserProfile.
+struct UserProfileUpdatePayload: Codable {
+    let phone: String?
+    let avatarURL: String?
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case phone
+        case avatarURL = "avatar_url"
+        case updatedAt = "updated_at"
+    }
+}
+
+
 

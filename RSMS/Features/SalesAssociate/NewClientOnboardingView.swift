@@ -434,42 +434,7 @@ struct NewClientOnboardingView: View {
 
     private var consentStep: some View {
         VStack(spacing: 20) {
-            LuxuryFormCard(title: "Privacy Consent", icon: "checkmark.shield.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Under GDPR and applicable data protection regulations, explicit client consent is required before collecting and processing personal data for marketing and personalisation purposes.")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
 
-                    Toggle(isOn: $viewModel.privacyConsentGiven) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Client Consent Given")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Text("The client has verbally or digitally confirmed consent.")
-                                .font(.caption2)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                        }
-                    }
-                    .tint(RSMSTheme.primary)
-
-                    HStack(spacing: 8) {
-                        Image(systemName: viewModel.privacyConsentGiven
-                              ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                            .foregroundStyle(viewModel.privacyConsentGiven
-                                             ? RSMSTheme.success : RSMSTheme.warning)
-                        Text(viewModel.privacyConsentGiven
-                             ? "Consent recorded — data may be used for personalisation."
-                             : "Without consent, client data cannot be used for marketing.")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    .padding(12)
-                    .background(
-                        (viewModel.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
-                        in: RoundedRectangle(cornerRadius: 10)
-                    )
-                }
-            }
 
             LuxuryFormCard(title: "Preferred Channels", icon: "paperplane.fill") {
                 VStack(alignment: .leading, spacing: 12) {
@@ -519,7 +484,7 @@ struct NewClientOnboardingView: View {
                     recapRow(label: "Name", value: viewModel.fullName)
                     recapRow(label: "Dates", value: "\(viewModel.anniversaries.count) added")
                     recapRow(label: "Wishlist", value: "\(viewModel.selectedProductIds.count) items selected")
-                    recapRow(label: "Consent", value: viewModel.privacyConsentGiven ? "GIVEN" : "NOT GIVEN", valueColor: viewModel.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
+
                 }
                 .font(.subheadline)
                 .padding(.top, 8)

@@ -8,7 +8,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case appointments = "Appointments"
 //    case selling      = "Assisted Selling"
 //    case pos          = "POS & Checkout"
-//    case omnichannel  = "Omnichannel"
+    case omnichannel  = "Omnichannel"
     case profile      = "Profile"
 
     var id: String { rawValue }
@@ -20,7 +20,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
         case .appointments: return "calendar"
 //        case .selling:      return "wand.and.stars"
 //        case .pos:          return "cart.fill"
-//        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
+        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
         case .profile:      return "person.circle.fill"
         }
     }
@@ -132,10 +132,8 @@ struct SalesAssociateHomeView: View {
 
                         QuickActionsSection(
                             columnsCount: 2,
-                            onNewClient: { showNewClientSheet = true }
-//                            onNewSale: { navigationPath.append("POS") },
-//                            onLookBuilder: { navigationPath.append("LookBuilder") },
-//                            onOmnichannel: { navigationPath.append("Omnichannel") }
+                            onNewClient: { showNewClientSheet = true },
+                            onOmnichannel: { navigationPath.append("Omnichannel") }
                         )
                     }
                     .padding(.bottom, 32)
@@ -214,8 +212,8 @@ struct SalesAssociateHomeView: View {
 //                    AssistedSellingView()
 //                case .pos:
 //                    POSCheckoutView()
-//                case .omnichannel:
-//                    OmnichannelView()
+            case .omnichannel:
+                OmnichannelView()
             case .profile:
                 SalesAssociateProfileView()
             case .none:
@@ -243,8 +241,8 @@ struct SalesAssociateHomeView: View {
 //                    POSCheckoutView()
 //                case "LookBuilder":
 //                    LookBuilderView()
-//                case "Omnichannel":
-//                    OmnichannelView()
+                case "Omnichannel":
+                    OmnichannelView()
                 case "Profile":
                     SalesAssociateProfileView()
                 default:
@@ -289,10 +287,8 @@ struct SalesAssociateHomeView: View {
                                 
                                 QuickActionsSection(
                                     columnsCount: 4,
-                                    onNewClient: { showNewClientSheet = true }
-//                                    onNewSale: { navigationPath.append("POS") },
-//                                    onLookBuilder: { navigationPath.append("LookBuilder") },
-//                                    onOmnichannel: { navigationPath.append("Omnichannel") }
+                                    onNewClient: { showNewClientSheet = true },
+                                    onOmnichannel: { navigationPath.append("Omnichannel") }
                                 )
                             }
                             .padding(.horizontal, 24)
@@ -346,10 +342,6 @@ private struct DashboardHeaderView: View {
                 
                 HStack(spacing: 6) {
                     Text("\(greeting(for: .now)), \(firstName)")
-                    Text("•")
-                    Image(systemName: "mappin.circle.fill")
-                        .foregroundStyle(RSMSTheme.primary)
-                    Text(storeName)
                 }
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(RSMSTheme.textSecondary)
@@ -359,16 +351,10 @@ private struct DashboardHeaderView: View {
             Button {
                 onProfileTapped()
             } label: {
-                ZStack {
-                    Circle()
-                        .fill(RSMSTheme.surfacePrimary)
-                        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(RSMSTheme.primary)
-                }
+                let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
+                    .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
+                ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 44)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
             }
             .accessibilityLabel("Profile")
         }
@@ -565,9 +551,7 @@ private struct QuickActionsSection: View {
 
     let columnsCount: Int
     let onNewClient: () -> Void
-//    let onNewSale: () -> Void
-//    let onLookBuilder: () -> Void
-//    let onOmnichannel: () -> Void
+    let onOmnichannel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -597,13 +581,13 @@ private struct QuickActionsSection: View {
 //                    color: RSMSTheme.warning,
 //                    onTap: onLookBuilder
 //                )
-//                
-//                QuickActionCard(
-//                    icon: "shippingbox.and.arrow.backward",
-//                    label: "Omnichannel",
-//                    color: RSMSTheme.success,
-//                    onTap: onOmnichannel
-//                )
+                
+                QuickActionCard(
+                    icon: "shippingbox.and.arrow.backward",
+                    label: "Omnichannel",
+                    color: RSMSTheme.success,
+                    onTap: onOmnichannel
+                )
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 20)
@@ -628,14 +612,14 @@ struct SAClientBrowserView: View {
     @State private var clientToDelete: ClientProfile? = nil
     @State private var showDeleteAlert = false
     
-    let filters = ["All", "VIP", "Platinum", "Gold", "Silver"]
+    let filters = ["All", "Privé", "Platinum", "Gold", "Silver", "Standard"]
     
     private var filteredGroupedClients: [ClientGroup] {
         var clients = appViewModel.dataStore.clients
         
         // 1. Filter by Tier
         if selectedFilter != "All" {
-            if selectedFilter == "VIP" {
+            if selectedFilter == "Privé" || selectedFilter == "Prive" || selectedFilter == "VIP" {
                 clients = clients.filter { $0.vipTier == VIPTier.prive }
             } else {
                 clients = clients.filter { $0.vipTier.rawValue.caseInsensitiveCompare(selectedFilter) == .orderedSame }
@@ -683,9 +667,6 @@ struct SAClientBrowserView: View {
                         Spacer()
                         
                         HStack(spacing: 12) {
-                            circleButton(icon: "slider.horizontal.3") {
-                                // Filter action
-                            }
                             circleButton(icon: "plus") {
                                 onAddClient()
                             }
@@ -882,17 +863,10 @@ private struct SAClientRow: View {
             }
             
             Spacer(minLength: 0)
-            
-            // Activity & Chevron
-            VStack(alignment: .trailing, spacing: 8) {
-                Text("Today")
-                    .font(.system(size: 13))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            }
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(RSMSTheme.textTertiary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 20)

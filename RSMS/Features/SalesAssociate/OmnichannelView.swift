@@ -26,17 +26,23 @@ struct OmnichannelView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
 
-                ScrollView {
-                    VStack(spacing: 16) {
-                        switch viewModel.selectedTab {
-                        case 0: bopisSection
-                        case 1: endlessAisleSection
-                        case 2: shipFromStoreSection
-                        default: bopisSection
-                        }
+                switch viewModel.selectedTab {
+                case 0:
+                    BOPISPickupView()
+                case 1:
+                    ScrollView {
+                        endlessAisleSection
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 40)
+                case 2:
+                    ScrollView {
+                        shipFromStoreSection
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 40)
+                    }
+                default:
+                    BOPISPickupView()
                 }
             }
         }
@@ -46,41 +52,6 @@ struct OmnichannelView: View {
             OCNewEndlessAisleSheet()
         }
     }
-
-    // MARK: - BOPIS Section
-
-    private var bopisSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(
-                title: "Buy Online, Pick Up In-Store",
-                subtitle: "Orders awaiting preparation or pickup"
-            )
-
-            // Status filter
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(["All", "Pending", "Preparing", "Ready"], id: \.self) { filter in
-                        OCFilterChip(
-                            label: filter,
-                            isSelected: viewModel.bopisFilter == filter
-                        ) {
-                            viewModel.bopisFilter = filter
-                        }
-                    }
-                }
-            }
-
-            let bopis = viewModel.filteredBOPIS
-            if bopis.isEmpty {
-                OCEmptyState(icon: "shippingbox", message: "No BOPIS orders")
-            } else {
-                ForEach(bopis) { order in
-                    OCBOPISCard(order: order, viewModel: viewModel)
-                }
-            }
-        }
-    }
-
     // MARK: - Endless Aisle Section
 
     private var endlessAisleSection: some View {
@@ -163,6 +134,7 @@ private final class OmnichannelScreenViewModel {
 
     func orderStatusColor(_ status: OmnichannelOrderStatus) -> Color {
         switch status {
+        case .reserved:   return RSMSTheme.info
         case .pending:    return RSMSTheme.textSecondary
         case .preparing:  return RSMSTheme.warning
         case .ready:      return RSMSTheme.info

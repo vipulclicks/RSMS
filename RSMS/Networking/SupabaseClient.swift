@@ -55,6 +55,7 @@ final class SupabaseClient: Sendable {
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
         self.session = URLSession(configuration: config)
 
         // ── Decoder ──────────────────────────────────────────
@@ -302,7 +303,11 @@ final class SupabaseClient: Sendable {
         request.httpMethod = "POST"
         applyHeaders(&request)
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-        request.setValue("close", forHTTPHeaderField: "Connection")
+        // Allow overwriting an existing file (upsert). Without this,
+        // re-uploading the same avatar path returns a 409 Conflict and
+        // the app silently falls back to a device-local file:// URL.
+        request.setValue("true", forHTTPHeaderField: "x-upsert")
+        request.httpBody = data
         
         let (responseData, response) = try await session.upload(for: request, from: data)
         try validateResponse(response, data: responseData)

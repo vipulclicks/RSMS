@@ -175,7 +175,6 @@ struct ClientProfileDetailView: View {
     
     private var personalInfoTabContent: some View {
         VStack(spacing: 16) {
-            consentSection
             contactSection
             anniversarySection
         }
@@ -192,6 +191,97 @@ struct ClientProfileDetailView: View {
     private var purchaseHistoryTabContent: some View {
         VStack(spacing: 16) {
             purchaseSummarySection
+            purchaseHistoryListSection
+        }
+    }
+    
+    // MARK: - Previous Transactions List
+    
+    @ViewBuilder
+    private var purchaseHistoryListSection: some View {
+        let transactions = viewModel.clientTransactions.sorted(by: { $0.createdAt > $1.createdAt })
+        
+        if transactions.isEmpty {
+            ProfileCard(title: "Previous Transactions") {
+                Text("No past transactions found.")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            ProfileCard(title: "Previous Transactions") {
+                VStack(spacing: 16) {
+                    ForEach(transactions) { transaction in
+                        transactionRow(for: transaction)
+                        
+                        if transaction.id != transactions.last?.id {
+                            Divider().overlay(RSMSTheme.divider)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func transactionRow(for transaction: Transaction) -> some View {
+        let tender = viewModel.dataStore.tenders.first { $0.transactionId == transaction.id }
+        let items = viewModel.dataStore.universalCartItems.filter { $0.cartId == transaction.cartId }
+        
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(transaction.createdAt, format: .dateTime.year().month().day().hour().minute())
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Spacer()
+                Text("₹\(Int(transaction.totalAmount).formatted())")
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.primary)
+            }
+            
+            HStack {
+                Text("Payment ID:")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                Text(tender?.reference ?? transaction.id.uuidString.prefix(8).uppercased())
+                    .font(.caption.monospaced())
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                
+                Spacer()
+                
+                Text(transaction.status.rawValue.capitalized)
+                    .font(.caption.weight(.bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(viewModel.transactionStatusColor(transaction.status).opacity(0.15), in: Capsule())
+                    .foregroundStyle(viewModel.transactionStatusColor(transaction.status))
+            }
+            
+            if !items.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Products Bought:")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    
+                    ForEach(items) { item in
+                        let product = viewModel.dataStore.products.first(where: { $0.id == item.productId })
+                        HStack {
+                            Text("\(item.quantity)x")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            Text(product?.name ?? "Unknown Product")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .lineLimit(1)
+                            Spacer()
+                            Text("₹\(Int(item.unitPrice ?? product?.price ?? 0).formatted())")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
         }
     }
     
@@ -219,7 +309,6 @@ struct ClientProfileDetailView: View {
                     showAILookBuilder = true
                 } label: {
                     HStack {
-                        Image(systemName: "sparkles")
                         Text("Create")
                     }
                     .font(.subheadline.weight(.semibold))
@@ -236,26 +325,12 @@ struct ClientProfileDetailView: View {
     // MARK: - Hero
 
     private var heroSection: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.primary.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                Text(viewModel.initials)
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(RSMSTheme.primary)
-            }
-            .padding(.top, 16)
-
-            Text(currentClient.fullName)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(RSMSTheme.textPrimary)
-                .multilineTextAlignment(.center)
-
+        VStack {
             StatusBadge(
                 text: currentClient.vipTier.rawValue.uppercased(),
                 color: viewModel.tierColor(currentClient.vipTier)
             )
+            .padding(.top, 16)
         }
         .frame(maxWidth: .infinity)
     }
@@ -331,46 +406,6 @@ struct ClientProfileDetailView: View {
             }
         }
     }
-
-    // MARK: - Consent Banner
-
-    private var consentSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: currentClient.privacyConsentGiven
-                  ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                .font(.title2)
-                .foregroundStyle(currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(currentClient.privacyConsentGiven
-                      ? "Privacy Consent Given" : "Privacy Consent Not Given")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(currentClient.privacyConsentGiven
-                                     ? RSMSTheme.success : RSMSTheme.warning)
-                if currentClient.privacyConsentGiven, let date = currentClient.consentDate {
-                    Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                } else if !currentClient.privacyConsentGiven {
-                    Text("Client data cannot be used for marketing.")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                }
-            }
-            Spacer()
-        }
-        .padding(16)
-        .background(
-            (currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke((currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-    }
-
     // MARK: - Contact
 
     private var contactSection: some View {

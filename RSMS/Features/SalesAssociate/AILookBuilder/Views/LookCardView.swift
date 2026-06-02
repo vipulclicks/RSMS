@@ -5,6 +5,12 @@
 
 import SwiftUI
 
+struct ProductRow: Identifiable {
+    let id = UUID()
+    let left: Product
+    let right: Product?
+}
+
 struct LookCardView: View {
     let look: GeneratedLook
     let isSaved: Bool
@@ -12,6 +18,17 @@ struct LookCardView: View {
     
     // We will use ShareLink for sharing
     var sharePayload: String
+    
+    private var productRows: [ProductRow] {
+        var rows: [ProductRow] = []
+        let products = look.products
+        for i in stride(from: 0, to: products.count, by: 2) {
+            let left = products[i]
+            let right = i + 1 < products.count ? products[i + 1] : nil
+            rows.append(ProductRow(left: left, right: right))
+        }
+        return rows
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -33,14 +50,17 @@ struct LookCardView: View {
             .padding(.top)
             
             // Products Grid (2x2 or similar)
-            let columns = [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ]
-            
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
-                ForEach(look.products) { product in
-                    LookProductItemView(product: product)
+            VStack(spacing: 16) {
+                ForEach(productRows) { row in
+                    HStack(spacing: 12) {
+                        LookProductItemView(product: row.left)
+                        
+                        if let right = row.right {
+                            LookProductItemView(product: right)
+                        } else {
+                            Color.clear.frame(maxWidth: .infinity)
+                        }
+                    }
                 }
             }
             .padding(.horizontal)
@@ -54,8 +74,8 @@ struct LookCardView: View {
                     Text("Total Value")
                         .font(.caption)
                         .foregroundColor(RSMSTheme.textSecondary)
-                    if let firstProduct = look.products.first {
-                        Text("\(firstProduct.currency) \(String(format: "%.2f", look.totalPrice))")
+                    if !look.products.isEmpty {
+                        Text("₹\(Int(look.totalPrice).formatted())")
                             .font(.body)
                             .foregroundColor(RSMSTheme.textPrimary)
                             .fontWeight(.medium)
@@ -96,57 +116,59 @@ struct LookProductItemView: View {
     let product: Product
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Image Placeholder (Using color palette if no imageURL)
-            ZStack {
-                if let urlString = product.imageURL, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            Color.clear
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        case .failure:
-                            Image(systemName: "photo")
-                                .foregroundColor(RSMSTheme.textSecondary)
-                        @unknown default:
-                            EmptyView()
+        VStack(alignment: .leading, spacing: 10) {
+            // Image Placeholder - Strictly enforce 1:1 aspect ratio
+            Rectangle()
+                .fill(RSMSTheme.surfaceSecondary)
+                .aspectRatio(1.0, contentMode: .fit)
+                .overlay(
+                    Group {
+                        if let urlString = product.imageURL, let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                default:
+                                    Image(systemName: "photo")
+                                        .foregroundColor(RSMSTheme.textSecondary)
+                                }
+                            }
+                        } else {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.system(size: 24))
+                                .foregroundColor(RSMSTheme.textSecondary.opacity(0.5))
                         }
                     }
-                } else {
-                    Image(systemName: "photo.on.rectangle")
-                        .font(.system(size: 24))
-                        .foregroundColor(RSMSTheme.textSecondary.opacity(0.5))
-                }
-            }
-            .frame(minWidth: 0, maxWidth: .infinity)
-            .aspectRatio(1.0, contentMode: .fit)
-            .background(RSMSTheme.surfaceSecondary)
-            .cornerRadius(8)
-            .clipped()
+                )
+                .clipped()
             
-            VStack(alignment: .leading, spacing: 2) {
-                Text(product.brand)
-                    .font(.caption)
-                    .foregroundColor(RSMSTheme.textSecondary)
-                    .textCase(.uppercase)
-                    .lineLimit(1)
-                
+            VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.subheadline)
-                    .foregroundColor(RSMSTheme.textPrimary)
+                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                     .frame(height: 36, alignment: .topLeading)
                 
-                Text("\(product.currency) \(String(format: "%.2f", product.price))")
-                    .font(.subheadline)
-                    .foregroundColor(RSMSTheme.textPrimary)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                Text(product.brand)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                
+                Text("₹\(Int(product.price).formatted())")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(RSMSTheme.primary)
             }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+            
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(RSMSTheme.surfaceSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
     }
 }

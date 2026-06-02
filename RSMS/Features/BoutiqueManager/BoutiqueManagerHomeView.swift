@@ -38,7 +38,7 @@ struct BoutiqueManagerHomeView: View {
                 ForEach(BoutiqueSection.allCases) { section in
                     detailViewFor(section)
                         .tabItem {
-                            Label(section.rawValue, systemImage: section.icon)
+                            Image(systemName: section.icon)
                         }
                         .tag(section as BoutiqueSection?)
                 }
