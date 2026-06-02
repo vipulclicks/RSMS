@@ -29,14 +29,14 @@ final class InventorySourcingViewModel {
     func activeRequests(for associateId: UUID? = nil) -> [InventorySourcingRequest] {
         requests.filter { req in
             let matchAssociate = associateId == nil || req.salesAssociateId == associateId
-            return matchAssociate && (req.status == .transferInitiated || req.status == .inTransit || req.status == .received || req.status == .available)
+            return matchAssociate && (req.status == .transferInitiated || req.status == .inTransit || req.status == .received)
         }.sorted { $0.createdAt > $1.createdAt }
     }
     
     func completedRequests(for associateId: UUID? = nil) -> [InventorySourcingRequest] {
         requests.filter { req in
             let matchAssociate = associateId == nil || req.salesAssociateId == associateId
-            return matchAssociate && (req.status == .completed || req.status == .cancelled)
+            return matchAssociate && (req.status == .available || req.status == .completed || req.status == .cancelled)
         }.sorted { $0.createdAt > $1.createdAt }
     }
     

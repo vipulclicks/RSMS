@@ -114,8 +114,8 @@ struct InventorySourcingRequestListView: View {
             role != .boutiqueManager || req.requestingStoreId == appViewModel.currentUser?.storeId
         }
         let pendingCount = allForStore.filter { $0.status == .requested || $0.status == .searching || $0.status == .stockFound }.count
-        let activeCount = allForStore.filter { $0.status == .transferInitiated || $0.status == .inTransit || $0.status == .received || $0.status == .available }.count
-        let completedCount = allForStore.filter { $0.status == .completed }.count
+        let activeCount = allForStore.filter { $0.status == .transferInitiated || $0.status == .inTransit || $0.status == .received }.count
+        let completedCount = allForStore.filter { $0.status == .available || $0.status == .completed || $0.status == .cancelled }.count
         
         return HStack(spacing: 12) {
             analyticsCard(title: "PENDING", count: pendingCount, color: RSMSTheme.info)

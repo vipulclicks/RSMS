@@ -363,7 +363,6 @@ struct InventorySourcingRequestDetailView: View {
                             if sourcingVM.isLoading {
                                 ProgressView().tint(.white)
                             } else {
-                                Image(systemName: "checkmark.circle.fill")
                                 Text("Complete Transfer & Mark Available")
                             }
                         }

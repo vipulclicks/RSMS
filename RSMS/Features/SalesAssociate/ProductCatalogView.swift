@@ -722,7 +722,6 @@ struct CatalogProductDetailSheet: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var addedToCart: Bool
-    @State private var showSourcingSheet = false
 
     init(product: Product, stockQuantity: Int, onAddToCart: @escaping () -> Void, activeClient: ClientProfile?, isWishlisted: Bool, sizeLabel: String?, isPreferenceMatch: Bool, onWishlistToggle: @escaping () -> Void, isInCart: Bool) {
         self.product = product
@@ -905,7 +904,7 @@ struct CatalogProductDetailSheet: View {
                         onAddToCart()
                         addedToCart = true
                     } label: {
-                        Text(addedToCart ? "Added ✓" : "Add to Cart")
+                        Text(addedToCart ? "Added" : "Add to Cart")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(RSMSTheme.cream)
                             .padding(.vertical, 16)
@@ -919,25 +918,17 @@ struct CatalogProductDetailSheet: View {
             }
             
             if stockQuantity == 0 {
-                Button {
-                    showSourcingSheet = true
-                } label: {
-                    HStack {
-                        Image(systemName: "shippingbox.and.arrow.backward")
-                        Text("Request Item From Another Store")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primary)
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(RSMSTheme.surfacePrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 1))
+                NavigationLink(destination: InventorySourcingRequestFormView(product: product)) {
+                    Text("Request Item From Another Store")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 1))
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .sheet(isPresented: $showSourcingSheet) {
-                    InventorySourcingRequestFormView(product: product)
-                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.horizontal, 24)
