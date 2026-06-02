@@ -4,9 +4,10 @@
 -- ==========================================
 -- 0. PREREQUISITES (STORES & USERS)
 -- ==========================================
-INSERT INTO stores (id, name, code, country, city, address, timezone, phone, email, is_active, created_at, updated_at) VALUES
-('00000000-0000-0000-0000-000000000001', 'Maison Lumière — Paris Vendôme', 'PAR-VND-01', 'France', 'Paris', '23 Place Vendôme, 75001 Paris', 'Europe/Paris', '+33 1 42 60 00 00', 'vendome@maisonlumiere.com', true, NOW(), NOW()),
-('00000000-0000-0000-0000-000000000002', 'Maison Lumière — Mumbai Palladium', 'MUM-PLD-01', 'India', 'Mumbai', 'Palladium Mall, Lower Parel, Mumbai 400013', 'Asia/Kolkata', '+91 22 4000 0000', 'mumbai@maisonlumiere.com', true, NOW(), NOW())
+INSERT INTO stores (id, name, code, country, city, address, timezone, phone, email, is_dc, is_active, created_at, updated_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'Maison Lumière — Paris Vendôme', 'PAR-VND-01', 'France', 'Paris', '23 Place Vendôme, 75001 Paris', 'Europe/Paris', '+33 1 42 60 00 00', 'vendome@maisonlumiere.com', false, true, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000002', 'Maison Lumière — Mumbai Palladium', 'MUM-PLD-01', 'India', 'Mumbai', 'Palladium Mall, Lower Parel, Mumbai 400013', 'Asia/Kolkata', '+91 22 4000 0000', 'mumbai@maisonlumiere.com', false, true, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000003', 'Maison Lumière — Europe DC', 'DC-EUROPE-01', 'France', 'Paris', 'Logistics Park, Paris', 'Europe/Paris', '+33 1 42 60 00 01', 'dc.europe@maisonlumiere.com', true, true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 UPDATE user_profiles SET store_id = '00000000-0000-0000-0000-000000000001', role = 'inventory_controller' WHERE id = 'ada6eb74-0b6d-43bb-8612-3f265960dae1';

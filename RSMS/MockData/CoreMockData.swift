@@ -20,6 +20,7 @@ extension Store {
         timezone: "Europe/Paris",
         phone: "+33 1 42 60 00 00",
         email: "vendome@maisonlumiere.com",
+        isDc: false,
         isActive: true,
         createdAt: .now,
         updatedAt: .now
@@ -35,6 +36,7 @@ extension Store {
         timezone: "Asia/Kolkata",
         phone: "+91 22 4000 0000",
         email: "mumbai@maisonlumiere.com",
+        isDc: false,
         isActive: true,
         createdAt: .now,
         updatedAt: .now
