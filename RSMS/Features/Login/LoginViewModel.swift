@@ -38,6 +38,12 @@ final class LoginViewModel {
                 userName: "Emma Leroy",
                 description: "RFID stock management & tracking"
             )
+        case .client:
+            return RoleInfo(
+                icon: "person.crop.rectangle.fill",
+                userName: "Isabelle Fontaine",
+                description: "Luxury Client Portal, wishlists & FaceTime consults"
+            )
         }
     }
 }

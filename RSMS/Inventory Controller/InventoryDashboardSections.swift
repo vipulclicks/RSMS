@@ -403,6 +403,7 @@ extension InventoryControllerHomeView {
                     }
                 }
             }
+            }
             .background(RSMSTheme.surfacePrimary)
             .clipShape(
                 RoundedRectangle(cornerRadius: 16)
@@ -414,6 +415,19 @@ extension InventoryControllerHomeView {
                         lineWidth: 1
                     )
             )
+            
+            Button {
+                selectedDestination = .auditTrail
+            } label: {
+                Text("View All Activity")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RSMSTheme.primary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.top, 8)
         }
     }
 

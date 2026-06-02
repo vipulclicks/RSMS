@@ -19,7 +19,7 @@ struct CircularProgressView: View {
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 2) {
                     Text(value)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text(label)
                         .font(.caption)

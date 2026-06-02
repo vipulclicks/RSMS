@@ -11,29 +11,33 @@ import SwiftUI
 // MARK: - Navigation Destinations
 
 enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
-    case dashboard        = "Dashboard"
-    case productLookup    = "Lookup & Stock In"
-    case transfer         = "Transfer Inventory"
-    case dcReplenishment  = "DC Replenishment"
-    case vendorReturn     = "Vendor Returns"
-    case cycleCounts      = "Cycle Counts & Verify"
-    case auditReconcile   = "Audit & Reconcile"
-    case notify           = "Notify Manager"
-    case profile          = "My Profile"
+    case dashboard      = "Dashboard"
+    case productLookup  = "Lookup & Stock In"
+    case transfer       = "Transfer Inventory"
+    case dcReplenishment = "DC Replenishments"
+    case vendorReturns  = "Vendor Returns"
+    case cycleCounts    = "Cycle Counts & Verify"
+    case auditReconcile = "Audit & Reconcile"
+    case auditTrail     = "Audit Trail"
+    case authCertificates = "Auth Certificates"
+    case notify         = "Notify Manager"
+    case profile        = "My Profile"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:        return "chart.bar.fill"
-        case .productLookup:    return "magnifyingglass.circle.fill"
-        case .transfer:         return "arrow.left.arrow.right"
-        case .dcReplenishment:  return "shippingbox.and.arrow.backward.fill"
-        case .vendorReturn:     return "shippingbox.and.arrow.forward.fill"
-        case .cycleCounts:      return "arrow.triangle.2.circlepath"
-        case .auditReconcile:   return "doc.text.magnifyingglass"
-        case .notify:           return "paperplane.fill"
-        case .profile:          return "person.crop.circle.fill"
+        case .dashboard:       return "chart.bar.fill"
+        case .productLookup:   return "magnifyingglass.circle.fill"
+        case .transfer:        return "arrow.left.arrow.right"
+        case .dcReplenishment: return "truck.box.fill"
+        case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
+        case .cycleCounts:     return "arrow.triangle.2.circlepath"
+        case .auditReconcile:  return "doc.text.magnifyingglass"
+        case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
+        case .authCertificates:return "seal.fill"
+        case .notify:          return "paperplane.fill"
+        case .profile:         return "person.crop.circle.fill"
         }
     }
 }
@@ -44,15 +48,43 @@ struct InventoryControllerHomeView: View {
 
     @State var dashVM = InventoryDashboardViewModel()
     @State var selectedDestination: InventoryDestination? = .dashboard
-    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
-        } detail: {
-            detailView
+        if horizontalSizeClass == .compact {
+            TabView(selection: $selectedDestination) {
+                ForEach(InventoryDestination.allCases) { destination in
+                    NavigationStack {
+                        detailViewFor(destination)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button {
+                                        selectedDestination = .profile
+                                    } label: {
+                                        SidebarAvatarButton(user: viewModel.currentUser)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                    }
+                    .tabItem {
+                        Label(destination.rawValue, systemImage: destination.icon)
+                    }
+                    .tag(destination as InventoryDestination?)
+                }
+            }
+            .tint(RSMSTheme.gold)
+        } else {
+            NavigationSplitView(columnVisibility: $columnVisibility) {
+                sidebar
+            } detail: {
+                NavigationStack {
+                    detailView
+                }
+            }
+            .tint(RSMSTheme.gold)
+            .navigationSplitViewStyle(.prominentDetail)
         }
-        .tint(RSMSTheme.gold)
     }
     
     // MARK: - Sidebar
@@ -73,14 +105,14 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.transfer.rawValue,
                       systemImage: InventoryDestination.transfer.icon)
                     .tag(InventoryDestination.transfer)
-
+                
                 Label(InventoryDestination.dcReplenishment.rawValue,
                       systemImage: InventoryDestination.dcReplenishment.icon)
                     .tag(InventoryDestination.dcReplenishment)
-                
-                Label(InventoryDestination.vendorReturn.rawValue,
-                      systemImage: InventoryDestination.vendorReturn.icon)
-                    .tag(InventoryDestination.vendorReturn)
+
+                Label(InventoryDestination.vendorReturns.rawValue,
+                      systemImage: InventoryDestination.vendorReturns.icon)
+                    .tag(InventoryDestination.vendorReturns)
             }
 
             Section {
@@ -91,6 +123,10 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.auditReconcile.rawValue,
                       systemImage: InventoryDestination.auditReconcile.icon)
                     .tag(InventoryDestination.auditReconcile)
+                
+                Label(InventoryDestination.authCertificates.rawValue,
+                      systemImage: InventoryDestination.authCertificates.icon)
+                    .tag(InventoryDestination.authCertificates)
 
                 Label(InventoryDestination.notify.rawValue,
                       systemImage: InventoryDestination.notify.icon)
@@ -127,8 +163,17 @@ struct InventoryControllerHomeView: View {
 
     @ViewBuilder
     private var detailContent: some View {
-        switch selectedDestination {
-        case .dashboard, .none:
+        if let destination = selectedDestination {
+            detailViewFor(destination)
+        } else {
+            detailViewFor(.dashboard)
+        }
+    }
+
+    @ViewBuilder
+    private func detailViewFor(_ destination: InventoryDestination) -> some View {
+        switch destination {
+        case .dashboard:
             dashboardView
         case .productLookup:
             ProductLookupView()
@@ -136,12 +181,16 @@ struct InventoryControllerHomeView: View {
             InventoryTransferView()
         case .dcReplenishment:
             DCReplenishmentView()
-        case .vendorReturn:
+        case .vendorReturns:
             VendorReturnView()
         case .cycleCounts:
             CycleCountView()
         case .auditReconcile:
             StockReconciliationView()
+        case .auditTrail:
+            AuditTrailView()
+        case .authCertificates:
+            AuthCertificateGeneratorView()
         case .notify:
             NotifyBoutiqueManagerView()
         case .profile:

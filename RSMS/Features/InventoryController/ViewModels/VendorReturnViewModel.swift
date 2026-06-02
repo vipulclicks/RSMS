@@ -2,112 +2,231 @@
 //  VendorReturnViewModel.swift
 //  RSMS
 //
-//  ViewModel for managing Vendor Returns.
-//  Handles returning defective, damaged, or overstock items to external vendors.
+//  ViewModel for the Vendor Returns screen.
+//  Manages vendor-return movements, form state, KPIs, and search.
+//  Follows the same @Observable pattern as InventoryTransferViewModel.
 //
 
 import SwiftUI
+
+// MARK: - Return Cart Item
+
+struct ReturnItem: Identifiable, Equatable {
+    let id = UUID()
+    let product: Product
+    var quantity: Int
+    var reason: ReturnReason
+}
+
+// MARK: - Return Reason
+
+enum ReturnReason: String, CaseIterable, Identifiable {
+    case defective      = "Defective"
+    case damaged        = "Damaged"
+    case incorrectItem  = "Incorrect Item"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .defective:      return "exclamationmark.triangle.fill"
+        case .damaged:        return "hammer.fill"
+        case .incorrectItem:  return "arrow.triangle.swap"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .defective:      return RSMSTheme.danger
+        case .damaged:        return RSMSTheme.warning
+        case .incorrectItem:  return RSMSTheme.info
+        }
+    }
+}
+
+// MARK: - Return Priority
+
+enum ReturnPriority: String, CaseIterable, Identifiable {
+    case low     = "Low"
+    case medium  = "Medium"
+    case high    = "High"
+    case urgent  = "Urgent"
+
+    var id: String { rawValue }
+
+    var color: Color {
+        switch self {
+        case .low:    return RSMSTheme.success
+        case .medium: return RSMSTheme.info
+        case .high:   return RSMSTheme.warning
+        case .urgent: return RSMSTheme.danger
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .low:    return "arrow.down"
+        case .medium: return "minus"
+        case .high:   return "arrow.up"
+        case .urgent: return "exclamationmark.2"
+        }
+    }
+}
+
+// MARK: - Return Status (for display)
+
+enum VendorReturnStatus: String, CaseIterable {
+    case pending    = "Pending"
+    case approved   = "Approved"
+    case rejected   = "Rejected"
+    case inTransit  = "In Transit"
+    case completed  = "Completed"
+
+    var color: Color {
+        switch self {
+        case .pending:   return RSMSTheme.warning
+        case .approved:  return RSMSTheme.info
+        case .rejected:  return RSMSTheme.danger
+        case .inTransit: return Color(red: 43/255, green: 115/255, blue: 138/255)
+        case .completed: return RSMSTheme.success
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .pending:   return "clock.fill"
+        case .approved:  return "checkmark.circle"
+        case .rejected:  return "xmark.circle.fill"
+        case .inTransit: return "shippingbox.and.arrow.backward.fill"
+        case .completed: return "checkmark.seal.fill"
+        }
+    }
+
+    static func from(_ movementStatus: MovementStatus) -> VendorReturnStatus {
+        switch movementStatus {
+        case .requested:  return .pending
+        case .approved:   return .approved
+        case .inTransit:  return .inTransit
+        case .received, .completed: return .completed
+        case .cancelled, .exception: return .rejected
+        case .partial:    return .inTransit
+        }
+    }
+}
+
+// MARK: - Vendor Names (Mock)
+
+struct VendorInfo: Identifiable, Hashable {
+    let id = UUID()
+    let name: String
+    let contact: String
+    let email: String
+}
+
+// MARK: - ViewModel
 
 @Observable
 final class VendorReturnViewModel {
 
     // MARK: - Data
     var movements: [InventoryMovement] = []
-    var movementItemsCache: [UUID: [MovementItem]] = [:]
+    var stores: [Store] = []
     var products: [Product] = []
     var stockItems: [StockItem] = []
     var isLoading = false
     var errorMessage: String?
 
-    // MARK: - Form State
-    var showCreateSheet = false
-    var returnId: String = ""
-    var sourceStore: Store?
-    var selectedVendor: String = "VEND-MAISON-001" // Default
-    
-    // Hardcoded vendors for UI since we don't have a Vendor model
-    let vendors = [
-        "VEND-MAISON-001",
-        "VEND-LUMIERE-HQ",
-        "VEND-EXT-042"
+    // MARK: - Mock Vendors
+    let vendors: [VendorInfo] = [
+        VendorInfo(name: "Maison Lumière Supplies", contact: "+33 1 42 68 53 00", email: "supply@maisonlumiere.fr"),
+        VendorInfo(name: "Atelier Bijoux Paris", contact: "+33 1 44 51 22 10", email: "orders@atelierbijoux.com"),
+        VendorInfo(name: "Geneva Watch Co.", contact: "+41 22 310 17 40", email: "returns@genevawatchco.ch"),
+        VendorInfo(name: "Milano Leather House", contact: "+39 02 7200 1234", email: "logistics@milanoleather.it"),
+        VendorInfo(name: "Kyoto Silk Artisans", contact: "+81 75 344 8900", email: "trade@kyotosilk.jp"),
+        VendorInfo(name: "Royal Gem Traders", contact: "+44 20 7946 0958", email: "vendor@royalgem.co.uk"),
     ]
 
-    var returnReasonType: ReturnReason = .defective
+    // MARK: - Create Form State
+    var showCreateSheet = false
+    var returnId: String = ""
+    var selectedVendor: VendorInfo?
+    var purchaseOrderNumber: String = ""
     var selectedProduct: Product?
     var quantity: Int = 1
-    var returnCart: [ReturnCartItem] = []
+    var selectedReason: ReturnReason = .defective
+    var priority: ReturnPriority = .medium
+    var returnCart: [ReturnItem] = []
+    var expectedPickupDate: Date = Calendar.current.date(byAdding: .day, value: 5, to: .now)!
     var returnNotes: String = ""
-    var productSearchText: String = ""
-    
+    var returnMethod: String = "Vendor Pickup"
     var isSubmitting = false
     var showSuccess = false
 
-    // MARK: - Detail State
-    var selectedReturn: InventoryMovement? = nil
-    var selectedLineItems: [ReturnLineItem] = []
-    var isLoadingDetail = false
-    var isUpdatingStatus = false
-
-    // MARK: - Filtered Lists
-
-    private var vendorReturns: [InventoryMovement] {
-        movements.filter { $0.type == .vendorReturn }
-    }
-
-    var activeReturns: [InventoryMovement] {
-        vendorReturns
-            .filter { $0.status == .requested || $0.status == .approved || $0.status == .inTransit }
-            .sorted { ($0.requestedAt ?? .distantPast) > ($1.requestedAt ?? .distantPast) }
-    }
-
-    var recentReturns: [InventoryMovement] {
-        vendorReturns
-            .filter { $0.status == .completed || $0.status == .cancelled }
-            .sorted { ($0.receivedAt ?? $0.shippedAt ?? $0.requestedAt ?? .distantPast) > ($1.receivedAt ?? $1.shippedAt ?? $1.requestedAt ?? .distantPast) }
-    }
-
+    // MARK: - Product Search
+    var productSearchText = ""
     var searchResults: [Product] {
         guard !productSearchText.isEmpty else { return [] }
         return products.filter {
             $0.name.localizedCaseInsensitiveContains(productSearchText) ||
             $0.sku.localizedCaseInsensitiveContains(productSearchText)
-        }
+        }.prefix(8).map { $0 }
     }
 
     // MARK: - KPIs
 
-    var totalReturns: Int {
-        vendorReturns.count
+    private var vendorReturns: [InventoryMovement] {
+        movements.filter { $0.type == .vendorReturn }
     }
 
     var pendingCount: Int {
-        vendorReturns.filter { $0.status == .requested || $0.status == .approved }.count
+        vendorReturns.filter { $0.status == .requested }.count
     }
 
-    var shippedCount: Int {
-        vendorReturns.filter { $0.status == .inTransit }.count
+    var approvedCount: Int {
+        vendorReturns.filter { $0.status == .approved }.count
+    }
+
+    var rejectedCount: Int {
+        vendorReturns.filter { $0.status == .cancelled || $0.status == .exception }.count
     }
 
     var completedCount: Int {
-        vendorReturns.filter { $0.status == .completed }.count
-    }
-    
-    var totalValueReturned: Double {
-        // Approximate based on items expected * average price (for simplicity without joining all line items)
-        // In a real app we'd sum line items.
-        return 0.0 // Placeholder or we compute it if needed
+        vendorReturns.filter { $0.status == .completed || $0.status == .received }.count
     }
 
-    // Available stock for selected product at source
+    var inTransitCount: Int {
+        vendorReturns.filter { $0.status == .inTransit }.count
+    }
+
+    var todayReturns: Int {
+        let cal = Calendar.current
+        return vendorReturns.filter { m in
+            guard let date = m.requestedAt else { return false }
+            return cal.isDateInToday(date)
+        }.count
+    }
+
+    var totalReturnValue: Double {
+        // Simplified: sum items * average product price
+        Double(vendorReturns.reduce(0) { $0 + ($1.itemsExpected ?? 0) }) * 125.0
+    }
+
+    // MARK: - Sorted Returns for Feed
+    var recentReturns: [InventoryMovement] {
+        vendorReturns.sorted { (a, b) in
+            (a.requestedAt ?? .distantPast) > (b.requestedAt ?? .distantPast)
+        }
+    }
+
+    // MARK: - Available Stock for Selected Product
     var availableStock: Int {
         guard let product = selectedProduct else { return 0 }
         return stockForProduct(product)
     }
 
     func stockForProduct(_ product: Product) -> Int {
-        let storeId = sourceStore?.id
         return stockItems
-            .filter { $0.productId == product.id && $0.status == .available && (storeId == nil || $0.storeId == storeId) }
+            .filter { $0.productId == product.id && $0.status == .available }
             .reduce(0) { $0 + $1.quantity }
     }
 
@@ -117,24 +236,15 @@ final class VendorReturnViewModel {
         isLoading = true
         errorMessage = nil
         do {
+            try await dataStore.fetchStores()
             try await dataStore.fetchProducts()
             try await dataStore.fetchStockItems()
             try await dataStore.fetchInventoryMovements(type: .vendorReturn)
 
+            stores = dataStore.stores
             products = dataStore.products
             stockItems = dataStore.stockItems
-            
-            if let storeId {
-                let storeIdString = storeId.uuidString.lowercased()
-                movements = dataStore.inventoryMovements.filter {
-                    $0.type == .vendorReturn &&
-                    $0.sourceId.lowercased() == storeIdString
-                }
-                sourceStore = dataStore.stores.first(where: { $0.id == storeId }) ?? Store.preview
-            } else {
-                movements = dataStore.inventoryMovements.filter { $0.type == .vendorReturn }
-                sourceStore = Store.preview
-            }
+            movements = dataStore.inventoryMovements
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -145,46 +255,56 @@ final class VendorReturnViewModel {
 
     func generateReturnID() {
         let digits = String(format: "%04d", Int.random(in: 1000...9999))
-        returnId = "RTV-\(digits)"
+        returnId = "VR-\(digits)"
     }
 
     // MARK: - Reset Form
 
     func resetForm() {
         generateReturnID()
+        selectedVendor = nil
+        purchaseOrderNumber = ""
         selectedProduct = nil
         quantity = 1
+        selectedReason = .defective
+        priority = .medium
         returnCart = []
-        returnReasonType = .defective
+        expectedPickupDate = Calendar.current.date(byAdding: .day, value: 5, to: .now)!
         returnNotes = ""
+        returnMethod = "Vendor Pickup"
         productSearchText = ""
     }
 
     // MARK: - Submit Return
 
-    func submitReturn(dataStore: DataStore, requestedBy: UUID?) async {
-        guard let src = sourceStore, !returnCart.isEmpty else { return }
+    func submitReturn(dataStore: DataStore, requestedBy: UUID?, storeId: UUID?) async {
+        guard let vendor = selectedVendor, !returnCart.isEmpty else { return }
 
         isSubmitting = true
-        let typeTag = "[\(returnReasonType.rawValue.uppercased())]"
-        let notes = [typeTag, returnId, returnNotes].filter { !$0.isEmpty }.joined(separator: " — ")
+        let priorityTag = "[\(priority.rawValue.uppercased())]"
+        let reasonSummary = returnCart.map { "\($0.product.name) (\($0.reason.rawValue))" }.joined(separator: ", ")
+        let notes = [priorityTag, returnId, "Vendor: \(vendor.name)", "Method: \(returnMethod)", returnNotes]
+            .filter { !$0.isEmpty }
+            .joined(separator: " — ")
 
         let totalItems = returnCart.reduce(0) { $0 + $1.quantity }
         let uniqueProducts = returnCart.count
-        let reasonTitle = uniqueProducts == 1 ? "Vendor Return — \(returnCart[0].product.name)" : "Vendor Return — \(uniqueProducts) products"
+        let reasonTitle = uniqueProducts == 1
+            ? "Vendor Return — \(returnCart[0].product.name) (\(returnCart[0].reason.rawValue))"
+            : "Vendor Return — \(uniqueProducts) products"
 
         let movement = InventoryMovement(
             id: UUID(),
             type: .vendorReturn,
-            sourceId: src.id.uuidString,
-            destinationId: selectedVendor,
-            status: .requested,
+            sourceId: storeId?.uuidString ?? "store",
+            destinationId: vendor.name,
+            status: .approved,
             requestedBy: requestedBy,
-            approvedBy: nil,
+            approvedBy: requestedBy,
             requestedAt: .now,
             shippedAt: nil,
             receivedAt: nil,
-            asnNumber: nil,
+            asnNumber: purchaseOrderNumber.isEmpty ? nil : purchaseOrderNumber,
             itemsExpected: totalItems,
             itemsReceived: nil,
             reason: reasonTitle,
@@ -204,135 +324,70 @@ final class VendorReturnViewModel {
                     quantity: cartItem.quantity,
                     reason: cartItem.reason.rawValue
                 )
-                try await dataStore.createMovementItem(item)
+                _ = try await dataStore.createMovementItem(item)
             }
 
-            // Audit trail
-            dataStore.logAudit(
-                storeId: src.id,
-                action: "Vendor Return Requested",
-                entityType: "InventoryMovement",
-                entityId: created.id,
-                performedBy: requestedBy ?? UUID(),
-                details: "Return to \(selectedVendor): \(totalItems) items. Reason: \(returnReasonType.rawValue)"
-            )
-
-            // Show success overlay temporarily
-            withAnimation {
-                showCreateSheet = false
+            withAnimation(.spring()) {
                 showSuccess = true
             }
-
-            try await Task.sleep(nanoseconds: 2_000_000_000)
-
-            withAnimation {
-                showSuccess = false
-            }
-
+            showCreateSheet = false
         } catch {
             errorMessage = error.localizedDescription
         }
-
         isSubmitting = false
     }
 
-    // MARK: - Load Detail
-
-    @MainActor
-    func loadReturnDetail(movement: InventoryMovement, dataStore: DataStore) async {
-        selectedReturn = movement
-        isLoadingDetail = true
-
-        try? await dataStore.fetchMovementItems(movementId: movement.id)
-
-        if products.isEmpty {
-            try? await dataStore.fetchProducts()
-            products = dataStore.products
-        }
-
-        selectedLineItems = dataStore.movementItems
-            .filter { $0.movementId == movement.id }
-            .compactMap { item in
-                guard let product = dataStore.product(by: item.productId) else { return nil }
-                return ReturnLineItem(
-                    id: item.id,
-                    product: product,
-                    quantity: item.quantity,
-                    reason: item.reason ?? "N/A"
-                )
-            }
-
-        movementItemsCache[movement.id] = dataStore.movementItems.filter { $0.movementId == movement.id }
-
-        isLoadingDetail = false
-    }
-    
     // MARK: - Update Status
-    
-    @MainActor
-    func updateStatus(to newStatus: MovementStatus, dataStore: DataStore, user: UserProfile, storeId: UUID) async {
-        guard let movement = selectedReturn else { return }
-        isUpdatingStatus = true
+
+    func updateStatus(for movementId: UUID, to newStatus: MovementStatus, dataStore: DataStore) async {
+        guard let index = movements.firstIndex(where: { $0.id == movementId }) else { return }
         
-        let updated = InventoryMovement(
-            id: movement.id,
-            type: movement.type,
-            sourceId: movement.sourceId,
-            destinationId: movement.destinationId,
+        let current = movements[index]
+        let updatedMovement = InventoryMovement(
+            id: current.id,
+            type: current.type,
+            sourceId: current.sourceId,
+            destinationId: current.destinationId,
             status: newStatus,
-            requestedBy: movement.requestedBy,
-            approvedBy: movement.approvedBy,
-            requestedAt: movement.requestedAt,
-            shippedAt: newStatus == .inTransit ? .now : movement.shippedAt,
-            receivedAt: newStatus == .completed ? .now : movement.receivedAt,
-            asnNumber: movement.asnNumber,
-            itemsExpected: movement.itemsExpected,
-            itemsReceived: newStatus == .completed ? movement.itemsExpected : movement.itemsReceived,
-            reason: movement.reason,
-            notes: movement.notes
+            requestedBy: current.requestedBy,
+            approvedBy: current.approvedBy,
+            requestedAt: current.requestedAt,
+            shippedAt: newStatus == .inTransit ? .now : current.shippedAt,
+            receivedAt: (newStatus == .completed || newStatus == .received) ? .now : current.receivedAt,
+            asnNumber: current.asnNumber,
+            itemsExpected: current.itemsExpected,
+            itemsReceived: current.itemsReceived,
+            reason: current.reason,
+            notes: current.notes
         )
         
-        try? await dataStore.updateInventoryMovement(updated)
-        
-        if let idx = movements.firstIndex(where: { $0.id == movement.id }) {
-            movements[idx] = updated
+        do {
+            try await dataStore.updateInventoryMovement(updatedMovement)
+            withAnimation(.spring()) {
+                movements[index] = updatedMovement
+            }
+        } catch {
+            errorMessage = error.localizedDescription
         }
-        selectedReturn = updated
-        
-        dataStore.logAudit(
-            storeId: storeId,
-            action: "Vendor Return Status Updated",
-            entityType: "InventoryMovement",
-            entityId: movement.id,
-            performedBy: user.id,
-            details: "Status changed to \(newStatus.rawValue)"
-        )
-        
-        isUpdatingStatus = false
     }
-}
 
-// MARK: - Supporting Types
+    // MARK: - Vendor Name from Movement
 
-enum ReturnReason: String, CaseIterable, Identifiable {
-    case defective = "Defective"
-    case damage = "Damaged in Transit"
-    case overstock = "Overstock"
-    case recall = "Recall"
-    
-    var id: String { rawValue }
-}
+    func vendorName(for movement: InventoryMovement) -> String {
+        let dest = movement.destinationId
+        // If it matches a known vendor name, use it
+        if vendors.contains(where: { $0.name == dest }) { return dest }
+        // Otherwise try shortening
+        if dest.count > 20 { return String(dest.prefix(18)) + "…" }
+        return dest
+    }
 
-struct ReturnCartItem: Identifiable {
-    let id = UUID()
-    let product: Product
-    var quantity: Int
-    var reason: ReturnReason
-}
-
-struct ReturnLineItem: Identifiable {
-    let id: UUID
-    let product: Product
-    let quantity: Int
-    let reason: String
+    func returnReason(for movement: InventoryMovement) -> String {
+        guard let reason = movement.reason else { return "—" }
+        // Strip the "Vendor Return — " prefix
+        if reason.hasPrefix("Vendor Return — ") {
+            return String(reason.dropFirst("Vendor Return — ".count))
+        }
+        return reason
+    }
 }

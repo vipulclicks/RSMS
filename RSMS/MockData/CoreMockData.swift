@@ -20,6 +20,7 @@ extension Store {
         timezone: "Europe/Paris",
         phone: "+33 1 42 60 00 00",
         email: "vendome@maisonlumiere.com",
+        isDc: false,
         isActive: true,
         createdAt: .now,
         updatedAt: .now
@@ -35,6 +36,7 @@ extension Store {
         timezone: "Asia/Kolkata",
         phone: "+91 22 4000 0000",
         email: "mumbai@maisonlumiere.com",
+        isDc: false,
         isActive: true,
         createdAt: .now,
         updatedAt: .now
@@ -85,5 +87,18 @@ extension UserProfile {
         updatedAt: .now
     )
 
-    static let all: [UserProfile] = [.previewManager, .previewAssociate, .previewInventory]
+    static let previewClient = UserProfile(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000020")!,
+        email: "isabelle.fontaine@email.com",
+        fullName: "Isabelle Fontaine",
+        role: .client,
+        storeId: Store.preview.id,
+        avatarURL: nil,
+        phone: "+33 6 11 22 33 44",
+        isActive: true,
+        createdAt: .now,
+        updatedAt: .now
+    )
+
+    static let all: [UserProfile] = [.previewManager, .previewAssociate, .previewInventory, .previewClient]
 }

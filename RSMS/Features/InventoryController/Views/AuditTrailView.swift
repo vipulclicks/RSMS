@@ -41,7 +41,7 @@ struct AuditTrailView: View {
                 $0.action.lowercased().contains(lowerSearch) ||
                 ($0.details?.lowercased().contains(lowerSearch) ?? false) ||
                 $0.entityType.lowercased().contains(lowerSearch) ||
-                $0.entityId.uuidString.lowercased().contains(lowerSearch)
+                $0.entityId.lowercased().contains(lowerSearch)
             }
         }
         
@@ -210,8 +210,10 @@ struct AuditTrailView: View {
         return "doc.text.fill"
     }
     
-    private func userName(for userId: UUID) -> String {
-        if let user = appVM.dataStore.users.first(where: { $0.id == userId }) {
+    private func userName(for userId: String) -> String {
+        // Find user by ID. If not found, check if it's "System"
+        if userId == "System" { return "System" }
+        if let uuid = UUID(uuidString: userId), let user = appVM.dataStore.users.first(where: { $0.id == uuid }) {
             return user.fullName
         }
         return "Unknown User"

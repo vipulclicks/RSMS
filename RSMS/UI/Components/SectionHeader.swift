@@ -9,8 +9,8 @@ struct SectionHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(RSMSTheme.textPrimary)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(RSMSTheme.primaryDark)
             if let subtitle {
                 Text(subtitle)
                     .font(.subheadline)

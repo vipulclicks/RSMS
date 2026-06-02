@@ -2,7 +2,7 @@ import SwiftUI
 
 struct StaffPickerView: View {
     @Bindable var viewModel: SalesGoalViewModel
-    @Binding var navPath: [SalesGoalRoute]
+    @Binding var navPath: [StaffRoute]
     
     var body: some View {
         ScrollView {

@@ -25,7 +25,7 @@ struct AuthCertificateGeneratorView: View {
             product: product,
             serialNumber: cert.serialNumber,
             date: cert.issuedAt,
-            issuerName: appVM.currentUser?.fullName ?? "System"
+            issuerName: appVM.dataStore.currentUser?.fullName ?? "System"
         )
         .frame(width: 600, height: 800)
         
@@ -194,7 +194,7 @@ struct AuthCertificateGeneratorView: View {
                     product: product,
                     serialNumber: cert.serialNumber,
                     date: cert.issuedAt,
-                    issuerName: appVM.currentUser?.fullName ?? "System"
+                    issuerName: appVM.dataStore.currentUser?.fullName ?? "System"
                 )
                 .frame(maxWidth: 600)
                 
@@ -241,22 +241,22 @@ struct AuthCertificateGeneratorView: View {
         guard let product = selectedProduct, !serialNumber.isEmpty else { return }
         isGenerating = true
         
-        let cert = AuthCertificate(
+        let newCert = AuthCertificate(
             id: UUID(),
             productId: product.id,
             serialNumber: serialNumber,
-            certificateURL: nil,
-            issuedAt: Date(),
-            issuedBy: appVM.currentUser?.id ?? UUID()
+            certificateUrl: nil, // Would be set after PDF generation in backend
+            issuedAt: .now,
+            issuedBy: appVM.dataStore.currentUser?.id.uuidString
         )
         
         do {
-            let created = try await appVM.dataStore.createAuthCertificate(cert)
+            let created = try await appVM.dataStore.createAuthCertificate(newCert)
             
-            // Log to Audit Trail
-            if let storeId = appVM.currentUser?.storeId {
-                let userId = appVM.currentUser?.id ?? UUID()
-                let details = "Generated certificate for \(product.name) (SN: \(serialNumber))."
+            // Log audit
+            if let storeIdStr = appVM.dataStore.currentUser?.storeId?.uuidString, let storeId = UUID(uuidString: storeIdStr) {
+                let userId = appVM.dataStore.currentUser?.id ?? UUID()
+                let details = "Issued Auth Certificate for \(product.name) (SN: \(serialNumber))."
                 appVM.dataStore.logAudit(storeId: storeId, action: "Certificate Issued", entityType: "AuthCertificate", entityId: created.id, performedBy: userId, details: details)
             }
             

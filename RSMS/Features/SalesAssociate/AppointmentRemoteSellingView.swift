@@ -17,62 +17,201 @@ struct AppointmentRemoteSellingView: View {
     // Search and Filters
     @State private var searchText = ""
     @State private var selectedStatusFilter: AppointmentStatus? = nil
+    @State private var showPastAppointments = false
 
     // Sheets Presentation
     @State private var showClientSelection = false
     @State private var showBookingForm = false
     @State private var appointmentToReschedule: Appointment? = nil
     @State private var appointmentToAddNotes: Appointment? = nil
-    @State private var showVideoCall = false
 
     // State for scheduling / quick actions
     @State private var selectedClientForBooking: ClientProfile? = nil
     @State private var selectedAppointmentForAction: Appointment? = nil
     @State private var appointmentToDelete: Appointment? = nil
     @State private var showDeleteConfirmation = false
+    @State private var consultationManager = VideoConsultationManager()
 
     var body: some View {
+        let scheduledCount = viewModel.appointments.count
+        
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Dashboard Header
-                headerView
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Appointments")
+                            .font(.system(size: 34, weight: .heavy))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Button {
+                            showClientSelection = true
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(RSMSTheme.surfacePrimary)
+                                    .frame(width: 42, height: 42)
+                                    .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
+                                
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundStyle(RSMSTheme.primary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("New Appointment")
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
 
-                // Search & Filter Row
-                searchAndFilterBar
+                // Search Bar
+                searchBar
                     .padding(.horizontal, 24)
                     .padding(.bottom, 16)
 
                 // Appointments List
                 ScrollView {
-                    let filtered = viewModel.appointments.filter { appointment in
-                        let nameMatch = viewModel.clientName(for: appointment.clientId).localizedCaseInsensitiveContains(searchText) || searchText.isEmpty
-                        let statusMatch = selectedStatusFilter == nil || appointment.status == selectedStatusFilter
-                        return nameMatch && statusMatch
-                    }
-
-                    if filtered.isEmpty {
-                        emptyStateView
-                            .padding(.top, 40)
-                    } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 340, maximum: 500), spacing: 20)], spacing: 20) {
-                            ForEach(filtered) { appointment in
-                                glassmorphicAppointmentCard(appointment)
+                    VStack(alignment: .leading, spacing: 32) {
+                        
+                        // SECTION 1: TODAY'S APPOINTMENTS
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Today's Schedule")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .padding(.horizontal, 24)
+                            
+                            if viewModel.todaysInStoreAppointments.isEmpty && viewModel.todaysVideoAppointments.isEmpty {
+                                emptyStateCard(title: "No appointments today", message: "Enjoy your day or schedule a new consultation.")
+                                    .padding(.horizontal, 24)
+                            } else {
+                                if !viewModel.todaysInStoreAppointments.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("In-Store")
+                                            .font(.headline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .padding(.horizontal, 24)
+                                        
+                                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 340, maximum: 500), spacing: 20)], spacing: 20) {
+                                            ForEach(viewModel.todaysInStoreAppointments) { appt in
+                                                glassmorphicAppointmentCard(appt)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
+                                
+                                if !viewModel.todaysVideoAppointments.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Video Consultations")
+                                            .font(.headline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .padding(.horizontal, 24)
+                                        
+                                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 340, maximum: 500), spacing: 20)], spacing: 20) {
+                                            ForEach(viewModel.todaysVideoAppointments) { appt in
+                                                glassmorphicAppointmentCard(appt)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
                             }
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 40)
+                        
+                        Divider().padding(.horizontal, 24)
+                        
+                        // SECTION 2: OTHER APPOINTMENTS
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Other Appointments")
+                                .font(.title2.weight(.bold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .padding(.horizontal, 24)
+                            
+                            // Horizontal Filter Pills
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    filterPill(title: "Upcoming", isSelected: !showPastAppointments) {
+                                        showPastAppointments = false
+                                    }
+                                    filterPill(title: "Past", isSelected: showPastAppointments) {
+                                        showPastAppointments = true
+                                    }
+                                    
+                                    Divider().frame(height: 20)
+
+                                    filterPill(title: "All Statuses", isSelected: selectedStatusFilter == nil) {
+                                        selectedStatusFilter = nil
+                                    }
+                                    let essentialStatuses: [AppointmentStatus] = [.scheduled, .completed, .cancelled]
+                                    ForEach(essentialStatuses, id: \.self) { status in
+                                        let title = status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+                                        filterPill(title: title, isSelected: selectedStatusFilter == status) {
+                                            selectedStatusFilter = status
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            
+                            let otherAppts = viewModel.filteredOtherAppointments(statusFilter: selectedStatusFilter, searchText: searchText)
+                            let timeFilteredAppts = showPastAppointments ? otherAppts.filter { $0.dateTime <= Date() } : otherAppts.filter { $0.dateTime > Date() }
+                            
+                            if timeFilteredAppts.isEmpty {
+                                emptyStateCard(title: "No \(showPastAppointments ? "past" : "upcoming") appointments found", message: "Try adjusting your filters or search terms.")
+                                    .padding(.horizontal, 24)
+                            } else {
+                                let inStore = timeFilteredAppts.filter { $0.type == .inStore }
+                                let video = timeFilteredAppts.filter { $0.type == .video }
+                                
+                                if !inStore.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("In-Store")
+                                            .font(.headline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .padding(.horizontal, 24)
+                                        
+                                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 340, maximum: 500), spacing: 20)], spacing: 20) {
+                                            ForEach(inStore) { appt in
+                                                glassmorphicAppointmentCard(appt)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
+                                
+                                if !video.isEmpty {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("Video Consultations")
+                                            .font(.headline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .padding(.horizontal, 24)
+                                        
+                                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 340, maximum: 500), spacing: 20)], spacing: 20) {
+                                            ForEach(video) { appt in
+                                                glassmorphicAppointmentCard(appt)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
+                            }
+                        }
                     }
+                    .padding(.bottom, 40)
                 }
             }
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(RSMSTheme.background, for: .navigationBar)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .sheet(isPresented: $showClientSelection) {
             clientSelectionSheet
         }
@@ -85,10 +224,23 @@ struct AppointmentRemoteSellingView: View {
         .sheet(item: $appointmentToAddNotes) { appointment in
             addNotesSheet(appointment: appointment)
         }
-        .fullScreenCover(isPresented: $showVideoCall) {
-            if let appointment = selectedAppointmentForAction {
-                videoCallSheet(appointment: appointment)
+        .fullScreenCover(isPresented: $consultationManager.showFaceTimeCompanion) {
+            if let appointment = consultationManager.activeAppointment {
+                FaceTimeVideoConsultationSheet(
+                    appointment: appointment,
+                    client: nil,
+                    viewModel: viewModel,
+                    consultationManager: consultationManager,
+                    onDismiss: {
+                        selectedAppointmentForAction = nil
+                    }
+                )
             }
+        }
+        .alert("FaceTime Error", isPresented: $consultationManager.showFaceTimeError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(consultationManager.errorMessage)
         }
         .task {
             await viewModel.processAutomaticReminders()
@@ -123,77 +275,37 @@ struct AppointmentRemoteSellingView: View {
         }
     }
 
-    // MARK: - Dashboard Header
-
-    private var headerView: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Appointments")
-                    .font(.system(size: 32, weight: .bold, design: .serif))
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                Text("Schedule and manage client consultations")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-            Spacer()
-
-            Button {
-                showClientSelection = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.subheadline.weight(.semibold))
-                    Text("New Appointment")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .foregroundStyle(RSMSTheme.cream)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(RSMSTheme.primaryGradient)
-                .clipShape(Capsule())
-                .shadow(color: RSMSTheme.primary.opacity(0.25), radius: 10, y: 4)
-            }
-            .buttonStyle(ScaleButtonStyle())
-        }
-    }
+    // MARK: - Dashboard Header removed in favor of native navigation title
 
     // MARK: - Search & Filters
 
-    private var searchAndFilterBar: some View {
-        HStack(spacing: 12) {
-            // Search field
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                TextField("Search appointments by client...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-            }
-            .padding(10)
-            .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-
-            // Filter menu
-            Menu {
-                Button("All Statuses") { selectedStatusFilter = nil }
-                ForEach(AppointmentStatus.allCases, id: \.self) { status in
-                    Button(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized) {
-                        selectedStatusFilter = status
-                    }
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                    Text(selectedStatusFilter == nil ? "Filter" : selectedStatusFilter!.rawValue.capitalized)
-                }
-                .font(.subheadline.weight(.medium))
+    private var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(RSMSTheme.textTertiary)
+            TextField("Search appointments by client...", text: $searchText)
+                .textFieldStyle(.plain)
                 .foregroundStyle(RSMSTheme.textPrimary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-            }
         }
+        .padding(10)
+        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+    }
+    
+    private func filterPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(isSelected ? RSMSTheme.cream : RSMSTheme.textPrimary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    isSelected ? RSMSTheme.primary : RSMSTheme.surfacePrimary,
+                    in: Capsule()
+                )
+                .overlay(Capsule().stroke(isSelected ? Color.clear : RSMSTheme.border, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Glassmorphic Card
@@ -202,105 +314,77 @@ struct AppointmentRemoteSellingView: View {
         let statusColor = viewModel.statusColor(appointment.status)
         let client = dataStore.clients.first(where: { $0.id == appointment.clientId })
 
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 0) {
+            // Top Badge Row
             HStack(alignment: .top) {
-                // Client initials & info
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(RSMSTheme.primary.opacity(0.1))
-                            .frame(width: 44, height: 44)
-                        Text(clientInitials(for: client))
-                            .font(.system(size: 16, weight: .bold, design: .serif))
-                            .foregroundStyle(RSMSTheme.primary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(client?.fullName ?? "Unknown Client")
-                            .font(.system(size: 17, weight: .semibold, design: .serif))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text(appointment.type == .video ? "Video Consultation" : "In-Store Consultation")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                }
+                StatusBadge(
+                    text: appointment.type == .video ? "VIDEO" : "IN-STORE",
+                    color: appointment.type == .video ? RSMSTheme.primary : RSMSTheme.textSecondary
+                )
                 Spacer()
-
-                // Status Badge
                 StatusBadge(
                     text: appointment.status.rawValue.replacingOccurrences(of: "_", with: " ").uppercased(),
                     color: statusColor
                 )
             }
+            .padding(.bottom, 12)
 
-            Divider().overlay(RSMSTheme.divider)
-
-            // Date, Time, Duration
-            HStack(spacing: 16) {
-                Label {
-                    Text(appointment.dateTime.formatted(date: .abbreviated, time: .shortened))
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                } icon: {
-                    Image(systemName: "calendar")
+            // Main Info
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(RSMSTheme.primary.opacity(0.1))
+                        .frame(width: 44, height: 44)
+                    Text(clientInitials(for: client))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
-            }
 
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(client?.fullName ?? "Unknown Client")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                        Text(appointment.dateTime.formatted(date: .abbreviated, time: .shortened))
+                        Text("• \(appointment.durationMinutes)m")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                }
+            }
+            .padding(.bottom, 12)
+            
+            // Truncated Notes Preview
             if let notes = appointment.notes, !notes.isEmpty {
                 Text(notes)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textTertiary)
                     .lineLimit(2)
-                    .padding(.top, 2)
+                    .padding(.bottom, 8)
             }
+            
+            Spacer(minLength: 0)
 
-            // Reminder Status Row
-            VStack(alignment: .leading, spacing: 6) {
-                Divider().overlay(RSMSTheme.divider)
+            Divider().overlay(RSMSTheme.divider).padding(.bottom, 12)
 
-                HStack(spacing: 8) {
-                    Image(systemName: viewModel.reminderStatusIcon(appointment.reminderStatus))
-                        .font(.caption)
-                        .foregroundStyle(viewModel.reminderStatusColor(appointment.reminderStatus))
-
-                    Text("Reminder:")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.textSecondary)
-
-                    Text(appointment.reminderStatus)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(viewModel.reminderStatusColor(appointment.reminderStatus))
-
-                    Text("via \(appointment.reminderChannel)")
-                        .font(.caption2)
-                        .foregroundStyle(RSMSTheme.textTertiary)
-
-                    Spacer()
-
-                    if appointment.reminderStatus == "Sent", let sentAt = appointment.reminderSentAt {
-                        Text(sentAt, format: .dateTime.hour().minute())
-                            .font(.caption2)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-                }
-
-                if appointment.reminderStatus == "Failed", let error = appointment.reminderError {
-                    Text(error)
-                        .font(.caption2)
-                        .foregroundStyle(RSMSTheme.danger.opacity(0.8))
-                        .padding(.leading, 22)
-                }
-            }
-
-            // Quick Actions Footer
+            // Bottom Actions Row
             HStack(spacing: 12) {
-                if appointment.type == .video && (appointment.status == .scheduled || appointment.status == .confirmed) {
+                if appointment.type == .video && (appointment.status == .scheduled || appointment.status == .confirmed || appointment.status == .inProgress) {
                     Button {
-                        selectedAppointmentForAction = appointment
-                        showVideoCall = true
+                        if appointment.status != .inProgress {
+                            Task {
+                                let updatedApp = Appointment(
+                                    id: appointment.id, clientId: appointment.clientId, associateId: appointment.associateId, storeId: appointment.storeId, dateTime: appointment.dateTime, durationMinutes: appointment.durationMinutes, type: appointment.type, status: .inProgress, reminderSentAt: appointment.reminderSentAt, videoLink: appointment.videoLink, notes: appointment.notes, createdAt: appointment.createdAt, reminderTimingHours: appointment.reminderTimingHours, reminderChannel: appointment.reminderChannel, reminderStatus: appointment.reminderStatus, reminderError: appointment.reminderError
+                                )
+                                try? await viewModel.updateAppointment(updatedApp)
+                            }
+                        }
+                        consultationManager.startVideoConsultation(for: appointment)
                     } label: {
-                        Label("Start Call", systemImage: "video.fill")
+                        Label(appointment.status == .inProgress ? "Join Call" : "Start Call", systemImage: "video.fill")
                             .font(.caption.weight(.bold))
                             .foregroundStyle(RSMSTheme.cream)
                             .padding(.horizontal, 14)
@@ -311,47 +395,8 @@ struct AppointmentRemoteSellingView: View {
                     .buttonStyle(ScaleButtonStyle())
                 }
 
-                // Resend/Send Reminder Button
-                if appointment.reminderStatus == "Pending" || appointment.reminderStatus == "Failed" {
-                    Button {
-                        Task {
-                            try? await viewModel.sendReminder(for: appointment)
-                        }
-                    } label: {
-                        Label("Send Reminder", systemImage: "bell.badge")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.cream)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                LinearGradient(
-                                    colors: [RSMSTheme.info, RSMSTheme.info.opacity(0.7)],
-                                    startPoint: .leading, endPoint: .trailing
-                                ),
-                                in: Capsule()
-                            )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                } else if appointment.reminderStatus == "Sent" {
-                    Button {
-                        Task {
-                            try? await viewModel.sendReminder(for: appointment)
-                        }
-                    } label: {
-                        Label("Resend", systemImage: "arrow.clockwise")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(RSMSTheme.surfacePrimary, in: Capsule())
-                            .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                }
-
                 Spacer()
 
-                // Context Menu for management actions
                 Menu {
                     if let c = client {
                         Button {
@@ -370,7 +415,7 @@ struct AppointmentRemoteSellingView: View {
                     Button {
                         appointmentToAddNotes = appointment
                     } label: {
-                        Label("Add Notes", systemImage: "square.and.pencil")
+                        Label("Add Notes / Details", systemImage: "square.and.pencil")
                     }
 
                     Menu {
@@ -378,31 +423,14 @@ struct AppointmentRemoteSellingView: View {
                             Button {
                                 Task {
                                     let updatedApp = Appointment(
-                                        id: appointment.id,
-                                        clientId: appointment.clientId,
-                                        associateId: appointment.associateId,
-                                        storeId: appointment.storeId,
-                                        dateTime: appointment.dateTime,
-                                        durationMinutes: appointment.durationMinutes,
-                                        type: appointment.type,
-                                        status: status,
-                                        reminderSentAt: appointment.reminderSentAt,
-                                        videoLink: appointment.videoLink,
-                                        notes: appointment.notes,
-                                        createdAt: appointment.createdAt,
-                                        reminderTimingHours: appointment.reminderTimingHours,
-                                        reminderChannel: appointment.reminderChannel,
-                                        reminderStatus: appointment.reminderStatus,
-                                        reminderError: appointment.reminderError
+                                        id: appointment.id, clientId: appointment.clientId, associateId: appointment.associateId, storeId: appointment.storeId, dateTime: appointment.dateTime, durationMinutes: appointment.durationMinutes, type: appointment.type, status: status, reminderSentAt: appointment.reminderSentAt, videoLink: appointment.videoLink, notes: appointment.notes, createdAt: appointment.createdAt, reminderTimingHours: appointment.reminderTimingHours, reminderChannel: appointment.reminderChannel, reminderStatus: appointment.reminderStatus, reminderError: appointment.reminderError
                                     )
                                     try? await viewModel.updateAppointment(updatedApp)
                                 }
                             } label: {
                                 HStack {
                                     Text(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-                                    if appointment.status == status {
-                                        Image(systemName: "checkmark")
-                                    }
+                                    if appointment.status == status { Image(systemName: "checkmark") }
                                 }
                             }
                         }
@@ -419,25 +447,26 @@ struct AppointmentRemoteSellingView: View {
                         Label("Cancel Appointment", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .padding(8)
-                        .background(RSMSTheme.surfacePrimary, in: Circle())
-                        .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
+                    Text("Options")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.primary.opacity(0.1), in: Capsule())
                 }
             }
-            .padding(.top, 4)
         }
         .padding(16)
-        .background(.ultraThinMaterial)
+        .frame(height: 220, alignment: .top)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.04), radius: 10, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                .stroke(RSMSTheme.border, lineWidth: 1)
         )
     }
+
 
     // MARK: - Search Existing Clients Sheet
 
@@ -490,30 +519,17 @@ struct AppointmentRemoteSellingView: View {
         )
     }
 
-    // MARK: - Video Call Simulation Sheet
-
-    private func videoCallSheet(appointment: Appointment) -> some View {
-        SimulatedVideoConsultationSheet(
-            appointment: appointment,
-            viewModel: viewModel,
-            onDismiss: {
-                showVideoCall = false
-                selectedAppointmentForAction = nil
-            }
-        )
-    }
-
     // MARK: - Helpers
 
-    private var emptyStateView: some View {
+    private func emptyStateCard(title: String, message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "calendar.badge.clock")
                 .font(.system(size: 54))
                 .foregroundStyle(RSMSTheme.textTertiary)
-            Text("No appointments found")
+            Text(title)
                 .font(.headline)
                 .foregroundStyle(RSMSTheme.textSecondary)
-            Text("Try clearing your filters or create a new consultation appointment.")
+            Text(message)
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
                 .multilineTextAlignment(.center)
@@ -521,6 +537,8 @@ struct AppointmentRemoteSellingView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
+        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
     }
 
     private func clientInitials(for client: ClientProfile?) -> String {
@@ -616,14 +634,14 @@ private struct ClientSearchPickerSheet: View {
                     .fill(RSMSTheme.primary.opacity(0.12))
                     .frame(width: 50, height: 50)
                 Text(initials)
-                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 // Name (No loyalty tiers!)
                 Text(client.fullName)
-                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
 
                 // Pref categories
@@ -688,9 +706,29 @@ private struct AppointmentBookingFormSheet: View {
     @State private var errorMessage: String? = nil
     @State private var showErrorAlert = false
 
+    // FaceTime Integration Fields
+    @State private var facetimeContact = ""
+    @State private var facetimeLink = ""
+    @State private var facetimeNotes = ""
+
     // Reminders Config
     @State private var reminderTimingHours = 24
     @State private var reminderChannel = "Email"
+
+    private func isValidFaceTimeContact(_ contact: String) -> Bool {
+        let trimmed = contact.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return false }
+        
+        if trimmed.contains("@") {
+            let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+            let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+            return emailPred.evaluate(with: trimmed)
+        } else {
+            // Basic phone verification: only permit numbers and some common symbols, min 5 chars
+            let allowedCharacters = CharacterSet(charactersIn: "0123456789+-() ")
+            return trimmed.unicodeScalars.allSatisfy { allowedCharacters.contains($0) } && trimmed.count >= 5
+        }
+    }
 
     private var currentStoreName: String {
         let storeId = appViewModel.currentUser?.storeId ?? viewModel.storeId
@@ -723,12 +761,12 @@ private struct AppointmentBookingFormSheet: View {
                                     .fill(RSMSTheme.primary.opacity(0.12))
                                     .frame(width: 44, height: 44)
                                 Text(String(client.fullName.prefix(1)))
-                                    .font(.system(size: 16, weight: .bold, design: .serif))
+                                    .font(.system(size: 16, weight: .bold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(client.fullName)
-                                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                                    .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Text(client.email ?? client.phone ?? "No contact logged")
                                     .font(.caption)
@@ -779,7 +817,6 @@ private struct AppointmentBookingFormSheet: View {
                                 }
                             }
 
-                            LuxuryPicker(title: "Boutique Location", selection: $selectedLocation, options: locations)
 
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Assigned Specialist")
@@ -799,68 +836,86 @@ private struct AppointmentBookingFormSheet: View {
                             }
                         }
 
-                        // Video Consultation Flow Card (shows only if video is selected)
+                        // FaceTime Configuration Section (shows only if video is selected)
                         if appointmentType == .video {
-                            LuxuryFormCard(title: "Video Consultation Setup", icon: "video.fill") {
-                                // Camera preview
+                            LuxuryFormCard(title: "FaceTime Configuration", icon: "video.fill") {
+                                // FaceTime Contact Input (Required)
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Camera Readiness Indicator")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(RSMSTheme.textSecondary)
-
-                                    HStack {
-                                        // Simulated Camera Preview
-                                        ZStack {
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .fill(LinearGradient(colors: [Color.black.opacity(0.85), Color.black.opacity(0.7)], startPoint: .top, endPoint: .bottom))
-                                                .frame(width: 100, height: 60)
-                                            Image(systemName: "camera.fill")
-                                                .foregroundStyle(Color.white.opacity(0.3))
-                                                .font(.title2)
-                                        }
-
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            HStack(spacing: 6) {
-                                                Circle()
-                                                    .fill(cameraOk ? RSMSTheme.success : RSMSTheme.warning)
-                                                    .frame(width: 8, height: 8)
-                                                Text("FaceTime HD Camera")
-                                                    .font(.subheadline.weight(.semibold))
-                                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                            }
-                                            Text(cameraOk ? "Ready & Optimized" : "Checking camera...")
-                                                .font(.caption2)
-                                                .foregroundStyle(RSMSTheme.textSecondary)
-                                        }
-                                        Spacer()
+                                    HStack(spacing: 4) {
+                                        Text("FaceTime Contact (Email or Phone)")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                        Text("*")
+                                            .font(.caption)
+                                            .foregroundStyle(RSMSTheme.danger)
                                     }
-                                    .padding(10)
-                                    .background(RSMSTheme.background, in: RoundedRectangle(cornerRadius: 12))
+
+                                    TextField("e.g. client@email.com or +33 6 1234 5678", text: $facetimeContact)
+                                        .font(.subheadline)
+                                        .padding(12)
+                                        .background(RSMSTheme.background)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(RSMSTheme.border, lineWidth: 1)
+                                        )
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .keyboardType(.emailAddress)
+                                        .autocorrectionDisabled()
+                                        .textInputAutocapitalization(.never)
                                 }
 
-                                // Link generator
+                                // FaceTime Meeting Link (Optional)
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("Meeting Link")
+                                    Text("FaceTime Meeting Link (Optional)")
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.textSecondary)
 
                                     HStack {
-                                        TextField("No link generated", text: $videoLink)
-                                            .font(.caption)
+                                        TextField("https://facetime.apple.com/join/...", text: $facetimeLink)
+                                            .font(.subheadline)
                                             .foregroundStyle(RSMSTheme.textPrimary)
-                                            .disabled(true)
+                                            .keyboardType(.URL)
+                                            .autocorrectionDisabled()
+                                            .textInputAutocapitalization(.never)
+                                        
                                         Spacer()
+                                        
                                         Button {
                                             let uuidSuffix = String(UUID().uuidString.prefix(6)).lowercased()
-                                            videoLink = "https://meet.lumiere.com/consult-\(uuidSuffix)"
+                                            facetimeLink = "https://facetime.apple.com/join/lumiere-consult-\(uuidSuffix)"
                                         } label: {
-                                            Text(videoLink.isEmpty ? "Generate" : "Regenerate")
+                                            Text(facetimeLink.isEmpty ? "Generate" : "Regenerate")
                                                 .font(.caption.weight(.semibold))
                                                 .foregroundStyle(RSMSTheme.primary)
                                         }
                                     }
-                                    .padding(10)
-                                    .background(RSMSTheme.background, in: RoundedRectangle(cornerRadius: 8))
+                                    .padding(12)
+                                    .background(RSMSTheme.background)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(RSMSTheme.border, lineWidth: 1)
+                                    )
+                                }
+
+                                // FaceTime Specific Notes/Instructions (Optional)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("FaceTime Notes / Instructions (Optional)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+
+                                    TextField("e.g. Please join 5 mins before...", text: $facetimeNotes, axis: .vertical)
+                                        .lineLimit(2...3)
+                                        .font(.subheadline)
+                                        .padding(12)
+                                        .background(RSMSTheme.background)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(RSMSTheme.border, lineWidth: 1)
+                                        )
+                                        .foregroundStyle(RSMSTheme.textPrimary)
                                 }
 
                                 Toggle("Add to Apple Calendar", isOn: $calendarSyncEnabled)
@@ -951,6 +1006,21 @@ private struct AppointmentBookingFormSheet: View {
                         // Save Button
                         Button {
                             Task {
+                                // FaceTime Validation
+                                if appointmentType == .video {
+                                    let contactTrimmed = facetimeContact.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    if contactTrimmed.isEmpty {
+                                        errorMessage = "FaceTime Contact (Email or Phone) is required for video consultations."
+                                        showErrorAlert = true
+                                        return
+                                    }
+                                    if !isValidFaceTimeContact(contactTrimmed) {
+                                        errorMessage = "Please enter a valid email address or phone number for the FaceTime Contact."
+                                        showErrorAlert = true
+                                        return
+                                    }
+                                }
+
                                 // Combine notes with occasion and tags
                                 var combinedNotes = "[Occasion: \(selectedOccasion)] "
                                 if !tags.isEmpty {
@@ -1003,6 +1073,19 @@ private struct AppointmentBookingFormSheet: View {
                                      return
                                  }
 
+                                var videoLinkPayload: String? = nil
+                                if appointmentType == .video {
+                                    let config = FaceTimeConfig(
+                                        contact: facetimeContact.trimmingCharacters(in: .whitespacesAndNewlines),
+                                        meetingLink: facetimeLink.isEmpty ? nil : facetimeLink.trimmingCharacters(in: .whitespacesAndNewlines),
+                                        notes: facetimeNotes.isEmpty ? nil : facetimeNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    )
+                                    if let encodedData = try? JSONEncoder().encode(config),
+                                       let jsonString = String(data: encodedData, encoding: .utf8) {
+                                        videoLinkPayload = jsonString
+                                    }
+                                }
+
                                 let newApp = Appointment(
                                     id: UUID(),
                                     clientId: client.id,
@@ -1013,7 +1096,7 @@ private struct AppointmentBookingFormSheet: View {
                                     type: appointmentType,
                                     status: .scheduled,
                                     reminderSentAt: nil,
-                                    videoLink: appointmentType == .video ? videoLink : nil,
+                                    videoLink: videoLinkPayload,
                                     notes: combinedNotes,
                                     createdAt: Date(),
                                     reminderTimingHours: reminderTimingHours,
@@ -1093,6 +1176,28 @@ private struct RescheduleAppointmentSheet: View {
     @State private var reminderTimingHours = 24
     @State private var reminderChannel = "Email"
 
+    // FaceTime Integration Fields
+    @State private var facetimeContact = ""
+    @State private var facetimeLink = ""
+    @State private var facetimeNotes = ""
+    @State private var errorMessage: String? = nil
+    @State private var showErrorAlert = false
+
+    private func isValidFaceTimeContact(_ contact: String) -> Bool {
+        let trimmed = contact.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return false }
+        
+        if trimmed.contains("@") {
+            let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+            let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+            return emailPred.evaluate(with: trimmed)
+        } else {
+            // Basic phone verification: only permit numbers and some common symbols, min 5 chars
+            let allowedCharacters = CharacterSet(charactersIn: "0123456789+-() ")
+            return trimmed.unicodeScalars.allSatisfy { allowedCharacters.contains($0) } && trimmed.count >= 5
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -1115,6 +1220,90 @@ private struct RescheduleAppointmentSheet: View {
                             .datePickerStyle(.wheel)
                             .labelsHidden()
                             .frame(maxWidth: .infinity, alignment: .center)
+                        }
+
+                        // FaceTime Configuration Section (shows only if video type)
+                        if appointment.type == .video {
+                            LuxuryFormCard(title: "FaceTime Configuration", icon: "video.fill") {
+                                // FaceTime Contact Input (Required)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 4) {
+                                        Text("FaceTime Contact (Email or Phone)")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                        Text("*")
+                                            .font(.caption)
+                                            .foregroundStyle(RSMSTheme.danger)
+                                    }
+
+                                    TextField("e.g. client@email.com or +33 6 1234 5678", text: $facetimeContact)
+                                        .font(.subheadline)
+                                        .padding(12)
+                                        .background(RSMSTheme.background)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(RSMSTheme.border, lineWidth: 1)
+                                        )
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .keyboardType(.emailAddress)
+                                        .autocorrectionDisabled()
+                                        .textInputAutocapitalization(.never)
+                                }
+
+                                // FaceTime Meeting Link (Optional)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("FaceTime Meeting Link (Optional)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+
+                                    HStack {
+                                        TextField("https://facetime.apple.com/join/...", text: $facetimeLink)
+                                            .font(.subheadline)
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                            .keyboardType(.URL)
+                                            .autocorrectionDisabled()
+                                            .textInputAutocapitalization(.never)
+                                        
+                                        Spacer()
+                                        
+                                        Button {
+                                            let uuidSuffix = String(UUID().uuidString.prefix(6)).lowercased()
+                                            facetimeLink = "https://facetime.apple.com/join/lumiere-consult-\(uuidSuffix)"
+                                        } label: {
+                                            Text(facetimeLink.isEmpty ? "Generate" : "Regenerate")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(RSMSTheme.primary)
+                                        }
+                                    }
+                                    .padding(12)
+                                    .background(RSMSTheme.background)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(RSMSTheme.border, lineWidth: 1)
+                                    )
+                                }
+
+                                // FaceTime Specific Notes/Instructions (Optional)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("FaceTime Notes / Instructions (Optional)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+
+                                    TextField("e.g. Please join 5 mins before...", text: $facetimeNotes, axis: .vertical)
+                                        .lineLimit(2...3)
+                                        .font(.subheadline)
+                                        .padding(12)
+                                        .background(RSMSTheme.background)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(RSMSTheme.border, lineWidth: 1)
+                                        )
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                }
+                            }
                         }
 
                         LuxuryFormCard(title: "Appointment Reminders", icon: "bell.fill") {
@@ -1159,6 +1348,20 @@ private struct RescheduleAppointmentSheet: View {
                     
                     Button {
                         Task {
+                            if appointment.type == .video {
+                                let contactTrimmed = facetimeContact.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if contactTrimmed.isEmpty {
+                                    errorMessage = "FaceTime Contact (Email or Phone) is required for video consultations."
+                                    showErrorAlert = true
+                                    return
+                                }
+                                if !isValidFaceTimeContact(contactTrimmed) {
+                                    errorMessage = "Please enter a valid email address or phone number for the FaceTime Contact."
+                                    showErrorAlert = true
+                                    return
+                                }
+                            }
+
                             let calendar = Calendar.current
                             let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
                             let timeComponents = calendar.dateComponents([.hour, .minute], from: rescheduleTime)
@@ -1172,6 +1375,19 @@ private struct RescheduleAppointmentSheet: View {
 
                             let finalDate = calendar.date(from: mergedComponents) ?? date
 
+                            var videoLinkPayload = appointment.videoLink
+                            if appointment.type == .video {
+                                let config = FaceTimeConfig(
+                                    contact: facetimeContact.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    meetingLink: facetimeLink.isEmpty ? nil : facetimeLink.trimmingCharacters(in: .whitespacesAndNewlines),
+                                    notes: facetimeNotes.isEmpty ? nil : facetimeNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+                                )
+                                if let encodedData = try? JSONEncoder().encode(config),
+                                   let jsonString = String(data: encodedData, encoding: .utf8) {
+                                    videoLinkPayload = jsonString
+                                }
+                            }
+
                             let updated = Appointment(
                                 id: appointment.id,
                                 clientId: appointment.clientId,
@@ -1182,7 +1398,7 @@ private struct RescheduleAppointmentSheet: View {
                                 type: appointment.type,
                                 status: .confirmed,
                                 reminderSentAt: nil,
-                                videoLink: appointment.videoLink,
+                                videoLink: videoLinkPayload,
                                 notes: appointment.notes,
                                 createdAt: appointment.createdAt,
                                 reminderTimingHours: reminderTimingHours,
@@ -1210,11 +1426,22 @@ private struct RescheduleAppointmentSheet: View {
             }
             .navigationTitle("Reschedule")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Reschedule Error", isPresented: $showErrorAlert, presenting: errorMessage) { _ in
+                Button("OK") {}
+            } message: { msg in
+                Text(msg)
+            }
             .onAppear {
                 date = appointment.dateTime
                 rescheduleTime = appointment.dateTime
                 reminderTimingHours = appointment.reminderTimingHours
                 reminderChannel = appointment.reminderChannel
+                
+                if let config = appointment.decodedFaceTimeConfig {
+                    facetimeContact = config.contact
+                    facetimeLink = config.meetingLink ?? ""
+                    facetimeNotes = config.notes ?? ""
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -1314,168 +1541,3 @@ private struct AddNotesAppointmentSheet: View {
         }
     }
 }
-
-// MARK: - Simulated Video Consultation Sheet
-
-private struct SimulatedVideoConsultationSheet: View {
-    let appointment: Appointment
-    let viewModel: AppointmentViewModel
-    let onDismiss: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var isMuted = false
-    @State private var cameraOff = false
-    @State private var callDurationSeconds = 0
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
-    var formattedDuration: String {
-        let mins = callDurationSeconds / 60
-        let secs = callDurationSeconds % 60
-        return String(format: "%02d:%02d", mins, secs)
-    }
-
-    var body: some View {
-        ZStack {
-            // Live Simulated Luxury Video Feed (Warm Boutique Atmosphere)
-            LinearGradient(
-                colors: [Color(red: 28/255, green: 22/255, blue: 18/255), Color(red: 54/255, green: 40/255, blue: 34/255)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Subtle Background Details representing a boutique setup
-            VStack {
-                Spacer()
-                Circle()
-                    .fill(Color(red: 201/255, green: 168/255, blue: 110/255).opacity(0.12))
-                    .frame(width: 400, height: 400)
-                    .blur(radius: 80)
-            }
-
-            VStack(spacing: 24) {
-                // Header (Consultation Details)
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(viewModel.clientName(for: appointment.clientId))
-                            .font(.system(size: 24, weight: .bold, design: .serif))
-                            .foregroundStyle(.white)
-                        Text("Live Luxury Styling Consultation")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.6))
-                    }
-                    Spacer()
-
-                    // Call Timer
-                    Text(formattedDuration)
-                        .font(.system(.subheadline, design: .monospaced))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.15), in: Capsule())
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-
-                Spacer()
-
-                // Client Video Feed & Product Spotlight (Split View)
-                HStack(spacing: 20) {
-                    // Left Column: Client feed or simulated camera state
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.15), lineWidth: 1.5))
-
-                        if cameraOff {
-                            VStack(spacing: 12) {
-                                Image(systemName: "video.slash.fill")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(.white.opacity(0.4))
-                                Text("Camera Off")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.white.opacity(0.6))
-                            }
-                        } else {
-                            VStack {
-                                Spacer()
-                                Text("Your Video (Boutique Camera)")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(.white.opacity(0.6))
-                                    .padding(.bottom, 12)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: 300)
-
-                    // Right Column: Simulated client camera feed
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.15), lineWidth: 1.5))
-
-                        VStack(spacing: 12) {
-                            Image(systemName: "person.fill")
-                                .font(.system(size: 40))
-                                .foregroundStyle(.white.opacity(0.4))
-                                .padding(16)
-                                .background(Color.white.opacity(0.05), in: Circle())
-                            Text(viewModel.clientName(for: appointment.clientId))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.white)
-                            Text("Connected")
-                                .font(.caption2)
-                                .foregroundStyle(RSMSTheme.success)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: 300)
-                }
-                .padding(.horizontal, 24)
-
-                Spacer()
-
-                // Call Controls
-                HStack(spacing: 24) {
-                    // Mute Button
-                    Button {
-                        isMuted.toggle()
-                    } label: {
-                        Image(systemName: isMuted ? "mic.slash.fill" : "mic.fill")
-                            .font(.title2)
-                            .foregroundStyle(isMuted ? .white : RSMSTheme.textPrimary)
-                            .frame(width: 60, height: 60)
-                            .background(isMuted ? Color.red : Color.white, in: Circle())
-                    }
-
-                    // End Call
-                    Button {
-                        dismiss()
-                        onDismiss()
-                    } label: {
-                        Image(systemName: "phone.down.fill")
-                            .font(.title)
-                            .foregroundStyle(.white)
-                            .frame(width: 74, height: 74)
-                            .background(Color.red, in: Circle())
-                            .shadow(color: Color.red.opacity(0.3), radius: 10, y: 5)
-                    }
-
-                    // Camera Toggle
-                    Button {
-                        cameraOff.toggle()
-                    } label: {
-                        Image(systemName: cameraOff ? "video.slash.fill" : "video.fill")
-                            .font(.title2)
-                            .foregroundStyle(cameraOff ? .white : RSMSTheme.textPrimary)
-                            .frame(width: 60, height: 60)
-                            .background(cameraOff ? Color.red : Color.white, in: Circle())
-                    }
-                }
-                .padding(.bottom, 40)
-            }
-        }
-        .onReceive(timer) { _ in
-            callDurationSeconds += 1
-        }
-    }
-}
-

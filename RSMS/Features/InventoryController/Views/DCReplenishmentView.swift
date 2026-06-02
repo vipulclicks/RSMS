@@ -188,7 +188,7 @@ struct DCReplenishmentView: View {
             if !isReceived && movement.status == .inTransit {
                 Button {
                     Task {
-                        await vm.markAsReceived(movement: movement, dataStore: appVM.dataStore, currentUser: appVM.currentUser)
+                        await vm.markAsReceived(movement: movement, dataStore: appVM.dataStore)
                     }
                 } label: {
                     HStack {

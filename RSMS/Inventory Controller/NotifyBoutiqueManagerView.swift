@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct NotifyBoutiqueManagerView: View {
+    @Environment(AppViewModel.self) private var appVM
     @State private var viewModel = NotifyBoutiqueManagerViewModel()
     @State private var appeared = false
     
@@ -34,6 +35,22 @@ struct NotifyBoutiqueManagerView: View {
                     lowStockAlertSection
                 }
                 .padding(24)
+                
+                if viewModel.isLoading {
+                    ProgressView("Loading inventory data...")
+                        .tint(RSMSTheme.gold)
+                        .padding(.top, 40)
+                } else if viewModel.lowStockItems.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(RSMSTheme.success)
+                        Text("All stock levels are optimal.")
+                            .font(.headline)
+                            .foregroundColor(RSMSTheme.textSecondary)
+                    }
+                    .padding(.top, 40)
+                }
             }
             .navigationTitle("Notify Manager")
             .navigationBarTitleDisplayMode(.inline)
@@ -55,15 +72,15 @@ struct NotifyBoutiqueManagerView: View {
                 }
             }
         }
-<<<<<<< Updated upstream
-        .onAppear {
-=======
+        }
         .task {
             await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
->>>>>>> Stashed changes
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
             }
+        }
+        .refreshable {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
         }
     }
     
@@ -72,7 +89,7 @@ struct NotifyBoutiqueManagerView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Notify Boutique Manager")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundColor(RSMSTheme.textPrimary)
             Text("Monitor low-stock products & request replenishment")
                 .font(.subheadline)
@@ -132,7 +149,7 @@ struct NotifyBoutiqueManagerView: View {
                 Spacer()
             }
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
                 .foregroundColor(valueColor)
             Text(label)
                 .font(.caption.weight(.bold))
@@ -420,4 +437,5 @@ struct NotifyBoutiqueManagerView: View {
 
 #Preview {
     NotifyBoutiqueManagerView()
+        .environment(AppViewModel())
 }
