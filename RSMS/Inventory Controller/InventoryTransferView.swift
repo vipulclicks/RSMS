@@ -52,7 +52,7 @@ struct InventoryTransferView: View {
         .navigationTitle("Transfer Inventory")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     vm.resetForm()
                     vm.showCreateSheet = true
@@ -1013,7 +1013,7 @@ struct InventoryTransferView: View {
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { vm.showCreateSheet = false }
                         .foregroundStyle(RSMSTheme.textTertiary)
                 }

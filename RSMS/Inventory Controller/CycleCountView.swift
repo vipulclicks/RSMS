@@ -45,7 +45,7 @@ struct CycleCountView: View {
         .navigationTitle("Cycle Counts")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     showScanner = true
                 } label: {

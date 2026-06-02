@@ -105,7 +105,7 @@ struct ShowroomProductDetailView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     if viewModel.cartItems.contains(where: { $0.product.id == product.id }) {
                         Button(action: {
                             viewModel.toggleCartItem(product)

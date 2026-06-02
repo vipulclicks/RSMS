@@ -459,6 +459,15 @@ private struct EditProfileSheet: View {
                         Text(user?.role.displayName ?? "—")
                             .foregroundStyle(.secondary)
                     }
+                Section {
+                    Button("Save Profile") {
+                        // TODO: Persist changes via DataStore.updateUser
+                        dismiss()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(RSMSTheme.background)
+                    .listRowBackground(RSMSTheme.gold)
                 }
             }
             .navigationTitle("Edit Profile")
@@ -467,15 +476,6 @@ private struct EditProfileSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        // TODO: Persist changes via DataStore.updateUser
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                    .tint(RSMSTheme.gold)
-                }
-            }
             .onAppear {
                 fullName = user?.fullName ?? ""
                 phone    = user?.phone    ?? ""
@@ -504,16 +504,8 @@ private struct ChangePasswordSheet: View {
                 Section("New Password") {
                     SecureField("New Password", text: $newPassword)
                     SecureField("Confirm New Password", text: $confirmPassword)
-                }
-            }
-            .navigationTitle("Change Password")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Update") {
+                Section {
+                    Button("Update Password") {
                         guard newPassword == confirmPassword, !newPassword.isEmpty else { return }
                         Task {
                             isUpdating = true
@@ -522,11 +514,23 @@ private struct ChangePasswordSheet: View {
                             dismiss()
                         }
                     }
+                    .frame(maxWidth: .infinity)
                     .fontWeight(.semibold)
-                    .tint(RSMSTheme.gold)
-                    .disabled(isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
+                    .foregroundStyle(RSMSTheme.background)
+                    .listRowBackground(
+                        (isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
+                        ? RSMSTheme.gold.opacity(0.5)
+                        : RSMSTheme.gold
+                    )
                 }
+                .disabled(isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
             }
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
         }
     }
 }
@@ -560,7 +564,7 @@ private struct NotificationPrefsSheet: View {
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                         .tint(RSMSTheme.gold)
@@ -595,7 +599,7 @@ private struct AboutSheet: View {
             .navigationTitle("About RSMS")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                         .tint(RSMSTheme.gold)

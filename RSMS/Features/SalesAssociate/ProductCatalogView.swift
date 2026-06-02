@@ -689,7 +689,7 @@ struct CartSelectionPreviewSheet: View {
                     Button("Clear All") { onClear() }
                         .foregroundStyle(.red)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
@@ -750,7 +750,7 @@ struct CatalogProductDetailSheet: View {
             .navigationTitle("Product Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                 }
             }
@@ -1009,7 +1009,7 @@ struct CatalogFilterSheet: View {
             .navigationTitle("Filter Products")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Apply") { dismiss() }
                 }
             }

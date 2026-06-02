@@ -261,7 +261,7 @@ struct LoginView: View {
             .background(RSMSTheme.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Close") {
                         showForgotPassword = false
                     }
