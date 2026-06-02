@@ -67,7 +67,7 @@ struct NotifyBoutiqueManagerView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Notify Boutique Manager")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundColor(RSMSTheme.textPrimary)
             Text("Monitor low-stock products & request replenishment")
                 .font(.subheadline)
@@ -127,7 +127,7 @@ struct NotifyBoutiqueManagerView: View {
                 Spacer()
             }
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
                 .foregroundColor(valueColor)
             Text(label)
                 .font(.caption.weight(.bold))

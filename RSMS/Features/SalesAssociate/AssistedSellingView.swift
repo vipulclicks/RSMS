@@ -176,7 +176,7 @@ private struct ASProductCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .semibold, design: .serif))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
@@ -185,8 +185,8 @@ private struct ASProductCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
 
                 HStack {
-                    Text("€\(Int(product.price).formatted())")
-                        .font(.system(size: 16, weight: .bold, design: .serif))
+                    Text("₹\(Int(product.price).formatted())")
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(RSMSTheme.primary)
 
                     Spacer()
@@ -249,11 +249,11 @@ private struct ASProductDetailSheet: View {
                         // Info
                         VStack(alignment: .leading, spacing: 16) {
                             Text(product.name)
-                                .font(.system(size: 24, weight: .bold, design: .serif))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
 
-                            Text("€\(Int(product.price).formatted())")
-                                .font(.system(size: 28, weight: .bold, design: .serif))
+                            Text("₹\(Int(product.price).formatted())")
+                                .font(.system(size: 28, weight: .bold))
                                 .foregroundStyle(RSMSTheme.primary)
 
                             Divider().overlay(RSMSTheme.divider)

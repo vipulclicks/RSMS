@@ -154,7 +154,7 @@ struct StockReconciliationView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Audit & Reconcile")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text("Resolve inventory discrepancies and review audit trail")
                 .font(.subheadline)
@@ -361,7 +361,7 @@ struct StockReconciliationView: View {
                 .tracking(1.2)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(color)
         }
         .frame(maxWidth: .infinity)
@@ -542,7 +542,7 @@ struct StockReconciliationView: View {
                                 .tracking(1)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("\(item.expectedQty)")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                         .frame(maxWidth: .infinity)
@@ -556,7 +556,7 @@ struct StockReconciliationView: View {
                                 .tracking(1)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("\(item.actualQty)")
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                                .font(.system(size: 24, weight: .bold))
                                 .foregroundStyle(RSMSTheme.danger)
                         }
                         .frame(maxWidth: .infinity)
@@ -627,7 +627,7 @@ struct StockReconciliationView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("RECONCILE STOCK")
-                        .font(.system(.headline, design: .serif, weight: .light))
+                        .font(.system(.headline, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
@@ -684,7 +684,7 @@ struct StockReconciliationView: View {
                             .tracking(1)
                             .foregroundStyle(RSMSTheme.textTertiary)
                         Text("\(viewModel.reconciledOldQty)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundStyle(RSMSTheme.danger)
                             .strikethrough()
                     }
@@ -699,7 +699,7 @@ struct StockReconciliationView: View {
                             .tracking(1)
                             .foregroundStyle(RSMSTheme.textTertiary)
                         Text("\(viewModel.reconciledNewQty)")
-                            .font(.system(size: 26, weight: .bold, design: .rounded))
+                            .font(.system(size: 26, weight: .bold))
                             .foregroundStyle(RSMSTheme.success)
                     }
                 }

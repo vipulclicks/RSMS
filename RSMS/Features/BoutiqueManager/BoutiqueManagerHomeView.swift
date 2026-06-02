@@ -8,32 +8,51 @@
 import SwiftUI
 
 enum BoutiqueSection: String, CaseIterable, Identifiable {
-    case dashboard     = "Store Dashboard"
-    case staffPlanning = "Staff & Shift Planning"
-    case shiftMonitor  = "Today's Shifts"
+    case dashboard             = "Dashboard"
+    case staff                 = "Staff"
+    case transfers             = "Stock Transfers"
+    case planograms            = "Planograms"
+    case compliance            = "Store Compliance"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:     return "chart.bar.fill"
-        case .staffPlanning: return "person.3.fill"
-        case .shiftMonitor:  return "calendar.badge.clock"
+        case .dashboard:             return "chart.bar.fill"
+        case .staff:                 return "person.2.fill"
+        case .transfers:             return "arrow.left.arrow.right"
+        case .planograms:            return "photo.artframe"
+        case .compliance:            return "checkmark.shield.fill"
         }
     }
 }
 
 struct BoutiqueManagerHomeView: View {
     @Environment(AppViewModel.self) private var viewModel
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selectedSection: BoutiqueSection? = .dashboard
 
     var body: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            detailView
+        if horizontalSizeClass == .compact {
+            TabView(selection: $selectedSection) {
+                ForEach(BoutiqueSection.allCases) { section in
+                    detailViewFor(section)
+                        .tabItem {
+                            Image(systemName: section.icon)
+                        }
+                        .tag(section as BoutiqueSection?)
+                }
+            }
+            .tint(RSMSTheme.primaryDark)
+        } else {
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                detailView
+            }
+            .tint(RSMSTheme.primaryDark)
+            .navigationSplitViewStyle(.prominentDetail)
         }
-        .tint(RSMSTheme.gold)
     }
 
     // MARK: - Sidebar
@@ -41,43 +60,55 @@ struct BoutiqueManagerHomeView: View {
     private var sidebar: some View {
         List(selection: $selectedSection) {
             ForEach(BoutiqueSection.allCases) { section in
-                Label(section.rawValue, systemImage: section.icon)
-                    .tag(section)
+                let isSelected = selectedSection == section
+                HStack(spacing: 16) {
+                    Image(systemName: section.icon)
+                        .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                        .frame(width: 24)
+                    
+                    Text(section.rawValue)
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                    
+                    Spacer()
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .tag(section)
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.sidebar)
+        .scrollContentBackground(.hidden)
+        .background(.ultraThinMaterial)
         .navigationTitle("Boutique Manager")
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                logoutButton
-            }
-        }
     }
 
     // MARK: - Detail
 
     @ViewBuilder
     private var detailView: some View {
-        switch selectedSection {
-        case .dashboard:
-            StoreDashboardView()
-        case .staffPlanning:
-            StaffShiftPlanningView()
-        case .shiftMonitor:
-            ShiftMonitorView()
-        case .none:
-            StoreDashboardView()
+        if let section = selectedSection {
+            detailViewFor(section)
+        } else {
+            detailViewFor(.dashboard)
         }
     }
 
-    // MARK: - Logout
-
-    private var logoutButton: some View {
-        Button {
-            viewModel.logout()
-        } label: {
-            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                .foregroundStyle(RSMSTheme.danger)
+    @ViewBuilder
+    private func detailViewFor(_ section: BoutiqueSection) -> some View {
+        switch section {
+        case .dashboard:
+            StoreDashboardView()
+        case .staff:
+            StaffView()
+        case .transfers:
+            StockTransfersView()
+        case .planograms:
+            StoreLayoutOverviewView()
+        case .compliance:
+            ComplianceDashboardView()
         }
     }
 }

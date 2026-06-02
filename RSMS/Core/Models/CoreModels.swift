@@ -14,6 +14,7 @@ enum UserRole: String, Codable, CaseIterable, Identifiable {
     case boutiqueManager     = "boutique_manager"
     case salesAssociate      = "sales_associate"
     case inventoryController = "inventory_controller"
+    case client              = "client"
 
     var id: String { rawValue }
 
@@ -22,6 +23,7 @@ enum UserRole: String, Codable, CaseIterable, Identifiable {
         case .boutiqueManager:      return "Boutique Manager"
         case .salesAssociate:       return "Sales Associate"
         case .inventoryController:  return "Inventory Controller"
+        case .client:               return "Client Profile"
         }
     }
 }
@@ -76,5 +78,19 @@ struct UserProfile: Codable, Identifiable, Hashable {
         case updatedAt  = "updated_at"
     }
 }
+
+/// Payload sent to Supabase to update only the allowed (editable) fields of a UserProfile.
+struct UserProfileUpdatePayload: Codable {
+    let phone: String?
+    let avatarURL: String?
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case phone
+        case avatarURL = "avatar_url"
+        case updatedAt = "updated_at"
+    }
+}
+
 
 

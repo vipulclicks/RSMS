@@ -22,25 +22,29 @@ final class ClientProfileDetailViewModel {
 
     // MARK: - Computed
 
+    var currentClient: ClientProfile {
+        dataStore.clients.first(where: { $0.id == client.id }) ?? client
+    }
+
     var initials: String {
-        client.fullName.split(separator: " ").prefix(2)
+        currentClient.fullName.split(separator: " ").prefix(2)
             .compactMap { $0.first.map(String.init) }.joined().uppercased()
     }
 
     var clientWishlist: [WishlistItem] {
-        dataStore.wishlistItems.filter { $0.clientId == client.id }
+        dataStore.wishlistItems.filter { $0.clientId == currentClient.id }
     }
 
     var clientAnniversaries: [ClientAnniversary] {
-        dataStore.clientAnniversaries.filter { $0.clientId == client.id }
+        dataStore.clientAnniversaries.filter { $0.clientId == currentClient.id }
     }
 
     var clientRecommendations: [AIRecommendation] {
-        dataStore.aiRecommendations.filter { $0.clientId == client.id }
+        dataStore.aiRecommendations.filter { $0.clientId == currentClient.id }
     }
 
     var clientTransactions: [Transaction] {
-        dataStore.transactions.filter { $0.clientId == client.id }
+        dataStore.transactions.filter { $0.clientId == currentClient.id }
     }
 
     var lifetimeValue: Double {
@@ -50,19 +54,19 @@ final class ClientProfileDetailViewModel {
     }
 
     var lifetimeValueFormatted: String {
-        "€\(Int(lifetimeValue).formatted())"
+        "₹\(Int(lifetimeValue).formatted())"
     }
 
     // MARK: - Size Preferences (non-nil fields)
 
     var sizePreferences: [(label: String, value: String)] {
         var result: [(String, String)] = []
-        if let v = client.shoeSize       { result.append(("Shoe Size", v)) }
-        if let v = client.ringSize       { result.append(("Ring Size", v)) }
-        if let v = client.braceletSize   { result.append(("Bracelet", v)) }
-        if let v = client.necklaceLength { result.append(("Necklace", v)) }
-        if let v = client.wristSize      { result.append(("Wrist", v)) }
-        if let v = client.beltSize       { result.append(("Belt", v)) }
+        if let v = currentClient.shoeSize       { result.append(("Shoe Size", v)) }
+        if let v = currentClient.ringSize       { result.append(("Ring Size", v)) }
+        if let v = currentClient.braceletSize   { result.append(("Bracelet", v)) }
+        if let v = currentClient.necklaceLength { result.append(("Necklace", v)) }
+        if let v = currentClient.wristSize      { result.append(("Wrist", v)) }
+        if let v = currentClient.beltSize       { result.append(("Belt", v)) }
         return result
     }
 
@@ -70,18 +74,20 @@ final class ClientProfileDetailViewModel {
 
     var detailedPreferences: [(label: String, value: String)] {
         var result: [(String, String)] = []
-        if let v = client.preferredMetal           { result.append(("Metal", v)) }
-        if let v = client.preferredGemstone        { result.append(("Gemstone", v)) }
-        if let v = client.watchCasePreference      { result.append(("Watch Case", v)) }
-        if let v = client.strapMaterialPreference  { result.append(("Strap", v)) }
-        if let v = client.preferredBagSize         { result.append(("Bag Size", v)) }
-        if let v = client.preferredBagStyle        { result.append(("Bag Style", v)) }
-        if let v = client.fragranceFamily          { result.append(("Fragrance", v)) }
-        if let v = client.fragranceStrength        { result.append(("Strength", v)) }
-        if let v = client.stylePreference          { result.append(("Style", v)) }
-        if let v = client.shoppingPreference       { result.append(("Shopping", v)) }
+        if let v = currentClient.preferredMetal           { result.append(("Metal", v)) }
+        if let v = currentClient.preferredGemstone        { result.append(("Gemstone", v)) }
+        if let v = currentClient.watchCasePreference      { solidityCheck1() ? result.append(("Watch Case", v)) : () }
+        if let v = currentClient.strapMaterialPreference  { result.append(("Strap", v)) }
+        if let v = currentClient.preferredBagSize         { result.append(("Bag Size", v)) }
+        if let v = currentClient.preferredBagStyle        { result.append(("Bag Style", v)) }
+        if let v = currentClient.fragranceFamily          { result.append(("Fragrance", v)) }
+        if let v = currentClient.fragranceStrength        { result.append(("Strength", v)) }
+        if let v = currentClient.stylePreference          { result.append(("Style", v)) }
+        if let v = currentClient.shoppingPreference       { result.append(("Shopping", v)) }
         return result
     }
+    
+    private func solidityCheck1() -> Bool { true }
 
     // MARK: - Actions
 

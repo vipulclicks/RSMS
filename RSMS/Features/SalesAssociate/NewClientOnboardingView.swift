@@ -147,23 +147,23 @@ struct NewClientOnboardingView: View {
         VStack(spacing: 20) {
             LuxuryFormCard(title: "Shoes & Belts", icon: "shoe.fill") {
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Shoe Size", text: $viewModel.shoeSize)
+                    LuxurySizeField(title: "Shoe Size", text: $viewModel.shoeSize, presets: LuxurySizePresets.shoes)
                     LuxuryPicker(title: "Shoe Fit", selection: $viewModel.shoeFit, options: ["Regular", "Wide", "Narrow"])
                 }
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Belt Size", text: $viewModel.beltSize)
+                    LuxurySizeField(title: "Belt Size", text: $viewModel.beltSize, presets: LuxurySizePresets.belts)
                     LuxuryTextField(title: "Buckle Pref", text: $viewModel.bucklePref)
                 }
             }
 
             LuxuryFormCard(title: "Jewellery & Watches", icon: "sparkles") {
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Ring Size", text: $viewModel.ringSize)
-                    LuxuryTextField(title: "Bracelet Size", text: $viewModel.braceletSize)
+                    LuxurySizeField(title: "Ring Size", text: $viewModel.ringSize, presets: LuxurySizePresets.rings)
+                    LuxurySizeField(title: "Bracelet Size", text: $viewModel.braceletSize, presets: LuxurySizePresets.bracelets)
                 }
                 HStack(spacing: 16) {
-                    LuxuryTextField(title: "Necklace Length", text: $viewModel.necklaceLength)
-                    LuxuryTextField(title: "Wrist Size", text: $viewModel.wristSize)
+                    LuxurySizeField(title: "Necklace Length", text: $viewModel.necklaceLength, presets: LuxurySizePresets.necklaces)
+                    LuxurySizeField(title: "Wrist Size", text: $viewModel.wristSize, presets: LuxurySizePresets.wristSizes)
                 }
                 HStack(spacing: 16) {
                     LuxuryPicker(title: "Preferred Metal", selection: $viewModel.preferredMetal, options: ["", "Gold", "Platinum", "Silver", "Rose Gold"])
@@ -388,7 +388,7 @@ struct NewClientOnboardingView: View {
                                             Text(product.name)
                                                 .font(.subheadline.weight(.semibold))
                                                 .foregroundStyle(RSMSTheme.textPrimary)
-                                            Text("SKU: \(product.sku) • €\(Int(product.price).formatted())")
+                                            Text("SKU: \(product.sku) • ₹\(Int(product.price).formatted())")
                                                 .font(.caption)
                                                 .foregroundStyle(RSMSTheme.textSecondary)
                                         }
@@ -434,42 +434,7 @@ struct NewClientOnboardingView: View {
 
     private var consentStep: some View {
         VStack(spacing: 20) {
-            LuxuryFormCard(title: "Privacy Consent", icon: "checkmark.shield.fill") {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Under GDPR and applicable data protection regulations, explicit client consent is required before collecting and processing personal data for marketing and personalisation purposes.")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
 
-                    Toggle(isOn: $viewModel.privacyConsentGiven) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Client Consent Given")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Text("The client has verbally or digitally confirmed consent.")
-                                .font(.caption2)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                        }
-                    }
-                    .tint(RSMSTheme.primary)
-
-                    HStack(spacing: 8) {
-                        Image(systemName: viewModel.privacyConsentGiven
-                              ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                            .foregroundStyle(viewModel.privacyConsentGiven
-                                             ? RSMSTheme.success : RSMSTheme.warning)
-                        Text(viewModel.privacyConsentGiven
-                             ? "Consent recorded — data may be used for personalisation."
-                             : "Without consent, client data cannot be used for marketing.")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    .padding(12)
-                    .background(
-                        (viewModel.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
-                        in: RoundedRectangle(cornerRadius: 10)
-                    )
-                }
-            }
 
             LuxuryFormCard(title: "Preferred Channels", icon: "paperplane.fill") {
                 VStack(alignment: .leading, spacing: 12) {
@@ -519,7 +484,7 @@ struct NewClientOnboardingView: View {
                     recapRow(label: "Name", value: viewModel.fullName)
                     recapRow(label: "Dates", value: "\(viewModel.anniversaries.count) added")
                     recapRow(label: "Wishlist", value: "\(viewModel.selectedProductIds.count) items selected")
-                    recapRow(label: "Consent", value: viewModel.privacyConsentGiven ? "GIVEN" : "NOT GIVEN", valueColor: viewModel.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
+
                 }
                 .font(.subheadline)
                 .padding(.top, 8)

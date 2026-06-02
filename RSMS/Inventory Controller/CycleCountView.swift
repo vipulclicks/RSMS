@@ -107,7 +107,7 @@ struct CycleCountView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Cycle Counts")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text("Physical verification of stock levels")
                 .font(.subheadline)
@@ -157,7 +157,7 @@ struct CycleCountView: View {
                 Spacer()
             }
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text(label)
                 .font(.caption.weight(.bold))
@@ -522,7 +522,7 @@ struct CycleCountView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("ENTER COUNT")
-                        .font(.system(.caption, design: .serif, weight: .light))
+                        .font(.system(.caption, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }

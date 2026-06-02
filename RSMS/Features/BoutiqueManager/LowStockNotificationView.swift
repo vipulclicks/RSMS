@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LowStockNotificationView: View {
     // Now tracking the live ViewModel
-    var dashboardVM: StoreDashboardViewModel
+    var dashboardVM: BoutiqueDashboardViewModel
     @Environment(\.dismiss) private var dismiss
     
     // Toast state
@@ -18,8 +18,7 @@ struct LowStockNotificationView: View {
     private let columns = [GridItem(.adaptive(minimum: 320), spacing: 24)]
     
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottom) {
                 // MARK: The Background Fix
                 // Placing the background color on the ZStack ensures the entire screen gets filled
                 RSMSTheme.background.ignoresSafeArea()
@@ -51,14 +50,6 @@ struct LowStockNotificationView: View {
             }
             .navigationTitle("Inventory Alerts")
             .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
-            }
-        }
     }
     
     private var warningBanner: some View {
@@ -75,12 +66,8 @@ struct LowStockNotificationView: View {
     }
     
     private func alertCard(_ alert: LowStockAlert) -> some View {
-        VStack(spacing: 24) {
-            HStack(alignment: .top, spacing: 16) {
-                RoundedRectangle(cornerRadius: 12).fill(RSMSTheme.surfaceSecondary)
-                    .frame(width: 80, height: 80)
-                    .overlay(Image(systemName: "bag.fill").font(.title).foregroundStyle(RSMSTheme.textSecondary))
-                
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(alert.product.name).font(.title3.weight(.medium)).foregroundStyle(RSMSTheme.textPrimary).lineLimit(2)
                     Text("SKU: \(alert.product.sku)").font(.caption.weight(.bold)).foregroundStyle(RSMSTheme.textSecondary)
@@ -88,53 +75,16 @@ struct LowStockNotificationView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("Stock").font(.caption).foregroundStyle(RSMSTheme.textSecondary)
-                    Text(String(format: "%02d", alert.stockItem.quantity))
+                    Text("\(alert.stockItem.quantity)")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(RSMSTheme.danger)
-                }
-            }
-            
-            HStack(spacing: 16) {
-                Button { } label: {
-                    Text("Request Transfer").font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .overlay(Capsule().stroke(RSMSTheme.border, lineWidth: 1))
-                }
-                
-                // MARK: REORDER ACTION
-                Button {
-                    placeReorder(for: alert)
-                } label: {
-                    Text("Reorder").font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.cream)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .background(RSMSTheme.gold).clipShape(Capsule())
                 }
             }
         }
         .rsmsCard(padding: 24)
     }
     
-    // MARK: - Helper Methods
-    
-    private func placeReorder(for alert: LowStockAlert) {
-        withAnimation(.spring) {
-            toastMessage = "Order successfully placed for \(alert.product.name)."
-        }
-        
-        dashboardVM.reorderItem(for: alert.product.id)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            withAnimation(.spring) {
-                self.toastMessage = nil
-            }
-        }
-        
-        if dashboardVM.lowStockAlerts.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                dismiss()
-            }
-        }
-    }
+
     
     private var emptyState: some View {
         VStack(spacing: 16) {
@@ -166,5 +116,5 @@ struct LowStockNotificationView: View {
 }
 
 #Preview {
-    LowStockNotificationView(dashboardVM: StoreDashboardViewModel())
+    LowStockNotificationView(dashboardVM: BoutiqueDashboardViewModel())
 }

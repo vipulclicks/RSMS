@@ -76,7 +76,7 @@ extension Discount {
         value: 10.0,
         validFrom: Calendar.current.date(byAdding: .month, value: -1, to: .now)!,
         validTo: Calendar.current.date(byAdding: .month, value: 2, to: .now)!,
-        conditions: "VIP clients only, min purchase €5,000",
+        conditions: "VIP clients only, min purchase ₹5,000",
         isActive: true,
         createdAt: .now
     )
@@ -95,7 +95,7 @@ extension Transaction {
         clientId: ClientProfile.preview.id,
         totalAmount: 24500.00,
         taxAmount: 4900.00,
-        currency: "EUR",
+        currency: "INR",
         status: .completed,
         isTaxFree: false,
         createdAt: .now

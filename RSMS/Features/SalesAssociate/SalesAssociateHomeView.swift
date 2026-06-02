@@ -4,22 +4,24 @@ import SwiftUI
 
 enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case dashboard    = "Dashboard"
-    case clienteling  = "Clienteling"
+    case clients  = "Clients"
     case appointments = "Appointments"
-    case selling      = "Assisted Selling"
-    case pos          = "POS & Checkout"
+//    case selling      = "Assisted Selling"
+//    case pos          = "POS & Checkout"
     case omnichannel  = "Omnichannel"
+    case profile      = "Profile"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
         case .dashboard:    return "square.grid.2x2.fill"
-        case .clienteling:  return "person.crop.circle.fill"
+        case .clients:  return "person.crop.circle.fill"
         case .appointments: return "calendar"
-        case .selling:      return "wand.and.stars"
-        case .pos:          return "cart.fill"
+//        case .selling:      return "wand.and.stars"
+//        case .pos:          return "cart.fill"
         case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
+        case .profile:      return "person.circle.fill"
         }
     }
 }
@@ -36,6 +38,8 @@ struct SalesAssociateHomeView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -59,20 +63,46 @@ struct SalesAssociateHomeView: View {
             }
         }
         .tint(RSMSTheme.primary)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active && horizontalSizeClass == .regular {
+                columnVisibility = .automatic
+            }
+        }
     }
 
     // MARK: - Adaptivity Content Routing
 
     @ViewBuilder
     private func mainContentView(_ appointmentVM: AppointmentViewModel) -> some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar(appointmentVM)
-        } detail: {
-            NavigationStack(path: $navigationPath) {
-                detailView(appointmentVM)
+        if horizontalSizeClass == .regular {
+            NavigationSplitView(columnVisibility: $columnVisibility) {
+                sidebar(appointmentVM)
+            } detail: {
+                NavigationStack(path: $navigationPath) {
+                    detailView(appointmentVM, section: selectedSection)
+                }
+            }
+            .navigationSplitViewStyle(.prominentDetail)
+        } else {
+            iphoneTabView(appointmentVM)
+        }
+    }
+    
+    private func iphoneTabView(_ appointmentVM: AppointmentViewModel) -> some View {
+        TabView(selection: $selectedSection) {
+            ForEach(SalesAssociateSection.allCases) { section in
+                NavigationStack(path: $navigationPath) {
+                    detailView(appointmentVM, section: section)
+                }
+                .tabItem {
+                    Label(section.rawValue, systemImage: section.icon)
+                }
+                .tag(Optional(section))
             }
         }
-        .navigationSplitViewStyle(.prominentDetail)
+        .onChange(of: selectedSection) { _ in
+            navigationPath = NavigationPath()
+        }
     }
 
     // MARK: - iPhone Dashboard
@@ -94,7 +124,7 @@ struct SalesAssociateHomeView: View {
                             errorBanner(appointmentVM: appointmentVM, error: error)
                         }
 
-                        DashboardHeaderView()
+                        DashboardHeaderView(onProfileTapped: { navigationPath.append("Profile") })
 
                         KPIGridView(appointmentVM: appointmentVM, viewWidth: geometry.size.width)
 
@@ -103,24 +133,11 @@ struct SalesAssociateHomeView: View {
                         QuickActionsSection(
                             columnsCount: 2,
                             onNewClient: { showNewClientSheet = true },
-                            onNewSale: { navigationPath.append("POS") },
-                            onLookBuilder: { navigationPath.append("LookBuilder") },
                             onOmnichannel: { navigationPath.append("Omnichannel") }
                         )
                     }
                     .padding(.bottom, 32)
                 }
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    appViewModel.logout()
-                } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .foregroundStyle(RSMSTheme.danger)
-                }
-                .accessibilityLabel("Sign Out")
             }
         }
         .refreshable {
@@ -130,56 +147,75 @@ struct SalesAssociateHomeView: View {
 
     // MARK: - iPad Sidebar & Detail
 
-    private func sidebar(_ appointmentVM: AppointmentViewModel) -> some View {
-        List(selection: $selectedSection) {
-            Section("Sales Associate") {
-                ForEach(SalesAssociateSection.allCases) { section in
-                    Label(section.rawValue, systemImage: section.icon)
+        private func sidebar(_ appointmentVM: AppointmentViewModel) -> some View {
+            List(selection: $selectedSection) {
+                Section {
+                    ForEach(SalesAssociateSection.allCases.filter { $0 != .profile }) { section in
+                        let isSelected = selectedSection == section
+                        
+                        HStack(spacing: 16) {
+                            Image(systemName: section.icon)
+                                .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                                .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
+                                .frame(width: 24)
+                            
+                            Text(section.rawValue)
+                                .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                                .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
+                            
+                            Spacer()
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 8)
                         .tag(section)
+                        .listRowSeparator(.hidden)
+                    }
                 }
             }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .background(RSMSTheme.backgroundGradient.ignoresSafeArea())
+            .navigationTitle("Sales Associate")
         }
-        .listStyle(.sidebar)
-        .navigationTitle("Sales Associate")
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                logoutButton
-            }
-        }
-    }
 
-    private var logoutButton: some View {
-        Button {
-            appViewModel.logout()
-        } label: {
-            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                .foregroundStyle(RSMSTheme.danger)
+
+
+        private var logoutButton: some View {
+            Button {
+                appViewModel.logout()
+            } label: {
+                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    .foregroundStyle(RSMSTheme.danger)
+            }
+            .accessibilityLabel("Sign Out")
         }
-        .accessibilityLabel("Sign Out")
-    }
 
     @ViewBuilder
-    private func detailView(_ appointmentVM: AppointmentViewModel) -> some View {
+    private func detailView(_ appointmentVM: AppointmentViewModel, section: SalesAssociateSection?) -> some View {
         Group {
-            switch selectedSection {
+            switch section {
             case .dashboard:
                 if horizontalSizeClass == .regular {
                     ipadDashboardView(appointmentVM)
                 } else {
                     iphoneDashboardView(appointmentVM)
                 }
-            case .clienteling:
+            case .clients:
                 SAClientBrowserView(onSelectClient: { client in
                     navigationPath.append(client)
+                }, onAddClient: {
+                    showNewClientSheet = true
                 })
             case .appointments:
                 AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
-            case .selling:
-                AssistedSellingView()
-            case .pos:
-                POSCheckoutView()
+//                case .selling:
+//                    AssistedSellingView()
+//                case .pos:
+//                    POSCheckoutView()
             case .omnichannel:
                 OmnichannelView()
+            case .profile:
+                SalesAssociateProfileView()
             case .none:
                 if horizontalSizeClass == .regular {
                     ipadDashboardView(appointmentVM)
@@ -188,81 +224,82 @@ struct SalesAssociateHomeView: View {
                 }
             }
         }
-        .navigationDestination(for: ClientProfile.self) { client in
-            ClientProfileDetailView(client: client, dataStore: appViewModel.dataStore)
-        }
-        .navigationDestination(for: String.self) { destination in
-            switch destination {
-            case "Clienteling":
-                SAClientBrowserView(onSelectClient: { client in
-                    navigationPath.append(client)
-                })
-            case "Appointments":
+            .navigationDestination(for: ClientProfile.self) { client in
+                ClientProfileDetailView(client: client, dataStore: appViewModel.dataStore, associateId: appViewModel.currentUser?.id ?? UUID())
+            }
+            .navigationDestination(for: String.self) { destination in
+                switch destination {
+                case "Clients":
+                    SAClientBrowserView(onSelectClient: { client in
+                        navigationPath.append(client)
+                    }, onAddClient: {
+                        showNewClientSheet = true
+                    })
+                case "Appointments":
+                    AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
+//                case "POS":
+//                    POSCheckoutView()
+//                case "LookBuilder":
+//                    LookBuilderView()
+                case "Omnichannel":
+                    OmnichannelView()
+                case "Profile":
+                    SalesAssociateProfileView()
+                default:
+                    Text("Coming Soon")
+                }
+            }
+            .sheet(isPresented: $showNewClientSheet) {
+                NewClientOnboardingView()
+                    .environment(appViewModel.dataStore)
+            }
+            .sheet(isPresented: $showAppointmentsSheet) {
                 AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
-            case "POS":
-                POSCheckoutView()
-            case "LookBuilder":
-                LookBuilderView()
-            case "Omnichannel":
-                OmnichannelView()
-            default:
-                Text("Coming Soon")
             }
         }
-        .sheet(isPresented: $showNewClientSheet) {
-            NewClientOnboardingView()
-                .environment(appViewModel.dataStore)
-        }
-        .sheet(isPresented: $showAppointmentsSheet) {
-            AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
-        }
-    }
 
-    private func ipadDashboardView(_ appointmentVM: AppointmentViewModel) -> some View {
-        GeometryReader { geometry in
-            let width = geometry.size.width
+        private func ipadDashboardView(_ appointmentVM: AppointmentViewModel) -> some View {
+            GeometryReader { geometry in
+                let width = min(geometry.size.width, 950)
 
-            ZStack(alignment: .top) {
-                RSMSTheme.backgroundGradient.ignoresSafeArea()
+                ZStack(alignment: .top) {
+                    RSMSTheme.backgroundGradient.ignoresSafeArea()
 
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 32) {
-                        if appointmentVM.isLoading {
-                            ProgressView()
-                                .tint(RSMSTheme.primary)
-                                .frame(maxWidth: .infinity, minHeight: 120)
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 32) {
+                            if appointmentVM.isLoading {
+                                ProgressView()
+                                    .tint(RSMSTheme.primary)
+                                    .frame(maxWidth: .infinity, minHeight: 120)
+                            }
+
+                            if let error = appointmentVM.errorMessage {
+                                errorBanner(appointmentVM: appointmentVM, error: error)
+                            }
+
+                            DashboardHeaderView(onProfileTapped: { navigationPath.append("Profile") })
+                                .padding(.horizontal, 4)
+
+                            KPIGridView(appointmentVM: appointmentVM, viewWidth: width, isSidebarClosed: true)
+
+                            VStack(alignment: .leading, spacing: 32) {
+                                UpcomingAppointmentsSection(appointmentVM: appointmentVM)
+                                
+                                QuickActionsSection(
+                                    columnsCount: 4,
+                                    onNewClient: { showNewClientSheet = true },
+                                    onOmnichannel: { navigationPath.append("Omnichannel") }
+                                )
+                            }
+                            .padding(.horizontal, 24)
                         }
-
-                        if let error = appointmentVM.errorMessage {
-                            errorBanner(appointmentVM: appointmentVM, error: error)
-                        }
-
-                        DashboardHeaderView()
-                            .padding(.horizontal, 4)
-
-                        KPIGridView(appointmentVM: appointmentVM, viewWidth: width, isSidebarClosed: true)
-
-                        VStack(alignment: .leading, spacing: 32) {
-                            UpcomingAppointmentsSection(appointmentVM: appointmentVM)
-                            
-                            QuickActionsSection(
-                                columnsCount: 4,
-                                onNewClient: { showNewClientSheet = true },
-                                onNewSale: { navigationPath.append("POS") },
-                                onLookBuilder: { navigationPath.append("LookBuilder") },
-                                onOmnichannel: { navigationPath.append("Omnichannel") }
-                            )
-                        }
-                        .padding(.horizontal, 24)
+                        .frame(maxWidth: 950)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 32)
                     }
-                    .padding(.bottom, 32)
                 }
             }
         }
-        .navigationTitle("Dashboard")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
     // MARK: - Shared Helpers
 
     private func errorBanner(appointmentVM: AppointmentViewModel, error: String) -> some View {
@@ -290,6 +327,7 @@ struct SalesAssociateHomeView: View {
 
 private struct DashboardHeaderView: View {
     @Environment(AppViewModel.self) private var appViewModel
+    var onProfileTapped: () -> Void
 
     var body: some View {
         let firstName = appViewModel.currentUser?.fullName.components(separatedBy: " ").first ?? "there"
@@ -298,27 +336,27 @@ private struct DashboardHeaderView: View {
 
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(greeting(for: .now)), \(firstName)")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .fontDesign(.serif)
+                Text("Dashboard")
+                    .font(.system(size: 34, weight: .heavy))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
-                Text(todayStr)
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.primary)
-                    Text(storeName)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundStyle(RSMSTheme.textSecondary)
+                HStack(spacing: 6) {
+                    Text("\(greeting(for: .now)), \(firstName)")
                 }
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(RSMSTheme.textSecondary)
             }
             Spacer()
+            
+            Button {
+                onProfileTapped()
+            } label: {
+                let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
+                    .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
+                ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 44)
+                    .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+            }
+            .accessibilityLabel("Profile")
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -364,15 +402,15 @@ private struct KPIGridView: View {
         LazyVGrid(columns: columns, spacing: spacing) {
             KPICard(
                 icon: "indianrupeesign.circle.fill",
-                value: "₹2,34,500",
+                value: appointmentVM.todaySalesFormatted,
                 label: "Today's Sales",
-                trend: "+12% vs yesterday",
+                trend: nil,
                 trendColor: RSMSTheme.success
             )
 
             KPICard(
                 icon: "calendar.circle.fill",
-                value: String(appointmentVM.upcomingAppointments.count),
+                value: appointmentVM.todaysAppointmentsCount,
                 label: "Today's Appointments",
                 trend: nil,
                 iconColor: RSMSTheme.info
@@ -380,7 +418,7 @@ private struct KPIGridView: View {
 
             KPICard(
                 icon: "person.2.circle.fill",
-                value: "3",
+                value: appointmentVM.clientsServedTodayCount,
                 label: "Clients Served",
                 trend: nil,
                 iconColor: RSMSTheme.success
@@ -388,9 +426,7 @@ private struct KPIGridView: View {
 
             KPICard(
                 icon: "clock.circle.fill",
-                value: appointmentVM.upcomingAppointments.first.map {
-                    RSMSDateFormatter.dateTime.string(from: $0.dateTime)
-                } ?? "None today",
+                value: appointmentVM.nextAppointmentDisplay,
                 label: "Next Appointment",
                 trend: nil,
                 iconColor: RSMSTheme.primary
@@ -484,7 +520,7 @@ private struct MyClientsSection: View {
                 )
                 Spacer()
                 
-                NavigationLink(value: "Clienteling") {
+                NavigationLink(value: "Clients") {
                     Text("See All")
                         .font(.subheadline)
                         .foregroundStyle(RSMSTheme.primary)
@@ -515,8 +551,6 @@ private struct QuickActionsSection: View {
 
     let columnsCount: Int
     let onNewClient: () -> Void
-    let onNewSale: () -> Void
-    let onLookBuilder: () -> Void
     let onOmnichannel: () -> Void
 
     var body: some View {
@@ -534,19 +568,19 @@ private struct QuickActionsSection: View {
                     onTap: onNewClient
                 )
                 
-                QuickActionCard(
-                    icon: "cart.badge.plus",
-                    label: "New Sale",
-                    color: RSMSTheme.info,
-                    onTap: onNewSale
-                )
-                
-                QuickActionCard(
-                    icon: "wand.and.stars",
-                    label: "Look Builder",
-                    color: RSMSTheme.warning,
-                    onTap: onLookBuilder
-                )
+//                QuickActionCard(
+//                    icon: "cart.badge.plus",
+//                    label: "New Sale",
+//                    color: RSMSTheme.info,
+//                    onTap: onNewSale
+//                )
+//                
+//                QuickActionCard(
+//                    icon: "wand.and.stars",
+//                    label: "Look Builder",
+//                    color: RSMSTheme.warning,
+//                    onTap: onLookBuilder
+//                )
                 
                 QuickActionCard(
                     icon: "shippingbox.and.arrow.backward",
@@ -562,131 +596,306 @@ private struct QuickActionsSection: View {
 
 // MARK: - Client Browser & Row for Navigation Stack
 
+struct ClientGroup: Identifiable {
+    let id = UUID()
+    let letter: String
+    let clients: [ClientProfile]
+}
+
 struct SAClientBrowserView: View {
-    @Environment(DataStore.self) private var dataStore
     let onSelectClient: (ClientProfile) -> Void
+    var onAddClient: () -> Void = {}
+    @Environment(AppViewModel.self) private var appViewModel
     @State private var searchText = ""
-    @State private var showOnboarding = false
-
-    private var clients: [ClientProfile] {
-        dataStore.clients
-    }
-
-    private var filteredClients: [ClientProfile] {
-        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !q.isEmpty else { return clients }
-        return clients.filter {
-            $0.fullName.lowercased().contains(q) ||
-            ($0.email?.lowercased().contains(q) ?? false) ||
-            ($0.phone?.contains(q) ?? false)
+    @State private var selectedFilter = "All"
+    
+    @State private var clientToDelete: ClientProfile? = nil
+    @State private var showDeleteAlert = false
+    
+    let filters = ["All", "Privé", "Platinum", "Gold", "Silver", "Standard"]
+    
+    private var filteredGroupedClients: [ClientGroup] {
+        var clients = appViewModel.dataStore.clients
+        
+        // 1. Filter by Tier
+        if selectedFilter != "All" {
+            if selectedFilter == "Privé" || selectedFilter == "Prive" || selectedFilter == "VIP" {
+                clients = clients.filter { $0.vipTier == VIPTier.prive }
+            } else {
+                clients = clients.filter { $0.vipTier.rawValue.caseInsensitiveCompare(selectedFilter) == .orderedSame }
+            }
         }
+        
+        // 2. Filter by Search Text
+        let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            clients = clients.filter {
+                $0.fullName.lowercased().contains(q) ||
+                ($0.email?.lowercased().contains(q) ?? false)
+            }
+        }
+        
+        // 3. Group by first letter
+        let grouped = Dictionary(grouping: clients) { client in
+            String(client.fullName.prefix(1)).uppercased()
+        }
+        
+        let groups = grouped.map { ClientGroup(letter: $0.key, clients: $0.value.sorted(by: { $0.fullName < $1.fullName })) }
+        return groups.sorted(by: { $0.letter < $1.letter })
     }
 
     var body: some View {
-        List {
-            ForEach(filteredClients) { client in
-                Button {
-                    onSelectClient(client)
-                } label: {
-                    SAClientRow(client: client)
+        ZStack {
+            RSMSTheme.background
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header, Search, and Filters stay pinned at the top
+                VStack(spacing: 24) {
+                    // Header
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Clients")
+                                .font(.system(size: 34, weight: .heavy))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            
+                            Text("\(filteredGroupedClients.flatMap { $0.clients }.count) contacts")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 12) {
+                            circleButton(icon: "plus") {
+                                onAddClient()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    
+                    // Search Bar
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        TextField("Search", text: $searchText)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                    .padding(.horizontal, 20)
+                    .frame(height: 52)
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
+                            )
+                            .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+                    )
+                    .padding(.horizontal, 24)
+                    
+                    // Filter Pills
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(filters, id: \.self) { filter in
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        selectedFilter = filter
+                                    }
+                                } label: {
+                                    Text(filter)
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundStyle(selectedFilter == filter ? .white : RSMSTheme.textSecondary)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Capsule()
+                                                .fill(selectedFilter == filter ? RSMSTheme.primary : RSMSTheme.surfacePrimary)
+                                                .shadow(color: .black.opacity(selectedFilter == filter ? 0.1 : 0.03), radius: 4, y: 2)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 4)
+                    }
                 }
-                .buttonStyle(.plain)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                .listRowSeparator(.hidden)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .background(RSMSTheme.background)
-        .navigationTitle("Clients")
-        .navigationBarTitleDisplayMode(.large)
-        .searchable(text: $searchText, prompt: "Search by name, email, or phone")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showOnboarding = true
-                } label: {
-                    Image(systemName: "person.badge.plus")
-                        .fontWeight(.medium)
+                .padding(.bottom, 16)
+
+                // Client Groups in a List for Swipe-to-Delete
+                List {
+                    if filteredGroupedClients.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.2.slash")
+                                .font(.system(size: 48))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            Text("No clients found")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                        }
+                        .padding(.top, 60)
+                        .frame(maxWidth: .infinity)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    } else {
+                        ForEach(filteredGroupedClients) { group in
+                            Section {
+                                ForEach(group.clients) { client in
+                                    Button {
+                                        onSelectClient(client)
+                                    } label: {
+                                        SAClientRow(client: client)
+                                            .padding(.vertical, 4)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            clientToDelete = client
+                                            showDeleteAlert = true
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                                }
+                            } header: {
+                                Text(group.letter)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                            }
+                        }
+                    }
                 }
-                .accessibilityLabel("Add New Client")
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
-        .sheet(isPresented: $showOnboarding) {
-            NewClientOnboardingView()
-                .environment(dataStore)
+        .navigationTitle("")
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .alert(
+            "Confirm Delete",
+            isPresented: $showDeleteAlert,
+            presenting: clientToDelete
+        ) { client in
+            Button("Delete", role: .destructive) {
+                Task {
+                    try? await appViewModel.dataStore.deleteClient(id: client.id)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { client in
+            Text("Are you sure you want to delete \(client.fullName)? This action cannot be undone.")
         }
-        .overlay {
-            if filteredClients.isEmpty {
-                ContentUnavailableView.search(text: searchText)
+    }
+    
+    private func circleButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.surfacePrimary)
+                    .frame(width: 42, height: 42)
+                    .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(RSMSTheme.primary)
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
 private struct SAClientRow: View {
     let client: ClientProfile
-
+    
     private var initials: String {
         client.fullName.split(separator: " ").prefix(2)
-            .compactMap { $0.first.map(String.init) }.joined().uppercased()
+            .compactMap { $0.first }
+            .map { String($0) }
+            .joined().uppercased()
     }
-
+    
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
+            // Avatar
             ZStack {
+                if client.vipTier == VIPTier.prive {
+                    Circle()
+                        .stroke(RSMSTheme.gold, lineWidth: 1.5)
+                        .frame(width: 52, height: 52)
+                }
+                
                 Circle()
-                    .fill(RSMSTheme.primary.opacity(0.12))
+                    .fill(RSMSTheme.primary)
                     .frame(width: 48, height: 48)
+                
                 Text(initials)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
-                    .foregroundStyle(RSMSTheme.primary)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
             }
-
-            VStack(alignment: .leading, spacing: 3) {
+            
+            // Name, Badge & Email
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(client.fullName)
-                        .font(.system(size: 15, weight: .semibold, design: .serif))
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
-                    StatusBadge(
-                        text: client.vipTier.rawValue.uppercased(),
-                        color: tierColor(client.vipTier)
-                    )
+                    
+                    if client.vipTier != .standard {
+                        Text(client.vipTier.rawValue.uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(badgeBackground, in: Capsule())
+                            .foregroundStyle(badgeForeground)
+                    }
                 }
-                if let contact = client.email ?? client.phone {
-                    Text(contact)
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .lineLimit(1)
-                }
+                
+                Text(client.email ?? "No Email")
+                    .font(.system(size: 14))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .lineLimit(1)
             }
-
+            
             Spacer(minLength: 0)
-
-            if !client.privacyConsentGiven {
-                Image(systemName: "exclamationmark.shield.fill")
-                    .foregroundStyle(RSMSTheme.warning)
-                    .font(.caption)
-                    .accessibilityLabel("Privacy consent not given")
-            }
-
+            // Chevron
             Image(systemName: "chevron.right")
-                .font(.footnote)
+                .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
-        .padding(.vertical, 6)
-        .padding(.horizontal, 12)
-        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(RSMSTheme.surfacePrimary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.04), radius: 10, y: 4)
+        )
+        .contentShape(Rectangle())
     }
-
-    private func tierColor(_ tier: VIPTier) -> Color {
-        switch tier {
-        case .standard: return RSMSTheme.textSecondary
-        case .silver:   return Color(red: 192/255, green: 192/255, blue: 192/255)
-        case .gold:     return RSMSTheme.primary
-        case .platinum: return Color(red: 176/255, green: 196/255, blue: 222/255)
-        case .prive:    return RSMSTheme.danger
+    
+    private var badgeBackground: Color {
+        if client.vipTier == VIPTier.prive {
+            return RSMSTheme.textPrimary
+        }
+        return badgeForeground.opacity(0.15)
+    }
+    
+    private var badgeForeground: Color {
+        switch client.vipTier {
+        case VIPTier.prive: return RSMSTheme.cream
+        case VIPTier.platinum: return .purple
+        case VIPTier.silver: return .gray
+        case VIPTier.gold: return .orange
+        default: return .clear
         }
     }
 }
@@ -695,7 +904,7 @@ private struct SAClientRow: View {
 
 #Preview("iPhone — Sales Associate") {
     let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
+    vm.currentUser = .previewAssociate
     return SalesAssociateHomeView()
         .environment(vm)
         .environment(vm.dataStore)
@@ -703,7 +912,7 @@ private struct SAClientRow: View {
 
 #Preview("iPad", traits: .fixedLayout(width: 1024, height: 768)) {
     let vm = AppViewModel()
-    vm.login(as: .salesAssociate)
+    vm.currentUser = .previewAssociate
     return SalesAssociateHomeView()
         .environment(vm)
         .environment(vm.dataStore)
