@@ -26,9 +26,19 @@ struct NotificationsSheetView: View {
                     List {
                         ForEach(myNotifications) { notification in
                             NotificationRow(notification: notification)
+                                .listRowBackground(Color.clear)
+                        }
+                        .onDelete { indexSet in
+                            for index in indexSet {
+                                let notification = myNotifications[index]
+                                Task {
+                                    try? await appViewModel.dataStore.deleteNotification(id: notification.id)
+                                }
+                            }
                         }
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
             .navigationTitle("Notifications")

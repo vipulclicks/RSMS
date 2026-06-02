@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct InventorySourcingRequestListView: View {
+    var isScrollable: Bool = true
     @Environment(AppViewModel.self) private var appViewModel
     @State private var sourcingVM = InventorySourcingViewModel()
     @State private var selectedSegment = 0 // 0 = Pending, 1 = Active, 2 = Completed
@@ -47,30 +48,38 @@ struct InventorySourcingRequestListView: View {
                         emptyStateView
                         Spacer()
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(filtered) { request in
-                                    NavigationLink(destination: InventorySourcingRequestDetailView(request: request, sourcingVM: sourcingVM)) {
-                                        requestCard(request)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
+                        if isScrollable {
+                            ScrollView {
+                                requestsListContent(filtered: filtered)
                             }
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 24)
+                        } else {
+                            requestsListContent(filtered: filtered)
                         }
                     }
                 }
             }
         }
-        .navigationTitle(navigationTitleForRole)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(isScrollable ? navigationTitleForRole : "Omnichannel")
+        .navigationBarTitleDisplayMode(isScrollable ? .inline : .large)
         .task {
             await sourcingVM.load(dataStore: appViewModel.dataStore)
         }
         .refreshable {
             await sourcingVM.load(dataStore: appViewModel.dataStore)
         }
+    }
+    
+    private func requestsListContent(filtered: [InventorySourcingRequest]) -> some View {
+        LazyVStack(spacing: 16) {
+            ForEach(filtered) { request in
+                NavigationLink(destination: InventorySourcingRequestDetailView(request: request, sourcingVM: sourcingVM)) {
+                    requestCard(request)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 24)
     }
     
     // MARK: - Adapter Helpers

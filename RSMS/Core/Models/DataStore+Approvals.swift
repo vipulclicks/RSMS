@@ -151,4 +151,14 @@ extension DataStore {
             }
         }
     }
+    
+    @MainActor
+    func deleteNotification(id: UUID) async throws {
+        do {
+            try await api.delete("app_notifications", id: id)
+        } catch {
+            print("Supabase delete failed for app_notifications: \(error)")
+        }
+        self.appNotifications.removeAll(where: { $0.id == id })
+    }
 }
