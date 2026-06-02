@@ -62,31 +62,46 @@ class AIRecommendationService {
         // To make it deterministic-ish for the UI mock, we shuffle the array based on occasion string
         let shuffledProducts = products.shuffled()
         
+        // Helper to pick next distinct product matching a condition
+        func pickDistinct(where predicate: (Product) -> Bool) -> Product? {
+            for product in shuffledProducts {
+                if predicate(product) && !selected.contains(where: { $0.id == product.id }) {
+                    return product
+                }
+            }
+            return nil
+        }
+        
+        // Helper to pick any distinct product as fallback
+        func pickAnyDistinct() -> Product? {
+            return pickDistinct(where: { _ in true })
+        }
+        
         // A naive categorization based on common luxury strings
         // In reality, this would use `product.subcategory` and a recommendation ML model
         
-        let mainWear = shuffledProducts.first { $0.category.localizedCaseInsensitiveContains("Ready to Wear") || $0.category.localizedCaseInsensitiveContains("Apparel") }
-        let shoes = shuffledProducts.first { $0.category.localizedCaseInsensitiveContains("Shoes") || $0.category.localizedCaseInsensitiveContains("Footwear") }
-        let bag = shuffledProducts.first { $0.category.localizedCaseInsensitiveContains("Bags") || $0.category.localizedCaseInsensitiveContains("Leather") }
-        let jewelry = shuffledProducts.first { $0.category.localizedCaseInsensitiveContains("Jewelry") || $0.category.localizedCaseInsensitiveContains("Watches") }
-        
-        // Fallback to random items if categories don't explicitly match (to ensure looks generate for preview)
-        var fallbackIndex = 0
-        
-        if let main = mainWear { selected.append(main) } else { 
-            if fallbackIndex < shuffledProducts.count { selected.append(shuffledProducts[fallbackIndex]); fallbackIndex += 1 }
+        if let main = pickDistinct(where: { $0.category.localizedCaseInsensitiveContains("Ready to Wear") || $0.category.localizedCaseInsensitiveContains("Apparel") }) {
+            selected.append(main)
+        } else if let fallback = pickAnyDistinct() {
+            selected.append(fallback)
         }
         
-        if let shoe = shoes { selected.append(shoe) } else { 
-            if fallbackIndex < shuffledProducts.count { selected.append(shuffledProducts[fallbackIndex]); fallbackIndex += 1 }
+        if let shoe = pickDistinct(where: { $0.category.localizedCaseInsensitiveContains("Shoes") || $0.category.localizedCaseInsensitiveContains("Footwear") }) {
+            selected.append(shoe)
+        } else if let fallback = pickAnyDistinct() {
+            selected.append(fallback)
         }
         
-        if let b = bag { selected.append(b) } else { 
-            if fallbackIndex < shuffledProducts.count { selected.append(shuffledProducts[fallbackIndex]); fallbackIndex += 1 }
+        if let bag = pickDistinct(where: { $0.category.localizedCaseInsensitiveContains("Bags") || $0.category.localizedCaseInsensitiveContains("Leather") }) {
+            selected.append(bag)
+        } else if let fallback = pickAnyDistinct() {
+            selected.append(fallback)
         }
         
-        if let jewel = jewelry { selected.append(jewel) } else { 
-            if fallbackIndex < shuffledProducts.count { selected.append(shuffledProducts[fallbackIndex]); fallbackIndex += 1 }
+        if let jewelry = pickDistinct(where: { $0.category.localizedCaseInsensitiveContains("Jewelry") || $0.category.localizedCaseInsensitiveContains("Watches") }) {
+            selected.append(jewelry)
+        } else if let fallback = pickAnyDistinct() {
+            selected.append(fallback)
         }
         
         return selected

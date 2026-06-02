@@ -13,6 +13,7 @@ struct SalesAssociateProfileView: View {
     @State private var viewModel = SalesAssociateProfileViewModel()
     
     @State private var showLogoutConfirmation = false
+    @State private var showingEditProfileSheet = false
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -38,9 +39,6 @@ struct SalesAssociateProfileView: View {
                         // 4. Personal Information (Grouped List Style)
                         personalInformationSection(user: user)
                         
-                        // 5. Device & Session Metadata
-                        deviceAndSessionSection()
-                        
                         // 6. Sign Out Button
                         signOutButton()
                         
@@ -59,6 +57,22 @@ struct SalesAssociateProfileView: View {
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingEditProfileSheet = true
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+        }
+        .sheet(isPresented: $showingEditProfileSheet) {
+            if let user = appViewModel.currentUser {
+                EditSalesAssociateProfileView(profile: user)
+            }
+        }
         .alert("Sign Out", isPresented: $showLogoutConfirmation) {
             Button("Sign Out", role: .destructive) {
                 appViewModel.logout()
@@ -84,6 +98,8 @@ struct SalesAssociateProfileView: View {
     // MARK: - Actions
     
     private func refreshData() async {
+        await appViewModel.refreshCurrentUser()
+        
         guard let user = appViewModel.currentUser else { return }
         let storeId = user.storeId ?? UUID()
         
@@ -110,15 +126,7 @@ struct SalesAssociateProfileView: View {
             .compactMap { $0.first.map(String.init) }.joined().uppercased()
         
         return VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.primaryGradient)
-                    .frame(width: 80, height: 80)
-                
-                Text(initials)
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
+            ProfileAvatarView(avatarURL: user.avatarURL, initials: initials, size: 80)
             
             VStack(spacing: 4) {
                 Text(user.fullName)
@@ -457,20 +465,7 @@ struct SalesAssociateProfileView: View {
         }
     }
     
-    private func deviceAndSessionSection() -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Last Login")
-                Spacer()
-                Text(viewModel.lastLoginTime)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(RSMSTheme.textSecondary)
-        .padding(.horizontal, 16)
-    }
-    
+
     private func signOutButton() -> some View {
         Button {
             showLogoutConfirmation = true

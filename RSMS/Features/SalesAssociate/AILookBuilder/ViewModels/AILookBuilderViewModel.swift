@@ -145,9 +145,9 @@ final class AILookBuilderViewModel {
     func sharePayload(for look: GeneratedLook) -> String {
         var text = "Check out this \(look.name) curated for you!\n\n"
         for product in look.products {
-            text += "- \(product.name) (\(product.currency) \(String(format: "%.2f", product.price)))\n"
+            text += "- \(product.name) (₹\(Int(product.price).formatted()))\n"
         }
-        text += "\nTotal: \(look.products.first?.currency ?? "") \(String(format: "%.2f", look.totalPrice))"
+        text += "\nTotal: ₹\(Int(look.totalPrice).formatted())"
         return text
     }
 }
