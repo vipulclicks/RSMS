@@ -38,7 +38,11 @@ final class DataStore {
     var eventInvitations: [EventInvitation] = []
 
     // ── Sales Associate / Clienteling ───────────────────
-    var clients: [ClientProfile] = []
+    var clients: [ClientProfile] = [] {
+            didSet {
+                recalculateVIPTiers()
+            }
+        }
     var clientAnniversaries: [ClientAnniversary] = []
     var wishlistItems: [WishlistItem] = []
     var appointments: [Appointment] = []
@@ -53,11 +57,45 @@ final class DataStore {
     var discountApprovalRequests: [DiscountApprovalRequest] = []
     var appNotifications: [AppNotification] = []
     var discounts: [Discount] = []
-    var transactions: [Transaction] = []
+    var transactions: [Transaction] = [] {
+            didSet {
+                recalculateVIPTiers()
+            }
+        }
     var orders: [Order] = []
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
+    private var isRecalculating = false
+
+        func recalculateVIPTiers() {
+            guard !isRecalculating else { return }
+            isRecalculating = true
+            defer { isRecalculating = false }
+            
+            for index in clients.indices {
+                let client = clients[index]
+                let completedTxns = transactions.filter { $0.clientId == client.id && $0.status == .completed }
+                let ltv = completedTxns.reduce(0.0) { $0 + $1.totalAmount }
+                
+                let calculatedTier: VIPTier
+                if ltv >= 1000000 {
+                    calculatedTier = .prive
+                } else if ltv >= 500000 {
+                    calculatedTier = .platinum
+                } else if ltv >= 150000 {
+                    calculatedTier = .gold
+                } else if ltv >= 50000 {
+                    calculatedTier = .silver
+                } else {
+                    calculatedTier = .standard
+                }
+                
+                if clients[index].vipTier != calculatedTier {
+                    clients[index].vipTier = calculatedTier
+                }
+            }
+        }
     var exchangeReturnItems: [ExchangeReturnItem] = []
 
     // ── Inventory ──────────────────────────────────────
@@ -161,10 +199,21 @@ final class DataStore {
     }
     
     func updateEmployeeProfile(_ profile: UserProfile) async throws {
-        // Explicitly update the user_profiles table. 
-        // The backend trigger auto-creates the row on auth.users insert.
-        // We use UPDATE instead of INSERT to avoid duplicate key errors.
-        try await api.update("user_profiles", id: profile.id, record: profile)
+        // Explicitly update only the allowed (editable) fields of the user_profiles table.
+        // This avoids write permissions or RLS violations on locked columns like role or store_id.
+        let payload = UserProfileUpdatePayload(
+            phone: profile.phone,
+            avatarURL: profile.avatarURL,
+            updatedAt: Date()
+        )
+        
+        do {
+            try await api.update("user_profiles", id: profile.id, record: payload)
+        } catch {
+            print("[DataStore] Profile update failed (possibly because row doesn't exist). Attempting to auto-insert: \(error.localizedDescription)")
+            // Auto-create/insert the user profile in the database if it doesn't exist yet
+            try await api.insert("user_profiles", record: profile)
+        }
         
         // Ensure local consistency by checking if already fetched
         if let i = users.firstIndex(where: { $0.id == profile.id }) { 

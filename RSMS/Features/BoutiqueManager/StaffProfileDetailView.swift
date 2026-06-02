@@ -6,6 +6,8 @@ struct StaffProfileDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var viewModel: StaffProfileViewModel
     @State private var showingCommissionSheet = false
+    @State private var selectedSalesDate: Date?
+    @State private var selectedCommissionDate: Date?
     
     init(staff: UserProfile) {
         _viewModel = State(initialValue: StaffProfileViewModel(staff: staff))
@@ -187,7 +189,7 @@ struct StaffProfileDetailView: View {
                     }
                     
                     if let goal = viewModel.currentMonthlyGoal {
-                        Text("\(goal.achievedAmount.formatted(.currency(code: "INR").precision(.fractionLength(0)))) / \(goal.targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
+                        Text("\(viewModel.computedAchievedAmount.formatted(.currency(code: "INR").precision(.fractionLength(0)))) / \(goal.targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     } else {
@@ -203,34 +205,41 @@ struct StaffProfileDetailView: View {
     
     private var barChart: some View {
         VStack(alignment: .leading, spacing: 16) {
-                    Text("Achievement History")
+                    Text("Achievement History (Last 7 Days)")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textSecondary)
                     
-                    if viewModel.chartGoalsData.isEmpty {
-                        Text("No history available")
+                    if viewModel.dailySalesData.isEmpty || viewModel.dailySalesData.allSatisfy({ $0.amount == 0 }) {
+                        Text("No sales history available")
                             .foregroundStyle(RSMSTheme.textTertiary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        Chart(viewModel.chartGoalsData) { goal in
+                        Chart(viewModel.dailySalesData) { dayData in
+                            let isSelected = selectedSalesDate == nil || Calendar.current.isDate(dayData.date, inSameDayAs: selectedSalesDate!)
                             BarMark(
-                                x: .value("Date", goal.createdAt, unit: .day),
-                                y: .value("Achieved", goal.achievedAmount)
+                                x: .value("Date", dayData.date, unit: .day),
+                                y: .value("Sales", dayData.amount)
                             )
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(isSelected ? RSMSTheme.gold.gradient : RSMSTheme.surfaceTertiary.gradient)
                             .cornerRadius(4)
-                            
-                            // Optional: overlay target as a rule mark or secondary bar
+                            .annotation(position: .top) {
+                                if dayData.amount > 0 && isSelected {
+                                    Text(dayData.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                            }
                         }
+                        .chartXSelection(value: $selectedSalesDate)
                         .chartXAxis {
                             AxisMarks(values: .stride(by: .day)) { value in
                                 AxisGridLine()
-                                AxisValueLabel(format: .dateTime.month().day())
+                                AxisValueLabel(format: .dateTime.weekday(.abbreviated))
                             }
                         }
                     }
                 }
-                .frame(height: 200)
+                .frame(height: 250)
                 .rsmsCard(padding: 24)
     }
     
@@ -264,25 +273,24 @@ struct StaffProfileDetailView: View {
                     .rsmsCard(padding: 24)
             } else {
                 VStack(spacing: 24) {
-                    // Line Chart
-                    Chart(viewModel.chartCommissionData) { comm in
-                        LineMark(
-                            x: .value("Date", comm.createdAt, unit: .day),
+                    // Bar Chart for Commission
+                    Chart(viewModel.dailyCommissionData) { comm in
+                        let isSelected = selectedCommissionDate == nil || Calendar.current.isDate(comm.date, inSameDayAs: selectedCommissionDate!)
+                        BarMark(
+                            x: .value("Date", comm.date, unit: .day),
                             y: .value("Amount", comm.amount)
                         )
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(RSMSTheme.primaryDark)
-                        .symbol {
-                            Circle().fill(RSMSTheme.primaryDark).frame(width: 8, height: 8)
+                        .foregroundStyle(isSelected ? RSMSTheme.primaryDark.gradient : RSMSTheme.surfaceTertiary.gradient)
+                        .cornerRadius(4)
+                        .annotation(position: .top) {
+                            if isSelected {
+                                Text(comm.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
                         }
-                        
-                        AreaMark(
-                            x: .value("Date", comm.createdAt, unit: .day),
-                            y: .value("Amount", comm.amount)
-                        )
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [RSMSTheme.primaryDark.opacity(0.3), .clear], startPoint: .top, endPoint: .bottom))
                     }
+                    .chartXSelection(value: $selectedCommissionDate)
                     .frame(height: 200)
                     
                     Divider().overlay(RSMSTheme.divider)

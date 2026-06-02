@@ -107,6 +107,19 @@ final class POSCheckoutViewModel {
             amount: totalAmount, reference: razorpayPaymentId
         )
         try? await dataStore.createTender(tender)
+        
+        // 2.1 Create commission (5% rate, pending status)
+        let commissionRate = 0.05
+        let commission = Commission(
+            id: UUID(),
+            staffId: associateId,
+            transactionId: txn.id,
+            amount: totalAmount * commissionRate,
+            rate: commissionRate,
+            status: .pending,
+            createdAt: .now
+        )
+        try? await dataStore.createCommission(commission)
 
         // 3. Update cart status locally and ignore backend error if it fails
         let completed = UniversalCart(
