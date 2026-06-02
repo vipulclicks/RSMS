@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct VendorReturnView: View {
 
@@ -19,6 +20,10 @@ struct VendorReturnView: View {
     @State private var appeared = false
     @State private var showRecentFeed = true
     @State private var selectedStatusFilter: VendorReturnStatus? = nil
+    
+    // Photo Picker State
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedDamageImage: Image?
 
     var body: some View {
         ZStack {
@@ -50,6 +55,8 @@ struct VendorReturnView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     vm.resetForm()
+                    selectedPhotoItem = nil
+                    selectedDamageImage = nil
                     vm.showCreateSheet = true
                 } label: {
                     HStack(spacing: 6) {
@@ -119,17 +126,17 @@ struct VendorReturnView: View {
 
             HStack(spacing: 0) {
                 pipelineNode(
-                    title: "Pending",
-                    count: vm.pendingCount,
-                    status: .pending,
+                    title: "Approved",
+                    count: vm.approvedCount,
+                    status: .approved,
                     color: RSMSTheme.warning,
                     isFirst: true
                 )
                 pipelineDivider()
                 pipelineNode(
-                    title: "Approved",
-                    count: vm.approvedCount,
-                    status: .approved,
+                    title: "In Transit",
+                    count: vm.inTransitCount,
+                    status: .inTransit,
                     color: RSMSTheme.info
                 )
                 pipelineDivider()
@@ -404,8 +411,21 @@ struct VendorReturnView: View {
                     
                     Spacer()
                     
-                    Button {
-                        // Action menu
+                    Menu {
+                        if ret.status == .approved {
+                            Button {
+                                Task { await vm.updateStatus(for: ret.id, to: .inTransit, dataStore: appVM.dataStore) }
+                            } label: {
+                                Label("Mark as Shipped", systemImage: "shippingbox.and.arrow.backward")
+                            }
+                        }
+                        if ret.status == .approved || ret.status == .inTransit {
+                            Button {
+                                Task { await vm.updateStatus(for: ret.id, to: .completed, dataStore: appVM.dataStore) }
+                            } label: {
+                                Label("Mark as Completed", systemImage: "checkmark.seal")
+                            }
+                        }
                     } label: {
                         Image(systemName: "ellipsis")
                             .foregroundStyle(RSMSTheme.textSecondary)
@@ -649,6 +669,46 @@ struct VendorReturnView: View {
                                     .padding()
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                     .tint(RSMSTheme.gold)
+                                
+                                Divider().padding(.leading)
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Proof of Damage")
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .padding(.horizontal)
+                                        .padding(.top)
+                                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                        if let selectedDamageImage {
+                                            selectedDamageImage
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(height: 120)
+                                                .frame(maxWidth: .infinity)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                .padding(.horizontal)
+                                                .padding(.bottom)
+                                        } else {
+                                            HStack {
+                                                Image(systemName: "camera.fill")
+                                                Text("Add Photo")
+                                            }
+                                            .foregroundStyle(RSMSTheme.gold)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 60)
+                                            .background(RSMSTheme.gold.opacity(0.1))
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            .padding(.horizontal)
+                                            .padding(.bottom)
+                                        }
+                                    }
+                                    .onChange(of: selectedPhotoItem) { _, newItem in
+                                        Task {
+                                            if let data = try? await newItem?.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
+                                                selectedDamageImage = Image(uiImage: uiImage)
+                                            }
+                                        }
+                                    }
+                                }
                                 
                                 Divider().padding(.leading)
                                 

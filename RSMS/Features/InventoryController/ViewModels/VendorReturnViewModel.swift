@@ -24,8 +24,6 @@ enum ReturnReason: String, CaseIterable, Identifiable {
     case defective      = "Defective"
     case damaged        = "Damaged"
     case incorrectItem  = "Incorrect Item"
-    case excessInventory = "Excess Inventory"
-    case expiredProduct = "Expired Product"
 
     var id: String { rawValue }
 
@@ -34,8 +32,6 @@ enum ReturnReason: String, CaseIterable, Identifiable {
         case .defective:      return "exclamationmark.triangle.fill"
         case .damaged:        return "hammer.fill"
         case .incorrectItem:  return "arrow.triangle.swap"
-        case .excessInventory: return "shippingbox.fill"
-        case .expiredProduct: return "clock.badge.xmark.fill"
         }
     }
 
@@ -44,8 +40,6 @@ enum ReturnReason: String, CaseIterable, Identifiable {
         case .defective:      return RSMSTheme.danger
         case .damaged:        return RSMSTheme.warning
         case .incorrectItem:  return RSMSTheme.info
-        case .excessInventory: return RSMSTheme.gold
-        case .expiredProduct: return RSMSTheme.textTertiary
         }
     }
 }
@@ -304,9 +298,9 @@ final class VendorReturnViewModel {
             type: .vendorReturn,
             sourceId: storeId?.uuidString ?? "store",
             destinationId: vendor.name,
-            status: .requested,
+            status: .approved,
             requestedBy: requestedBy,
-            approvedBy: nil,
+            approvedBy: requestedBy,
             requestedAt: .now,
             shippedAt: nil,
             receivedAt: nil,
@@ -341,6 +335,40 @@ final class VendorReturnViewModel {
             errorMessage = error.localizedDescription
         }
         isSubmitting = false
+    }
+
+    // MARK: - Update Status
+
+    func updateStatus(for movementId: UUID, to newStatus: MovementStatus, dataStore: DataStore) async {
+        guard let index = movements.firstIndex(where: { $0.id == movementId }) else { return }
+        
+        let current = movements[index]
+        let updatedMovement = InventoryMovement(
+            id: current.id,
+            type: current.type,
+            sourceId: current.sourceId,
+            destinationId: current.destinationId,
+            status: newStatus,
+            requestedBy: current.requestedBy,
+            approvedBy: current.approvedBy,
+            requestedAt: current.requestedAt,
+            shippedAt: newStatus == .inTransit ? .now : current.shippedAt,
+            receivedAt: (newStatus == .completed || newStatus == .received) ? .now : current.receivedAt,
+            asnNumber: current.asnNumber,
+            itemsExpected: current.itemsExpected,
+            itemsReceived: current.itemsReceived,
+            reason: current.reason,
+            notes: current.notes
+        )
+        
+        do {
+            try await dataStore.updateInventoryMovement(updatedMovement)
+            withAnimation(.spring()) {
+                movements[index] = updatedMovement
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: - Vendor Name from Movement
