@@ -63,7 +63,7 @@ struct ProductCatalogView: View {
                             .foregroundColor(.green)
                             .font(.system(size: 20, weight: .bold))
                         Text(message)
-                            .font(.system(size: 14, weight: .medium, design: .serif))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(RSMSTheme.textPrimary)
                     }
                     .padding(.horizontal, 20)
@@ -219,7 +219,7 @@ struct ProductCatalogView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     
                     Text(client.fullName)
-                        .font(.system(size: 32, weight: .regular, design: .serif))
+                        .font(.system(size: 32, weight: .semibold))
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Text("UPDATED \(Date().formatted(date: .abbreviated, time: .omitted).uppercased())")
@@ -274,7 +274,7 @@ struct ProductCatalogView: View {
     private func curatedRecommendationsCarousel(_ vm: ProductCatalogViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recommended For This Client")
-                .font(.system(size: 16, weight: .semibold, design: .serif))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .padding(.horizontal, 24)
             
@@ -475,7 +475,7 @@ struct ProductCatalogCard: View {
             
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
@@ -568,23 +568,20 @@ struct StockBadge: View {
     let quantity: Int
 
     var body: some View {
-        HStack(spacing: 3) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 5, height: 5)
-            Text(statusText)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(statusColor)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(statusColor.opacity(0.08), in: Capsule())
+        Text(statusText.uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .tracking(1.0)
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(statusColor, in: Capsule())
+            .shadow(color: statusColor.opacity(0.35), radius: 3, x: 0, y: 1.5)
     }
 
     private var statusColor: Color {
-        if quantity == 0 { return .red }
-        if quantity <= 3 { return .orange }
-        return .green
+        if quantity == 0 { return RSMSTheme.danger }
+        if quantity <= 3 { return RSMSTheme.warning }
+        return RSMSTheme.success
     }
 
     private var statusText: String {

@@ -36,7 +36,7 @@ struct CartDiscountSheet: View {
                         // Header
                         VStack(spacing: 8) {
                             Text("Apply Privilege")
-                                .font(.system(size: 28, weight: .light, design: .serif))
+                                .font(.system(size: 28, weight: .semibold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             
                             Text("Enhance the client experience with a curated discount")

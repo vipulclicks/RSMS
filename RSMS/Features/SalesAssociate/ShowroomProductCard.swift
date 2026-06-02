@@ -63,7 +63,7 @@ struct ShowroomProductCard: View {
                 }
                 
                 Text(product.name)
-                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(1)
                 

@@ -146,7 +146,7 @@ struct LookProductItemView: View {
             
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                     .frame(height: 36, alignment: .topLeading)
