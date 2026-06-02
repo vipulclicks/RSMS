@@ -19,6 +19,11 @@ struct PaymentSummaryView: View {
     @State private var isProcessing = false
     @State private var finalCartItems: [UniversalCartItem] = []
     
+    // Gift Receipt
+    @State private var showGiftReceiptSheet = false
+    @State private var pendingGiftReceipts: [PendingGiftReceipt] = []
+    @State private var isGiftReceiptEnabled = false
+    
     // Computed states for validation
     private var cartItems: [UniversalCartItem] {
         checkoutVM.cartItems(for: cart.id)
@@ -91,7 +96,10 @@ struct PaymentSummaryView: View {
                     order: completedOrder,
                     client: client!,
                     paymentId: successfulPaymentId,
-                    cartItems: finalCartItems
+                    cartItems: finalCartItems,
+                    giftReceipts: appVM.dataStore.giftReceipts.filter { r in
+                        pendingGiftReceipts.contains(where: { $0.id == r.id })
+                    }
                 )
             } else {
                 ScrollView {
@@ -219,6 +227,36 @@ struct PaymentSummaryView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         
+                        // Gift Receipt Option
+                        VStack(spacing: 0) {
+                            HStack {
+                                Label("Gift Receipt", systemImage: "gift")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Spacer()
+                                Toggle("", isOn: $isGiftReceiptEnabled)
+                                    .tint(RSMSTheme.primary)
+                                    .labelsHidden()
+                            }
+                            .padding()
+                            .rsmsCard()
+
+                            if isGiftReceiptEnabled && !pendingGiftReceipts.isEmpty {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                    Text("\(pendingGiftReceipts.count) gift receipt\(pendingGiftReceipts.count > 1 ? "s" : "") prepared")
+                                }
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.success)
+                                .padding(.top, 6)
+                            }
+                        }
+                        .onChange(of: isGiftReceiptEnabled) { _, enabled in
+                            if enabled && pendingGiftReceipts.isEmpty {
+                                showGiftReceiptSheet = true
+                            }
+                        }
+
                         // Actions
                         Button {
                             showPaymentSheet = true
@@ -258,6 +296,13 @@ struct PaymentSummaryView: View {
                     handlePaymentSuccess(paymentId: paymentId)
                 }
             }
+        }
+        .sheet(isPresented: $showGiftReceiptSheet) {
+            GiftReceiptSheet(
+                cartItems: cartItems,
+                cart: cart,
+                generatedReceipts: $pendingGiftReceipts
+            )
         }
     }
     
@@ -318,6 +363,18 @@ struct PaymentSummaryView: View {
                 // We ignore backend errors here if 'orders' table doesn't exist
                 // so the user still sees the success screen.
                 try? await appVM.dataStore.createOrder(order)
+                
+                // Persist prepared gift receipts now that we have the real transactionId
+                let capturedPendingReceipts = pendingGiftReceipts
+                for pending in capturedPendingReceipts {
+                    let linked = GiftReceipt(
+                        id: pending.id,
+                        transactionId: transactionId,
+                        recipientNote: pending.encodedNote,
+                        printedAt: pending.printedAt
+                    )
+                    try? await appVM.dataStore.createGiftReceipt(linked)
+                }
                 
                 successfulPaymentId = paymentId
                 completedOrder = order

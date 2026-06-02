@@ -24,7 +24,7 @@ struct ReceiptView: View {
                     
                     // Header
                     VStack(spacing: 8) {
-                        Image(systemName: "seal.fill")
+                        Image(systemName: "checkmark.seal.fill")
                             .font(.system(size: 48))
                             .foregroundStyle(RSMSTheme.gold)
                         Text("Maison Lumière")

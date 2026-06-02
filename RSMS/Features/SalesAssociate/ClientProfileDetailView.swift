@@ -46,6 +46,13 @@ struct ClientProfileDetailView: View {
     
     // AI Look Builder state
     @State private var showAILookBuilder = false
+    
+    // Receipt viewing state from purchase history
+    @State private var showHistoryReceipt = false
+    @State private var selectedHistoryOrder: Order?
+    @State private var selectedHistoryPaymentId: String = ""
+    @State private var showHistoryGiftReceipt = false
+    @State private var selectedHistoryGiftReceipt: GiftReceipt?
 
     private var currentClient: ClientProfile {
         dataStore.clients.first(where: { $0.id == client.id }) ?? client
@@ -108,6 +115,25 @@ struct ClientProfileDetailView: View {
         .sheet(isPresented: $showAILookBuilder) {
             AILookBuilderView(client: currentClient, dataStore: dataStore, associateId: associateId)
         }
+        .sheet(isPresented: $showHistoryReceipt) {
+            if let order = selectedHistoryOrder {
+                ReceiptView(
+                    order: order,
+                    client: currentClient,
+                    paymentId: selectedHistoryPaymentId,
+                    cartItems: dataStore.universalCartItems.filter { $0.cartId == order.cartId }
+                )
+            }
+        }
+        .sheet(isPresented: $showHistoryGiftReceipt) {
+            if let gr = selectedHistoryGiftReceipt, let order = selectedHistoryOrder {
+                GiftReceiptPreviewView(
+                    giftReceipt: gr,
+                    order: order,
+                    cartItems: dataStore.universalCartItems.filter { $0.cartId == order.cartId }
+                )
+            }
+        }
         .navigationDestination(item: $selectedCuratedCart) { cart in
             ShowroomCartView(mode: .savedCart(cart: cart, dataStore: dataStore))
         }
@@ -122,6 +148,30 @@ struct ClientProfileDetailView: View {
                 try await dataStore.fetchProducts()
                 try await dataStore.fetchWishlistItems(clientId: client.id)
                 try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
+                
+                // Fetch transactions, orders, tenders, and gift receipts for client history
+                let txns: [Transaction] = (try? await SupabaseClient.shared.fetch("transactions", query: ["client_id": "eq.\(client.id)"])) ?? []
+                for txn in txns {
+                    if !dataStore.transactions.contains(where: { $0.id == txn.id }) {
+                        dataStore.transactions.append(txn)
+                    }
+                    try? await dataStore.fetchTenders(transactionId: txn.id)
+                    try? await dataStore.fetchUniversalCartItems(cartId: txn.cartId)
+                    
+                    let grs: [GiftReceipt] = (try? await SupabaseClient.shared.fetch("gift_receipts", query: ["transaction_id": "eq.\(txn.id)"])) ?? []
+                    for gr in grs {
+                        if !dataStore.giftReceipts.contains(where: { $0.id == gr.id }) {
+                            dataStore.giftReceipts.append(gr)
+                        }
+                    }
+                }
+                
+                let ords: [Order] = (try? await SupabaseClient.shared.fetch("orders", query: ["client_id": "eq.\(client.id)"])) ?? []
+                for ord in ords {
+                    if !dataStore.orders.contains(where: { $0.id == ord.id }) {
+                        dataStore.orders.append(ord)
+                    }
+                }
             } catch {
                 print("[ClientProfileDetailView] Error loading data: \(error)")
             }
@@ -282,6 +332,72 @@ struct ClientProfileDetailView: View {
                 }
                 .padding(.top, 4)
             }
+            
+            // Receipt Actions
+            HStack(spacing: 12) {
+                // View Customer Receipt
+                Button {
+                    let order = dataStore.orders.first { $0.transactionId == transaction.id } ?? Order(
+                        id: UUID(),
+                        clientId: client.id,
+                        transactionId: transaction.id,
+                        cartId: transaction.cartId,
+                        status: .confirmed,
+                        totalAmount: transaction.totalAmount,
+                        discountAmount: 0,
+                        finalAmount: transaction.totalAmount,
+                        createdAt: transaction.createdAt
+                    )
+                    selectedHistoryOrder = order
+                    selectedHistoryPaymentId = tender?.reference ?? transaction.id.uuidString.prefix(8).uppercased()
+                    showHistoryReceipt = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.text")
+                        Text("View Receipt")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.primary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // View Gift Receipt
+                let grs = dataStore.giftReceipts.filter { $0.transactionId == transaction.id }
+                if !grs.isEmpty {
+                    Button {
+                        selectedHistoryGiftReceipt = grs.first
+                        selectedHistoryOrder = dataStore.orders.first { $0.transactionId == transaction.id } ?? Order(
+                            id: UUID(),
+                            clientId: client.id,
+                            transactionId: transaction.id,
+                            cartId: transaction.cartId,
+                            status: .confirmed,
+                            totalAmount: transaction.totalAmount,
+                            discountAmount: 0,
+                            finalAmount: transaction.totalAmount,
+                            createdAt: transaction.createdAt
+                        )
+                        showHistoryGiftReceipt = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "gift")
+                            Text(grs.count == 1 ? "Gift Receipt" : "Gift Receipts (\(grs.count))")
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.success)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.success.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.top, 8)
         }
     }
     
