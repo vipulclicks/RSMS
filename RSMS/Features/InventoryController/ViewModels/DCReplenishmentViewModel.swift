@@ -123,3 +123,45 @@ final class DCReplenishmentViewModel {
         }
     }
 }
+
+// MARK: - Mock State for Detail View
+struct DCLineItem: Identifiable, Equatable {
+    let id = UUID()
+    let product: Product
+    let expectedQty: Int
+}
+
+extension DCReplenishmentViewModel {
+    // These properties are required by DCShipmentDetailView
+    // Since InventoryMovement items are not yet fully implemented in Supabase schema, we mock them
+    var selectedLineItems: [DCLineItem] {
+        get { return [] }
+        set { }
+    }
+    
+    var showExceptionSheet: Bool {
+        get { return false }
+        set { }
+    }
+    
+    var exceptionNotes: String {
+        get { return "" }
+        set { }
+    }
+    
+    var isSubmittingException: Bool {
+        return false
+    }
+    
+    var isLoadingDetail: Bool {
+        return false
+    }
+    
+    func loadShipmentDetail(movement: InventoryMovement, dataStore: DataStore) async {
+        // No-op for now
+    }
+    
+    func reportException(dataStore: DataStore, user: UserProfile, storeId: UUID) async {
+        // No-op for now
+    }
+}

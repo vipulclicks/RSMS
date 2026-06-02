@@ -134,6 +134,7 @@ final class VendorReturnViewModel {
     var products: [Product] = []
     var stockItems: [StockItem] = []
     var isLoading = false
+    var isUpdatingStatus = false
     var errorMessage: String?
 
     // MARK: - Mock Vendors
@@ -339,8 +340,12 @@ final class VendorReturnViewModel {
 
     // MARK: - Update Status
 
-    func updateStatus(for movementId: UUID, to newStatus: MovementStatus, dataStore: DataStore) async {
-        guard let index = movements.firstIndex(where: { $0.id == movementId }) else { return }
+    func updateStatus(for movementId: UUID, to newStatus: MovementStatus, dataStore: DataStore, user: UserProfile? = nil, storeId: UUID? = nil) async {
+        isUpdatingStatus = true
+        guard let index = movements.firstIndex(where: { $0.id == movementId }) else { 
+            isUpdatingStatus = false
+            return 
+        }
         
         let current = movements[index]
         let updatedMovement = InventoryMovement(
@@ -366,9 +371,16 @@ final class VendorReturnViewModel {
             withAnimation(.spring()) {
                 movements[index] = updatedMovement
             }
+            
+            if let store = storeId {
+                let uid = user?.id ?? UUID()
+                let details = "Updated return status to \(newStatus.rawValue)."
+                dataStore.logAudit(storeId: store, action: "Return Updated", entityType: "InventoryMovement", entityId: movementId, performedBy: uid, details: details)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
+        isUpdatingStatus = false
     }
 
     // MARK: - Vendor Name from Movement
@@ -389,5 +401,39 @@ final class VendorReturnViewModel {
             return String(reason.dropFirst("Vendor Return — ".count))
         }
         return reason
+    }
+}
+
+// MARK: - Mock State for Detail View
+extension VendorReturnViewModel {
+    var selectedLineItems: [ReturnItem] {
+        get { return [] }
+        set { }
+    }
+    
+    var showExceptionSheet: Bool {
+        get { return false }
+        set { }
+    }
+    
+    var exceptionNotes: String {
+        get { return "" }
+        set { }
+    }
+    
+    var isSubmittingException: Bool {
+        return false
+    }
+    
+    var isLoadingDetail: Bool {
+        return false
+    }
+    
+    func loadReturnDetail(movement: InventoryMovement, dataStore: DataStore) async {
+        // No-op for now
+    }
+    
+    func reportException(dataStore: DataStore, user: UserProfile, storeId: UUID) async {
+        // No-op for now
     }
 }

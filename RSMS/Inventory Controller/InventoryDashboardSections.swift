@@ -364,7 +364,7 @@ extension InventoryControllerHomeView {
             accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
             badgeText: "Manage"
         ) {
-            selectedDestination = .vendorReturn
+            selectedDestination = .vendorReturns
         }
     }
 

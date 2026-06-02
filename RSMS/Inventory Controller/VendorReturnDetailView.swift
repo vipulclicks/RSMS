@@ -146,7 +146,7 @@ struct VendorReturnDetailView: View {
             Button {
                 Task {
                     if let user = appVM.currentUser, let storeId = appVM.currentStoreId {
-                        await vm.updateStatus(to: .inTransit, dataStore: appVM.dataStore, user: user, storeId: storeId)
+                        await vm.updateStatus(for: movement.id, to: .inTransit, dataStore: appVM.dataStore, user: user, storeId: storeId)
                     }
                 }
             } label: {
@@ -176,7 +176,7 @@ struct VendorReturnDetailView: View {
             Button {
                 Task {
                     if let user = appVM.currentUser, let storeId = appVM.currentStoreId {
-                        await vm.updateStatus(to: .completed, dataStore: appVM.dataStore, user: user, storeId: storeId)
+                        await vm.updateStatus(for: movement.id, to: .completed, dataStore: appVM.dataStore, user: user, storeId: storeId)
                     }
                 }
             } label: {
@@ -239,7 +239,7 @@ struct VendorReturnDetailView: View {
         .animation(.easeOut(duration: 0.4).delay(0.15), value: appeared)
     }
 
-    private func lineItemRow(_ item: ReturnLineItem) -> some View {
+    private func lineItemRow(_ item: ReturnItem) -> some View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10).fill(RSMSTheme.gold.opacity(0.1)).frame(width: 44, height: 44)
