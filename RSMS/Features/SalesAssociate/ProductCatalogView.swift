@@ -137,16 +137,8 @@ struct ProductCatalogView: View {
         .sheet(isPresented: $showClientPickerSheet) {
             ClientSelectionSheet(onSelect: { client in
                 if let vm = viewModel {
-                    vm.activeClient = client
                     Task {
-                        vm.isLoading = true
-                        do {
-                            try await appViewModel.dataStore.fetchWishlistItems(clientId: client.id)
-                            try await appViewModel.dataStore.fetchClientAnniversaries(clientId: client.id)
-                        } catch {
-                            print("[ProductCatalogView] Error fetching client data: \(error)")
-                        }
-                        vm.isLoading = false
+                        await vm.selectClient(client)
                     }
                 }
                 showClientPickerSheet = false

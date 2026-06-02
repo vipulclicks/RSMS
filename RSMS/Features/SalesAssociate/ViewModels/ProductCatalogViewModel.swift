@@ -143,19 +143,8 @@ final class ProductCatalogViewModel {
             results = results.filter { stockQuantity(for: $0.id) > 0 }
         }
 
-        // Elevate matches if preferences highlighted
-        if highlightPreferences, let client = activeClient {
-            results.sort { p1, p2 in
-                let p1Match = hasPreferenceMatch(for: p1, client: client)
-                let p2Match = hasPreferenceMatch(for: p2, client: client)
-                if p1Match != p2Match {
-                    return p1Match && !p2Match
-                }
-                return p1.name < p2.name
-            }
-        } else {
-            results.sort { $0.name < $1.name }
-        }
+        // Sort products uniformly (alphabetically by name) for all clients to ensure a consistent list
+        results.sort { $0.name < $1.name }
 
         return results
     }
@@ -261,6 +250,7 @@ final class ProductCatalogViewModel {
             }
             if let client = activeClient {
                 try await dataStore.fetchWishlistItems(clientId: client.id)
+                try await dataStore.fetchClientAnniversaries(clientId: client.id)
                 try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
                 await MainActor.run {
                     self.localCartProductIds = Set(self.cartItems.map(\.productId))
@@ -274,6 +264,27 @@ final class ProductCatalogViewModel {
                 maxPrice = maxPriceSliderBound
             }
         } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func selectClient(_ client: ClientProfile) async {
+        activeClient = client
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await dataStore.fetchWishlistItems(clientId: client.id)
+            try await dataStore.fetchClientAnniversaries(clientId: client.id)
+            try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
+            if let id = storeId {
+                try await dataStore.fetchStockItems(storeId: id)
+            }
+            await MainActor.run {
+                self.localCartProductIds = Set(self.cartItems.map(\.productId))
+            }
+        } catch {
+            print("[ProductCatalogViewModel] Error selecting client: \(error)")
             errorMessage = error.localizedDescription
         }
         isLoading = false
