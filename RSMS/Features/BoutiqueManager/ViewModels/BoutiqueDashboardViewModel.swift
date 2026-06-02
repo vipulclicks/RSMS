@@ -28,6 +28,33 @@ final class BoutiqueDashboardViewModel {
     private(set) var todayTransactions: [Transaction] = []
     private(set) var lowStockAlerts: [LowStockAlert] = []
     
+    struct DailyStoreSales: Identifiable {
+        let id = UUID()
+        let date: Date
+        let amount: Double
+    }
+    private(set) var previousDaysSales: [DailyStoreSales] = []
+    private(set) var salesIncrementPercentage: Double = 0.0
+    
+    struct StaffSales: Identifiable {
+        let id: UUID
+        let staffName: String
+        let totalSales: Double
+    }
+    
+    var todaySalesByStaff: [StaffSales] {
+        var salesDict: [UUID: Double] = [:]
+        for txn in todayTransactions {
+            salesDict[txn.associateId, default: 0] += txn.totalAmount
+        }
+        
+        return salesDict.map { (associateId, total) in
+            let staff = allAssociates.first { $0.id == associateId }
+            let name = staff?.fullName ?? "Unknown"
+            return StaffSales(id: associateId, staffName: name, totalSales: total)
+        }.sorted { $0.totalSales > $1.totalSales }
+    }
+    
     // Period filter for Sales Progress
     var selectedPeriod: GoalPeriod = .monthly {
         didSet { recalculateForPeriod() }
@@ -70,11 +97,36 @@ final class BoutiqueDashboardViewModel {
             }
             self.todaySales = self.todayTransactions.reduce(0.0) { $0 + $1.totalAmount }
             
+            let now = Date()
+            
+            // Calculate previous days sales and increment
+            let cal = Calendar.current
+            var dailyHistory: [DailyStoreSales] = []
+            for i in (0..<7).reversed() {
+                if let d = cal.date(byAdding: .day, value: -i, to: now) {
+                    let start = cal.startOfDay(for: d)
+                    let end = cal.date(byAdding: .day, value: 1, to: start)!
+                    let dailyTotal = self.allTransactions.filter { $0.createdAt >= start && $0.createdAt < end }.reduce(0.0) { $0 + $1.totalAmount }
+                    dailyHistory.append(DailyStoreSales(date: start, amount: dailyTotal))
+                }
+            }
+            self.previousDaysSales = dailyHistory
+            
+            if dailyHistory.count >= 2 {
+                let yesterdaySales = dailyHistory[dailyHistory.count - 2].amount
+                if yesterdaySales > 0 {
+                    self.salesIncrementPercentage = ((self.todaySales - yesterdaySales) / yesterdaySales) * 100
+                } else if self.todaySales > 0 {
+                    self.salesIncrementPercentage = 100.0
+                } else {
+                    self.salesIncrementPercentage = 0.0
+                }
+            }
+            
             // B) Sales Target — fetch all goals, cache them
             try await dataStore.fetchSalesGoals(storeId: storeId)
-            let now = Date()
             self.allActiveGoals = dataStore.salesGoals.filter {
-                $0.storeId == storeId && $0.startDate <= now && $0.endDate >= now
+                $0.storeId == storeId
             }
             
             // C) Sales Progress
@@ -238,25 +290,31 @@ final class BoutiqueDashboardViewModel {
     }
     
     private func recalculateForPeriod() {
-        let filtered = allActiveGoals.filter { $0.period == selectedPeriod }
-        self.hasGoalsForPeriod = !filtered.isEmpty
-        self.goalAssociateCount = filtered.count
-        self.salesTarget = filtered.reduce(0.0) { $0 + $1.targetAmount }
-        self.periodAchievedAmount = filtered.reduce(0.0) { $0 + $1.achievedAmount }
+        let periodGoals = allActiveGoals.filter { $0.period == selectedPeriod }
         
-        if salesTarget > 0 {
-            self.salesProgress = min(1.0, periodAchievedAmount / salesTarget)
-        } else {
-            self.salesProgress = 0.0
-        }
-        
-        // Compute associate-level progress using actual transactions for the period
         let periodStart = startDate(for: selectedPeriod)
         
+        let txsInPeriod = allTransactions.filter { $0.createdAt >= periodStart }
+        
+        // Sum of all transactions in this period (regardless of who made them) for the store overall progress
+        self.periodAchievedAmount = txsInPeriod.reduce(0.0) { $0 + $1.totalAmount }
+        
+        // Compute associate-level progress using actual transactions for the period
         var progressList: [AssociateSalesProgress] = []
+        var validTargetsSum = 0.0
+        var associatesWithGoals = 0
+        
         for associate in allAssociates {
-            // Find if there's a goal for this period for this associate
-            let goal = filtered.first { $0.staffId == associate.id }
+            // Find the LATEST goal for this period for this associate
+            let goal = periodGoals
+                .filter { $0.staffId == associate.id }
+                .sorted { $0.createdAt > $1.createdAt }
+                .first
+            
+            if let target = goal?.targetAmount {
+                validTargetsSum += target
+                associatesWithGoals += 1
+            }
             
             // Calculate actual sales in this period
             let associateTransactions = allTransactions.filter { 
@@ -273,6 +331,16 @@ final class BoutiqueDashboardViewModel {
                     targetAmount: goal?.targetAmount
                 ))
             }
+        }
+        
+        self.hasGoalsForPeriod = associatesWithGoals > 0
+        self.goalAssociateCount = associatesWithGoals
+        self.salesTarget = validTargetsSum
+        
+        if salesTarget > 0 {
+            self.salesProgress = min(1.0, periodAchievedAmount / salesTarget)
+        } else {
+            self.salesProgress = 0.0
         }
         
         self.periodAssociateProgress = progressList.sorted { $0.achievedAmount > $1.achievedAmount }

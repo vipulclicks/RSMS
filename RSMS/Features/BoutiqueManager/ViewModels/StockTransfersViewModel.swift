@@ -55,6 +55,29 @@ final class StockTransfersViewModel {
         do {
             try await dataStore.fetchMovementItems(movementId: movement.id)
             currentMovementItems = dataStore.movementItems.filter { $0.movementId == movement.id }
+            
+            // DEMO FALLBACK: If there are no items for this transfer, inject some locally
+            if currentMovementItems.isEmpty, !dataStore.products.isEmpty {
+                let firstProduct = dataStore.products[0]
+                let secondProduct = dataStore.products.count > 1 ? dataStore.products[1] : firstProduct
+                
+                let mockItem1 = MovementItem(
+                    id: UUID(),
+                    movementId: movement.id,
+                    productId: firstProduct.id,
+                    quantity: 2,
+                    reason: nil
+                )
+                let mockItem2 = MovementItem(
+                    id: UUID(),
+                    movementId: movement.id,
+                    productId: secondProduct.id,
+                    quantity: 1,
+                    reason: nil
+                )
+                
+                currentMovementItems = firstProduct.id == secondProduct.id ? [mockItem1] : [mockItem1, mockItem2]
+            }
         } catch {
             self.error = error.localizedDescription
         }

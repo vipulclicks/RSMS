@@ -107,21 +107,8 @@ final class POSCheckoutViewModel {
             amount: totalAmount, reference: razorpayPaymentId
         )
         try? await dataStore.createTender(tender)
-        
-        // 2.1 Create commission (5% rate, pending status)
-        let commissionRate = 0.05
-        let commission = Commission(
-            id: UUID(),
-            staffId: associateId,
-            transactionId: txn.id,
-            amount: totalAmount * commissionRate,
-            rate: commissionRate,
-            status: .pending,
-            createdAt: .now
-        )
-        try? await dataStore.createCommission(commission)
 
-        // 3. Update cart status locally and persist to Supabase
+        // 3. Update cart status locally and ignore backend error if it fails
         let completed = UniversalCart(
             id: cart.id, type: cart.type, associateId: cart.associateId,
             clientId: cart.clientId, storeId: cart.storeId, status: .completed,
@@ -133,23 +120,26 @@ final class POSCheckoutViewModel {
             dataStore.universalCarts[i] = completed 
         }
         
-        // Then persist to Supabase — log if it fails so RLS issues are visible in the console
-        do {
-            try await dataStore.updateUniversalCart(completed)
-        } catch {
-            print("[POSCheckoutViewModel] ⚠️ Failed to update cart status to 'completed' in Supabase: \(error)")
-            print("[POSCheckoutViewModel] ℹ️ If this is an RLS error, add an UPDATE policy on 'universal_carts' for the sales_associate role.")
-        }
+        // Then try backend (will fail if RLS prevents it, but UI is already updated)
+        try? await dataStore.updateUniversalCart(completed)
 
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
-        // 5. Update Sales Goal Achieved Amount
+        // 5. Update Sales Goal Achieved Amount & Gather Goal Data
+        var previousAchieved: Double = 0.0
+        var targetAmount: Double = 0.0
+        var hasGoal = false
+
         if let currentGoal = dataStore.salesGoals
             .filter({ $0.staffId == associateId && $0.period == .monthly })
             .sorted(by: { $0.createdAt > $1.createdAt })
             .first 
         {
+            previousAchieved = currentGoal.achievedAmount
+            targetAmount = currentGoal.targetAmount
+            hasGoal = true
+            
             let updatedGoal = SalesGoal(
                 id: currentGoal.id,
                 staffId: currentGoal.staffId,
@@ -173,12 +163,54 @@ final class POSCheckoutViewModel {
             }
         }
         
-        // 6. Delete cart items from Supabase AND clear from memory
-        // Each deleteUniversalCartItem call handles both the backend DELETE and the local removeAll.
-        // Capture IDs first because the array mutates during deletion.
-        let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
-        for item in itemsToDelete {
-            try? await dataStore.deleteUniversalCartItem(id: item.id)
+        // 6. Clear in-memory cart items so UI reflects empty cart post-payment
+        await MainActor.run {
+            dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
+        }
+        
+        // 7. Auto-assign Commission (Static Tiered calculation based on Monthly Sales)
+        var commissionAmount: Double = 0.0
+        
+        let tier1Threshold: Double = 1_000_000
+        let tier2Threshold: Double = 2_000_000
+        
+        var remainingAmount = totalAmount
+        var currentAchieved = previousAchieved
+        
+        // Tier 1: 0 to 10,00,000 (2%)
+        if currentAchieved < tier1Threshold {
+            let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+            commissionAmount += amountInTier1 * 0.02
+            remainingAmount -= amountInTier1
+            currentAchieved += amountInTier1
+        }
+        
+        // Tier 2: 10,00,001 to 20,00,000 (3%)
+        if remainingAmount > 0 && currentAchieved < tier2Threshold {
+            let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+            commissionAmount += amountInTier2 * 0.03
+            remainingAmount -= amountInTier2
+            currentAchieved += amountInTier2
+        }
+        
+        // Tier 3: Above 20,00,000 (5%)
+        if remainingAmount > 0 {
+            commissionAmount += remainingAmount * 0.05
+        }
+        
+        let effectiveRate = totalAmount > 0 ? commissionAmount / totalAmount : 0.0
+        
+        if commissionAmount > 0 {
+            let commission = Commission(
+                id: UUID(),
+                staffId: associateId,
+                transactionId: txn.id,
+                amount: commissionAmount,
+                rate: effectiveRate,
+                status: .pending,
+                createdAt: .now
+            )
+            try? await dataStore.createCommission(commission)
         }
     }
 

@@ -5,7 +5,9 @@ struct StaffProfileDetailView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var viewModel: StaffProfileViewModel
-    @State private var showingCommissionSheet = false
+    @State private var selectedSalesDate: Date?
+    @State private var selectedCommissionDate: Date?
+    @State private var isRecalculating = false
     
     init(staff: UserProfile) {
         _viewModel = State(initialValue: StaffProfileViewModel(staff: staff))
@@ -39,25 +41,6 @@ struct StaffProfileDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.load(dataStore: appVM.dataStore)
-        }
-        .sheet(isPresented: $showingCommissionSheet) {
-            // Re-fetch transactions for total sales
-            let periodSales = appVM.dataStore.transactions
-                .filter { $0.associateId == viewModel.staff.id }
-                .reduce(0) { $0 + $1.totalAmount }
-            
-            CommissionAssignSheet(
-                staffId: viewModel.staff.id,
-                staffName: viewModel.staff.fullName,
-                periodSales: periodSales,
-                targetAmount: viewModel.currentMonthlyGoal?.targetAmount ?? 0.0,
-                period: .monthly
-            )
-            .onDisappear {
-                Task {
-                    await viewModel.load(dataStore: appVM.dataStore)
-                }
-            }
         }
     }
     
@@ -187,7 +170,7 @@ struct StaffProfileDetailView: View {
                     }
                     
                     if let goal = viewModel.currentMonthlyGoal {
-                        Text("\(goal.achievedAmount.formatted(.currency(code: "INR").precision(.fractionLength(0)))) / \(goal.targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
+                        Text("\(viewModel.computedAchievedAmount.formatted(.currency(code: "INR").precision(.fractionLength(0)))) / \(goal.targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     } else {
@@ -196,41 +179,48 @@ struct StaffProfileDetailView: View {
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
                 }
-                .frame(maxWidth: 200)
-                .frame(maxWidth: .infinity) // Center in VStack
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(height: 250)
                 .rsmsCard(padding: 24)
     }
     
     private var barChart: some View {
         VStack(alignment: .leading, spacing: 16) {
-                    Text("Achievement History")
+                    Text("Achievement History (Last 7 Days)")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textSecondary)
                     
-                    if viewModel.chartGoalsData.isEmpty {
-                        Text("No history available")
+                    if viewModel.dailySalesData.isEmpty || viewModel.dailySalesData.allSatisfy({ $0.amount == 0 }) {
+                        Text("No sales history available")
                             .foregroundStyle(RSMSTheme.textTertiary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
-                        Chart(viewModel.chartGoalsData) { goal in
+                        Chart(viewModel.dailySalesData) { dayData in
+                            let isSelected = selectedSalesDate == nil || Calendar.current.isDate(dayData.date, inSameDayAs: selectedSalesDate!)
                             BarMark(
-                                x: .value("Date", goal.createdAt, unit: .day),
-                                y: .value("Achieved", goal.achievedAmount)
+                                x: .value("Date", dayData.date, unit: .day),
+                                y: .value("Sales", dayData.amount)
                             )
-                            .foregroundStyle(RSMSTheme.gold)
+                            .foregroundStyle(isSelected ? RSMSTheme.gold.gradient : RSMSTheme.surfaceTertiary.gradient)
                             .cornerRadius(4)
-                            
-                            // Optional: overlay target as a rule mark or secondary bar
+                            .annotation(position: .top) {
+                                if dayData.amount > 0 && isSelected {
+                                    Text(dayData.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                            }
                         }
+                        .chartXSelection(value: $selectedSalesDate)
                         .chartXAxis {
-                            AxisMarks(values: .stride(by: .day)) { value in
+                            AxisMarks(values: .stride(by: .day)) { _ in
                                 AxisGridLine()
-                                AxisValueLabel(format: .dateTime.month().day())
+                                AxisValueLabel(format: .dateTime.month(.abbreviated).day(), centered: true)
                             }
                         }
                     }
                 }
-                .frame(height: 200)
+                .frame(height: 250)
                 .rsmsCard(padding: 24)
     }
     
@@ -238,83 +228,137 @@ struct StaffProfileDetailView: View {
     private var commissionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                SectionHeader(title: "Commission", subtitle: "Payout History")
+                SectionHeader(title: "Commission", subtitle: "Transaction History")
                 Spacer()
                 Button {
-                    showingCommissionSheet = true
+                    Task { await recalculateAssociateCommissions() }
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Assign")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primaryDark)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RSMSTheme.primaryDark.opacity(0.1))
-                    .clipShape(Capsule())
+                    Text(isRecalculating ? "Recalculating..." : "Fix History")
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.danger.opacity(0.1))
+                        .foregroundStyle(RSMSTheme.danger)
+                        .clipShape(Capsule())
                 }
+                .disabled(isRecalculating)
             }
             
-            if viewModel.chartCommissionData.isEmpty {
+            if viewModel.commissionList.isEmpty {
                 Text("No commission history found.")
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .rsmsCard(padding: 24)
             } else {
-                VStack(spacing: 24) {
-                    // Line Chart
-                    Chart(viewModel.chartCommissionData) { comm in
-                        LineMark(
-                            x: .value("Date", comm.createdAt, unit: .day),
-                            y: .value("Amount", comm.amount)
-                        )
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(RSMSTheme.primaryDark)
-                        .symbol {
-                            Circle().fill(RSMSTheme.primaryDark).frame(width: 8, height: 8)
-                        }
-                        
-                        AreaMark(
-                            x: .value("Date", comm.createdAt, unit: .day),
-                            y: .value("Amount", comm.amount)
-                        )
-                        .interpolationMethod(.monotone)
-                        .foregroundStyle(LinearGradient(colors: [RSMSTheme.primaryDark.opacity(0.3), .clear], startPoint: .top, endPoint: .bottom))
-                    }
-                    .frame(height: 200)
-                    
-                    Divider().overlay(RSMSTheme.divider)
-                    
-                    // List
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Payouts")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                            .tracking(1)
-                        
-                        ForEach(viewModel.chartCommissionData.reversed().prefix(5)) { comm in
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(comm.createdAt.formatted(date: .abbreviated, time: .shortened))
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                    Text(comm.status.rawValue.capitalized)
-                                        .font(.caption)
-                                        .foregroundStyle(comm.status == .paid ? RSMSTheme.success : RSMSTheme.info)
-                                }
-                                Spacer()
-                                Text(comm.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
-                                    .font(.headline)
+                VStack(spacing: 0) {
+                    ForEach(viewModel.commissionList) { item in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.transactionDate.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.subheadline.weight(.medium))
                                     .foregroundStyle(RSMSTheme.textPrimary)
+                                Text("Transaction: \(item.transactionAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
                             }
-                            .padding(.vertical, 4)
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(item.commissionEarned.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.gold)
+                                Text(item.status.rawValue.capitalized)
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(item.status == .paid ? RSMSTheme.success.opacity(0.2) : RSMSTheme.warning.opacity(0.2))
+                                    .foregroundStyle(item.status == .paid ? RSMSTheme.success : RSMSTheme.warning)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        
+                        if item.id != viewModel.commissionList.last?.id {
+                            Divider().overlay(RSMSTheme.divider)
                         }
                     }
                 }
                 .rsmsCard(padding: 24)
             }
+        }
+    }
+    
+    @MainActor
+    private func recalculateAssociateCommissions() async {
+        isRecalculating = true
+        defer { isRecalculating = false }
+        
+        do {
+            try await appVM.dataStore.fetchTransactions(storeId: appVM.currentStoreId)
+            let associateTxns = appVM.dataStore.transactions
+                .filter { $0.associateId == viewModel.staff.id }
+                .sorted(by: { $0.createdAt < $1.createdAt })
+            
+            // Delete only this associate's commissions
+            let associateCommissions = appVM.dataStore.commissions.filter { $0.staffId == viewModel.staff.id }
+            for commission in associateCommissions {
+                try? await appVM.dataStore.deleteCommission(id: commission.id)
+            }
+            
+            var monthlyTotals: [String: Double] = [:]
+            
+            for txn in associateTxns {
+                let monthYear = txn.createdAt.formatted(.dateTime.year().month())
+                let currentMonthTotal = monthlyTotals[monthYear] ?? 0.0
+                
+                let tier1Threshold: Double = 1_000_000
+                let tier2Threshold: Double = 2_000_000
+                
+                var remainingAmount = txn.totalAmount
+                var currentAchieved = currentMonthTotal
+                var commissionAmount: Double = 0.0
+                
+                if currentAchieved < tier1Threshold {
+                    let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+                    commissionAmount += amountInTier1 * 0.02
+                    remainingAmount -= amountInTier1
+                    currentAchieved += amountInTier1
+                }
+                
+                if remainingAmount > 0 && currentAchieved < tier2Threshold {
+                    let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+                    commissionAmount += amountInTier2 * 0.03
+                    remainingAmount -= amountInTier2
+                    currentAchieved += amountInTier2
+                }
+                
+                if remainingAmount > 0 {
+                    commissionAmount += remainingAmount * 0.05
+                }
+                
+                let effectiveRate = txn.totalAmount > 0 ? commissionAmount / txn.totalAmount : 0.0
+                
+                if commissionAmount > 0 {
+                    let newCommission = Commission(
+                        id: UUID(),
+                        staffId: txn.associateId,
+                        transactionId: txn.id,
+                        amount: commissionAmount,
+                        rate: effectiveRate,
+                        status: .approved,
+                        createdAt: txn.createdAt
+                    )
+                    try? await appVM.dataStore.createCommission(newCommission)
+                }
+                
+                monthlyTotals[monthYear] = currentMonthTotal + txn.totalAmount
+            }
+            
+            await viewModel.load(dataStore: appVM.dataStore)
+        } catch {
+            print("Error recalculating: \(error)")
         }
     }
 }

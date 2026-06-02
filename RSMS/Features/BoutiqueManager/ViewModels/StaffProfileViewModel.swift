@@ -2,6 +2,18 @@ import SwiftUI
 import Observation
 import Charts
 
+struct DailySales: Identifiable {
+    let id = UUID()
+    let date: Date
+    let amount: Double
+}
+
+struct DailyCommission: Identifiable {
+    let id = UUID()
+    let date: Date
+    let amount: Double
+}
+
 @Observable
 class StaffProfileViewModel {
     let staff: UserProfile
@@ -99,8 +111,70 @@ class StaffProfileViewModel {
         salesGoals.sorted { $0.createdAt < $1.createdAt }
     }
     
-    // For Line Chart: Commission over time
-    var chartCommissionData: [Commission] {
-        commissions.sorted { $0.createdAt < $1.createdAt }
+    var dailySalesData: [DailySales] {
+        guard let ds = dataStore else { return [] }
+        let cal = Calendar.current
+        let now = Date()
+        
+        var result: [DailySales] = []
+        for i in (0..<7).reversed() {
+            if let date = cal.date(byAdding: .day, value: -i, to: now) {
+                let startOfDay = cal.startOfDay(for: date)
+                let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay)!
+                
+                let daySales = ds.transactions.filter {
+                    $0.associateId == staff.id &&
+                    $0.status == .completed &&
+                    $0.createdAt >= startOfDay &&
+                    $0.createdAt < endOfDay
+                }.reduce(0.0) { $0 + $1.totalAmount }
+                
+                result.append(DailySales(date: startOfDay, amount: daySales))
+            }
+        }
+        return result
+    }
+    
+    struct CommissionListItem: Identifiable {
+        let id: UUID
+        let transactionDate: Date
+        let transactionAmount: Double
+        let commissionEarned: Double
+        let status: CommissionStatus
+    }
+    
+    var commissionList: [CommissionListItem] {
+        guard let ds = dataStore else { return [] }
+        return commissions.compactMap { commission in
+            // Find the associated transaction
+            guard let txn = ds.transactions.first(where: { $0.id == commission.transactionId }) else { return nil }
+            return CommissionListItem(
+                id: commission.id,
+                transactionDate: txn.createdAt,
+                transactionAmount: txn.totalAmount,
+                commissionEarned: commission.amount,
+                status: commission.status
+            )
+        }.sorted { $0.transactionDate > $1.transactionDate }
+    }
+    
+    var dailyCommissionData: [DailyCommission] {
+        let cal = Calendar.current
+        let now = Date()
+        
+        var result: [DailyCommission] = []
+        for i in (0..<7).reversed() {
+            if let date = cal.date(byAdding: .day, value: -i, to: now) {
+                let startOfDay = cal.startOfDay(for: date)
+                let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay)!
+                
+                let dayCommission = commissions.filter {
+                    $0.createdAt >= startOfDay && $0.createdAt < endOfDay
+                }.reduce(0.0) { $0 + $1.amount }
+                
+                result.append(DailyCommission(date: startOfDay, amount: dayCommission))
+            }
+        }
+        return result
     }
 }
