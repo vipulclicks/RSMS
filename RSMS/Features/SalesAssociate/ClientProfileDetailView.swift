@@ -175,7 +175,6 @@ struct ClientProfileDetailView: View {
     
     private var personalInfoTabContent: some View {
         VStack(spacing: 16) {
-            consentSection
             contactSection
             anniversarySection
         }
@@ -310,7 +309,6 @@ struct ClientProfileDetailView: View {
                     showAILookBuilder = true
                 } label: {
                     HStack {
-                        Image(systemName: "sparkles")
                         Text("Create")
                     }
                     .font(.subheadline.weight(.semibold))
@@ -327,26 +325,12 @@ struct ClientProfileDetailView: View {
     // MARK: - Hero
 
     private var heroSection: some View {
-        VStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.primary.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                Text(viewModel.initials)
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(RSMSTheme.primary)
-            }
-            .padding(.top, 16)
-
-            Text(currentClient.fullName)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(RSMSTheme.textPrimary)
-                .multilineTextAlignment(.center)
-
+        VStack {
             StatusBadge(
                 text: currentClient.vipTier.rawValue.uppercased(),
                 color: viewModel.tierColor(currentClient.vipTier)
             )
+            .padding(.top, 16)
         }
         .frame(maxWidth: .infinity)
     }
@@ -422,46 +406,6 @@ struct ClientProfileDetailView: View {
             }
         }
     }
-
-    // MARK: - Consent Banner
-
-    private var consentSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: currentClient.privacyConsentGiven
-                  ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
-                .font(.title2)
-                .foregroundStyle(currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(currentClient.privacyConsentGiven
-                      ? "Privacy Consent Given" : "Privacy Consent Not Given")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(currentClient.privacyConsentGiven
-                                     ? RSMSTheme.success : RSMSTheme.warning)
-                if currentClient.privacyConsentGiven, let date = currentClient.consentDate {
-                    Text("Consented on \(date.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                } else if !currentClient.privacyConsentGiven {
-                    Text("Client data cannot be used for marketing.")
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                }
-            }
-            Spacer()
-        }
-        .padding(16)
-        .background(
-            (currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.08),
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke((currentClient.privacyConsentGiven ? RSMSTheme.success : RSMSTheme.warning).opacity(0.25), lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
-    }
-
     // MARK: - Contact
 
     private var contactSection: some View {

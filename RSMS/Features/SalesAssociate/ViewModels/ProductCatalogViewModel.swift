@@ -65,6 +65,7 @@ final class ProductCatalogViewModel {
     var errorMessage: String?
     var isSaving = false
     var showSuccess = false
+    var localCartProductIds: Set<UUID> = []
     
     var client: ClientProfile {
         return activeClient ?? .preview // Fallback just in case, though activeClient should be non-nil
@@ -261,6 +262,9 @@ final class ProductCatalogViewModel {
             if let client = activeClient {
                 try await dataStore.fetchWishlistItems(clientId: client.id)
                 try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
+                await MainActor.run {
+                    self.localCartProductIds = Set(self.cartItems.map(\.productId))
+                }
             }
             // Seed price bounds from actual data
             let prices = dataStore.products.map(\.price)
@@ -416,30 +420,35 @@ final class ProductCatalogViewModel {
             }
     }
 
-    /// Checks whether a product is in the client's curated cart by reading DataStore directly.
+    /// Checks whether a product is in the client's curated cart by reading the local cache.
     func isInCart(_ productId: UUID) -> Bool {
-        guard let client = activeClient else { return false }
-        guard let cart = dataStore.universalCarts.first(where: { $0.clientId == client.id && $0.type == .curated && $0.status == .active }) else { return false }
-        return dataStore.universalCartItems.contains { $0.cartId == cart.id && $0.productId == productId }
+        return localCartProductIds.contains(productId)
     }
 
     /// Toggles a product in/out of the curated cart. Writes directly to the database.
     func toggleCartItem(_ product: Product) {
         guard let client = activeClient, let assocId = associateId else { return }
-        Task {
-            do {
-                if isInCart(product.id) {
-                    try await dataStore.removeItemFromCuratedCart(productId: product.id, forClient: client.id)
-                } else {
+        
+        if localCartProductIds.contains(product.id) {
+            // No-op or handle removal. If they want to prevent removal from the grid toggle, we do nothing.
+            // But wait, if they do want to toggle it out, they can still do it from the cart preview list.
+            // Let's keep it in the set to show it already exists.
+        } else {
+            localCartProductIds.insert(product.id)
+            Task {
+                do {
                     try await dataStore.addItemToCuratedCart(
                         productId: product.id,
                         price: product.price,
                         forClient: client.id,
                         associateId: assocId
                     )
+                } catch {
+                    print("[ProductCatalogViewModel] Error toggling cart item: \(error)")
+                    await MainActor.run {
+                        self.localCartProductIds.remove(product.id)
+                    }
                 }
-            } catch {
-                print("[ProductCatalogViewModel] Error toggling cart item: \(error)")
             }
         }
     }
@@ -466,7 +475,9 @@ final class ProductCatalogViewModel {
 
     func addToCart(_ product: Product) {
         guard let client = activeClient, let assocId = associateId else { return }
-        guard !isInCart(product.id) else { return }
+        guard !localCartProductIds.contains(product.id) else { return }
+        
+        localCartProductIds.insert(product.id)
         Task {
             do {
                 try await dataStore.addItemToCuratedCart(
@@ -477,17 +488,24 @@ final class ProductCatalogViewModel {
                 )
             } catch {
                 print("[ProductCatalogViewModel] Error adding to cart: \(error)")
+                await MainActor.run {
+                    self.localCartProductIds.remove(product.id)
+                }
             }
         }
     }
 
     func removeFromCart(_ productId: UUID) {
         guard let client = activeClient else { return }
+        localCartProductIds.remove(productId)
         Task {
             do {
                 try await dataStore.removeItemFromCuratedCart(productId: productId, forClient: client.id)
             } catch {
                 print("[ProductCatalogViewModel] Error removing from cart: \(error)")
+                await MainActor.run {
+                    self.localCartProductIds.insert(productId)
+                }
             }
         }
     }
@@ -495,6 +513,7 @@ final class ProductCatalogViewModel {
     func clearCart() {
         guard let client = activeClient else { return }
         let items = cartItems
+        localCartProductIds.removeAll()
         Task {
             for item in items {
                 do {
