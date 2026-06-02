@@ -41,7 +41,7 @@ struct AuditTrailView: View {
                 $0.action.lowercased().contains(lowerSearch) ||
                 ($0.details?.lowercased().contains(lowerSearch) ?? false) ||
                 $0.entityType.lowercased().contains(lowerSearch) ||
-                $0.entityId.lowercased().contains(lowerSearch)
+                $0.entityId.uuidString.lowercased().contains(lowerSearch)
             }
         }
         
@@ -186,7 +186,7 @@ struct AuditTrailView: View {
                 HStack {
                     Label(audit.entityType, systemImage: "cube.box")
                     Spacer()
-                    Label(userName(for: audit.performedBy), systemImage: "person.fill")
+                    Label(userName(for: audit.performedBy.uuidString), systemImage: "person.fill")
                 }
                 .font(.caption)
                 .foregroundStyle(RSMSTheme.textTertiary)

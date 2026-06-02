@@ -459,6 +459,7 @@ private struct EditProfileSheet: View {
                         Text(user?.role.displayName ?? "—")
                             .foregroundStyle(.secondary)
                     }
+                }
                 Section {
                     Button("Save Profile") {
                         // TODO: Persist changes via DataStore.updateUser
@@ -476,6 +477,7 @@ private struct EditProfileSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
+            }
             .onAppear {
                 fullName = user?.fullName ?? ""
                 phone    = user?.phone    ?? ""
@@ -504,6 +506,7 @@ private struct ChangePasswordSheet: View {
                 Section("New Password") {
                     SecureField("New Password", text: $newPassword)
                     SecureField("Confirm New Password", text: $confirmPassword)
+                }
                 Section {
                     Button("Update Password") {
                         guard newPassword == confirmPassword, !newPassword.isEmpty else { return }
@@ -531,6 +534,7 @@ private struct ChangePasswordSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
+            }
         }
     }
 }

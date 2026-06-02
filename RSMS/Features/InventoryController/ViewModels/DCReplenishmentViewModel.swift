@@ -85,7 +85,7 @@ final class DCReplenishmentViewModel {
     }
     
     // MARK: - Receive Action
-    func markAsReceived(movement: InventoryMovement, dataStore: DataStore) async {
+    func markAsReceived(movement: InventoryMovement, dataStore: DataStore, userId: UUID?, storeId: UUID?) async {
         let updatedMovement = InventoryMovement(
             id: movement.id,
             type: movement.type,
@@ -113,10 +113,10 @@ final class DCReplenishmentViewModel {
             }
             
             // Log to Audit Trail
-            if let storeId = dataStore.currentUser?.storeId {
+            if let storeId = storeId {
                 let details = "Received \(movement.itemsExpected ?? 0) items from \(movement.sourceId)."
-                let userId = dataStore.currentUser?.id ?? UUID()
-                dataStore.logAudit(storeId: storeId, action: "Replenishment Received", entityType: "InventoryMovement", entityId: movement.id, performedBy: userId, details: details)
+                let uid = userId ?? UUID()
+                dataStore.logAudit(storeId: storeId, action: "Replenishment Received", entityType: "InventoryMovement", entityId: movement.id, performedBy: uid, details: details)
             }
         } catch {
             errorMessage = error.localizedDescription
