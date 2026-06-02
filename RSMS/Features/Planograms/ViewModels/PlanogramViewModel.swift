@@ -113,6 +113,31 @@ final class PlanogramViewModel {
         }
     }
     
+    func saveZonesLayout(storeId: UUID) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
+        let api = PlanogramService.shared
+        let existingZones = try await api.fetchZones(for: storeId)
+        
+        let existingIds = Set(existingZones.map { $0.id })
+        let currentIds = Set(zones.map { $0.id })
+        
+        let toDelete = existingIds.subtracting(currentIds)
+        
+        for id in toDelete {
+            try? await api.deleteZone(id: id)
+        }
+        
+        for zone in zones {
+            if existingIds.contains(zone.id) {
+                _ = try? await api.updateZone(zone)
+            } else {
+                _ = try? await api.createZone(zone)
+            }
+        }
+    }
+    
     func selectZone(_ zone: MerchandisingZone) {
         selectedZone = zone
     }

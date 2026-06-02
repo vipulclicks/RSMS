@@ -8,6 +8,7 @@ import SwiftUI
 struct StoreLayoutOverviewView: View {
     @State private var viewModel = PlanogramViewModel()
     @State private var isShowingEdit = false
+    @State private var isEditingLayout = false
     @Environment(AppViewModel.self) private var appVM
     
     // Luxury Colors
@@ -25,13 +26,47 @@ struct StoreLayoutOverviewView: View {
                         Text("Store Layout Overview")
                             .font(.system(size: 24, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
-                        Text("Select a merchandising zone to view capacity and stock health.")
+                        Text(isEditingLayout ? "Drag items to position them, or add new fixtures." : "Select a merchandising zone to view capacity and stock health.")
                             .font(.system(size: 15))
                             .foregroundColor(textSecondary)
                     }
                     Spacer()
                     
-
+                    if isEditingLayout {
+                        Button("Cancel") {
+                            Task {
+                                viewModel.zones.removeAll()
+                                await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                            }
+                            isEditingLayout = false
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.red)
+                        .padding(.trailing, 16)
+                        
+                        Button("Save Layout") {
+                            Task {
+                                try? await viewModel.saveZonesLayout(storeId: appVM.currentStoreId ?? UUID())
+                                isEditingLayout = false
+                            }
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black)
+                        .clipShape(Capsule())
+                    } else {
+                        Button("Edit Layout") {
+                            isEditingLayout = true
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black)
+                        .clipShape(Capsule())
+                    }
                 }
                 .padding(.horizontal, 32)
                 .padding(.vertical, 24)
@@ -105,6 +140,13 @@ struct StoreLayoutOverviewView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(isSelected ? Color.blue : Color.blue.opacity(0.3), lineWidth: isSelected ? 2 : 1)
                             )
+                    case .cashWrap:
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(white: 0.98))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(isSelected ? Color.black : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                            )
                     }
                     
                     VStack(spacing: 8) {
@@ -129,10 +171,71 @@ struct StoreLayoutOverviewView: View {
                 }
                 .frame(width: zone.frame.width, height: zone.frame.height)
                 .position(x: zone.frame.midX, y: zone.frame.midY)
+                .gesture(
+                    isEditingLayout ? DragGesture()
+                        .onChanged { value in
+                            if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                                viewModel.zones[idx].xPosition = value.location.x
+                                viewModel.zones[idx].yPosition = value.location.y
+                            }
+                        }
+                        .onEnded { value in
+                            if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                                let snapX = round(value.location.x / 20) * 20
+                                let snapY = round(value.location.y / 20) * 20
+                                viewModel.zones[idx].xPosition = snapX
+                                viewModel.zones[idx].yPosition = snapY
+                            }
+                        }
+                    : nil
+                )
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    if isEditingLayout {
                         viewModel.selectZone(zone)
-                        isShowingEdit = true
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            viewModel.selectZone(zone)
+                            isShowingEdit = true
+                        }
+                    }
+                }
+                .overlay(
+                    Group {
+                        if isEditingLayout && isSelected {
+                            Button(action: {
+                                viewModel.zones.removeAll(where: { $0.id == zone.id })
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.red)
+                                    .background(Color.white.clipShape(Circle()))
+                            }
+                            .offset(x: (zone.width / 2) - 8, y: -(zone.height / 2) + 8)
+                        }
+                    }
+                )
+            }
+            
+            if isEditingLayout {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Menu {
+                            Button("Wall Unit") { addZone(type: .wall) }
+                            Button("Table") { addZone(type: .table) }
+                            Button("Window Display") { addZone(type: .window) }
+                            Button("Cash Wrap") { addZone(type: .cashWrap) }
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 56, height: 56)
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                                .shadow(color: .blue.opacity(0.3), radius: 10, y: 5)
+                        }
+                        .padding(32)
                     }
                 }
             }
@@ -148,6 +251,45 @@ struct StoreLayoutOverviewView: View {
         case .table: return "table.furniture"
         case .wall: return "cabinet"
         case .window: return "rectangle.split.3x1"
+        case .cashWrap: return "creditcard.and.123"
         }
+    }
+    
+    private func addZone(type: ZoneType) {
+        let newId = UUID()
+        let name: String
+        let width: Double
+        let height: Double
+        let capacity: Int
+        
+        switch type {
+        case .table:
+            name = "New Table"
+            width = 160; height = 100; capacity = 20
+        case .wall:
+            name = "New Wall Unit"
+            width = 60; height = 180; capacity = 40
+        case .window:
+            name = "New Window"
+            width = 240; height = 80; capacity = 10
+        case .cashWrap:
+            name = "Cash Wrap"
+            width = 200; height = 80; capacity = 0
+        }
+        
+        let newZone = MerchandisingZone(
+            id: newId,
+            storeId: appVM.currentStoreId ?? UUID(),
+            name: name,
+            type: type,
+            xPosition: 400,
+            yPosition: 400,
+            width: width,
+            height: height,
+            totalCapacity: capacity
+        )
+        
+        viewModel.zones.append(newZone)
+        viewModel.selectZone(newZone)
     }
 }
