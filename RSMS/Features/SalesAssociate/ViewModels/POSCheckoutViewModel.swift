@@ -121,7 +121,7 @@ final class POSCheckoutViewModel {
         )
         try? await dataStore.createCommission(commission)
 
-        // 3. Update cart status locally and ignore backend error if it fails
+        // 3. Update cart status locally and persist to Supabase
         let completed = UniversalCart(
             id: cart.id, type: cart.type, associateId: cart.associateId,
             clientId: cart.clientId, storeId: cart.storeId, status: .completed,
@@ -133,14 +133,18 @@ final class POSCheckoutViewModel {
             dataStore.universalCarts[i] = completed 
         }
         
-        // Then try backend (will fail if RLS prevents it, but UI is already updated)
-        try? await dataStore.updateUniversalCart(completed)
+        // Then persist to Supabase — log if it fails so RLS issues are visible in the console
+        do {
+            try await dataStore.updateUniversalCart(completed)
+        } catch {
+            print("[POSCheckoutViewModel] ⚠️ Failed to update cart status to 'completed' in Supabase: \(error)")
+            print("[POSCheckoutViewModel] ℹ️ If this is an RLS error, add an UPDATE policy on 'universal_carts' for the sales_associate role.")
+        }
 
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
         // 5. Update Sales Goal Achieved Amount
-        let now = Date()
         if let currentGoal = dataStore.salesGoals
             .filter({ $0.staffId == associateId && $0.period == .monthly })
             .sorted(by: { $0.createdAt > $1.createdAt })
@@ -169,9 +173,12 @@ final class POSCheckoutViewModel {
             }
         }
         
-        // 6. Clear in-memory cart items so UI reflects empty cart post-payment
-        await MainActor.run {
-            dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
+        // 6. Delete cart items from Supabase AND clear from memory
+        // Each deleteUniversalCartItem call handles both the backend DELETE and the local removeAll.
+        // Capture IDs first because the array mutates during deletion.
+        let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
+        for item in itemsToDelete {
+            try? await dataStore.deleteUniversalCartItem(id: item.id)
         }
     }
 
