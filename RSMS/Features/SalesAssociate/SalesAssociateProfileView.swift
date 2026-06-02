@@ -334,7 +334,49 @@ struct SalesAssociateProfileView: View {
     }
     
     private func commissionAndGoalsSection(user: UserProfile) -> some View {
-        let totalCommissions = appViewModel.dataStore.commissions.filter { $0.staffId == user.id && $0.status == .approved }.reduce(0.0) { $0 + $1.amount }
+        let totalCommissions: Double = {
+            let associateTxns = appViewModel.dataStore.transactions
+                .filter { $0.associateId == user.id && $0.status == .completed }
+                .sorted(by: { $0.createdAt < $1.createdAt })
+                
+            var monthlyTotals: [String: Double] = [:]
+            var grandTotal = 0.0
+            
+            for txn in associateTxns {
+                let monthYear = txn.createdAt.formatted(.dateTime.year().month())
+                let currentMonthTotal = monthlyTotals[monthYear] ?? 0.0
+                
+                let tier1Threshold: Double = 1_000_000
+                let tier2Threshold: Double = 2_000_000
+                
+                var remainingAmount = txn.totalAmount
+                var currentAchieved = currentMonthTotal
+                var commissionAmount: Double = 0.0
+                
+                if currentAchieved < tier1Threshold {
+                    let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+                    commissionAmount += amountInTier1 * 0.02
+                    remainingAmount -= amountInTier1
+                    currentAchieved += amountInTier1
+                }
+                
+                if remainingAmount > 0 && currentAchieved < tier2Threshold {
+                    let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+                    commissionAmount += amountInTier2 * 0.03
+                    remainingAmount -= amountInTier2
+                    currentAchieved += amountInTier2
+                }
+                
+                if remainingAmount > 0 {
+                    commissionAmount += remainingAmount * 0.05
+                }
+                
+                grandTotal += commissionAmount
+                monthlyTotals[monthYear] = currentMonthTotal + txn.totalAmount
+            }
+            return grandTotal
+        }()
+        
         let commissionEarned = totalCommissions > 0 ? "₹\(Int(totalCommissions).formatted())" : "₹0"
         
         let commissionApprover: String = {
