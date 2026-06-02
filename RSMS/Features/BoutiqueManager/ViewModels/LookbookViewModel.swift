@@ -86,7 +86,7 @@ final class LookbookViewModel {
     // MARK: - Uploading
     
     @MainActor
-    func uploadLookbook(title: String, fileURL: URL, dataStore: DataStore) async {
+    func uploadLookbook(title: String, fileURL: URL, dataStore: DataStore) async -> Lookbook? {
         isUploading = true
         errorMessage = nil
         
@@ -116,16 +116,33 @@ final class LookbookViewModel {
             
             // Refresh
             self.allLookbooks = dataStore.lookbooks
+            isUploading = false
+            return lookbook
         } catch let err as URLError {
             self.errorMessage = "Network error: \(err.localizedDescription) (Code: \(err.errorCode))"
         } catch let err as SupabaseError {
             self.errorMessage = "Supabase error: \(err.localizedDescription)"
-        } catch {
-            self.errorMessage = "Upload failed: \(error.localizedDescription)"
+        } catch let err as NSError {
+            self.errorMessage = "Error: \(err.localizedDescription)"
         }
         isUploading = false
+        return nil
     }
-
+    @MainActor
+    func deleteLookbook(_ lookbook: Lookbook, dataStore: DataStore) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await dataStore.deleteLookbook(id: lookbook.id)
+            // Refresh
+            self.allLookbooks = dataStore.lookbooks
+        } catch let err as NSError {
+            self.errorMessage = "Failed to delete: \(err.localizedDescription)"
+        }
+        
+        isLoading = false
+    }
     // MARK: - Formatting
 
     func formattedDate(_ date: Date) -> String {
