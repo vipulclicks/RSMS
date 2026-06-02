@@ -459,6 +459,19 @@ private struct EditProfileSheet: View {
                         Text(user?.role.displayName ?? "—")
                             .foregroundStyle(.secondary)
                     }
+<<<<<<< Updated upstream
+=======
+                }
+                Section {
+                    Button("Save Profile") {
+                        // TODO: Persist changes via DataStore.updateUser
+                        dismiss()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(RSMSTheme.background)
+                    .listRowBackground(RSMSTheme.gold)
+>>>>>>> Stashed changes
                 }
             }
             .navigationTitle("Edit Profile")
@@ -467,6 +480,7 @@ private struct EditProfileSheet: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
+<<<<<<< Updated upstream
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         // TODO: Persist changes via DataStore.updateUser
@@ -475,6 +489,8 @@ private struct EditProfileSheet: View {
                     .fontWeight(.semibold)
                     .tint(RSMSTheme.gold)
                 }
+=======
+>>>>>>> Stashed changes
             }
             .onAppear {
                 fullName = user?.fullName ?? ""
@@ -505,6 +521,7 @@ private struct ChangePasswordSheet: View {
                     SecureField("New Password", text: $newPassword)
                     SecureField("Confirm New Password", text: $confirmPassword)
                 }
+<<<<<<< Updated upstream
             }
             .navigationTitle("Change Password")
             .navigationBarTitleDisplayMode(.inline)
@@ -514,6 +531,10 @@ private struct ChangePasswordSheet: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Update") {
+=======
+                Section {
+                    Button("Update Password") {
+>>>>>>> Stashed changes
                         guard newPassword == confirmPassword, !newPassword.isEmpty else { return }
                         Task {
                             isUpdating = true
@@ -527,6 +548,16 @@ private struct ChangePasswordSheet: View {
                     .disabled(isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
                 }
             }
+<<<<<<< Updated upstream
+=======
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+>>>>>>> Stashed changes
         }
     }
 }

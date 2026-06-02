@@ -55,7 +55,12 @@ struct NotifyBoutiqueManagerView: View {
                 }
             }
         }
+<<<<<<< Updated upstream
         .onAppear {
+=======
+        .task {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+>>>>>>> Stashed changes
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
             }

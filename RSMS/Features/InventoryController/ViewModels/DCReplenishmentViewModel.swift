@@ -166,6 +166,7 @@ final class DCReplenishmentViewModel {
         isLoadingDetail = false
     }
 
+<<<<<<< Updated upstream
     // MARK: - Report Exception
 
     @MainActor
@@ -174,6 +175,18 @@ final class DCReplenishmentViewModel {
         isSubmittingException = true
 
         let updated = InventoryMovement(
+=======
+    func destinationName(for movement: InventoryMovement) -> String {
+        if let uuid = UUID(uuidString: movement.destinationId), let store = stores.first(where: { $0.id == uuid }) {
+            return store.name
+        }
+        return movement.destinationId
+    }
+    
+    // MARK: - Receive Action
+    func markAsReceived(movement: InventoryMovement, dataStore: DataStore, currentUser: UserProfile?) async {
+        let updatedMovement = InventoryMovement(
+>>>>>>> Stashed changes
             id: movement.id,
             type: movement.type,
             sourceId: movement.sourceId,
@@ -190,12 +203,32 @@ final class DCReplenishmentViewModel {
             reason: movement.reason,
             notes: [movement.notes, "[EXCEPTION] \(exceptionNotes)"].compactMap { $0 }.joined(separator: " — ")
         )
+<<<<<<< Updated upstream
 
         try? await dataStore.updateInventoryMovement(updated)
 
         // Update local cache
         if let idx = movements.firstIndex(where: { $0.id == movement.id }) {
             movements[idx] = updated
+=======
+        
+        do {
+            try await dataStore.updateInventoryMovement(updatedMovement)
+            if let index = movements.firstIndex(where: { $0.id == movement.id }) {
+                withAnimation(.spring()) {
+                    movements[index] = updatedMovement
+                }
+            }
+            
+            // Log to Audit Trail
+            if let storeId = currentUser?.storeId {
+                let details = "Received \(movement.itemsExpected ?? 0) items from \(movement.sourceId)."
+                let userId = currentUser?.id ?? UUID()
+                dataStore.logAudit(storeId: storeId, action: "Replenishment Received", entityType: "InventoryMovement", entityId: movement.id, performedBy: userId, details: details)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+>>>>>>> Stashed changes
         }
         selectedShipment = updated
 
