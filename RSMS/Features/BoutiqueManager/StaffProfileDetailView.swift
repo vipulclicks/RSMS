@@ -7,7 +7,7 @@ struct StaffProfileDetailView: View {
     @State private var viewModel: StaffProfileViewModel
     @State private var selectedSalesDate: Date?
     @State private var selectedCommissionDate: Date?
-    @State private var isRecalculating = false
+
     
     init(staff: UserProfile) {
         _viewModel = State(initialValue: StaffProfileViewModel(staff: staff))
@@ -40,7 +40,9 @@ struct StaffProfileDetailView: View {
         .navigationTitle(viewModel.staff.fullName)
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.load(dataStore: appVM.dataStore)
+            if let storeId = appVM.currentStoreId {
+                await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
+            }
         }
     }
     
@@ -229,19 +231,6 @@ struct StaffProfileDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 SectionHeader(title: "Commission", subtitle: "Transaction History")
-                Spacer()
-                Button {
-                    Task { await recalculateAssociateCommissions() }
-                } label: {
-                    Text(isRecalculating ? "Recalculating..." : "Fix History")
-                        .font(.caption.weight(.bold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(RSMSTheme.danger.opacity(0.1))
-                        .foregroundStyle(RSMSTheme.danger)
-                        .clipShape(Capsule())
-                }
-                .disabled(isRecalculating)
             }
             
             if viewModel.commissionList.isEmpty {
@@ -284,81 +273,30 @@ struct StaffProfileDetailView: View {
                             Divider().overlay(RSMSTheme.divider)
                         }
                     }
+                    
+                    if !viewModel.commissionList.isEmpty {
+                        Divider().overlay(RSMSTheme.divider)
+                            .padding(.top, 4)
+                        
+                        let totalCommission = viewModel.commissionList.reduce(0) { $0 + $1.commissionEarned }
+                        HStack {
+                            Text("Total Commission")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            
+                            Spacer()
+                            
+                            Text(totalCommission.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(RSMSTheme.gold)
+                        }
+                        .padding(.vertical, 16)
+                    }
                 }
                 .rsmsCard(padding: 24)
             }
         }
     }
     
-    @MainActor
-    private func recalculateAssociateCommissions() async {
-        isRecalculating = true
-        defer { isRecalculating = false }
-        
-        do {
-            try await appVM.dataStore.fetchTransactions(storeId: appVM.currentStoreId)
-            let associateTxns = appVM.dataStore.transactions
-                .filter { $0.associateId == viewModel.staff.id }
-                .sorted(by: { $0.createdAt < $1.createdAt })
-            
-            // Delete only this associate's commissions
-            let associateCommissions = appVM.dataStore.commissions.filter { $0.staffId == viewModel.staff.id }
-            for commission in associateCommissions {
-                try? await appVM.dataStore.deleteCommission(id: commission.id)
-            }
-            
-            var monthlyTotals: [String: Double] = [:]
-            
-            for txn in associateTxns {
-                let monthYear = txn.createdAt.formatted(.dateTime.year().month())
-                let currentMonthTotal = monthlyTotals[monthYear] ?? 0.0
-                
-                let tier1Threshold: Double = 1_000_000
-                let tier2Threshold: Double = 2_000_000
-                
-                var remainingAmount = txn.totalAmount
-                var currentAchieved = currentMonthTotal
-                var commissionAmount: Double = 0.0
-                
-                if currentAchieved < tier1Threshold {
-                    let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
-                    commissionAmount += amountInTier1 * 0.02
-                    remainingAmount -= amountInTier1
-                    currentAchieved += amountInTier1
-                }
-                
-                if remainingAmount > 0 && currentAchieved < tier2Threshold {
-                    let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
-                    commissionAmount += amountInTier2 * 0.03
-                    remainingAmount -= amountInTier2
-                    currentAchieved += amountInTier2
-                }
-                
-                if remainingAmount > 0 {
-                    commissionAmount += remainingAmount * 0.05
-                }
-                
-                let effectiveRate = txn.totalAmount > 0 ? commissionAmount / txn.totalAmount : 0.0
-                
-                if commissionAmount > 0 {
-                    let newCommission = Commission(
-                        id: UUID(),
-                        staffId: txn.associateId,
-                        transactionId: txn.id,
-                        amount: commissionAmount,
-                        rate: effectiveRate,
-                        status: .approved,
-                        createdAt: txn.createdAt
-                    )
-                    try? await appVM.dataStore.createCommission(newCommission)
-                }
-                
-                monthlyTotals[monthYear] = currentMonthTotal + txn.totalAmount
-            }
-            
-            await viewModel.load(dataStore: appVM.dataStore)
-        } catch {
-            print("Error recalculating: \(error)")
-        }
-    }
+
 }

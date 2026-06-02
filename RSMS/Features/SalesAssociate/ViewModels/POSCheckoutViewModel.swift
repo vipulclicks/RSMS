@@ -93,20 +93,28 @@ final class POSCheckoutViewModel {
 
     // MARK: - Checkout
     func checkout(cart: UniversalCart, totalAmount: Double, taxAmount: Double, tenderMethod: TenderMethod, isTaxFree: Bool = false, razorpayPaymentId: String? = nil) async throws {
-        // 1. Create transaction (ignore backend error so UI continues)
+        // 1. Create Transaction
         let txn = Transaction(
             id: UUID(), cartId: cart.id, storeId: _storeId, associateId: associateId,
             clientId: cart.clientId, totalAmount: totalAmount, taxAmount: taxAmount,
             currency: "INR", status: .completed, isTaxFree: isTaxFree, createdAt: .now
         )
-        try? await dataStore.createTransaction(txn)
+        do {
+            try await dataStore.createTransaction(txn)
+        } catch {
+            print("[POSCheckoutViewModel] Failed to create transaction: \(error)")
+        }
 
         // 2. Create tender
         let tender = Tender(
             id: UUID(), transactionId: txn.id, method: tenderMethod,
             amount: totalAmount, reference: razorpayPaymentId
         )
-        try? await dataStore.createTender(tender)
+        do {
+            try await dataStore.createTender(tender)
+        } catch {
+            print("[POSCheckoutViewModel] Failed to create tender: \(error)")
+        }
 
         // 3. Update cart status locally and ignore backend error if it fails
         let completed = UniversalCart(
@@ -121,47 +129,27 @@ final class POSCheckoutViewModel {
         }
         
         // Then try backend (will fail if RLS prevents it, but UI is already updated)
-        try? await dataStore.updateUniversalCart(completed)
+        do {
+            try await dataStore.updateUniversalCart(completed)
+        } catch {
+            print("[POSCheckoutViewModel] Failed to update cart: \(error)")
+        }
 
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
-        // 5. Update Sales Goal Achieved Amount & Gather Goal Data
-        var previousAchieved: Double = 0.0
-        var targetAmount: Double = 0.0
-        var hasGoal = false
-
-        if let currentGoal = dataStore.salesGoals
-            .filter({ $0.staffId == associateId && $0.period == .monthly })
-            .sorted(by: { $0.createdAt > $1.createdAt })
-            .first 
-        {
-            previousAchieved = currentGoal.achievedAmount
-            targetAmount = currentGoal.targetAmount
-            hasGoal = true
-            
-            let updatedGoal = SalesGoal(
-                id: currentGoal.id,
-                staffId: currentGoal.staffId,
-                storeId: currentGoal.storeId,
-                targetAmount: currentGoal.targetAmount,
-                achievedAmount: currentGoal.achievedAmount + totalAmount,
-                period: currentGoal.period,
-                startDate: currentGoal.startDate,
-                endDate: currentGoal.endDate,
-                createdAt: currentGoal.createdAt
-            )
-            // Optimistic local update FIRST (so UI reacts immediately)
-            if let i = dataStore.salesGoals.firstIndex(where: { $0.id == currentGoal.id }) {
-                dataStore.salesGoals[i] = updatedGoal
+        // 5. Calculate previous achieved for this month (excluding the current transaction)
+        let currentMonth = Calendar.current.component(.month, from: .now)
+        let currentYear = Calendar.current.component(.year, from: .now)
+        
+        let previousAchieved = dataStore.transactions
+            .filter { 
+                $0.associateId == associateId &&
+                $0.id != txn.id &&
+                Calendar.current.component(.month, from: $0.createdAt) == currentMonth &&
+                Calendar.current.component(.year, from: $0.createdAt) == currentYear
             }
-            // Then persist to Supabase — log error if it fails, do not silently swallow
-            do {
-                try await dataStore.updateSalesGoal(updatedGoal)
-            } catch {
-                print("[POSCheckoutViewModel] ⚠️ Failed to persist sales goal update: \(error)")
-            }
-        }
+            .reduce(0) { $0 + $1.totalAmount }
         
         // 6. Clear in-memory cart items so UI reflects empty cart post-payment
         await MainActor.run {
@@ -207,10 +195,14 @@ final class POSCheckoutViewModel {
                 transactionId: txn.id,
                 amount: commissionAmount,
                 rate: effectiveRate,
-                status: .pending,
+                status: .approved,
                 createdAt: .now
             )
-            try? await dataStore.createCommission(commission)
+            do {
+                try await dataStore.createCommission(commission)
+            } catch {
+                print("[POSCheckoutViewModel] Failed to create commission: \(error)")
+            }
         }
     }
 

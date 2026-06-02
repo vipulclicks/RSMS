@@ -19,7 +19,9 @@ class StaffProfileViewModel {
     let staff: UserProfile
     /// Live reference to the shared DataStore — makes `salesGoals` reactive
     private var dataStore: DataStore?
-    var commissions: [Commission] = []
+    var commissions: [Commission] {
+        dataStore?.commissions.filter { $0.staffId == staff.id } ?? []
+    }
     
     var isLoading = false
     var errorMessage: String?
@@ -38,23 +40,16 @@ class StaffProfileViewModel {
     }
     
     @MainActor
-    func load(dataStore: DataStore) async {
+    func load(dataStore: DataStore, storeId: UUID) async {
         self.dataStore = dataStore
         isLoading = true
         errorMessage = nil
         
         do {
-            try await dataStore.fetchSalesGoals(storeId: staff.storeId ?? UUID()) // Using storeId from staff or fallback
-            // We need to fetch commissions. The dataStore might not have a function to fetch all commissions by store,
-            // or maybe it does. Let's fetch transactions first which fetch commissions internally?
-            try await dataStore.fetchTransactions(storeId: staff.storeId ?? UUID())
+            try await dataStore.fetchSalesGoals(storeId: storeId)
+            try await dataStore.fetchTransactions(storeId: storeId)
             try await dataStore.fetchCommissions(staffId: staff.id)
-            try await dataStore.fetchStaffShifts(storeId: staff.storeId ?? UUID())
-            
-            // Filter commissions for this staff (commissions are not computed because
-            // they are fetched per-staff, not per-store, so the dataStore array may
-            // contain commissions from different fetch calls)
-            self.commissions = dataStore.commissions.filter { $0.staffId == staff.id }
+            try await dataStore.fetchStaffShifts(storeId: storeId)
             
             // Current Shift
             if let shift = dataStore.staffShifts.first(where: { $0.staffId == staff.id && Calendar.current.isDateInToday($0.shiftDate) }) {
@@ -145,17 +140,57 @@ class StaffProfileViewModel {
     
     var commissionList: [CommissionListItem] {
         guard let ds = dataStore else { return [] }
-        return commissions.compactMap { commission in
-            // Find the associated transaction
-            guard let txn = ds.transactions.first(where: { $0.id == commission.transactionId }) else { return nil }
-            return CommissionListItem(
-                id: commission.id,
-                transactionDate: txn.createdAt,
-                transactionAmount: txn.totalAmount,
-                commissionEarned: commission.amount,
-                status: commission.status
-            )
-        }.sorted { $0.transactionDate > $1.transactionDate }
+        
+        let associateTxns = ds.transactions
+            .filter { $0.associateId == staff.id && $0.status == .completed }
+            .sorted(by: { $0.createdAt < $1.createdAt })
+            
+        var monthlyTotals: [String: Double] = [:]
+        var result: [CommissionListItem] = []
+        
+        for txn in associateTxns {
+            let monthYear = txn.createdAt.formatted(.dateTime.year().month())
+            let currentMonthTotal = monthlyTotals[monthYear] ?? 0.0
+            
+            let tier1Threshold: Double = 1_000_000
+            let tier2Threshold: Double = 2_000_000
+            
+            var remainingAmount = txn.totalAmount
+            var currentAchieved = currentMonthTotal
+            var commissionAmount: Double = 0.0
+            
+            if currentAchieved < tier1Threshold {
+                let amountInTier1 = min(remainingAmount, tier1Threshold - currentAchieved)
+                commissionAmount += amountInTier1 * 0.02
+                remainingAmount -= amountInTier1
+                currentAchieved += amountInTier1
+            }
+            
+            if remainingAmount > 0 && currentAchieved < tier2Threshold {
+                let amountInTier2 = min(remainingAmount, tier2Threshold - currentAchieved)
+                commissionAmount += amountInTier2 * 0.03
+                remainingAmount -= amountInTier2
+                currentAchieved += amountInTier2
+            }
+            
+            if remainingAmount > 0 {
+                commissionAmount += remainingAmount * 0.05
+            }
+            
+            monthlyTotals[monthYear] = currentMonthTotal + txn.totalAmount
+            
+            if commissionAmount > 0 {
+                result.append(CommissionListItem(
+                    id: txn.id,
+                    transactionDate: txn.createdAt,
+                    transactionAmount: txn.totalAmount,
+                    commissionEarned: commissionAmount,
+                    status: .approved
+                ))
+            }
+        }
+        
+        return result.sorted(by: { $0.transactionDate > $1.transactionDate })
     }
     
     var dailyCommissionData: [DailyCommission] {
