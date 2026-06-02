@@ -36,6 +36,7 @@ struct SalesAssociateHomeView: View {
     @State private var showAppointmentsSheet = false
     @State private var appointmentVM: AppointmentViewModel?
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
+    @State private var showNotifications = false
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
@@ -58,6 +59,7 @@ struct SalesAssociateHomeView: View {
                         storeId: appViewModel.currentUser?.storeId ?? UUID()
                     )
                     await vm.loadData()
+                    try? await appViewModel.dataStore.fetchAppNotifications()
                     self.appointmentVM = vm
                 }
             }
@@ -142,6 +144,8 @@ struct SalesAssociateHomeView: View {
         }
         .refreshable {
             await appointmentVM.loadData()
+            try? await appViewModel.dataStore.fetchAppNotifications()
+            try? await appViewModel.dataStore.fetchStockItems(storeId: appViewModel.currentUser?.storeId)
         }
     }
 
@@ -255,6 +259,35 @@ struct SalesAssociateHomeView: View {
             }
             .sheet(isPresented: $showAppointmentsSheet) {
                 AppointmentRemoteSellingView(viewModel: appointmentVM, navigationPath: $navigationPath)
+            }
+            .sheet(isPresented: $showNotifications) {
+                NotificationsSheetView()
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showNotifications = true
+                    } label: {
+                        let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
+                        
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(RSMSTheme.primary)
+                                .padding(8)
+                            
+                            if unreadCount > 0 {
+                                Text("\(unreadCount)")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(4)
+                                    .background(RSMSTheme.danger)
+                                    .clipShape(Circle())
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                    }
+                }
             }
         }
 

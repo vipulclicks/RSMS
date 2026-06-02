@@ -99,6 +99,15 @@ struct ProductCatalogView: View {
             await vm.load()
             viewModel = vm
         }
+        .onAppear {
+            // Re-fetch stock items every time the catalog becomes visible
+            // so that completed transfers are reflected immediately
+            Task {
+                if let storeId = appViewModel.currentUser?.storeId {
+                    try? await appViewModel.dataStore.fetchStockItems(storeId: storeId)
+                }
+            }
+        }
         .sheet(item: $selectedProduct) { product in
             if let vm = viewModel {
                 CatalogProductDetailSheet(
@@ -403,23 +412,29 @@ struct ProductCatalogView: View {
                     )
                     .onTapGesture { selectedProduct = product }
                     .overlay(alignment: .topTrailing) {
-                        Button {
-                            if vm.isInCart(product.id) {
-                                triggerToast(message: "\(product.name) already exists in the cart")
-                            } else {
-                                vm.toggleCartItem(product)
-                                triggerToast(message: "\(product.name) added to curated cart")
+                        let stockQty = vm.stockQuantity(for: product.id)
+                        let isInCart = vm.isInCart(product.id)
+                        Group {
+                            if stockQty > 0 || isInCart {
+                                Button {
+                                    if vm.isInCart(product.id) {
+                                        triggerToast(message: "\(product.name) already exists in the cart")
+                                    } else {
+                                        vm.toggleCartItem(product)
+                                        triggerToast(message: "\(product.name) added to curated cart")
+                                    }
+                                } label: {
+                                    Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(vm.isInCart(product.id) ? Color.green : RSMSTheme.primary)
+                                        .background(Circle().fill(RSMSTheme.cream))
+                                        .scaleEffect(vm.isInCart(product.id) ? 1.25 : 1.0)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: vm.isInCart(product.id))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(10)
                             }
-                        } label: {
-                            Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(vm.isInCart(product.id) ? Color.green : RSMSTheme.primary)
-                                .background(Circle().fill(RSMSTheme.cream))
-                                .scaleEffect(vm.isInCart(product.id) ? 1.25 : 1.0)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: vm.isInCart(product.id))
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(10)
                     }
                 }
             }
@@ -581,9 +596,9 @@ struct StockBadge: View {
     }
 
     private var statusText: String {
-        if quantity == 0 { return "No Stock" }
-        if quantity <= 3 { return "Low Stock" }
-        return "In Boutique"
+        if quantity == 0 { return "Out Of Stock" }
+        if quantity <= 3 { return "Few Left" }
+        return "In Stock"
     }
 }
 
@@ -715,6 +730,7 @@ struct CatalogProductDetailSheet: View {
     
     @Environment(\.dismiss) private var dismiss
     @State private var addedToCart: Bool
+    @State private var showSourcingSheet = false
 
     init(product: Product, stockQuantity: Int, onAddToCart: @escaping () -> Void, activeClient: ClientProfile?, isWishlisted: Bool, sizeLabel: String?, isPreferenceMatch: Bool, onWishlistToggle: @escaping () -> Void, isInCart: Bool) {
         self.product = product
@@ -878,20 +894,58 @@ struct CatalogProductDetailSheet: View {
                     .buttonStyle(ScaleButtonStyle())
                 }
                 
+                if stockQuantity == 0 {
+                    Button {
+                        // Out of stock, action disabled
+                    } label: {
+                        Text("Out of Stock")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity)
+                            .background(RSMSTheme.surfaceSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(true)
+                } else {
+                    Button {
+                        onAddToCart()
+                        addedToCart = true
+                    } label: {
+                        Text(addedToCart ? "Added ✓" : "Add to Cart")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RSMSTheme.cream)
+                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity)
+                            .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(addedToCart)
+                }
+            }
+            
+            if stockQuantity == 0 {
                 Button {
-                    onAddToCart()
-                    addedToCart = true
+                    showSourcingSheet = true
                 } label: {
-                    Text(addedToCart ? "Added ✓" : "Add to Cart")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(RSMSTheme.cream)
-                        .padding(.vertical, 16)
-                        .frame(maxWidth: .infinity)
-                        .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    HStack {
+                        Image(systemName: "shippingbox.and.arrow.backward")
+                        Text("Request Item From Another Store")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 1))
                 }
                 .buttonStyle(ScaleButtonStyle())
-                .disabled(addedToCart)
+                .sheet(isPresented: $showSourcingSheet) {
+                    InventorySourcingRequestFormView(product: product)
+                }
             }
         }
         .padding(.horizontal, 24)

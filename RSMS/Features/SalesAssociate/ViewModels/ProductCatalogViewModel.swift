@@ -434,6 +434,10 @@ final class ProductCatalogViewModel {
             // But wait, if they do want to toggle it out, they can still do it from the cart preview list.
             // Let's keep it in the set to show it already exists.
         } else {
+            guard stockQuantity(for: product.id) > 0 else {
+                print("[ProductCatalogViewModel] Cannot toggle add out-of-stock product to cart: \(product.name)")
+                return
+            }
             localCartProductIds.insert(product.id)
             Task {
                 do {
@@ -476,6 +480,10 @@ final class ProductCatalogViewModel {
     func addToCart(_ product: Product) {
         guard let client = activeClient, let assocId = associateId else { return }
         guard !localCartProductIds.contains(product.id) else { return }
+        guard stockQuantity(for: product.id) > 0 else {
+            print("[ProductCatalogViewModel] Cannot add out-of-stock product to cart: \(product.name)")
+            return
+        }
         
         localCartProductIds.insert(product.id)
         Task {

@@ -75,24 +75,36 @@ struct ShowroomProductCard: View {
                     Spacer()
                     
                     // Add Button placed at bottom-right of the text block
-                    Button(action: onAdd) {
-                        HStack(spacing: 4) {
-                            if isInCart {
-                                Image(systemName: "checkmark")
-                                    .font(.caption2.weight(.bold))
-                                Text("ADDED")
-                            } else {
-                                Text("ADD")
-                            }
+                    if stockQty == 0 && !isInCart {
+                        Button(action: {}) {
+                            Text("OUT OF STOCK")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(RSMSTheme.surfaceSecondary, in: Capsule())
                         }
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(isInCart ? RSMSTheme.primary : Color(red: 0.15, green: 0.15, blue: 0.15), in: Capsule())
-                        .shadow(color: .black.opacity(0.12), radius: 3)
+                        .disabled(true)
+                    } else {
+                        Button(action: onAdd) {
+                            HStack(spacing: 4) {
+                                if isInCart {
+                                    Image(systemName: "checkmark")
+                                        .font(.caption2.weight(.bold))
+                                    Text("ADDED")
+                                } else {
+                                    Text("ADD")
+                                }
+                            }
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(isInCart ? RSMSTheme.primary : Color(red: 0.15, green: 0.15, blue: 0.15), in: Capsule())
+                            .shadow(color: .black.opacity(0.12), radius: 3)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .padding(16)

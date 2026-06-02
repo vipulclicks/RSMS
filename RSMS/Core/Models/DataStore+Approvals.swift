@@ -135,12 +135,7 @@ extension DataStore {
             createdAt: Date()
         )
         
-        do {
-            _ = try await api.insert("app_notifications", record: notification)
-        } catch {
-            print("Supabase insert failed for app_notifications: \(error)")
-        }
-        
+        _ = try await api.insert("app_notifications", record: notification)
         self.appNotifications.append(notification)
     }
     

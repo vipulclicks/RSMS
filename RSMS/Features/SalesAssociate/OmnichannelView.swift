@@ -30,11 +30,7 @@ struct OmnichannelView: View {
                 case 0:
                     BOPISPickupView()
                 case 1:
-                    ScrollView {
-                        endlessAisleSection
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 40)
-                    }
+                    InventorySourcingRequestListView()
                 case 2:
                     ScrollView {
                         shipFromStoreSection
