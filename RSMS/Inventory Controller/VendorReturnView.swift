@@ -2,10 +2,8 @@
 //  VendorReturnView.swift
 //  RSMS
 //
-//  Premium Vendor Returns screen for the Inventory Controller module.
-//  Manages vendor return requests for defective, damaged, incorrect,
-//  excess, and expired inventory items.
-//  Follows the luxury beige-maroon RSMSTheme design language.
+//  Main dashboard for Vendor Returns.
+//  Follows the premium RSMSTheme design language.
 //
 
 import SwiftUI
@@ -13,71 +11,62 @@ import SwiftUI
 struct VendorReturnView: View {
 
     @Environment(AppViewModel.self) private var appVM
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @State private var vm = VendorReturnViewModel()
     @State private var appeared = false
-    @State private var showRecentFeed = true
-    @State private var selectedStatusFilter: VendorReturnStatus? = nil
+    @State private var navigateToDetail = false
+
+    private let kpiColumns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
 
     var body: some View {
-        ZStack {
-            RSMSTheme.background.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                RSMSTheme.background.ignoresSafeArea()
 
-            if vm.isLoading && vm.movements.isEmpty {
-                loadingView
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 32) {
-                        headerSection
-                        pipelineSection
-                        actionSection
-                        returnsListSection
+                if vm.isLoading && vm.movements.isEmpty {
+                    loadingView
+                } else {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 24) {
+                            headerSection
+                            heroKPICard
+                            miniCardsSection
+                            createReturnButton
+                            activeReturnsSection
+                            recentReturnsSection
+                        }
+                        .padding(24)
+                        .padding(.bottom, 24)
                     }
-                    .padding(24)
-                    .padding(.bottom, 24)
+                }
+
+                if vm.showSuccess {
+                    successOverlay
                 }
             }
-
-            // Success overlay
-            if vm.showSuccess {
-                successOverlay
-            }
-        }
-        .navigationTitle("Vendor Returns")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    vm.resetForm()
-                    vm.showCreateSheet = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "shippingbox.and.arrow.backward.fill")
-                        Text("New Return")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.background)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(RSMSTheme.gold)
-                    .clipShape(Capsule())
+            .navigationTitle("Vendor Returns")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $navigateToDetail) {
+                if let returnMovement = vm.selectedReturn {
+                    VendorReturnDetailView(vm: vm, movement: returnMovement)
                 }
             }
-        }
-        .sheet(isPresented: $vm.showCreateSheet) {
-            createReturnSheet
-        }
-        .task {
-            await vm.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
-            withAnimation(.easeOut(duration: 0.4)) { appeared = true }
-        }
-        .refreshable {
-            await vm.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+            .sheet(isPresented: $vm.showCreateSheet) {
+                createReturnSheet
+            }
+            .task {
+                await vm.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+                withAnimation(.easeOut(duration: 0.4)) { appeared = true }
+            }
+            .refreshable {
+                await vm.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+            }
         }
     }
 
-    // MARK: - Loading
+    // MARK: - Loading & Success
 
     private var loadingView: some View {
         VStack(spacing: 16) {
@@ -91,14 +80,30 @@ struct VendorReturnView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var successOverlay: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(RSMSTheme.success)
+            Text("Return Requested")
+                .font(.title3.bold())
+                .foregroundStyle(RSMSTheme.textPrimary)
+        }
+        .padding(40)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.1), radius: 20)
+        .transition(.scale.combined(with: .opacity))
+    }
+
     // MARK: - Header
 
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Vendor Returns")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Manage outgoing inventory pipeline and supplier reconciliation.")
+            Text("Process returns for defective, damaged, or overstock items")
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
@@ -106,318 +111,392 @@ struct VendorReturnView: View {
         .offset(y: appeared ? 0 : -8)
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MARK: - Pipeline Section (New UI Approach)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // MARK: - Hero KPI Card
 
-    private var pipelineSection: some View {
+    private var heroKPICard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("RETURN PIPELINE")
-                .font(.caption.weight(.bold))
-                .tracking(2)
-                .foregroundStyle(RSMSTheme.gold)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("TOTAL RETURNS")
+                        .font(.caption.weight(.semibold))
+                        .tracking(2)
+                        .foregroundStyle(RSMSTheme.gold)
+
+                    Text("\(vm.totalReturns)")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundStyle(RSMSTheme.gold)
+                }
+
+                Spacer()
+
+                Image(systemName: "shippingbox.and.arrow.forward.fill")
+                    .font(.title)
+                    .foregroundStyle(RSMSTheme.gold.opacity(0.4))
+                    .padding(12)
+                    .background(RSMSTheme.gold.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            Rectangle()
+                .fill(RSMSTheme.divider)
+                .frame(height: 1)
 
             HStack(spacing: 0) {
-                pipelineNode(
-                    title: "Pending",
-                    count: vm.pendingCount,
-                    status: .pending,
-                    color: RSMSTheme.warning,
-                    isFirst: true
-                )
-                pipelineDivider()
-                pipelineNode(
-                    title: "Approved",
-                    count: vm.approvedCount,
-                    status: .approved,
-                    color: RSMSTheme.info
-                )
-                pipelineDivider()
-                pipelineNode(
-                    title: "Completed",
-                    count: vm.completedCount,
-                    status: .completed,
-                    color: RSMSTheme.success,
-                    isLast: true
-                )
+                heroStatColumn(value: "\(vm.pendingCount)", label: "PENDING", color: RSMSTheme.warning)
+                Spacer()
+                heroStatColumn(value: "\(vm.shippedCount)", label: "SHIPPED", color: RSMSTheme.info)
+                Spacer()
+                heroStatColumn(value: "\(vm.completedCount)", label: "COMPLETED", color: RSMSTheme.success)
             }
-            .padding(24)
-            .background(RSMSTheme.surfacePrimary)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.03), radius: 10, y: 4)
         }
+        .padding(20)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(RSMSTheme.gold.opacity(0.2), lineWidth: 1)
+        )
         .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
+        .offset(y: appeared ? 0 : 12)
+        .animation(.easeOut(duration: 0.4).delay(0.05), value: appeared)
     }
 
-    private func pipelineNode(title: String, count: Int, status: VendorReturnStatus, color: Color, isFirst: Bool = false, isLast: Bool = false) -> some View {
-        Button {
-            withAnimation(.spring()) {
-                if selectedStatusFilter == status {
-                    selectedStatusFilter = nil
-                } else {
-                    selectedStatusFilter = status
-                }
+    private func heroStatColumn(value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.title3.bold())
+                .foregroundStyle(RSMSTheme.textPrimary)
+            Text(label)
+                .font(.system(size: 11, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(RSMSTheme.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(color.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(color.opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Mini KPI Cards
+
+    private var miniCardsSection: some View {
+        LazyVGrid(columns: kpiColumns, spacing: 12) {
+            miniCard(
+                icon: "exclamationmark.triangle.fill",
+                title: "Defective",
+                value: "\(vm.movements.filter { $0.notes?.contains("[DEFECTIVE]") == true }.count)",
+                color: RSMSTheme.danger
+            )
+            miniCard(
+                icon: "shield.check.fill",
+                title: "Warranty",
+                value: "Active", // Placeholder
+                color: RSMSTheme.info
+            )
+            miniCard(
+                icon: "shippingbox.fill",
+                title: "Overstock",
+                value: "\(vm.movements.filter { $0.notes?.contains("[OVERSTOCK]") == true }.count)",
+                color: RSMSTheme.warning
+            )
+            miniCard(
+                icon: "dollarsign.circle.fill",
+                title: "Value",
+                value: "€--",
+                color: RSMSTheme.success
+            )
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 12)
+        .animation(.easeOut(duration: 0.4).delay(0.1), value: appeared)
+    }
+
+    private func miniCard(icon: String, title: String, value: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(color.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(color)
             }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(.title3.bold())
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text(title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Create Button
+
+    private var createReturnButton: some View {
+        Button {
+            vm.resetForm()
+            vm.showCreateSheet = true
         } label: {
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(
-                            selectedStatusFilter == status ? color : color.opacity(0.3),
-                            lineWidth: selectedStatusFilter == status ? 3 : 1
-                        )
-                        .background(
-                            Circle().fill(selectedStatusFilter == status ? color.opacity(0.1) : RSMSTheme.background)
-                        )
-                        .frame(width: 60, height: 60)
-                    
-                    Text("\(count)")
-                        .font(.title2.bold())
-                        .foregroundStyle(selectedStatusFilter == status ? color : RSMSTheme.textPrimary)
-                }
-                
-                VStack(spacing: 2) {
-                    Text(title)
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                    if status == .pending && count > 0 {
-                        Text("Requires Action")
-                            .font(.system(size: 9))
-                            .foregroundStyle(RSMSTheme.warning)
+            HStack(spacing: 10) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title3)
+                Text("Create Vendor Return")
+                    .font(.headline.weight(.bold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.background.opacity(0.6))
+            }
+            .foregroundStyle(RSMSTheme.background)
+            .padding(18)
+            .background(Color(hue: 0.8, saturation: 0.6, brightness: 0.6)) // Distinguish visually from Transfers (gold)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .opacity(appeared ? 1 : 0)
+        .animation(.easeOut(duration: 0.4).delay(0.15), value: appeared)
+    }
+
+    // MARK: - Active Returns
+
+    private var activeReturnsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("ACTIVE RETURNS")
+                    .font(.caption.weight(.semibold))
+                    .tracking(2)
+                    .foregroundStyle(RSMSTheme.gold)
+                Spacer()
+                Text("\(vm.activeReturns.count) ongoing")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+
+            if vm.activeReturns.isEmpty {
+                emptyActiveView
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(vm.activeReturns) { ret in
+                        returnCard(ret)
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
-            .scaleEffect(selectedStatusFilter == status ? 1.05 : 1.0)
+        }
+        .opacity(appeared ? 1 : 0)
+        .animation(.easeOut(duration: 0.4).delay(0.2), value: appeared)
+    }
+
+    private func returnCard(_ ret: InventoryMovement) -> some View {
+        Button {
+            Task {
+                await vm.loadReturnDetail(movement: ret, dataStore: appVM.dataStore)
+                navigateToDetail = true
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(ret.reason ?? "Vendor Return")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+
+                        Text("To: \(ret.destinationId)")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+
+                    Spacer()
+
+                    statusBadge(ret.status)
+                }
+
+                Rectangle()
+                    .fill(RSMSTheme.divider)
+                    .frame(height: 0.5)
+
+                HStack(spacing: 20) {
+                    infoChip(
+                        label: "REQUESTED",
+                        value: ret.requestedAt?.formatted(date: .abbreviated, time: .omitted) ?? "—"
+                    )
+
+                    infoChip(
+                        label: "ITEMS",
+                        value: "\(ret.itemsExpected ?? 0)"
+                    )
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+            }
+            .padding(18)
+            .background(RSMSTheme.surfacePrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(RSMSTheme.border, lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
     }
 
-    private func pipelineDivider() -> some View {
-        Rectangle()
-            .fill(RSMSTheme.divider)
-            .frame(height: 2)
-            .padding(.horizontal, 4)
-            .offset(y: -20)
+    private func infoChip(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption2.weight(.semibold))
+                .tracking(1)
+                .foregroundStyle(RSMSTheme.textTertiary)
+            Text(value)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(RSMSTheme.textPrimary)
+                .lineLimit(1)
+        }
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MARK: - Action Section
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private var actionSection: some View {
-        Group {
-            if horizontalSizeClass == .compact {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Today's Activity")
-                            .font(.headline)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("\(vm.todayReturns) returns initiated today")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-                    
-                    Button {
-                        vm.resetForm()
-                        vm.showCreateSheet = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("Initiate Return")
-                        }
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(RSMSTheme.background)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(RSMSTheme.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-            } else {
-                HStack(spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Today's Activity")
-                            .font(.headline)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("\(vm.todayReturns) returns initiated today")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        vm.resetForm()
-                        vm.showCreateSheet = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "plus")
-                            Text("Initiate Return")
-                        }
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(RSMSTheme.background)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 14)
-                        .background(RSMSTheme.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
+    private var emptyActiveView: some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.success.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(RSMSTheme.success)
             }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(RSMSTheme.gold.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(RSMSTheme.gold.opacity(0.2), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                )
-        )
-        .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.5).delay(0.2), value: appeared)
-    }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MARK: - Returns List Section
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private var filteredReturns: [InventoryMovement] {
-        if let filter = selectedStatusFilter {
-            return vm.recentReturns.filter { VendorReturnStatus.from($0.status) == filter }
-        }
-        return vm.recentReturns
-    }
-
-    private var returnsListSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(selectedStatusFilter == nil ? "ALL RETURNS" : "\(selectedStatusFilter!.rawValue.uppercased()) RETURNS")
-                    .font(.caption.weight(.bold))
-                    .tracking(2)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("No active returns")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("All returns have been processed.")
+                    .font(.caption)
                     .foregroundStyle(RSMSTheme.textTertiary)
-                
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(RSMSTheme.success.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Recent Returns Feed
+
+    private var recentReturnsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("RECENT RETURNS")
+                    .font(.caption.weight(.semibold))
+                    .tracking(2)
+                    .foregroundStyle(RSMSTheme.gold)
                 Spacer()
-                
-                if selectedStatusFilter != nil {
-                    Button {
-                        withAnimation { selectedStatusFilter = nil }
-                    } label: {
-                        Text("Clear Filter")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(RSMSTheme.info)
-                    }
-                }
+                Text("\(vm.recentReturns.count) completed")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
             }
 
-            if filteredReturns.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "tray")
-                        .font(.largeTitle)
-                        .foregroundStyle(RSMSTheme.textTertiary.opacity(0.5))
-                    Text("No returns found")
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
+            if vm.recentReturns.isEmpty {
+                emptyRecentView
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(vm.recentReturns.prefix(5).enumerated()), id: \.element.id) { index, ret in
+                        recentFeedRow(ret)
+
+                        if index < min(vm.recentReturns.count, 5) - 1 {
+                            Rectangle()
+                                .fill(RSMSTheme.divider)
+                                .frame(height: 0.5)
+                                .padding(.horizontal, 14)
+                        }
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 48)
                 .background(RSMSTheme.surfacePrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-            } else {
-                LazyVStack(spacing: 16) {
-                    ForEach(filteredReturns) { ret in
-                        returnListItem(ret)
-                    }
-                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
+                )
             }
         }
         .opacity(appeared ? 1 : 0)
-        .animation(.easeOut(duration: 0.5).delay(0.3), value: appeared)
+        .animation(.easeOut(duration: 0.4).delay(0.25), value: appeared)
     }
 
-    private func returnListItem(_ ret: InventoryMovement) -> some View {
-        let status = VendorReturnStatus.from(ret.status)
-        
-        return HStack(spacing: 16) {
-            // Status Indicator Line
-            Rectangle()
-                .fill(status.color)
-                .frame(width: 4)
-                .clipShape(Capsule())
-                .padding(.vertical, 8)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(vm.vendorName(for: ret))
-                            .font(.headline.weight(.bold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        
-                        Text(vm.returnReason(for: ret))
-                            .font(.subheadline)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(status.rawValue)
-                            .font(.caption.weight(.bold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(status.color)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(status.color.opacity(0.1))
-                            .clipShape(Capsule())
-                        
-                        if let date = ret.requestedAt {
-                            Text(date.formatted(date: .abbreviated, time: .omitted))
-                                .font(.caption2)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                        }
-                    }
-                }
-                
-                Divider()
-                
-                HStack {
-                    HStack(spacing: 4) {
-                        Image(systemName: "shippingbox")
-                        Text("\(ret.itemsExpected ?? 0) units")
-                    }
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                    
-                    if let asn = ret.asnNumber {
-                        Text("•")
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.text")
-                            Text("PO: \(asn)")
-                        }
-                        .font(.caption.weight(.medium))
+    private func recentFeedRow(_ ret: InventoryMovement) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.success.opacity(0.12))
+                    .frame(width: 40, height: 40)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(RSMSTheme.success)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(ret.reason ?? "Vendor Return")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+
+                HStack(spacing: 8) {
+                    Text("\(ret.itemsExpected ?? 0) items")
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(RSMSTheme.textTertiary)
-                    }
                     
-                    Spacer()
-                    
-                    Button {
-                        // Action menu
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                            .padding(8)
-                            .background(RSMSTheme.surfaceSecondary)
-                            .clipShape(Circle())
+                    if let date = ret.receivedAt {
+                        Text(date.formatted(.dateTime.month(.abbreviated).day()))
+                            .font(.caption2)
+                            .foregroundStyle(RSMSTheme.textTertiary)
                     }
                 }
             }
-            .padding(.vertical, 16)
-            .padding(.trailing, 16)
+            Spacer(minLength: 0)
+            statusBadge(ret.status)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    private var emptyRecentView: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(RSMSTheme.gold.opacity(0.1))
+                    .frame(width: 56, height: 56)
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.title2)
+                    .foregroundStyle(RSMSTheme.gold)
+            }
+            Text("No recent history")
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.textPrimary)
+            Text("Completed returns will appear here.")
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
@@ -426,362 +505,292 @@ struct VendorReturnView: View {
         )
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MARK: - Create Return Sheet (Redesigned)
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // MARK: - Create Return Sheet
 
     private var createReturnSheet: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                RSMSTheme.background.ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        
-                        // Header info
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    
+                    formRow(label: "RETURN ID") {
                         HStack {
-                            VStack(alignment: .leading) {
-                                Text("Return ID")
-                                    .font(.caption)
-                                    .foregroundStyle(RSMSTheme.textTertiary)
-                                Text(vm.returnId)
-                                    .font(.subheadline.weight(.bold).monospaced())
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                            }
+                            Text(vm.returnId)
+                                .font(.subheadline.weight(.bold).monospaced())
+                                .foregroundStyle(RSMSTheme.gold)
                             Spacer()
-                            VStack(alignment: .trailing) {
-                                Text("Date")
+                            Image(systemName: "barcode.viewfinder")
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                        }
+                    }
+
+                    formRow(label: "VENDOR") {
+                        Menu {
+                            ForEach(vm.vendors, id: \.self) { vendor in
+                                Button(vendor) {
+                                    vm.selectedVendor = vendor
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(vm.selectedVendor)
+                                    .font(.subheadline)
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.textTertiary)
-                                Text(Date().formatted(date: .abbreviated, time: .omitted))
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(RSMSTheme.textPrimary)
                             }
                         }
-                        .padding(.bottom, 8)
-                        
-                        // Section 1: Supplier Info
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("1. Supplier Details")
-                                .font(.headline)
-                                .foregroundStyle(RSMSTheme.gold)
-                            
-                            VStack(spacing: 0) {
-                                Menu {
-                                    ForEach(vm.vendors) { vendor in
-                                        Button(vendor.name) {
-                                            vm.selectedVendor = vendor
+                    }
+
+                    formRow(label: "ADD PRODUCT") {
+                        VStack(spacing: 16) {
+                            VStack(spacing: 8) {
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                    TextField("Search by name or SKU…", text: $vm.productSearchText)
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .font(.subheadline)
+                                }
+
+                                if let p = vm.selectedProduct {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(RSMSTheme.success)
+                                        Text(p.name)
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                        Text(p.sku)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(RSMSTheme.gold)
+                                        Spacer()
+                                        Button {
+                                            vm.selectedProduct = nil
+                                            vm.productSearchText = ""
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundStyle(RSMSTheme.textTertiary)
                                         }
                                     }
-                                } label: {
-                                    HStack {
-                                        Text(vm.selectedVendor?.name ?? "Select Supplier")
-                                            .foregroundStyle(vm.selectedVendor != nil ? RSMSTheme.textPrimary : RSMSTheme.textTertiary)
-                                        Spacer()
-                                        Image(systemName: "chevron.up.chevron.down")
-                                            .font(.caption)
-                                            .foregroundStyle(RSMSTheme.textTertiary)
-                                    }
-                                    .padding()
-                                    .background(RSMSTheme.surfacePrimary)
+                                    .padding(10)
+                                    .background(RSMSTheme.success.opacity(0.06))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
                                 }
-                                
-                                Divider().padding(.leading)
-                                
-                                TextField("Purchase Order Reference (Required)", text: $vm.purchaseOrderNumber)
-                                    .padding()
-                                    .background(RSMSTheme.surfacePrimary)
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-                        }
-                        
-                        // Section 2: Items
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("2. Return Items")
-                                .font(.headline)
-                                .foregroundStyle(RSMSTheme.gold)
-                            
-                            // Product Search
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Image(systemName: "magnifyingglass").foregroundStyle(RSMSTheme.textTertiary)
-                                    TextField("Search product by SKU or name...", text: $vm.productSearchText)
-                                }
-                                .padding()
-                                .background(RSMSTheme.surfacePrimary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-                                
+
                                 if !vm.searchResults.isEmpty && vm.selectedProduct == nil {
                                     VStack(spacing: 0) {
                                         ForEach(vm.searchResults) { product in
                                             Button {
-                                                withAnimation {
-                                                    vm.selectedProduct = product
-                                                    vm.productSearchText = ""
-                                                }
+                                                vm.selectedProduct = product
+                                                vm.productSearchText = ""
+                                                vm.quantity = 1
                                             } label: {
                                                 HStack {
-                                                    Text(product.name)
-                                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(product.name).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
+                                                        Text(product.sku).font(.caption.monospaced()).foregroundStyle(RSMSTheme.textTertiary)
+                                                    }
                                                     Spacer()
-                                                    Text(product.sku)
-                                                        .font(.caption.monospaced())
-                                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                                    let stock = vm.stockForProduct(product)
+                                                    Text("\(stock) in stock").font(.caption.weight(.medium)).foregroundStyle(stock > 0 ? RSMSTheme.success : RSMSTheme.danger)
                                                 }
-                                                .padding()
+                                                .padding(12)
+                                                .background(Color.white.opacity(0.001))
                                             }
-                                            if product.id != vm.searchResults.last?.id { Divider() }
+                                            .buttonStyle(.plain)
+                                            Divider()
                                         }
                                     }
-                                    .background(RSMSTheme.surfacePrimary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-                                }
-                                
-                                // Selected Product configuration
-                                if let p = vm.selectedProduct {
-                                    VStack(spacing: 16) {
-                                        HStack {
-                                            VStack(alignment: .leading) {
-                                                Text(p.name).font(.headline).foregroundStyle(RSMSTheme.textPrimary)
-                                                Text(p.sku).font(.caption.monospaced()).foregroundStyle(RSMSTheme.textSecondary)
-                                            }
-                                            Spacer()
-                                            Button { vm.selectedProduct = nil } label: {
-                                                Image(systemName: "xmark.circle.fill").foregroundStyle(RSMSTheme.textTertiary)
-                                            }
-                                        }
-                                        
-                                        HStack {
-                                            Text("Quantity").foregroundStyle(RSMSTheme.textSecondary)
-                                            Spacer()
-                                            Stepper("\(vm.quantity)", value: $vm.quantity, in: 1...vm.availableStock)
-                                                .fixedSize()
-                                        }
-                                        
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            Text("Reason").foregroundStyle(RSMSTheme.textSecondary)
-                                            Picker("Reason", selection: $vm.selectedReason) {
-                                                ForEach(ReturnReason.allCases) { reason in
-                                                    Text(reason.rawValue).tag(reason)
-                                                }
-                                            }
-                                            .pickerStyle(.segmented)
-                                        }
-                                        
-                                        Button {
-                                            withAnimation(.spring()) {
-                                                if let index = vm.returnCart.firstIndex(where: { $0.product.id == p.id }) {
-                                                    vm.returnCart[index].quantity += vm.quantity
-                                                } else {
-                                                    vm.returnCart.append(ReturnItem(product: p, quantity: vm.quantity, reason: vm.selectedReason))
-                                                }
-                                                vm.selectedProduct = nil
-                                                vm.quantity = 1
-                                            }
-                                        } label: {
-                                            Text("Add to Cart")
-                                                .font(.headline)
-                                                .frame(maxWidth: .infinity)
-                                                .padding()
-                                                .background(RSMSTheme.gold.opacity(0.1))
-                                                .foregroundStyle(RSMSTheme.gold)
-                                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                        }
-                                    }
-                                    .padding()
-                                    .background(RSMSTheme.surfaceSecondary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
                                 }
                             }
-                            
-                            // Cart Preview
-                            if !vm.returnCart.isEmpty {
-                                VStack(spacing: 0) {
-                                    ForEach(vm.returnCart) { item in
-                                        HStack {
-                                            VStack(alignment: .leading) {
-                                                Text(item.product.name).font(.subheadline.weight(.semibold))
-                                                Text(item.reason.rawValue).font(.caption).foregroundStyle(item.reason.color)
-                                            }
-                                            Spacer()
-                                            Text("\(item.quantity)").font(.headline)
-                                            Button {
-                                                withAnimation { vm.returnCart.removeAll { $0.id == item.id } }
-                                            } label: {
-                                                Image(systemName: "minus.circle.fill").foregroundStyle(RSMSTheme.danger).padding(.leading, 8)
-                                            }
-                                        }
-                                        .padding()
-                                        if item.id != vm.returnCart.last?.id { Divider() }
-                                    }
-                                }
-                                .background(RSMSTheme.surfacePrimary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-                            }
-                        }
-                        
-                        // Section 3: Logistics
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("3. Logistics & Notes")
-                                .font(.headline)
-                                .foregroundStyle(RSMSTheme.gold)
-                            
-                            VStack(spacing: 0) {
-                                HStack {
-                                    Text("Return Method").foregroundStyle(RSMSTheme.textPrimary)
+
+                            if vm.selectedProduct != nil {
+                                Divider()
+
+                                HStack(spacing: 16) {
+                                    Text("Quantity")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
                                     Spacer()
-                                    Picker("Method", selection: $vm.returnMethod) {
-                                        Text("Vendor Pickup").tag("Vendor Pickup")
-                                        Text("Courier").tag("Courier")
-                                        Text("Self Drop-off").tag("Self Drop-off")
+                                    
+                                    Button {
+                                        if vm.quantity > 1 { vm.quantity -= 1 }
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(vm.availableStock == 0 ? RSMSTheme.textTertiary.opacity(0.5) : RSMSTheme.textSecondary)
                                     }
-                                    .tint(RSMSTheme.gold)
-                                }
-                                .padding()
-                                
-                                Divider().padding(.leading)
-                                
-                                DatePicker("Expected Date", selection: $vm.expectedPickupDate, displayedComponents: .date)
-                                    .padding()
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                    .tint(RSMSTheme.gold)
-                                
-                                Divider().padding(.leading)
-                                
-                                VStack(alignment: .leading) {
-                                    Text("Remarks")
+                                    .disabled(vm.availableStock == 0)
+
+                                    Text("\(vm.quantity)")
+                                        .font(.title2.bold())
                                         .foregroundStyle(RSMSTheme.textPrimary)
-                                        .padding(.horizontal)
-                                        .padding(.top)
-                                    TextEditor(text: $vm.returnNotes)
-                                        .frame(height: 80)
-                                        .padding(.horizontal)
-                                        .scrollContentBackground(.hidden)
+                                        .frame(minWidth: 40, alignment: .center)
+
+                                    Button {
+                                        if vm.quantity < vm.availableStock {
+                                            vm.quantity += 1
+                                        }
+                                    } label: {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(vm.availableStock == 0 ? RSMSTheme.textTertiary.opacity(0.5) : RSMSTheme.textSecondary)
+                                    }
+                                    .disabled(vm.availableStock == 0)
+                                }
+                                
+                                HStack(spacing: 4) {
+                                    Image(systemName: "shippingbox.fill")
+                                        .font(.caption2)
+                                    Text("\(vm.availableStock) available")
+                                        .font(.caption.weight(.semibold))
+                                }
+                                .foregroundStyle(vm.availableStock == 0 ? RSMSTheme.danger : RSMSTheme.textTertiary)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                
+                                // Return Reason Picker
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Reason")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                    Picker("Reason", selection: $vm.returnReasonType) {
+                                        ForEach(ReturnReason.allCases) { reason in
+                                            Text(reason.rawValue).tag(reason)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
+                                }
+
+                                Button {
+                                    if let p = vm.selectedProduct, vm.quantity > 0, vm.quantity <= vm.availableStock {
+                                        vm.returnCart.append(ReturnCartItem(product: p, quantity: vm.quantity, reason: vm.returnReasonType))
+                                        vm.selectedProduct = nil
+                                        vm.productSearchText = ""
+                                        vm.quantity = 1
+                                    }
+                                } label: {
+                                    Text("Add to Return")
+                                        .font(.subheadline.weight(.bold))
+                                        .foregroundStyle(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(vm.availableStock > 0 ? RSMSTheme.gold : RSMSTheme.textTertiary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .disabled(vm.availableStock == 0)
+                            }
+                        }
+                    }
+
+                    if !vm.returnCart.isEmpty {
+                        formRow(label: "ITEMS TO RETURN") {
+                            VStack(spacing: 0) {
+                                ForEach(Array(vm.returnCart.enumerated()), id: \.element.id) { index, item in
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.product.name).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary)
+                                            Text("\(item.reason.rawValue) · \(item.quantity) units")
+                                                .font(.caption)
+                                                .foregroundStyle(RSMSTheme.textTertiary)
+                                        }
+                                        Spacer()
+                                        Button {
+                                            vm.returnCart.remove(at: index)
+                                        } label: {
+                                            Image(systemName: "trash.fill").foregroundStyle(RSMSTheme.danger)
+                                        }
+                                    }
+                                    .padding(.vertical, 10)
+                                    if index < vm.returnCart.count - 1 {
+                                        Divider()
+                                    }
                                 }
                             }
-                            .background(RSMSTheme.surfacePrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
                         }
-                        
-                        // Bottom Padding for submit button
-                        Spacer().frame(height: 100)
                     }
-                    .padding(24)
-                }
-                
-                // Sticky Submit Button
-                VStack {
-                    Divider()
+
+                    formRow(label: "NOTES") {
+                        TextEditor(text: $vm.returnNotes)
+                            .frame(height: 80)
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .scrollContentBackground(.hidden)
+                    }
+
                     Button {
-                        Task {
-                            await vm.submitReturn(
-                                dataStore: appVM.dataStore,
-                                requestedBy: appVM.currentUser?.id,
-                                storeId: appVM.currentStoreId
-                            )
-                        }
+                        Task { await vm.submitReturn(dataStore: appVM.dataStore, requestedBy: appVM.currentUser?.id) }
                     } label: {
-                        HStack {
+                        HStack(spacing: 8) {
                             if vm.isSubmitting {
-                                ProgressView().tint(RSMSTheme.background)
-                            } else {
-                                Text("Submit Return")
-                                    .font(.headline.weight(.bold))
+                                ProgressView().tint(.white)
                             }
+                            Text("Submit Return").font(.headline)
                         }
-                        .foregroundStyle(RSMSTheme.background)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(RSMSTheme.textPrimary)
+                        .padding(.vertical, 18)
+                        .background(vm.returnCart.isEmpty ? RSMSTheme.textTertiary : Color(hue: 0.8, saturation: 0.6, brightness: 0.6))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
-                    .disabled(vm.isSubmitting || vm.selectedVendor == nil || vm.returnCart.isEmpty || vm.purchaseOrderNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .opacity((vm.selectedVendor == nil || vm.returnCart.isEmpty || vm.purchaseOrderNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.5 : 1)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
-                    .background(RSMSTheme.background.opacity(0.95))
+                    .disabled(vm.returnCart.isEmpty || vm.isSubmitting)
+                    .padding(.top, 10)
+
                 }
+                .padding(24)
             }
+            .navigationTitle("New Vendor Return")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("INITIATE RETURN")
-                        .font(.system(.headline, design: .serif, weight: .light))
-                        .tracking(4)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { vm.showCreateSheet = false }
-                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .foregroundStyle(RSMSTheme.gold)
                 }
             }
         }
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // MARK: - Success Overlay
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    private var successOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .transition(.opacity)
-                .onTapGesture {
-                    withAnimation(.spring()) { vm.showSuccess = false }
-                }
-
-            VStack(spacing: 24) {
-                ZStack {
-                    Circle()
-                        .fill(RSMSTheme.success.opacity(0.15))
-                        .frame(width: 80, height: 80)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundStyle(RSMSTheme.success)
-                }
-
-                VStack(spacing: 8) {
-                    Text("Return Initiated")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    Text("Return ID: \(vm.returnId)")
-                        .font(.subheadline.monospaced())
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                }
-
-                Button {
-                    withAnimation(.spring()) { vm.showSuccess = false }
-                } label: {
-                    Text("Done")
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.background)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(RSMSTheme.textPrimary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-            .padding(32)
-            .frame(width: 320)
-            .background(RSMSTheme.surfacePrimary)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.15), radius: 20, y: 10)
-            .transition(.scale(scale: 0.9).combined(with: .opacity))
+    private func formRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .tracking(1.5)
+                .foregroundStyle(RSMSTheme.textTertiary)
+            content()
+                .padding(14)
+                .background(RSMSTheme.surfacePrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
         }
     }
-}
 
-// MARK: - Preview
+    // MARK: - Helpers
 
-#Preview {
-    NavigationStack {
-        VendorReturnView()
+    private func statusBadge(_ status: MovementStatus) -> some View {
+        let (text, color) = statusDisplay(status)
+        return Text(text)
+            .font(.caption2.weight(.bold))
+            .tracking(1)
+            .foregroundStyle(color)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
     }
-    .environment(AppViewModel())
+
+    private func statusDisplay(_ status: MovementStatus) -> (String, Color) {
+        switch status {
+        case .requested:  return ("REQUESTED", RSMSTheme.textTertiary)
+        case .approved:   return ("APPROVED", RSMSTheme.info)
+        case .inTransit:  return ("SHIPPED", RSMSTheme.warning) // Contextually 'shipped' for returns
+        case .received:   return ("RECEIVED", RSMSTheme.success)
+        case .completed:  return ("COMPLETED", RSMSTheme.success)
+        case .cancelled:  return ("CANCELLED", RSMSTheme.textTertiary)
+        case .partial:    return ("PARTIAL", RSMSTheme.danger)
+        case .exception:  return ("EXCEPTION", RSMSTheme.danger)
+        }
+    }
 }

@@ -11,27 +11,29 @@ import SwiftUI
 // MARK: - Navigation Destinations
 
 enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
-    case dashboard      = "Dashboard"
-    case productLookup  = "Lookup & Stock In"
-    case transfer       = "Transfer Inventory"
-    case vendorReturns  = "Vendor Returns"
-    case cycleCounts    = "Cycle Counts & Verify"
-    case auditReconcile = "Audit & Reconcile"
-    case notify         = "Notify Manager"
-    case profile        = "My Profile"
+    case dashboard        = "Dashboard"
+    case productLookup    = "Lookup & Stock In"
+    case transfer         = "Transfer Inventory"
+    case dcReplenishment  = "DC Replenishment"
+    case vendorReturn     = "Vendor Returns"
+    case cycleCounts      = "Cycle Counts & Verify"
+    case auditReconcile   = "Audit & Reconcile"
+    case notify           = "Notify Manager"
+    case profile          = "My Profile"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:       return "chart.bar.fill"
-        case .productLookup:   return "magnifyingglass.circle.fill"
-        case .transfer:        return "arrow.left.arrow.right"
-        case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
-        case .cycleCounts:     return "arrow.triangle.2.circlepath"
-        case .auditReconcile:  return "doc.text.magnifyingglass"
-        case .notify:          return "paperplane.fill"
-        case .profile:         return "person.crop.circle.fill"
+        case .dashboard:        return "chart.bar.fill"
+        case .productLookup:    return "magnifyingglass.circle.fill"
+        case .transfer:         return "arrow.left.arrow.right"
+        case .dcReplenishment:  return "shippingbox.and.arrow.backward.fill"
+        case .vendorReturn:     return "shippingbox.and.arrow.forward.fill"
+        case .cycleCounts:      return "arrow.triangle.2.circlepath"
+        case .auditReconcile:   return "doc.text.magnifyingglass"
+        case .notify:           return "paperplane.fill"
+        case .profile:          return "person.crop.circle.fill"
         }
     }
 }
@@ -72,9 +74,13 @@ struct InventoryControllerHomeView: View {
                       systemImage: InventoryDestination.transfer.icon)
                     .tag(InventoryDestination.transfer)
 
-                Label(InventoryDestination.vendorReturns.rawValue,
-                      systemImage: InventoryDestination.vendorReturns.icon)
-                    .tag(InventoryDestination.vendorReturns)
+                Label(InventoryDestination.dcReplenishment.rawValue,
+                      systemImage: InventoryDestination.dcReplenishment.icon)
+                    .tag(InventoryDestination.dcReplenishment)
+                
+                Label(InventoryDestination.vendorReturn.rawValue,
+                      systemImage: InventoryDestination.vendorReturn.icon)
+                    .tag(InventoryDestination.vendorReturn)
             }
 
             Section {
@@ -128,7 +134,9 @@ struct InventoryControllerHomeView: View {
             ProductLookupView()
         case .transfer:
             InventoryTransferView()
-        case .vendorReturns:
+        case .dcReplenishment:
+            DCReplenishmentView()
+        case .vendorReturn:
             VendorReturnView()
         case .cycleCounts:
             CycleCountView()

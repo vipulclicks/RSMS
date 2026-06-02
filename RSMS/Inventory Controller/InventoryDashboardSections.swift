@@ -200,6 +200,8 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
+                dcShipmentsCard
+                vendorReturnsCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -210,6 +212,8 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
+                dcShipmentsCard
+                vendorReturnsCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -335,6 +339,32 @@ extension InventoryControllerHomeView {
             badgeText: "Manage"
         ) {
             selectedDestination = .transfer
+        }
+    }
+
+    var dcShipmentsCard: some View {
+
+        actionCard(
+            title: "DC Shipments",
+            subtitle: "REPLENISHMENT",
+            icon: "shippingbox.and.arrow.backward.fill",
+            accentColor: Color(hue: 0.52, saturation: 0.6, brightness: 0.75),
+            badgeText: "Inbound"
+        ) {
+            selectedDestination = .dcReplenishment
+        }
+    }
+
+    var vendorReturnsCard: some View {
+
+        actionCard(
+            title: "Vendor Returns",
+            subtitle: "RMA / DEFECTIVE",
+            icon: "shippingbox.and.arrow.forward.fill",
+            accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
+            badgeText: "Manage"
+        ) {
+            selectedDestination = .vendorReturn
         }
     }
 
