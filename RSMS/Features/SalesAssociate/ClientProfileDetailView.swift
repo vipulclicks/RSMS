@@ -95,7 +95,7 @@ struct ClientProfileDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(RSMSTheme.primary)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     showEditClientSheet = true
                 } label: {
@@ -146,6 +146,7 @@ struct ClientProfileDetailView: View {
         .task {
             do {
                 try await dataStore.fetchProducts()
+                try? await dataStore.fetchTaxFreeTransactions()
                 try await dataStore.fetchWishlistItems(clientId: client.id)
                 try await dataStore.fetchCuratedCartsAndItems(forClient: client.id)
                 

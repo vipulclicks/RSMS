@@ -43,6 +43,11 @@ final class InventoryDashboardViewModel {
 
     // MARK: - Snapshot Builder
 
+    @MainActor
+    func refreshSnapshot(dataStore: DataStore, storeId: UUID) {
+        snapshot = buildSnapshot(from: dataStore, storeId: storeId)
+    }
+
     private func buildSnapshot(from dataStore: DataStore, storeId: UUID) -> InventoryDashboardSnapshot {
         let calendar = Calendar.current
 

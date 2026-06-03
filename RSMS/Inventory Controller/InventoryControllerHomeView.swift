@@ -14,9 +14,15 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case dashboard      = "Dashboard"
     case productLookup  = "Lookup & Stock In"
     case transfer       = "Transfer Inventory"
+    case dcReplenishment = "DC Replenishments"
+    case vendorReturns  = "Vendor Returns"
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
+    case auditTrail     = "Audit Trail"
+    case authCertificates = "Auth Certificates"
     case notify         = "Notify Manager"
+    case serviceTracking = "Service Center"
+    case loanerManagement = "Loaner Management"
     case profile        = "My Profile"
 
     var id: String { rawValue }
@@ -26,9 +32,15 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .dashboard:       return "chart.bar.fill"
         case .productLookup:   return "magnifyingglass.circle.fill"
         case .transfer:        return "arrow.left.arrow.right"
+        case .dcReplenishment: return "truck.box.fill"
+        case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
+        case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
+        case .authCertificates:return "seal.fill"
         case .notify:          return "paperplane.fill"
+        case .serviceTracking: return "wrench.and.screwdriver.fill"
+        case .loanerManagement: return "clock.arrow.circlepath"
         case .profile:         return "person.crop.circle.fill"
         }
     }
@@ -97,6 +109,22 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.transfer.rawValue,
                       systemImage: InventoryDestination.transfer.icon)
                     .tag(InventoryDestination.transfer)
+                
+                Label(InventoryDestination.dcReplenishment.rawValue,
+                      systemImage: InventoryDestination.dcReplenishment.icon)
+                    .tag(InventoryDestination.dcReplenishment)
+
+                Label(InventoryDestination.vendorReturns.rawValue,
+                      systemImage: InventoryDestination.vendorReturns.icon)
+                    .tag(InventoryDestination.vendorReturns)
+
+                Label(InventoryDestination.serviceTracking.rawValue,
+                      systemImage: InventoryDestination.serviceTracking.icon)
+                    .tag(InventoryDestination.serviceTracking)
+                    
+                Label(InventoryDestination.loanerManagement.rawValue,
+                      systemImage: InventoryDestination.loanerManagement.icon)
+                    .tag(InventoryDestination.loanerManagement)
             }
 
             Section {
@@ -107,6 +135,10 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.auditReconcile.rawValue,
                       systemImage: InventoryDestination.auditReconcile.icon)
                     .tag(InventoryDestination.auditReconcile)
+                
+                Label(InventoryDestination.authCertificates.rawValue,
+                      systemImage: InventoryDestination.authCertificates.icon)
+                    .tag(InventoryDestination.authCertificates)
 
                 Label(InventoryDestination.notify.rawValue,
                       systemImage: InventoryDestination.notify.icon)
@@ -159,12 +191,24 @@ struct InventoryControllerHomeView: View {
             ProductLookupView()
         case .transfer:
             InventoryTransferView()
+        case .dcReplenishment:
+            DCReplenishmentView()
+        case .vendorReturns:
+            VendorReturnView()
         case .cycleCounts:
             CycleCountView()
         case .auditReconcile:
             StockReconciliationView()
+        case .auditTrail:
+            AuditTrailView()
+        case .authCertificates:
+            AuthCertificateGeneratorView()
         case .notify:
             NotifyBoutiqueManagerView()
+        case .serviceTracking:
+            ServiceCenterTrackingView()
+        case .loanerManagement:
+            LoanerProductManagementView()
         case .profile:
             InventoryControllerProfileView()
         }
@@ -189,6 +233,15 @@ struct InventoryControllerHomeView: View {
             if dashVM.snapshot == nil {
                 await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
             }
+        }
+        .onChange(of: viewModel.dataStore.auditTrails.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.inventoryVariances.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.stockItems.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
         }
     }
 }

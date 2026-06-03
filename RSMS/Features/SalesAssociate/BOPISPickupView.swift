@@ -233,6 +233,7 @@ enum BOPISStatusFilter: String, CaseIterable, Identifiable {
 // MARK: - BOPIS Pickup View
 
 struct BOPISPickupView: View {
+    var isScrollable: Bool = true
     @Environment(AppViewModel.self) private var appViewModel
     @State private var viewModel = BOPISPickupViewModel()
 
@@ -325,20 +326,29 @@ struct BOPISPickupView: View {
         }
     }
 
+    @ViewBuilder
     private var orderList: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(viewModel.displayedOrders) { order in
-                    BOPISOrderCard(order: order, viewModel: viewModel)
-                        .onTapGesture {
-                            viewModel.selectedOrder = order
-                            viewModel.showDetailSheet = true
-                        }
-                }
+        if isScrollable {
+            ScrollView {
+                orderListContent
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+        } else {
+            orderListContent
         }
+    }
+
+    private var orderListContent: some View {
+        LazyVStack(spacing: 12) {
+            ForEach(viewModel.displayedOrders) { order in
+                BOPISOrderCard(order: order, viewModel: viewModel)
+                    .onTapGesture {
+                        viewModel.selectedOrder = order
+                        viewModel.showDetailSheet = true
+                    }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 40)
     }
 
     private var emptyState: some View {
@@ -554,7 +564,7 @@ struct BOPISOrderDetailSheet: View {
             .navigationTitle("Order Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }

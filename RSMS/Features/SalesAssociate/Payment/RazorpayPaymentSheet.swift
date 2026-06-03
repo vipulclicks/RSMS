@@ -142,7 +142,7 @@ struct RazorpayPaymentSheet: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     if case .loading = state {
                         Button("Cancel") {
                             dismiss()

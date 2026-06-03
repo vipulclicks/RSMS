@@ -69,10 +69,10 @@ struct StoreDashboardView: View {
             .navigationTitle("Store Dashboard")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
-                        notificationBell
-                        profileButton
-                    }
+                    profileButton
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    notificationBell
                 }
             }
             .navigationDestination(for: DashboardRoute.self) { route in
@@ -101,7 +101,7 @@ struct StoreDashboardView: View {
                 NavigationStack {
                     ManagerNotificationSheet(dashboardVM: dashboardVM)
                         .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarItem(placement: .topBarLeading) {
                                 Button("Done") { showingNotifications = false }
                                     .font(.headline)
                                     .foregroundStyle(RSMSTheme.gold)

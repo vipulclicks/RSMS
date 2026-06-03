@@ -82,7 +82,7 @@ struct ProductLookupView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if selectedTab == .productLookup {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button {
                         showScanner.toggle()
                     } label: {

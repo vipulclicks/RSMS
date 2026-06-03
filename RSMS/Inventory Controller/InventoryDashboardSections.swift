@@ -200,6 +200,9 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
+                dcShipmentsCard
+                vendorReturnsCard
+                serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -210,6 +213,9 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
+                dcShipmentsCard
+                vendorReturnsCard
+                serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -338,6 +344,45 @@ extension InventoryControllerHomeView {
         }
     }
 
+    var dcShipmentsCard: some View {
+
+        actionCard(
+            title: "DC Shipments",
+            subtitle: "REPLENISHMENT",
+            icon: "shippingbox.and.arrow.backward.fill",
+            accentColor: Color(hue: 0.52, saturation: 0.6, brightness: 0.75),
+            badgeText: "Inbound"
+        ) {
+            selectedDestination = .dcReplenishment
+        }
+    }
+
+    var vendorReturnsCard: some View {
+
+        actionCard(
+            title: "Vendor Returns",
+            subtitle: "RMA / DEFECTIVE",
+            icon: "shippingbox.and.arrow.forward.fill",
+            accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
+            badgeText: "Manage"
+        ) {
+            selectedDestination = .vendorReturns
+        }
+    }
+    
+    var serviceTrackingCard: some View {
+
+        actionCard(
+            title: "Service Center",
+            subtitle: "REPAIRS & LOGISTICS",
+            icon: "wrench.and.screwdriver.fill",
+            accentColor: RSMSTheme.primary,
+            badgeText: "Track"
+        ) {
+            selectedDestination = .serviceTracking
+        }
+    }
+
     // MARK: - Activity Feed
 
     var activityFeedSection: some View {
@@ -384,6 +429,19 @@ extension InventoryControllerHomeView {
                         lineWidth: 1
                     )
             )
+            
+            Button {
+                selectedDestination = .auditTrail
+            } label: {
+                Text("View All Activity")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RSMSTheme.primary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.top, 8)
         }
     }
 

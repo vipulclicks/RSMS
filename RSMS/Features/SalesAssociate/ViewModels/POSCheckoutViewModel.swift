@@ -50,6 +50,11 @@ final class POSCheckoutViewModel {
             
             // Run expiration check
             await checkAndProcessExpiredSessions()
+            
+            // Tax Free
+            try? await dataStore.fetchTaxFreeConfigs()
+            try? await dataStore.fetchTaxFreeTransactions()
+            try? await dataStore.fetchTaxFreeAudits()
         } catch {
             errorMessage = error.localizedDescription
         }
