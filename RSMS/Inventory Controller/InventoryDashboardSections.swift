@@ -202,6 +202,7 @@ extension InventoryControllerHomeView {
                 transferCard
                 dcShipmentsCard
                 vendorReturnsCard
+                serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -214,6 +215,7 @@ extension InventoryControllerHomeView {
                 transferCard
                 dcShipmentsCard
                 vendorReturnsCard
+                serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
             }
@@ -365,6 +367,19 @@ extension InventoryControllerHomeView {
             badgeText: "Manage"
         ) {
             selectedDestination = .vendorReturns
+        }
+    }
+    
+    var serviceTrackingCard: some View {
+
+        actionCard(
+            title: "Service Center",
+            subtitle: "REPAIRS & LOGISTICS",
+            icon: "wrench.and.screwdriver.fill",
+            accentColor: RSMSTheme.primary,
+            badgeText: "Track"
+        ) {
+            selectedDestination = .serviceTracking
         }
     }
 
