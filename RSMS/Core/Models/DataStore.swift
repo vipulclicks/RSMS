@@ -114,6 +114,9 @@ final class DataStore {
     // ── Omnichannel ────────────────────────────────────
     var omnichannelOrders: [OmnichannelOrder] = []
     var shipFromStoreSlips: [ShipFromStoreSlip] = []
+    var checkoutSessions: [CheckoutSession] = []
+    var checkoutShippingAddresses: [CheckoutShippingAddress] = []
+    var inventoryReservations: [InventoryReservation] = []
 
     // ══════════════════════════════════════════════════════════
     // MARK: - Convenience Lookups
@@ -819,7 +822,7 @@ final class DataStore {
     // MARK: - orders
     // ══════════════════════════════════════════════════════════
 
-    func fetchOrders(storeId: UUID) async throws {
+    func fetchOrders(storeId: UUID? = nil) async throws {
         // NOTE: If orders need fetching by store, they may need to join with transactions.
         // Assuming we fetch by client or all for now.
     }
@@ -1197,6 +1200,479 @@ final class DataStore {
         if let i = shipFromStoreSlips.firstIndex(where: { $0.id == s.id }) { shipFromStoreSlips[i] = s }
     }
 
+    // ══════════════════════════════════════════════════════════
+    // MARK: - BOPIS / Checkout Sessions
+    // ══════════════════════════════════════════════════════════
+
+    /// Reads the checkout server base URL from UserDefaults (set via gear icon in ShowroomCartView)
+    private var checkoutServerBaseURL: String {
+        UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "http://localhost:3000"
+    }
+
+    func cartTotal(for cartId: UUID) -> Double {
+        let items = universalCartItems.filter { $0.cartId == cartId }
+        if !items.isEmpty {
+            let subtotal = items.reduce(0.0) { total, item in
+                let price = item.unitPrice ?? product(by: item.productId)?.price ?? 0.0
+                return total + (price * Double(item.quantity))
+            }
+            return subtotal * 1.20 // Subtotal + 20% Tax
+        }
+        
+        // Fallback to inventory reservations if cart was cleared
+        if let session = checkoutSessions.first(where: { $0.cartId == cartId }) {
+            let reservations = inventoryReservations.filter { $0.checkoutSessionId == session.id }
+            let subtotal = reservations.reduce(0.0) { total, res in
+                let price = product(by: res.productId)?.price ?? 0.0
+                return total + (price * Double(res.quantity))
+            }
+            return subtotal * 1.20
+        }
+        return 0.0
+    }
+
+    func fetchCheckoutSessions() async throws {
+        #if DEBUG
+        if let url = URL(string: "\(checkoutServerBaseURL)/api/checkout/sessions") {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let decoder = JSONDecoder()
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                let isoFormatterNoFractional = ISO8601DateFormatter()
+                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
+                decoder.dateDecodingStrategy = .custom { decoder in
+                    let container = try decoder.singleValueContainer()
+                    let dateStr = try container.decode(String.self)
+                    if let date = formatter.date(from: dateStr) { return date }
+                    if let date = isoFormatterNoFractional.date(from: dateStr) { return date }
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(dateStr)")
+                }
+                let localSessions = try decoder.decode([CheckoutSession].self, from: data)
+                for s in localSessions {
+                    if let idx = checkoutSessions.firstIndex(where: { $0.id == s.id }) {
+                        if checkoutSessions[idx] != s { checkoutSessions[idx] = s }
+                    } else {
+                        checkoutSessions.append(s)
+                    }
+                }
+            } catch {
+                print("[DataStore] ⚠️ Failed to fetch local sessions from Python server: \(error.localizedDescription)")
+            }
+        }
+        #endif
+
+        do {
+            let fetched: [CheckoutSession] = try await api.fetch("checkout_sessions")
+            // Smart merge — never delete, never downgrade status.
+            // Sessions only in Python server memory (paid via web) stay visible.
+            // Supabase returning an old status must not overwrite an advanced status
+            // already set by the Python server.
+            let advancedStatuses: [CheckoutStatus] = [
+                .pendingStorePayment, .paid, .readyForPickup, .readyForShipping, .completed
+            ]
+            let fetchedById = Dictionary(uniqueKeysWithValues: fetched.map { ($0.id, $0) })
+            let currentIds  = Set(checkoutSessions.map { $0.id })
+            
+            var didAdvance = false
+            let previousStatuses = Dictionary(uniqueKeysWithValues: checkoutSessions.map { ($0.id, $0.status) })
+
+            // 1. Update existing sessions — skip if Supabase would downgrade status
+            for idx in checkoutSessions.indices {
+                guard let updated = fetchedById[checkoutSessions[idx].id] else { continue }
+                let currentIsAdvanced = advancedStatuses.contains(checkoutSessions[idx].status)
+                let newIsAdvanced     = advancedStatuses.contains(updated.status)
+                if checkoutSessions[idx] != updated && (newIsAdvanced || !currentIsAdvanced) {
+                    checkoutSessions[idx] = updated
+                    if newIsAdvanced && !currentIsAdvanced {
+                        didAdvance = true
+                    }
+                }
+            }
+            // 2. Append brand-new sessions from Supabase
+            for session in fetched where !currentIds.contains(session.id) {
+                checkoutSessions.append(session)
+                if advancedStatuses.contains(session.status) {
+                    didAdvance = true
+                }
+            }
+            // NOTE: we intentionally never remove sessions — sessions only in
+            // Python server memory must remain visible after payment.
+            
+            // Check if any session we already processed has advanced
+            for s in checkoutSessions {
+                if advancedStatuses.contains(s.status), let prev = previousStatuses[s.id], !advancedStatuses.contains(prev) {
+                    didAdvance = true
+                }
+            }
+            
+            // 3. Auto-reconciliation: create missing Transaction/Tender for completed/paid online sessions
+            let terminalStatuses: Set<CheckoutStatus> = [.readyForPickup, .readyForShipping, .completed]
+            var didReconcile = false
+            for s in checkoutSessions {
+                if (s.status == .paid || terminalStatuses.contains(s.status)) && s.paymentMethod == .online {
+                    if !transactions.contains(where: { $0.cartId == s.cartId }) {
+                        let amt = cartTotal(for: s.cartId)
+                        if amt > 0 {
+                            let txId = UUID()
+                            let storeId = universalCarts.first(where: { $0.id == s.cartId })?.storeId ?? s.associateId
+                            let newTx = Transaction(
+                                id: txId,
+                                cartId: s.cartId,
+                                storeId: storeId,
+                                associateId: s.associateId,
+                                clientId: s.clientId,
+                                totalAmount: amt,
+                                taxAmount: amt * 0.2 / 1.2,
+                                currency: "INR",
+                                status: .completed,
+                                isTaxFree: false,
+                                createdAt: s.createdAt
+                            )
+                            let newTender = Tender(
+                                id: UUID(),
+                                transactionId: txId,
+                                method: .card,
+                                amount: amt,
+                                reference: "ONLINE (\(s.token))"
+                            )
+                            didReconcile = true
+                            Task {
+                                do {
+                                    try await createTransaction(newTx)
+                                    try await createTender(newTender)
+                                    print("[DataStore] 🚀 Automatically reconciled transaction and tender for online session \(s.token)")
+                                } catch {
+                                    print("[DataStore] ⚠️ Auto-reconciliation failed for session \(s.token): \(error.localizedDescription)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if didAdvance || didReconcile {
+                // Find carts that are linked to these advanced sessions and complete them
+                let advancedSessionCartIds = Set(checkoutSessions.filter { advancedStatuses.contains($0.status) }.map { $0.cartId })
+                
+                for cartId in advancedSessionCartIds {
+                    if let cartIdx = universalCarts.firstIndex(where: { $0.id == cartId }), universalCarts[cartIdx].status != .completed {
+                        // Create a mutable copy and update status
+                        let oldCart = universalCarts[cartIdx]
+                        let updatedCart = UniversalCart(
+                            id: oldCart.id, type: oldCart.type, associateId: oldCart.associateId,
+                            clientId: oldCart.clientId, storeId: oldCart.storeId, status: .completed,
+                            note: oldCart.note, createdAt: oldCart.createdAt, updatedAt: Date()
+                        )
+                        universalCarts[cartIdx] = updatedCart
+                        Task { try? await api.update("universal_carts", id: updatedCart.id, record: updatedCart) }
+                    }
+                }
+                
+                // Refresh transactions and orders so the UI updates
+                try? await fetchTransactions()
+                try? await fetchOrders()
+            }
+            
+            // Clean up any lingering cart items in memory/Supabase for completed checkout sessions
+            let completedCartIds = Set(checkoutSessions.filter { terminalStatuses.contains($0.status) }.map { $0.cartId })
+            for cartId in completedCartIds {
+                let itemsToDelete = universalCartItems.filter { $0.cartId == cartId }
+                if !itemsToDelete.isEmpty {
+                    print("[DataStore] 🛒 Found \(itemsToDelete.count) stale items in memory for completed cart \(cartId). Clearing them.")
+                    for item in itemsToDelete {
+                        Task {
+                            try? await deleteUniversalCartItem(id: item.id)
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("[DataStore] ⚠️ fetchCheckoutSessions from Supabase failed: \(error.localizedDescription). Using local state.")
+        }
+    }
+
+    func fetchCheckoutSession(token: String) async throws -> CheckoutSession {
+        do {
+            let fetched: [CheckoutSession] = try await api.fetch("checkout_sessions", query: ["token": "eq.\(token)"])
+            guard let first = fetched.first else {
+                throw NSError(domain: "DataStore", code: 404, userInfo: [NSLocalizedDescriptionKey: "Checkout session not found."])
+            }
+            return first
+        } catch {
+            print("[DataStore] ⚠️ fetchCheckoutSession by token from Supabase failed: \(error.localizedDescription). Falling back to local state.")
+            if let local = checkoutSessions.first(where: { $0.token == token }) {
+                return local
+            }
+            throw error
+        }
+    }
+
+    @discardableResult
+    func createCheckoutSession(_ session: CheckoutSession) async throws -> CheckoutSession {
+        if !checkoutSessions.contains(where: { $0.id == session.id }) {
+            checkoutSessions.append(session)
+        }
+        
+        defer {
+            syncSessionWithLocalServer(session)
+        }
+        
+        do {
+            let created: CheckoutSession = try await api.insert("checkout_sessions", record: session)
+            if let idx = checkoutSessions.firstIndex(where: { $0.id == session.id }) {
+                checkoutSessions[idx] = created
+            }
+            return created
+        } catch {
+            print("[DataStore] ⚠️ createCheckoutSession in Supabase failed: \(error.localizedDescription). Kept locally in-memory.")
+            return session
+        }
+    }
+
+    func updateCheckoutSession(_ session: CheckoutSession) async throws {
+        if let idx = checkoutSessions.firstIndex(where: { $0.id == session.id }) {
+            checkoutSessions[idx] = session
+        }
+        
+        defer {
+            syncSessionWithLocalServer(session)
+        }
+        
+        do {
+            try await api.update("checkout_sessions", id: session.id, record: session)
+        } catch {
+            print("[DataStore] ⚠️ updateCheckoutSession in Supabase failed: \(error.localizedDescription). Updated locally in-memory.")
+        }
+    }
+    
+    func syncSessionWithLocalServer(_ session: CheckoutSession) {
+        #if DEBUG
+        guard let url = URL(string: "\(checkoutServerBaseURL)/api/checkout/sync-session") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let cartItemsForSession = universalCartItems.filter { $0.cartId == session.cartId }
+        let productsForSession = cartItemsForSession.compactMap { product(by: $0.productId) }
+        let cart = universalCarts.first { $0.id == session.cartId }
+        
+        let subtotal = cartItemsForSession.reduce(0.0) { total, item in
+            let price = item.unitPrice ?? product(by: item.productId)?.price ?? 0.0
+            return total + (price * Double(item.quantity))
+        }
+        
+        let discount = cart?.appliedDiscount.map { d -> Double in
+            if d.type == .percentage { return subtotal * (d.value / 100.0) }
+            return d.value
+        } ?? 0.0
+        
+        let postDiscountSubtotal = max(0, subtotal - discount)
+        let tax = postDiscountSubtotal * 0.20
+        let finalTotal = postDiscountSubtotal + tax
+        
+        let cartItemsPayload: [[String: Any]] = cartItemsForSession.map { item in
+            [
+                "id": item.id.uuidString.lowercased(),
+                "cart_id": item.cartId.uuidString.lowercased(),
+                "product_id": item.productId.uuidString.lowercased(),
+                "quantity": item.quantity,
+                "unit_price": item.unitPrice as Any
+            ]
+        }
+        
+        let productsPayload: [[String: Any]] = productsForSession.map { prod in
+            [
+                "id": prod.id.uuidString.lowercased(),
+                "name": prod.name,
+                "price": prod.price,
+                "brand": prod.brand,
+                "category": prod.category,
+                "sku": prod.sku
+            ]
+        }
+        
+        let payload: [String: Any] = [
+            "session": [
+                "id": session.id.uuidString.lowercased(),
+                "cart_id": session.cartId.uuidString.lowercased(),
+                "token": session.token,
+                "client_id": session.clientId.uuidString.lowercased(),
+                "associate_id": session.associateId.uuidString.lowercased(),
+                "status": session.status.rawValue,
+                "fulfillment_method": session.fulfillmentMethod?.rawValue as Any,
+                "payment_method": session.paymentMethod?.rawValue as Any,
+                "expires_at": ISO8601DateFormatter().string(from: session.expiresAt),
+                "created_at": ISO8601DateFormatter().string(from: session.createdAt),
+                "updated_at": ISO8601DateFormatter().string(from: session.updatedAt)
+            ],
+            "cartItems": cartItemsPayload,
+            "products": productsPayload,
+            "totals": [
+                "subtotal": subtotal,
+                "discount": discount,
+                "tax": tax,
+                "total": finalTotal
+            ]
+        ]
+        
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        request.httpBody = httpBody
+        
+        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+        #endif
+    }
+
+    // MARK: - Pickup Confirmation Email
+
+    /// Sends a pickup confirmation email to the client via the Python checkout server.
+    /// Falls back silently if the server is unreachable — email is best-effort.
+    func sendPickupConfirmationEmail(for session: CheckoutSession) async {
+        #if DEBUG
+        guard let url = URL(string: "\(checkoutServerBaseURL)/api/checkout/send-pickup-email") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Resolve client email from local cache
+        let clientEmail = client(by: session.clientId)?.email ?? ""
+        let clientName  = client(by: session.clientId)?.fullName ?? "Valued Client"
+
+        // Build cart item summary for the email body
+        let cartItems = universalCartItems.filter { $0.cartId == session.cartId }
+        let itemsPayload: [[String: Any]] = cartItems.map { item in
+            let prod = product(by: item.productId)
+            return [
+                "name":     prod?.name ?? "Luxury Item",
+                "quantity": item.quantity,
+                "price":    item.unitPrice ?? prod?.price ?? 0
+            ]
+        }
+
+        let formatter = ISO8601DateFormatter()
+        let payload: [String: Any] = [
+            "sessionId":         session.id.uuidString.lowercased(),
+            "token":             session.token,
+            "clientEmail":       clientEmail,
+            "clientName":        clientName,
+            "scheduledPickupAt": session.scheduledPickupAt.map { formatter.string(from: $0) } as Any,
+            "pickupCode":        session.pickupCode as Any,
+            "paymentMethod":     session.paymentMethod?.rawValue ?? "unknown",
+            "fulfillmentMethod": session.fulfillmentMethod?.rawValue ?? "pickup",
+            "items":             itemsPayload
+        ]
+
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else { return }
+        request.httpBody = httpBody
+
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            if let error = error {
+                print("[DataStore] ⚠️ sendPickupConfirmationEmail failed: \(error.localizedDescription)")
+            } else {
+                print("[DataStore] ✅ Pickup confirmation email sent for token: \(session.token)")
+            }
+        }.resume()
+        #endif
+    }
+
+    // MARK: - Checkout Shipping Addresses
+
+    func fetchCheckoutShippingAddresses() async throws {
+        #if DEBUG
+        if let url = URL(string: "\(checkoutServerBaseURL)/api/checkout/shipping-addresses") {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let decoder = JSONDecoder()
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                let isoFormatterNoFractional = ISO8601DateFormatter()
+                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
+                decoder.dateDecodingStrategy = .custom { decoder in
+                    let container = try decoder.singleValueContainer()
+                    let dateStr = try container.decode(String.self)
+                    if let date = formatter.date(from: dateStr) { return date }
+                    if let date = isoFormatterNoFractional.date(from: dateStr) { return date }
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(dateStr)")
+                }
+                let localAddresses = try decoder.decode([CheckoutShippingAddress].self, from: data)
+                for addr in localAddresses {
+                    if let idx = checkoutShippingAddresses.firstIndex(where: { $0.id == addr.id }) {
+                        checkoutShippingAddresses[idx] = addr
+                    } else {
+                        checkoutShippingAddresses.append(addr)
+                    }
+                }
+            } catch {
+                print("[DataStore] ⚠️ Failed to fetch local shipping addresses from Python server: \(error.localizedDescription)")
+            }
+        }
+        #endif
+        
+        do {
+            checkoutShippingAddresses = try await api.fetch("checkout_shipping_addresses")
+        } catch {
+            print("[DataStore] ⚠️ fetchCheckoutShippingAddresses from Supabase failed: \(error.localizedDescription). Using local state.")
+        }
+    }
+
+    @discardableResult
+    func createCheckoutShippingAddress(_ address: CheckoutShippingAddress) async throws -> CheckoutShippingAddress {
+        if !checkoutShippingAddresses.contains(where: { $0.id == address.id }) {
+            checkoutShippingAddresses.append(address)
+        }
+        
+        do {
+            let created: CheckoutShippingAddress = try await api.insert("checkout_shipping_addresses", record: address)
+            if let idx = checkoutShippingAddresses.firstIndex(where: { $0.id == address.id }) {
+                checkoutShippingAddresses[idx] = created
+            }
+            return created
+        } catch {
+            print("[DataStore] ⚠️ createCheckoutShippingAddress in Supabase failed: \(error.localizedDescription). Kept locally.")
+            return address
+        }
+    }
+
+    // MARK: - Inventory Reservations
+
+    func fetchInventoryReservations() async throws {
+        do {
+            inventoryReservations = try await api.fetch("inventory_reservations")
+        } catch {
+            print("[DataStore] ⚠️ fetchInventoryReservations from Supabase failed: \(error.localizedDescription). Using local state.")
+        }
+    }
+
+    @discardableResult
+    func createInventoryReservation(_ reservation: InventoryReservation) async throws -> InventoryReservation {
+        if !inventoryReservations.contains(where: { $0.id == reservation.id }) {
+            inventoryReservations.append(reservation)
+        }
+        
+        do {
+            let created: InventoryReservation = try await api.insert("inventory_reservations", record: reservation)
+            if let idx = inventoryReservations.firstIndex(where: { $0.id == reservation.id }) {
+                inventoryReservations[idx] = created
+            }
+            return created
+        } catch {
+            print("[DataStore] ⚠️ createInventoryReservation in Supabase failed: \(error.localizedDescription). Kept locally.")
+            return reservation
+        }
+    }
+
+    func updateInventoryReservation(_ reservation: InventoryReservation) async throws {
+        if let idx = inventoryReservations.firstIndex(where: { $0.id == reservation.id }) {
+            inventoryReservations[idx] = reservation
+        }
+        
+        do {
+            try await api.update("inventory_reservations", id: reservation.id, record: reservation)
+        } catch {
+            print("[DataStore] ⚠️ updateInventoryReservation in Supabase failed: \(error.localizedDescription). Updated locally.")
+        }
+    }
+
     @MainActor
     func clearAllCaches() {
         stores = []
@@ -1241,5 +1717,8 @@ final class DataStore {
         discountApprovalRequests = []
         appNotifications = []
         orders = []
+        checkoutSessions = []
+        checkoutShippingAddresses = []
+        inventoryReservations = []
     }
 }

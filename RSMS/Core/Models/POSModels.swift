@@ -19,7 +19,7 @@ struct UniversalCart: Codable, Identifiable, Hashable {
     let associateId: UUID
     let clientId: UUID?
     let storeId: UUID?
-    let status: CartStatus
+    var status: CartStatus
     let note: String?
     let createdAt: Date
     let updatedAt: Date

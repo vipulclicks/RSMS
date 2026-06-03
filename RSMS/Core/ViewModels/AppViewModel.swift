@@ -14,6 +14,13 @@ class AppViewModel {
     let dataStore = DataStore()
     var currentUser: UserProfile?
 
+    /// Base URL for remote checkout links (ngrok, public server, etc.)
+    var customCheckoutBaseURL: String = UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "http://localhost:3000" {
+        didSet {
+            UserDefaults.standard.set(customCheckoutBaseURL, forKey: "custom_checkout_base_url")
+        }
+    }
+
     /// The store ID of the currently logged-in user.
     var currentStoreId: UUID? { currentUser?.storeId }
 

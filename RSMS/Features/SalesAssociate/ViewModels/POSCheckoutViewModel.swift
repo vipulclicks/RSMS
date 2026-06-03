@@ -42,6 +42,14 @@ final class POSCheckoutViewModel {
             try await dataStore.fetchTransactions(storeId: _storeId)
             try await dataStore.fetchExchangeReturns(storeId: _storeId)
             try? await dataStore.fetchSalesGoals(storeId: _storeId)
+            
+            // BOPIS Fetches
+            try? await dataStore.fetchCheckoutSessions()
+            try? await dataStore.fetchCheckoutShippingAddresses()
+            try? await dataStore.fetchInventoryReservations()
+            
+            // Run expiration check
+            await checkAndProcessExpiredSessions()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -217,6 +225,219 @@ final class POSCheckoutViewModel {
         case .completed: return RSMSTheme.success
         case .voided:    return RSMSTheme.danger
         case .refunded:  return RSMSTheme.info
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MARK: - BOPIS Link Generation & Status
+    // ══════════════════════════════════════════════════════════
+
+    func generateCheckoutLink(for cart: UniversalCart) async throws -> CheckoutSession {
+        let items = cartItems(for: cart.id)
+        guard !items.isEmpty else {
+            throw NSError(domain: "POSCheckout", code: 1, userInfo: [NSLocalizedDescriptionKey: "Cart is empty."])
+        }
+        guard let clientId = cart.clientId else {
+            throw NSError(domain: "POSCheckout", code: 2, userInfo: [NSLocalizedDescriptionKey: "No client associated with this cart."])
+        }
+        
+        // Verify stock for all items
+        for item in items {
+            let availableStock = dataStore.stockItems.first(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId &&
+                $0.status == .available
+            })
+            // If the stock database cache is completely empty, fallback to 10 for demo/testing
+            let quantityAvailable = dataStore.stockItems.isEmpty ? 10 : (availableStock?.quantity ?? 0)
+            if quantityAvailable < item.quantity {
+                let name = dataStore.product(by: item.productId)?.name ?? "Unknown Item"
+                throw NSError(domain: "POSCheckout", code: 3, userInfo: [NSLocalizedDescriptionKey: "Insufficient stock for \(name). Available: \(quantityAvailable), Requested: \(item.quantity)"])
+            }
+        }
+        
+        // Alphanumeric 11-character token
+        let characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        let token = String((0..<11).map { _ in characters.randomElement()! })
+        let expiresAt = Date().addingTimeInterval(48 * 3600) // 48 Hours
+        
+        let session = CheckoutSession(
+            id: UUID(),
+            cartId: cart.id,
+            token: token,
+            clientId: clientId,
+            associateId: associateId,
+            status: .linkGenerated,
+            fulfillmentMethod: nil,
+            paymentMethod: nil,
+            expiresAt: expiresAt,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        let createdSession = try await dataStore.createCheckoutSession(session)
+        
+        // Reserve inventory: decrement available in stock_items and insert inventory_reservations
+        for item in items {
+            if let stockIdx = dataStore.stockItems.firstIndex(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId &&
+                $0.status == .available
+            }) {
+                let currentStock = dataStore.stockItems[stockIdx]
+                let updatedStock = StockItem(
+                    id: currentStock.id,
+                    productId: currentStock.productId,
+                    storeId: currentStock.storeId,
+                    quantity: max(0, currentStock.quantity - item.quantity),
+                    rfidTag: currentStock.rfidTag,
+                    location: currentStock.location,
+                    status: currentStock.status,
+                    lastScannedAt: currentStock.lastScannedAt,
+                    updatedAt: Date()
+                )
+                try? await SupabaseClient.shared.update("stock_items", id: currentStock.id, record: updatedStock)
+                dataStore.stockItems[stockIdx] = updatedStock
+            }
+            
+            let reservation = InventoryReservation(
+                id: UUID(),
+                checkoutSessionId: createdSession.id,
+                productId: item.productId,
+                quantity: item.quantity,
+                storeId: _storeId,
+                status: .reserved,
+                createdAt: Date(),
+                expiresAt: expiresAt
+            )
+            try? await dataStore.createInventoryReservation(reservation)
+        }
+        
+        dataStore.logAudit(storeId: _storeId, action: "Checkout Link Generated", entityType: "CheckoutSession", entityId: createdSession.id, performedBy: associateId)
+        
+        return createdSession
+    }
+
+    func fetchCheckoutSessionStatus(token: String) async throws -> CheckoutSession {
+        try? await dataStore.fetchCheckoutSessions()
+        if let session = dataStore.checkoutSessions.first(where: { $0.token == token }) {
+            return session
+        }
+        throw NSError(domain: "POSCheckoutViewModel", code: 404, userInfo: [NSLocalizedDescriptionKey: "Checkout session not found."])
+    }
+
+    func cancelCheckoutSession(_ session: CheckoutSession) async {
+        let updated = CheckoutSession(
+            id: session.id,
+            cartId: session.cartId,
+            token: session.token,
+            clientId: session.clientId,
+            associateId: session.associateId,
+            status: .cancelled,
+            fulfillmentMethod: session.fulfillmentMethod,
+            paymentMethod: session.paymentMethod,
+            expiresAt: session.expiresAt,
+            createdAt: session.createdAt,
+            updatedAt: Date()
+        )
+        try? await dataStore.updateCheckoutSession(updated)
+        
+        let reservations = dataStore.inventoryReservations.filter { $0.checkoutSessionId == session.id && $0.status == .reserved }
+        for res in reservations {
+            if let stockIdx = dataStore.stockItems.firstIndex(where: {
+                $0.productId == res.productId &&
+                $0.storeId == res.storeId &&
+                $0.status == .available
+            }) {
+                let currentStock = dataStore.stockItems[stockIdx]
+                let updatedStock = StockItem(
+                    id: currentStock.id,
+                    productId: currentStock.productId,
+                    storeId: currentStock.storeId,
+                    quantity: currentStock.quantity + res.quantity,
+                    rfidTag: currentStock.rfidTag,
+                    location: currentStock.location,
+                    status: currentStock.status,
+                    lastScannedAt: currentStock.lastScannedAt,
+                    updatedAt: Date()
+                )
+                try? await SupabaseClient.shared.update("stock_items", id: currentStock.id, record: updatedStock)
+                dataStore.stockItems[stockIdx] = updatedStock
+            }
+            
+            let updatedRes = InventoryReservation(
+                id: res.id,
+                checkoutSessionId: res.checkoutSessionId,
+                productId: res.productId,
+                quantity: res.quantity,
+                storeId: res.storeId,
+                status: .released,
+                createdAt: res.createdAt,
+                expiresAt: res.expiresAt
+            )
+            try? await dataStore.updateInventoryReservation(updatedRes)
+        }
+        
+        dataStore.logAudit(storeId: _storeId, action: "Checkout Link Cancelled", entityType: "CheckoutSession", entityId: session.id, performedBy: associateId)
+    }
+
+    func checkAndProcessExpiredSessions() async {
+        let now = Date()
+        let expired = dataStore.checkoutSessions.filter {
+            ($0.status == .linkGenerated || $0.status == .viewed || $0.status == .pendingPayment) && $0.expiresAt < now
+        }
+        for session in expired {
+            let updated = CheckoutSession(
+                id: session.id,
+                cartId: session.cartId,
+                token: session.token,
+                clientId: session.clientId,
+                associateId: session.associateId,
+                status: .expired,
+                fulfillmentMethod: session.fulfillmentMethod,
+                paymentMethod: session.paymentMethod,
+                expiresAt: session.expiresAt,
+                createdAt: session.createdAt,
+                updatedAt: Date()
+            )
+            try? await dataStore.updateCheckoutSession(updated)
+            
+            let reservations = dataStore.inventoryReservations.filter { $0.checkoutSessionId == session.id && $0.status == .reserved }
+            for res in reservations {
+                if let stockIdx = dataStore.stockItems.firstIndex(where: {
+                    $0.productId == res.productId &&
+                    $0.storeId == res.storeId &&
+                    $0.status == .available
+                }) {
+                    let currentStock = dataStore.stockItems[stockIdx]
+                    let updatedStock = StockItem(
+                        id: currentStock.id,
+                        productId: currentStock.productId,
+                        storeId: currentStock.storeId,
+                        quantity: currentStock.quantity + res.quantity,
+                        rfidTag: currentStock.rfidTag,
+                        location: currentStock.location,
+                        status: currentStock.status,
+                        lastScannedAt: currentStock.lastScannedAt,
+                        updatedAt: Date()
+                    )
+                    try? await SupabaseClient.shared.update("stock_items", id: currentStock.id, record: updatedStock)
+                    dataStore.stockItems[stockIdx] = updatedStock
+                }
+                
+                let updatedRes = InventoryReservation(
+                    id: res.id,
+                    checkoutSessionId: res.checkoutSessionId,
+                    productId: res.productId,
+                    quantity: res.quantity,
+                    storeId: res.storeId,
+                    status: .released,
+                    createdAt: res.createdAt,
+                    expiresAt: res.expiresAt
+                )
+                try? await dataStore.updateInventoryReservation(updatedRes)
+            }
+            dataStore.logAudit(storeId: _storeId, action: "Checkout Link Expired", entityType: "CheckoutSession", entityId: session.id, performedBy: associateId)
         }
     }
 }
