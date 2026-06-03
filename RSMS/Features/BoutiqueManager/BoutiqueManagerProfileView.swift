@@ -25,6 +25,7 @@ struct BoutiqueManagerProfileView: View {
                     if let user = appVM.currentUser {
                         profileHeaderCard(user: user)
                         personalInformationSection(user: user)
+                        securitySettingsSection()
                         signOutButton()
                     } else {
                         ContentUnavailableView(
@@ -174,6 +175,39 @@ struct BoutiqueManagerProfileView: View {
     }
 
 
+
+    // MARK: - Security Settings
+    
+    private func securitySettingsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Security")
+                .font(.system(size: 15, weight: .bold, design: .serif))
+                .foregroundStyle(RSMSTheme.textPrimary)
+            
+            NavigationLink(destination: MFASettingsView()) {
+                HStack(spacing: 12) {
+                    Image(systemName: "shield.fill")
+                        .font(.body)
+                        .foregroundStyle(RSMSTheme.gold)
+                        .frame(width: 24)
+                    
+                    Text("Two-Factor Authentication")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+            }
+        }
+    }
 
     // MARK: - Sign Out
 
