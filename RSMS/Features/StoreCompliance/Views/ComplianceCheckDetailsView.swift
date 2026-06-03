@@ -7,9 +7,15 @@ import SwiftUI
 
 struct ComplianceCheckDetailsView: View {
     @Bindable var viewModel: ComplianceViewModel
-    let check: ComplianceCheck
+    @State private var check: ComplianceCheck
+    
+    init(viewModel: ComplianceViewModel, check: ComplianceCheck) {
+        self.viewModel = viewModel
+        self._check = State(initialValue: check)
+    }
     
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.dismiss) private var dismiss
     
     @State private var showReport = false
     @State private var isUpdating = false
@@ -74,11 +80,15 @@ struct ComplianceCheckDetailsView: View {
                             let reviews = parsed.checkpoints.filter { $0.status == "⚠️" }
                             
                             if !fails.isEmpty {
-                                checkpointListCard(title: "Non-Compliant", icon: "xmark.circle.fill", iconColor: RSMSTheme.danger, items: fails)
+                                checkpointListCard(title: "Non-Compliant", icon: "xmark.circle.fill", iconColor: RSMSTheme.danger, items: fails) { text, oldStatus in
+                                    resolveCheckpoint(text: text, oldStatus: oldStatus)
+                                }
                             }
                             
                             if !reviews.isEmpty {
-                                checkpointListCard(title: "Needs Review", icon: "exclamationmark.triangle.fill", iconColor: RSMSTheme.warning, items: reviews)
+                                checkpointListCard(title: "Needs Review", icon: "exclamationmark.triangle.fill", iconColor: RSMSTheme.warning, items: reviews) { text, oldStatus in
+                                    resolveCheckpoint(text: text, oldStatus: oldStatus)
+                                }
                             }
                         }
                         
@@ -231,7 +241,7 @@ struct ComplianceCheckDetailsView: View {
     }
     
     @ViewBuilder
-    private func checkpointListCard(title: String, icon: String, iconColor: Color = RSMSTheme.primary, items: [(status: String, text: String)]) -> some View {
+    private func checkpointListCard(title: String, icon: String, iconColor: Color = RSMSTheme.primary, items: [(status: String, text: String)], onResolve: ((String, String) -> Void)? = nil) -> some View {
         detailCard(title: title, icon: icon, iconColor: iconColor) {
             VStack(alignment: .leading, spacing: 16) {
                 ForEach(items.indices, id: \.self) { i in
@@ -248,6 +258,29 @@ struct ComplianceCheckDetailsView: View {
                             .foregroundColor(RSMSTheme.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
+                            
+                        Spacer()
+                        
+                        if appVM.currentUser?.role == .inventoryController && !isCompliant && onResolve != nil {
+                            Button(action: {
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.success)
+                                
+                                withAnimation(.spring(duration: 0.5)) {
+                                    onResolve?(cp.text, cp.status)
+                                }
+                            }) {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .bold))
+                                Text("Resolve")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(RSMSTheme.success)
+                            .clipShape(Capsule())
+                        }
                     }
                     if i < items.count - 1 {
                         Divider().padding(.leading, 38)
@@ -278,13 +311,40 @@ struct ComplianceCheckDetailsView: View {
         .shadow(color: Color.black.opacity(0.04), radius: 15, y: 5)
     }
     
+    private func resolveCheckpoint(text: String, oldStatus: String) {
+        guard let notes = check.notes else { return }
+        
+        let targetLine = "\(oldStatus) \(text)"
+        let replacementLine = "✅ \(text)"
+        
+        let newNotes = notes.replacingOccurrences(of: targetLine, with: replacementLine)
+        check.notes = newNotes
+        
+        let p = parsedNotes
+        let hasFails = p.checkpoints.contains(where: { $0.status == "❌" })
+        let hasWarnings = p.checkpoints.contains(where: { $0.status == "⚠️" })
+        
+        if !hasFails && !hasWarnings {
+            check.status = .compliant
+        } else if !hasFails {
+            check.status = .needsReview
+        }
+        
+        updateStatus(to: check.status)
+        
+        if check.status == .compliant {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                dismiss()
+            }
+        }
+    }
+
     private func updateStatus(to newStatus: ComplianceStatus) {
-        var updatedCheck = check
-        updatedCheck.status = newStatus
+        check.status = newStatus
         isUpdating = true
         Task {
             do {
-                try await viewModel.updateCheck(updatedCheck)
+                try await viewModel.updateCheck(check)
             } catch {
                 print(error)
             }

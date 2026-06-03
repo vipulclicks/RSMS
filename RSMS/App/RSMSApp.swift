@@ -21,6 +21,9 @@ struct RSMSApp: App {
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
         UINavigationBar.appearance().compactAppearance = appearance
+        
+        // Execute unit tests for Tax-Free Module
+        TaxFreeTests.runAllTests()
     }
 
     var body: some Scene {

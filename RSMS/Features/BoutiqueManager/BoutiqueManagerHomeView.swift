@@ -14,6 +14,8 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
     case events                = "Client Events"
     case planograms            = "Planograms"
     case compliance            = "Store Compliance"
+    case taxFreeDashboard      = "Tax-Free Reporting"
+    case taxFreeConfig         = "Tax-Free Settings"
 
     var id: String { rawValue }
 
@@ -25,6 +27,8 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         case .events:                return "calendar.badge.clock"
         case .planograms:            return "photo.artframe"
         case .compliance:            return "checkmark.shield.fill"
+        case .taxFreeDashboard:      return "globe"
+        case .taxFreeConfig:         return "gearshape.fill"
         }
     }
 }
@@ -113,6 +117,10 @@ struct BoutiqueManagerHomeView: View {
             StoreLayoutOverviewView()
         case .compliance:
             ComplianceDashboardView()
+        case .taxFreeDashboard:
+            TaxFreeDashboardView()
+        case .taxFreeConfig:
+            TaxFreeConfigurationView()
         }
     }
 }

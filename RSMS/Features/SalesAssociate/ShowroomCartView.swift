@@ -18,15 +18,26 @@ struct ShowroomCartView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.dismiss) private var dismiss
     @State private var showShareToast = false
+    @State private var toastMessage = "Shared curated link successfully!"
     @State private var navigateToCheckout = false
     
     // States for saved cart mode
     @State private var isSharing = false
     @State private var shareSuccess = false
     @State private var currentStatus: CartStatus = .active
+    @State private var showStockLimitToast = false
+    @State private var stockLimitMessage = ""
     
     // Discount State
     @State private var showDiscountSheet = false
+    
+    // BOPIS Client Checkout States
+    @State private var showStatusSheet = false
+    @State private var activeSession: CheckoutSession? = nil
+    @State private var errorMessage: String? = nil
+    @State private var showErrorAlert = false
+    @State private var showURLConfig = false
+    @State private var tempBaseURLSetting = ""
     
     // Compute or check mode
     private var isEditMode: Bool {
@@ -58,7 +69,7 @@ struct ShowroomCartView: View {
                         if isEmpty {
                             emptyView
                         } else {
-                            if UIDevice.current.userInterfaceIdiom == .pad {
+                             if UIDevice.current.userInterfaceIdiom == .pad {
                                 // iPad Side-by-Side layout
                                 HStack(alignment: .top, spacing: 24) {
                                     itemsSection
@@ -71,6 +82,8 @@ struct ShowroomCartView: View {
                                         if let req = activeApprovalRequest, req.status != .approved {
                                             approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
                                         }
+                                        
+                                        clientCheckoutSection
                                     }
                                     .frame(width: 320)
                                 }
@@ -86,6 +99,8 @@ struct ShowroomCartView: View {
                                     if let req = activeApprovalRequest, req.status != .approved {
                                         approvalStatusBanner(status: req.status, managerNotes: req.managerNotes)
                                     }
+                                    
+                                    clientCheckoutSection
                                 }
                                 .padding(.horizontal, 16)
                             }
@@ -103,10 +118,21 @@ struct ShowroomCartView: View {
             if showShareToast || shareSuccess {
                 VStack {
                     Spacer()
-                    ToastView(message: "Shared curated link successfully!")
+                    ToastView(message: shareSuccess ? "Shared curated link successfully!" : toastMessage)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 .animation(.spring(), value: showShareToast || shareSuccess)
+            }
+            
+            // Stock limit notification toast
+            if showStockLimitToast {
+                VStack {
+                    Spacer()
+                    ToastView(message: stockLimitMessage)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .padding(.bottom, 80) // To stay above the action bar
+                .animation(.spring(), value: showStockLimitToast)
             }
         }
         .navigationTitle("Curated Cart")
@@ -125,6 +151,32 @@ struct ShowroomCartView: View {
             // Also re-fetch carts so the discount note field is current
             if let associateId = appVM.currentUser?.id {
                 try? await appVM.dataStore.fetchUniversalCarts(associateId: associateId, type: .curated)
+            }
+            // Fetch checkout sessions
+            try? await appVM.dataStore.fetchCheckoutSessions()
+        }
+        .onChange(of: activeCartSession?.status) { _, newStatus in
+            guard let newStatus, let cart = currentCart else { return }
+            let terminalStatuses: Set<CheckoutStatus> = [.readyForPickup, .readyForShipping, .completed]
+            if terminalStatuses.contains(newStatus) {
+                Task {
+                    let checkoutVM = POSCheckoutViewModel(
+                        dataStore: appVM.dataStore,
+                        associateId: getAssociateId(),
+                        storeId: appVM.currentStoreId ?? UUID()
+                    )
+                    let itemsToDelete = appVM.dataStore.universalCartItems.filter { $0.cartId == cart.id }
+                    for item in itemsToDelete {
+                        try? await appVM.dataStore.deleteUniversalCartItem(id: item.id)
+                    }
+                    // Also mark the cart completed locally so it stops showing as active
+                    let targetId = cart.id
+                    if let index = appVM.dataStore.universalCarts.firstIndex(where: { $0.id == targetId }) {
+                        var updatedCart = appVM.dataStore.universalCarts[index]
+                        updatedCart.status = .completed
+                        try? await appVM.dataStore.updateUniversalCart(updatedCart)
+                    }
+                }
             }
         }
         .alert("Saved", isPresented: isEditModeSuccessPresented) {
@@ -163,6 +215,18 @@ struct ShowroomCartView: View {
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showStatusSheet) {
+            if let activeSession {
+                BOPISStatusSheet(session: activeSession)
+            }
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            if let errorMessage {
+                Text(errorMessage)
+            }
         }
     }
     
@@ -363,17 +427,26 @@ struct ShowroomCartView: View {
                                     .frame(minWidth: 24, alignment: .center)
                                 
                                 Button {
-                                    let updated = UniversalCartItem(
-                                        id: item.id,
-                                        cartId: item.cartId,
-                                        productId: item.productId,
-                                        quantity: currentQty + 1,
-                                        unitPrice: item.unitPrice,
-                                        discountApplied: item.discountApplied,
-                                        note: item.note
-                                    )
-                                    Task {
-                                        try? await ds.updateUniversalCartItem(updated)
+                                    let availableStock = ds.stockItems.filter { $0.productId == item.productId && $0.status == .available && $0.storeId == appVM.currentStoreId }.reduce(0) { $0 + $1.quantity }
+                                    if currentQty < availableStock {
+                                        let updated = UniversalCartItem(
+                                            id: item.id,
+                                            cartId: item.cartId,
+                                            productId: item.productId,
+                                            quantity: currentQty + 1,
+                                            unitPrice: item.unitPrice,
+                                            discountApplied: item.discountApplied,
+                                            note: item.note
+                                        )
+                                        Task {
+                                            try? await ds.updateUniversalCartItem(updated)
+                                        }
+                                    } else {
+                                        stockLimitMessage = "Only \(availableStock) pieces are in stock."
+                                        showStockLimitToast = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                            showStockLimitToast = false
+                                        }
                                     }
                                 } label: {
                                     Image(systemName: "plus.circle")
@@ -764,6 +837,7 @@ struct ShowroomCartView: View {
     }
     
     private func triggerShare() {
+        toastMessage = "Shared curated link successfully!"
         showShareToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showShareToast = false
@@ -804,6 +878,271 @@ struct ShowroomCartView: View {
                     isSharing = false
                 }
             }
+        }
+    }
+    
+    // MARK: - BOPIS Client Checkout Helper Views & Methods
+    
+    private var activeCartSession: CheckoutSession? {
+        guard let cart = currentCart else { return nil }
+        return appVM.dataStore.checkoutSessions.first(where: { $0.cartId == cart.id && $0.status != .cancelled && $0.status != .expired && $0.status != .completed })
+    }
+    
+    @ViewBuilder
+    private var clientCheckoutSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                SectionHeader(title: "Client Checkout Link", subtitle: "Generate payment link for remote checkout")
+                Spacer()
+                Button {
+                    tempBaseURLSetting = appVM.customCheckoutBaseURL
+                    withAnimation {
+                        showURLConfig.toggle()
+                    }
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.title3)
+                        .foregroundStyle(showURLConfig ? RSMSTheme.primary : RSMSTheme.textTertiary)
+                        .padding(.top, 4)
+                }
+                .buttonStyle(.plain)
+            }
+            
+            if showURLConfig {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Base URL Settings")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    
+                    HStack(spacing: 8) {
+                        TextField("Base URL", text: $tempBaseURLSetting)
+                            .font(.subheadline)
+                            .padding(8)
+                            .background(RSMSTheme.surfaceSecondary)
+                            .cornerRadius(8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                        
+                        Button {
+                            appVM.customCheckoutBaseURL = tempBaseURLSetting
+                            withAnimation {
+                                showURLConfig = false
+                            }
+                        } label: {
+                            Text("Save")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.cream)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(RSMSTheme.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+                .padding(.bottom, 8)
+            }
+            
+            if let cart = currentCart {
+                if let session = activeCartSession {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Status:")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                            
+                            StatusBadge(
+                                text: session.status.rawValue.replacingOccurrences(of: "linkGenerated", with: "Link Generated").capitalized,
+                                color: checkoutSessionStatusColor(session.status)
+                            )
+                            Spacer()
+                        }
+                        
+                        let url = "\(appVM.customCheckoutBaseURL)/c/\(session.token)"
+                        Text(url)
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.primary)
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RSMSTheme.background)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                        
+                        HStack(spacing: 12) {
+                            Button {
+                                UIPasteboard.general.string = url
+                            } label: {
+                                Label("Copy Link", systemImage: "doc.on.doc.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.cream)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.primary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Button {
+                                shareLink(url: url)
+                            } label: {
+                                Label("Share", systemImage: "square.and.arrow.up.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.surfaceSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Button {
+                                emailLink(url: url, clientId: session.clientId)
+                            } label: {
+                                Label("Email", systemImage: "envelope.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.surfaceSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                        
+                        HStack(spacing: 12) {
+                            Button {
+                                activeSession = session
+                                showStatusSheet = true
+                            } label: {
+                                Label("View Status", systemImage: "clock.arrow.circlepath")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.cream)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.info)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                            
+                            Button {
+                                Task {
+                                    let checkoutVM = POSCheckoutViewModel(
+                                        dataStore: appVM.dataStore,
+                                        associateId: getAssociateId(),
+                                        storeId: appVM.currentStoreId ?? UUID()
+                                    )
+                                    await checkoutVM.cancelCheckoutSession(session)
+                                }
+                            } label: {
+                                Label("Cancel Link", systemImage: "xmark.circle.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.cream)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.danger)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                    }
+                    .padding()
+                    .rsmsCard()
+                } else {
+                    Button {
+                        Task {
+                            let checkoutVM = POSCheckoutViewModel(
+                                dataStore: appVM.dataStore,
+                                associateId: getAssociateId(),
+                                storeId: appVM.currentStoreId ?? UUID()
+                            )
+                            do {
+                                let _ = try await checkoutVM.generateCheckoutLink(for: cart)
+                            } catch {
+                                await MainActor.run {
+                                    self.errorMessage = error.localizedDescription
+                                    self.showErrorAlert = true
+                                }
+                                print("[ShowroomCartView] Failed to generate link: \(error.localizedDescription)")
+                            }
+                        }
+                    } label: {
+                        Label("Generate Checkout Link", systemImage: "link.badge.plus")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.cream)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(cart.clientId == nil ? AnyShapeStyle(RSMSTheme.surfaceSecondary) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(cart.clientId == nil)
+                    
+                    if cart.clientId == nil {
+                        Text("Please associate a client with this cart to enable checkout link generation.")
+                            .font(.caption2)
+                            .foregroundStyle(RSMSTheme.danger)
+                            .padding(.top, 4)
+                    }
+                }
+            } else {
+                Text("No cart available.")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
+            }
+        }
+    }
+    
+    private func shareLink(url: String) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else { return }
+        
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = rootViewController.view
+            popover.sourceRect = CGRect(x: rootViewController.view.bounds.midX, y: rootViewController.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        rootViewController.present(activityVC, animated: true, completion: nil)
+    }
+    
+    private func emailLink(url: String, clientId: UUID) {
+        let client = appVM.dataStore.clients.first(where: { $0.id == clientId })
+        let email = client?.email ?? ""
+        let clientName = client?.fullName ?? "Client"
+        let subject = "Your Curated Cart Checkout"
+        let body = "Dear \(clientName),\n\nPlease find your curated cart checkout link here: \(url)\n\nThank you,\nLuxora Boutique"
+        
+        if let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let mailtoURL = URL(string: "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)") {
+            if UIApplication.shared.canOpenURL(mailtoURL) {
+                UIApplication.shared.open(mailtoURL)
+            } else {
+                UIPasteboard.general.string = url
+                toastMessage = "No email client. Copied link and opened share menu!"
+                showShareToast = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    showShareToast = false
+                }
+                shareLink(url: url)
+            }
+        }
+    }
+    
+    private func checkoutSessionStatusColor(_ status: CheckoutStatus) -> Color {
+        switch status {
+        case .draft: return RSMSTheme.textSecondary
+        case .linkGenerated: return RSMSTheme.info
+        case .viewed: return RSMSTheme.warning
+        case .pendingPayment, .pendingStorePayment: return RSMSTheme.warning
+        case .paid, .readyForPickup, .readyForShipping: return RSMSTheme.success
+        case .completed: return RSMSTheme.success
+        case .expired: return RSMSTheme.textTertiary
+        case .cancelled: return RSMSTheme.danger
         }
     }
 }

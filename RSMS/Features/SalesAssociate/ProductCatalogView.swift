@@ -63,7 +63,7 @@ struct ProductCatalogView: View {
                             .foregroundColor(.green)
                             .font(.system(size: 20, weight: .bold))
                         Text(message)
-                            .font(.system(size: 14, weight: .medium, design: .serif))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(RSMSTheme.textPrimary)
                     }
                     .padding(.horizontal, 20)
@@ -99,6 +99,15 @@ struct ProductCatalogView: View {
             await vm.load()
             viewModel = vm
         }
+        .onAppear {
+            // Re-fetch stock items every time the catalog becomes visible
+            // so that completed transfers are reflected immediately
+            Task {
+                if let storeId = appViewModel.currentUser?.storeId {
+                    try? await appViewModel.dataStore.fetchStockItems(storeId: storeId)
+                }
+            }
+        }
         .sheet(item: $selectedProduct) { product in
             if let vm = viewModel {
                 CatalogProductDetailSheet(
@@ -128,16 +137,8 @@ struct ProductCatalogView: View {
         .sheet(isPresented: $showClientPickerSheet) {
             ClientSelectionSheet(onSelect: { client in
                 if let vm = viewModel {
-                    vm.activeClient = client
                     Task {
-                        vm.isLoading = true
-                        do {
-                            try await appViewModel.dataStore.fetchWishlistItems(clientId: client.id)
-                            try await appViewModel.dataStore.fetchClientAnniversaries(clientId: client.id)
-                        } catch {
-                            print("[ProductCatalogView] Error fetching client data: \(error)")
-                        }
-                        vm.isLoading = false
+                        await vm.selectClient(client)
                     }
                 }
                 showClientPickerSheet = false
@@ -218,7 +219,7 @@ struct ProductCatalogView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     
                     Text(client.fullName)
-                        .font(.system(size: 32, weight: .regular, design: .serif))
+                        .font(.system(size: 32, weight: .semibold))
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Text("UPDATED \(Date().formatted(date: .abbreviated, time: .omitted).uppercased())")
@@ -273,7 +274,7 @@ struct ProductCatalogView: View {
     private func curatedRecommendationsCarousel(_ vm: ProductCatalogViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recommended For This Client")
-                .font(.system(size: 16, weight: .semibold, design: .serif))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .padding(.horizontal, 24)
             
@@ -403,23 +404,29 @@ struct ProductCatalogView: View {
                     )
                     .onTapGesture { selectedProduct = product }
                     .overlay(alignment: .topTrailing) {
-                        Button {
-                            if vm.isInCart(product.id) {
-                                triggerToast(message: "\(product.name) already exists in the cart")
-                            } else {
-                                vm.toggleCartItem(product)
-                                triggerToast(message: "\(product.name) added to curated cart")
+                        let stockQty = vm.stockQuantity(for: product.id)
+                        let isInCart = vm.isInCart(product.id)
+                        Group {
+                            if stockQty > 0 || isInCart {
+                                Button {
+                                    if vm.isInCart(product.id) {
+                                        triggerToast(message: "\(product.name) already exists in the cart")
+                                    } else {
+                                        vm.toggleCartItem(product)
+                                        triggerToast(message: "\(product.name) added to curated cart")
+                                    }
+                                } label: {
+                                    Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
+                                        .font(.title3)
+                                        .foregroundStyle(vm.isInCart(product.id) ? Color.green : RSMSTheme.primary)
+                                        .background(Circle().fill(RSMSTheme.cream))
+                                        .scaleEffect(vm.isInCart(product.id) ? 1.25 : 1.0)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: vm.isInCart(product.id))
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(10)
                             }
-                        } label: {
-                            Image(systemName: vm.isInCart(product.id) ? "checkmark.circle.fill" : "plus.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(vm.isInCart(product.id) ? Color.green : RSMSTheme.primary)
-                                .background(Circle().fill(RSMSTheme.cream))
-                                .scaleEffect(vm.isInCart(product.id) ? 1.25 : 1.0)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.5), value: vm.isInCart(product.id))
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(10)
                     }
                 }
             }
@@ -468,7 +475,7 @@ struct ProductCatalogCard: View {
             
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
@@ -561,29 +568,26 @@ struct StockBadge: View {
     let quantity: Int
 
     var body: some View {
-        HStack(spacing: 3) {
-            Circle()
-                .fill(statusColor)
-                .frame(width: 5, height: 5)
-            Text(statusText)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(statusColor)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(statusColor.opacity(0.08), in: Capsule())
+        Text(statusText.uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .tracking(1.0)
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(statusColor, in: Capsule())
+            .shadow(color: statusColor.opacity(0.35), radius: 3, x: 0, y: 1.5)
     }
 
     private var statusColor: Color {
-        if quantity == 0 { return .red }
-        if quantity <= 3 { return .orange }
-        return .green
+        if quantity == 0 { return RSMSTheme.danger }
+        if quantity <= 3 { return RSMSTheme.warning }
+        return RSMSTheme.success
     }
 
     private var statusText: String {
-        if quantity == 0 { return "No Stock" }
-        if quantity <= 3 { return "Low Stock" }
-        return "In Boutique"
+        if quantity == 0 { return "Out Of Stock" }
+        if quantity <= 3 { return "Few Left" }
+        return "In Stock"
     }
 }
 
@@ -689,7 +693,7 @@ struct CartSelectionPreviewSheet: View {
                     Button("Clear All") { onClear() }
                         .foregroundStyle(.red)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
@@ -750,7 +754,7 @@ struct CatalogProductDetailSheet: View {
             .navigationTitle("Product Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                 }
             }
@@ -878,20 +882,50 @@ struct CatalogProductDetailSheet: View {
                     .buttonStyle(ScaleButtonStyle())
                 }
                 
-                Button {
-                    onAddToCart()
-                    addedToCart = true
-                } label: {
-                    Text(addedToCart ? "Added ✓" : "Add to Cart")
-                        .font(.subheadline.weight(.bold))
-                        .foregroundStyle(RSMSTheme.cream)
+                if stockQuantity == 0 {
+                    Button {
+                        // Out of stock, action disabled
+                    } label: {
+                        Text("Out of Stock")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity)
+                            .background(RSMSTheme.surfaceSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(true)
+                } else {
+                    Button {
+                        onAddToCart()
+                        addedToCart = true
+                    } label: {
+                        Text(addedToCart ? "Added" : "Add to Cart")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RSMSTheme.cream)
+                            .padding(.vertical, 16)
+                            .frame(maxWidth: .infinity)
+                            .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(addedToCart)
+                }
+            }
+            
+            if stockQuantity == 0 {
+                NavigationLink(destination: InventorySourcingRequestFormView(product: product)) {
+                    Text("Request Item From Another Store")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity)
-                        .background(addedToCart ? AnyShapeStyle(Color.green) : AnyShapeStyle(RSMSTheme.primaryGradient))
+                        .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(RSMSTheme.primary.opacity(0.3), lineWidth: 1))
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .disabled(addedToCart)
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.horizontal, 24)
@@ -1009,7 +1043,7 @@ struct CatalogFilterSheet: View {
             .navigationTitle("Filter Products")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Apply") { dismiss() }
                 }
             }

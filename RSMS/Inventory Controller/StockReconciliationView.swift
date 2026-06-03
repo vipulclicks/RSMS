@@ -67,7 +67,7 @@ struct StockReconciliationView: View {
         .navigationTitle("Audit & Reconcile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
             if segment == .mismatches {
                 HStack(spacing: 12) {
                     Button {
@@ -631,7 +631,7 @@ struct StockReconciliationView: View {
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { selectedItem = nil }
                         .foregroundStyle(RSMSTheme.textTertiary)
                 }

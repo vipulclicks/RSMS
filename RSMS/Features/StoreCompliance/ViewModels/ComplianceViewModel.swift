@@ -62,9 +62,6 @@ final class ComplianceViewModel {
     
     // Create
     func createCheck(_ check: ComplianceCheck) async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
         let newCheck = try await ComplianceService.shared.createComplianceCheck(check)
         // Optimistic UI Update or just fetch again
         self.complianceChecks.append(newCheck)
@@ -72,9 +69,6 @@ final class ComplianceViewModel {
     
     // Update
     func updateCheck(_ check: ComplianceCheck) async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
         let updatedCheck = try await ComplianceService.shared.updateComplianceCheck(id: check.id, check: check)
         
         if let index = complianceChecks.firstIndex(where: { $0.id == updatedCheck.id }) {
@@ -84,9 +78,6 @@ final class ComplianceViewModel {
     
     // Delete
     func deleteCheck(_ id: UUID) async throws {
-        isLoading = true
-        defer { isLoading = false }
-        
         try await ComplianceService.shared.deleteComplianceCheck(id: id)
         complianceChecks.removeAll { $0.id == id }
     }

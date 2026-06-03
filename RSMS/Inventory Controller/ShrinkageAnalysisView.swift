@@ -48,7 +48,7 @@ struct ShrinkageAnalysisView: View {
             .navigationTitle("Shrinkage Analysis")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") {
                         dismiss()
                     }
