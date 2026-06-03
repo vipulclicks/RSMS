@@ -314,7 +314,7 @@ struct SalesAssociateHomeView: View {
 
         private func ipadDashboardView(_ appointmentVM: AppointmentViewModel) -> some View {
             GeometryReader { geometry in
-                let width = min(geometry.size.width, 950)
+                let width = geometry.size.width
 
                 ZStack(alignment: .top) {
                     RSMSTheme.backgroundGradient.ignoresSafeArea()
@@ -333,21 +333,21 @@ struct SalesAssociateHomeView: View {
 
                             greetingHeaderSection
 
-                            KPIGridView(appointmentVM: appointmentVM, viewWidth: width, isSidebarClosed: true)
+                            KPIGridView(appointmentVM: appointmentVM, viewWidth: min(width, 1200))
 
                             VStack(alignment: .leading, spacing: 32) {
                                 UpcomingAppointmentsSection(appointmentVM: appointmentVM)
                                 
                                 QuickActionsSection(
-                                    columnsCount: 4,
+                                    columnsCount: min(width, 1200) >= 700 ? 4 : 2,
                                     onNewClient: { showNewClientSheet = true },
                                     onOmnichannel: { navigationPath.append("Omnichannel") }
                                 )
                             }
                             .padding(.horizontal, 20)
                         }
-                        .frame(maxWidth: 950, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: 1200)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.bottom, 32)
                     }
                 }
