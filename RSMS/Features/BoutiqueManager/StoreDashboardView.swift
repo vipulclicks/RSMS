@@ -20,6 +20,7 @@ struct StoreDashboardView: View {
     @State private var showingProfile = false
     @State private var showingSalesBreakdown = false
     @State private var carouselSelection: Int = 0
+    @State private var selectedSalesDate: Date? = nil
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -320,7 +321,7 @@ struct StoreDashboardView: View {
                 SectionHeader(title: "Sales Progress")
                 Spacer()
                 Picker("Period", selection: Bindable(dashboardVM).selectedPeriod) {
-                    ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
+                    ForEach(GoalPeriod.allCases, id: \.self) { period in
                         Text(period.rawValue.capitalized).tag(period)
                     }
                 }
@@ -335,11 +336,9 @@ struct StoreDashboardView: View {
                 TabView(selection: $carouselSelection) {
                     storeSalesOverviewSlide
                         .tag(0)
-                    
-                    ForEach(Array(dashboardVM.periodAssociateProgress.enumerated()), id: \.element.id) { index, progress in
-                        associateProgressSlide(progress)
-                            .tag(index + 1)
-                    }
+                        
+                    storeSalesChartSlide
+                        .tag(1)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
                 .frame(height: 330)
@@ -476,6 +475,178 @@ struct StoreDashboardView: View {
             Spacer()
         }
         .padding(24)
+    }
+    
+    private var storeSalesChartSlide: some View {
+        VStack(alignment: .center, spacing: 16) {
+            HStack(alignment: .top) {
+                Text(dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount))
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(RSMSTheme.primaryDark)
+                
+                Spacer()
+                
+                if dashboardVM.salesIncrementPercentage > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right")
+                        Text(String(format: "%.1f%%", dashboardVM.salesIncrementPercentage))
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RSMSTheme.success.opacity(0.15))
+                    .foregroundStyle(RSMSTheme.success)
+                    .clipShape(Capsule())
+                } else if dashboardVM.salesIncrementPercentage < 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.down.right")
+                        Text(String(format: "%.1f%%", abs(dashboardVM.salesIncrementPercentage)))
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RSMSTheme.danger.opacity(0.15))
+                    .foregroundStyle(RSMSTheme.danger)
+                    .clipShape(Capsule())
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            VStack(spacing: 0) {
+                Chart {
+                    ForEach(dashboardVM.previousDaysSales) { dayData in
+                        LineMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        
+                        AreaMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [RSMSTheme.primaryDark.opacity(0.3), .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        
+                        PointMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        .symbolSize(selectedSalesDate == dayData.date ? 150 : 50)
+                        .annotation(position: .top) {
+                            if selectedSalesDate != dayData.date && dayData.amount > 0 {
+                                Text(dashboardVM.formatCurrency(dayData.amount))
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                        }
+                        
+                        if let selectedDate = selectedSalesDate, selectedDate == dayData.date {
+                            RuleMark(
+                                x: .value("Selected", selectedDate, unit: .day)
+                            )
+                            .foregroundStyle(Color.gray.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                            .annotation(position: .top, spacing: 10, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack {
+                                    Text(dashboardVM.formatCurrency(dayData.amount))
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(RSMSTheme.primaryDark)
+                                    Text(dayData.date, format: .dateTime.day().month())
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(RSMSTheme.surfacePrimary)
+                                        .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
+                                )
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: dashboardVM.previousDaysSales.map { $0.date }) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .foregroundStyle(RSMSTheme.border)
+                        if let date = value.as(Date.self) {
+                            AxisValueLabel(anchor: .top) {
+                                Text(date, format: .dateTime.day().month())
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis(.hidden)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let location = value.location
+                                        let x = location.x - geometry[proxy.plotAreaFrame].origin.x
+                                        if let date: Date = proxy.value(atX: x) {
+                                            // Find closest date in previousDaysSales
+                                            let closest = dashboardVM.previousDaysSales.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
+                                            if let closestDate = closest?.date {
+                                                selectedSalesDate = closestDate
+                                            }
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        // Do nothing to keep it selected after a tap
+                                    }
+                            )
+                            .simultaneousGesture(
+                                TapGesture(count: 2)
+                                    .onEnded {
+                                        selectedSalesDate = nil
+                                    }
+                            )
+                    }
+                }
+                .frame(height: 150)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Target")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        Text(dashboardVM.formatCurrency(dashboardVM.salesTarget))
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Progress")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        Text("\(Int(dashboardVM.salesProgress * 100))%")
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
     
     private func associateProgressSlide(_ progress: BoutiqueDashboardViewModel.AssociateSalesProgress) -> some View {

@@ -17,16 +17,16 @@ struct ComplianceCheckDetailsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 32) {
+            VStack(alignment: .leading, spacing: 40) {
                 // Header Profile
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Compliance Inspection")
-                            .font(.system(size: 36, weight: .bold))
+                        Text("Inspection Report")
+                            .font(.system(size: 40, weight: .heavy, design: .rounded))
                             .foregroundColor(RSMSTheme.textPrimary)
                         
                         Text(check.checkedAt.formatted(date: .complete, time: .shortened))
-                            .font(.title3)
+                            .font(.title3.weight(.medium))
                             .foregroundColor(RSMSTheme.textSecondary)
                     }
                     
@@ -35,54 +35,73 @@ struct ComplianceCheckDetailsView: View {
                     // Large Status Badge
                     HStack(spacing: 8) {
                         Image(systemName: check.status.iconName)
-                            .font(.system(size: 24))
+                            .font(.system(size: 24, weight: .bold))
                         Text(check.status.displayName)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
                     .background(check.status.color.opacity(0.15))
                     .foregroundColor(check.status.color)
                     .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(check.status.color.opacity(0.5), lineWidth: 2)
-                    )
                 }
                 
-                Divider()
+                let parsed = parsedNotes
                 
                 // Content
-                HStack(alignment: .top, spacing: 32) {
+                HStack(alignment: .top, spacing: 40) {
                     // Left Column: Details
                     VStack(alignment: .leading, spacing: 24) {
-                        detailCard(title: "Inspector Notes", icon: "doc.text") {
-                            Text(check.notes ?? "No notes provided.")
-                                .font(.body)
-                                .foregroundColor(check.notes == nil ? .gray : RSMSTheme.textPrimary)
-                        }
                         
-                        detailCard(title: "Area Information", icon: "map") {
-                            VStack(alignment: .leading, spacing: 12) {
+                        detailCard(title: "Inspection Details", icon: "info.circle.fill") {
+                            VStack(alignment: .leading, spacing: 16) {
                                 let pId = check.planogramId
-                                if let planogram = viewModel.availablePlanograms.first(where: { $0.id == pId }) {
-                                    Text("Merchandising Zone: \(planogram.name)")
-                                } else {
-                                    Text("Zone ID: \(check.planogramId.uuidString)")
-                                }
+                                let planogramName = viewModel.availablePlanograms.first(where: { $0.id == pId })?.name ?? "Unknown Zone"
+                                let zoneName = parsed.zone ?? planogramName
                                 
-                                let inspectorName = appVM.dataStore.userName(for: check.checkedBy)
-                                Text("Inspector: \(inspectorName)")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                                infoRow(title: "Merchandising Zone", value: zoneName)
+                                infoRow(title: "Inspector", value: appVM.dataStore.userName(for: check.checkedBy))
+                                infoRow(title: "Report ID", value: String(check.id.uuidString.prefix(8)))
                             }
                         }
+                        
+                        if check.status == .compliant {
+                            if !parsed.checkpoints.isEmpty {
+                                checkpointListCard(title: "Checkpoints", icon: "checklist", items: parsed.checkpoints)
+                            }
+                        } else {
+                            let fails = parsed.checkpoints.filter { $0.status == "❌" }
+                            let reviews = parsed.checkpoints.filter { $0.status == "⚠️" }
+                            
+                            if !fails.isEmpty {
+                                checkpointListCard(title: "Non-Compliant", icon: "xmark.circle.fill", iconColor: RSMSTheme.danger, items: fails)
+                            }
+                            
+                            if !reviews.isEmpty {
+                                checkpointListCard(title: "Needs Review", icon: "exclamationmark.triangle.fill", iconColor: RSMSTheme.warning, items: reviews)
+                            }
+                        }
+                        
+                        if let notes = parsed.inspectorNotes, !notes.isEmpty {
+                            detailCard(title: "Inspector Notes", icon: "note.text") {
+                                Text(notes)
+                                    .font(.body)
+                                    .foregroundColor(RSMSTheme.textSecondary)
+                                    .padding(20)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.gray.opacity(0.06))
+                                    .cornerRadius(12)
+                            }
+                        }
+                        
                     }
-                    .frame(maxWidth: 400)
+                    .frame(maxWidth: 450)
                     
                     // Right Column: Evidence Gallery
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Evidence Gallery")
                             .font(.title2.bold())
+                            .foregroundColor(RSMSTheme.textPrimary)
                         
                         if let urls = check.photoURLs, !urls.isEmpty {
                             TabView(selection: $selectedPhotoIndex) {
@@ -90,7 +109,7 @@ struct ComplianceCheckDetailsView: View {
                                     AsyncImage(url: URL(string: urlString)) { phase in
                                         if let image = phase.image {
                                             image.resizable()
-                                                .aspectRatio(contentMode: .fit)
+                                                .aspectRatio(contentMode: .fill)
                                         } else {
                                             ProgressView()
                                         }
@@ -98,22 +117,39 @@ struct ComplianceCheckDetailsView: View {
                                     .tag(index)
                                 }
                             }
-                            .frame(height: 500)
+                            .frame(height: 550)
                             .tabViewStyle(.page(indexDisplayMode: .always))
                             .background(Color.black.opacity(0.05))
-                            .cornerRadius(16)
+                            .cornerRadius(24)
+                            .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
                         } else {
-                            VStack(spacing: 16) {
-                                Image(systemName: "camera.on.rectangle")
-                                    .font(.system(size: 64))
-                                    .foregroundColor(.gray.opacity(0.5))
-                                Text("No evidence provided during this inspection.")
-                                    .foregroundColor(.gray)
+                            VStack(spacing: 20) {
+                                ZStack {
+                                    Circle()
+                                        .fill(RSMSTheme.surfacePrimary)
+                                        .frame(width: 120, height: 120)
+                                        .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
+                                    Image(systemName: "camera.badge.ellipsis")
+                                        .font(.system(size: 48, weight: .light))
+                                        .foregroundColor(RSMSTheme.primaryDark.opacity(0.6))
+                                }
+                                Text("No Photographic Evidence")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundColor(RSMSTheme.textPrimary)
+                                Text("This inspection was logged without attaching any photos.")
+                                    .font(.subheadline)
+                                    .foregroundColor(RSMSTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 400)
+                            .frame(height: 550)
                             .background(RSMSTheme.surfaceSecondary)
-                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24)
+                                    .stroke(RSMSTheme.border.opacity(0.6), style: StrokeStyle(lineWidth: 2, dash: [8, 8]))
+                            )
+                            .cornerRadius(24)
                         }
                     }
                 }
@@ -121,7 +157,7 @@ struct ComplianceCheckDetailsView: View {
             .padding(40)
         }
         .background(RSMSTheme.background.ignoresSafeArea())
-        .navigationTitle("Inspection Report")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -130,10 +166,7 @@ struct ComplianceCheckDetailsView: View {
                         Label("Share Report", systemImage: "square.and.arrow.up")
                     }
                     Button(action: { showReport = true }) {
-                        Label("Generate PDF (Placeholder)", systemImage: "doc.text")
-                    }
-                    Button(action: {}) {
-                        Label("Edit", systemImage: "pencil")
+                        Label("Generate PDF", systemImage: "doc.text")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -144,6 +177,105 @@ struct ComplianceCheckDetailsView: View {
         .navigationDestination(isPresented: $showReport) {
             ComplianceReportView(viewModel: viewModel)
         }
+    }
+    
+    // MARK: - Components & Helpers
+    
+    private var parsedNotes: (zone: String?, checkpoints: [(status: String, text: String)], inspectorNotes: String?) {
+        let text = check.notes ?? ""
+        var zone: String?
+        var checkpoints: [(status: String, text: String)] = []
+        var inspectorNotes: String?
+        
+        let lines = text.components(separatedBy: .newlines)
+        var currentSection = ""
+        
+        for line in lines {
+            let t = line.trimmingCharacters(in: .whitespaces)
+            if t.hasPrefix("[Zone:") {
+                zone = t.replacingOccurrences(of: "[Zone: ", with: "").replacingOccurrences(of: "]", with: "")
+            } else if t == "[Checkpoints]" {
+                currentSection = "checkpoints"
+            } else if t == "[Inspector Notes]" {
+                currentSection = "notes"
+            } else if !t.isEmpty {
+                if currentSection == "checkpoints" {
+                    if t.hasPrefix("✅") || t.hasPrefix("❌") || t.hasPrefix("⚠️") {
+                        let status = String(t.prefix(1))
+                        let textContent = String(t.dropFirst(2))
+                        checkpoints.append((status, textContent))
+                    } else {
+                        checkpoints.append(("", t))
+                    }
+                } else if currentSection == "notes" {
+                    if inspectorNotes == nil { inspectorNotes = "" }
+                    inspectorNotes! += t + "\n"
+                }
+            }
+        }
+        
+        return (zone, checkpoints, inspectorNotes?.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+    
+    private func infoRow(title: String, value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(RSMSTheme.textSecondary)
+                .frame(width: 150, alignment: .leading)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(RSMSTheme.textPrimary)
+            Spacer()
+        }
+    }
+    
+    @ViewBuilder
+    private func checkpointListCard(title: String, icon: String, iconColor: Color = RSMSTheme.primary, items: [(status: String, text: String)]) -> some View {
+        detailCard(title: title, icon: icon, iconColor: iconColor) {
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(items.indices, id: \.self) { i in
+                    let cp = items[i]
+                    HStack(alignment: .top, spacing: 16) {
+                        let isCompliant = cp.status == "✅"
+                        let isFail = cp.status == "❌"
+                        
+                        Image(systemName: isCompliant ? "checkmark.circle.fill" : (isFail ? "xmark.circle.fill" : "exclamationmark.triangle.fill"))
+                            .foregroundColor(isCompliant ? RSMSTheme.success : (isFail ? RSMSTheme.danger : RSMSTheme.warning))
+                            .font(.system(size: 22))
+                        Text(cp.text)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(RSMSTheme.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                    }
+                    if i < items.count - 1 {
+                        Divider().padding(.leading, 38)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func detailCard<Content: View>(title: String, icon: String, iconColor: Color = RSMSTheme.primary, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(iconColor)
+                Text(title)
+                    .font(.title3.bold())
+                    .foregroundColor(RSMSTheme.textPrimary)
+            }
+            .padding(.bottom, 8)
+            
+            content()
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RSMSTheme.surfacePrimary)
+        .cornerRadius(24)
+        .shadow(color: Color.black.opacity(0.04), radius: 15, y: 5)
     }
     
     private func updateStatus(to newStatus: ComplianceStatus) {
@@ -173,23 +305,5 @@ struct ComplianceCheckDetailsView: View {
         Notes:
         \(check.notes ?? "None")
         """
-    }
-    
-    private func detailCard<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(RSMSTheme.primary)
-                Text(title)
-                    .font(.headline)
-            }
-            
-            content()
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RSMSTheme.surfacePrimary)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, y: 4)
     }
 }
