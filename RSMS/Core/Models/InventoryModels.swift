@@ -396,3 +396,167 @@ struct ScanLogEntry: Identifiable {
     let mode: ScanMode
     let success: Bool
 }
+
+// MARK: - Service Request
+
+/// A service or repair request for a product.
+/// Maps to Supabase `service_requests` table.
+struct ServiceRequest: Codable, Identifiable, Hashable {
+    let id: UUID
+    let storeId: UUID
+    let requestId: String
+    let productId: UUID?
+    let productName: String
+    let sku: String
+    let serialNumber: String
+    let category: String
+    let customerName: String?
+    let boutiqueName: String
+    let serviceCenterName: String
+    let dispatchDate: Date
+    let expectedReturnDate: Date?
+    let isUnderWarranty: Bool
+    let issueType: String
+    let priority: String
+    let status: String
+    let issueDescription: String
+    let courierProvider: String?
+    let trackingId: String?
+    let isInsured: Bool
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, sku, category
+        case storeId            = "store_id"
+        case requestId          = "request_id"
+        case productId          = "product_id"
+        case productName        = "product_name"
+        case serialNumber       = "serial_number"
+        case customerName       = "customer_name"
+        case boutiqueName       = "boutique_name"
+        case serviceCenterName  = "service_center_name"
+        case dispatchDate       = "dispatch_date"
+        case expectedReturnDate = "expected_return_date"
+        case isUnderWarranty    = "is_under_warranty"
+        case issueType          = "issue_type"
+        case priority           = "priority"
+        case status             = "status"
+        case issueDescription   = "issue_description"
+        case courierProvider    = "courier_provider"
+        case trackingId         = "tracking_id"
+        case isInsured          = "is_insured"
+        case createdAt          = "created_at"
+        case updatedAt          = "updated_at"
+    }
+}
+
+// MARK: - Service Activity
+
+/// Activity feed log for a service request.
+/// Maps to Supabase `service_activities` table.
+struct ServiceActivity: Codable, Identifiable, Hashable {
+    let id: UUID
+    let requestId: String
+    let productName: String
+    let serviceCenter: String
+    let stage: String
+    let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, stage, timestamp
+        case requestId     = "request_id"
+        case productName   = "product_name"
+        case serviceCenter = "service_center"
+    }
+}
+
+// MARK: - Loaner Management
+
+/// Status of a loaner assignment.
+enum LoanerStatus: String, Codable, CaseIterable, Identifiable {
+    case available = "Available"
+    case assigned = "Assigned"
+    case overdue = "Overdue"
+    case returned = "Returned"
+    case maintenance = "Maintenance"
+    
+    var id: String { rawValue }
+}
+
+/// Physical condition of a loaner product.
+enum LoanerCondition: String, Codable, CaseIterable, Identifiable {
+    case new = "New"
+    case excellent = "Excellent"
+    case good = "Good"
+    case refurbished = "Refurbished"
+    
+    var id: String { rawValue }
+}
+
+/// A loaner assignment for a customer.
+/// Maps to Supabase `loaner_assignments` table.
+struct LoanerAssignment: Codable, Identifiable, Hashable {
+    let id: UUID
+    let assignmentId: String
+    let storeId: UUID
+    let customerName: String
+    let customerContact: String
+    let customerEmail: String?
+    let repairRequestId: String?
+    let originalProductDetails: String?
+    let loanerProductId: UUID?
+    let loanerProductName: String
+    let sku: String
+    let serialNumber: String
+    let category: String
+    let condition: String
+    let securityDeposit: Double
+    let agreementSigned: Bool
+    let priority: String
+    let status: String
+    let notes: String?
+    let assignmentDate: Date
+    let expectedReturnDate: Date
+    let actualReturnDate: Date?
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, sku, category, condition, priority, status, notes
+        case assignmentId           = "assignment_id"
+        case storeId                = "store_id"
+        case customerName           = "customer_name"
+        case customerContact        = "customer_contact"
+        case customerEmail          = "customer_email"
+        case repairRequestId        = "repair_request_id"
+        case originalProductDetails = "original_product_details"
+        case loanerProductId        = "loaner_product_id"
+        case loanerProductName      = "loaner_product_name"
+        case serialNumber           = "serial_number"
+        case securityDeposit        = "security_deposit"
+        case agreementSigned        = "agreement_signed"
+        case assignmentDate         = "assignment_date"
+        case expectedReturnDate     = "expected_return_date"
+        case actualReturnDate       = "actual_return_date"
+        case createdAt              = "created_at"
+        case updatedAt              = "updated_at"
+    }
+}
+
+/// Activity feed log for a loaner assignment.
+/// Maps to Supabase `loaner_activities` table.
+struct LoanerActivity: Codable, Identifiable, Hashable {
+    let id: UUID
+    let assignmentId: String
+    let loanerProductName: String
+    let stage: String
+    let notes: String?
+    let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, stage, notes, timestamp
+        case assignmentId      = "assignment_id"
+        case loanerProductName = "loaner_product_name"
+    }
+}
