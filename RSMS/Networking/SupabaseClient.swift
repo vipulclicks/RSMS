@@ -120,6 +120,7 @@ final class SupabaseClient: Sendable {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         applyHeaders(&request)
 
         let (data, response) = try await session.data(for: request)

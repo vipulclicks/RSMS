@@ -384,8 +384,7 @@ struct AddShiftView: View {
     @State private var selectedRole: String = "floor"
     @State private var notes: String = ""
     @State private var availableStaff: [UserProfile] = []
-
-    private let availableRoles = ["floor", "cashier", "back_office", "vip_lounge", "sales_associate"]
+    @State private var selectedFilterRole: UserRole? = nil
     
     private var isOverlapping: Bool {
         guard let staffId = staffId else { return false }
@@ -429,59 +428,78 @@ struct AddShiftView: View {
                             .foregroundStyle(RSMSTheme.textPrimary)
                             .tracking(1)
                         
-                        // Staff Member
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Staff Member *")
-                                .font(.caption)
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                            
-                            Menu {
-                                ForEach(availableStaff) { user in
-                                    Button("\(user.fullName) (\(user.role.displayName))") { staffId = user.id }
-                                }
-                            } label: {
-                                HStack {
-                                    if let user = availableStaff.first(where: { $0.id == staffId }) {
-                                        Text("\(user.fullName) (\(user.role.displayName))")
-                                            .foregroundStyle(RSMSTheme.textPrimary)
-                                    } else {
-                                        Text("Select Staff")
+                        // Staff Selection
+                        HStack(spacing: 16) {
+                            // Role
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Choose Role *")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                
+                                Menu {
+                                    let roles = Array(Set(availableStaff.map { $0.role })).sorted { $0.displayName < $1.displayName }
+                                    ForEach(roles) { role in
+                                        Button(role.displayName) {
+                                            selectedFilterRole = role
+                                            staffId = nil
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(selectedFilterRole?.displayName ?? "Select Role")
+                                            .foregroundStyle(selectedFilterRole == nil ? RSMSTheme.textTertiary : RSMSTheme.textPrimary)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
                                             .foregroundStyle(RSMSTheme.textTertiary)
                                     }
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                    .padding()
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                                .padding()
-                                .background(RSMSTheme.background)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                        }
-                        
-                        // Role
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Role *")
-                                .font(.caption)
-                                .foregroundStyle(RSMSTheme.textSecondary)
                             
-                            Menu {
-                                ForEach(availableRoles, id: \.self) { role in
-                                    Button(role.replacingOccurrences(of: "_", with: " ").capitalized) { selectedRole = role }
+                            // Name
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Name *")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                
+                                Menu {
+                                    let filteredStaff = availableStaff.filter { selectedFilterRole == nil || $0.role == selectedFilterRole }
+                                    ForEach(filteredStaff) { user in
+                                        Button(user.fullName) { 
+                                            staffId = user.id 
+                                            selectedRole = user.role.rawValue
+                                            selectedFilterRole = user.role
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        if let user = availableStaff.first(where: { $0.id == staffId }) {
+                                            Text(user.fullName)
+                                                .foregroundStyle(RSMSTheme.textPrimary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
+                                        } else {
+                                            Text("Select Name")
+                                                .foregroundStyle(RSMSTheme.textTertiary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.8)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
+                                    .padding()
+                                    .background(RSMSTheme.background)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
                                 }
-                            } label: {
-                                HStack {
-                                    Text(selectedRole.replacingOccurrences(of: "_", with: " ").capitalized)
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                    Spacer()
-                                    Image(systemName: "chevron.down")
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                }
-                                .padding()
-                                .background(RSMSTheme.background)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                         }
                         
+
                         // Shift Timing
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Shift Timing *")
@@ -569,11 +587,14 @@ struct AddShiftView: View {
                 staffId = edit.staffId
                 selectedRole = edit.role
                 notes = edit.notes ?? ""
-                
                 if edit.startTime == "16:00" {
                     selectedBlock = .evening
                 } else {
                     selectedBlock = .morning
+                }
+                
+                if let u = availableStaff.first(where: { $0.id == edit.staffId }) {
+                    selectedFilterRole = u.role
                 }
             }
         }

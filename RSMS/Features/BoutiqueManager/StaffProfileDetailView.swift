@@ -5,9 +5,9 @@ struct StaffProfileDetailView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var viewModel: StaffProfileViewModel
-    @State private var showingCommissionSheet = false
     @State private var selectedSalesDate: Date?
     @State private var selectedCommissionDate: Date?
+
     
     init(staff: UserProfile) {
         _viewModel = State(initialValue: StaffProfileViewModel(staff: staff))
@@ -40,25 +40,8 @@ struct StaffProfileDetailView: View {
         .navigationTitle(viewModel.staff.fullName)
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.load(dataStore: appVM.dataStore)
-        }
-        .sheet(isPresented: $showingCommissionSheet) {
-            // Re-fetch transactions for total sales
-            let periodSales = appVM.dataStore.transactions
-                .filter { $0.associateId == viewModel.staff.id }
-                .reduce(0) { $0 + $1.totalAmount }
-            
-            CommissionAssignSheet(
-                staffId: viewModel.staff.id,
-                staffName: viewModel.staff.fullName,
-                periodSales: periodSales,
-                targetAmount: viewModel.currentMonthlyGoal?.targetAmount ?? 0.0,
-                period: .monthly
-            )
-            .onDisappear {
-                Task {
-                    await viewModel.load(dataStore: appVM.dataStore)
-                }
+            if let storeId = appVM.currentStoreId {
+                await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
             }
         }
     }
@@ -198,8 +181,8 @@ struct StaffProfileDetailView: View {
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
                 }
-                .frame(maxWidth: 200)
-                .frame(maxWidth: .infinity) // Center in VStack
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(height: 250)
                 .rsmsCard(padding: 24)
     }
     
@@ -232,9 +215,9 @@ struct StaffProfileDetailView: View {
                         }
                         .chartXSelection(value: $selectedSalesDate)
                         .chartXAxis {
-                            AxisMarks(values: .stride(by: .day)) { value in
+                            AxisMarks(values: .stride(by: .day)) { _ in
                                 AxisGridLine()
-                                AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                                AxisValueLabel(format: .dateTime.month(.abbreviated).day(), centered: true)
                             }
                         }
                     }
@@ -247,82 +230,73 @@ struct StaffProfileDetailView: View {
     private var commissionSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                SectionHeader(title: "Commission", subtitle: "Payout History")
-                Spacer()
-                Button {
-                    showingCommissionSheet = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("Assign")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.primaryDark)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RSMSTheme.primaryDark.opacity(0.1))
-                    .clipShape(Capsule())
-                }
+                SectionHeader(title: "Commission", subtitle: "Transaction History")
             }
             
-            if viewModel.chartCommissionData.isEmpty {
+            if viewModel.commissionList.isEmpty {
                 Text("No commission history found.")
                     .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .rsmsCard(padding: 24)
             } else {
-                VStack(spacing: 24) {
-                    // Bar Chart for Commission
-                    Chart(viewModel.dailyCommissionData) { comm in
-                        let isSelected = selectedCommissionDate == nil || Calendar.current.isDate(comm.date, inSameDayAs: selectedCommissionDate!)
-                        BarMark(
-                            x: .value("Date", comm.date, unit: .day),
-                            y: .value("Amount", comm.amount)
-                        )
-                        .foregroundStyle(isSelected ? RSMSTheme.primaryDark.gradient : RSMSTheme.surfaceTertiary.gradient)
-                        .cornerRadius(4)
-                        .annotation(position: .top) {
-                            if isSelected {
-                                Text(comm.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
-                                    .font(.system(size: 10, weight: .bold))
+                VStack(spacing: 0) {
+                    ForEach(viewModel.commissionList) { item in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.transactionDate.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                Text("Transaction: \(item.transactionAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))")
+                                    .font(.caption)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                             }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text(item.commissionEarned.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                    .font(.headline)
+                                    .foregroundStyle(RSMSTheme.gold)
+                                Text(item.status.rawValue.capitalized)
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(item.status == .paid ? RSMSTheme.success.opacity(0.2) : RSMSTheme.warning.opacity(0.2))
+                                    .foregroundStyle(item.status == .paid ? RSMSTheme.success : RSMSTheme.warning)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.vertical, 12)
+                        
+                        if item.id != viewModel.commissionList.last?.id {
+                            Divider().overlay(RSMSTheme.divider)
                         }
                     }
-                    .chartXSelection(value: $selectedCommissionDate)
-                    .frame(height: 200)
                     
-                    Divider().overlay(RSMSTheme.divider)
-                    
-                    // List
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Payouts")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                            .tracking(1)
+                    if !viewModel.commissionList.isEmpty {
+                        Divider().overlay(RSMSTheme.divider)
+                            .padding(.top, 4)
                         
-                        ForEach(viewModel.chartCommissionData.reversed().prefix(5)) { comm in
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(comm.createdAt.formatted(date: .abbreviated, time: .shortened))
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                    Text(comm.status.rawValue.capitalized)
-                                        .font(.caption)
-                                        .foregroundStyle(comm.status == .paid ? RSMSTheme.success : RSMSTheme.info)
-                                }
-                                Spacer()
-                                Text(comm.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
-                                    .font(.headline)
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                            }
-                            .padding(.vertical, 4)
+                        let totalCommission = viewModel.commissionList.reduce(0) { $0 + $1.commissionEarned }
+                        HStack {
+                            Text("Total Commission")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            
+                            Spacer()
+                            
+                            Text(totalCommission.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(RSMSTheme.gold)
                         }
+                        .padding(.vertical, 16)
                     }
                 }
                 .rsmsCard(padding: 24)
             }
         }
     }
+    
+
 }

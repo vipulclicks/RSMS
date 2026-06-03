@@ -57,6 +57,26 @@ class AppViewModel {
         dataStore.clearAllCaches()
     }
 
+    /// Development/Demo helper to instantly switch personas
+    func demoSwitchRole(to newRole: UserRole) {
+        guard let current = currentUser else { return }
+        let updatedUser = UserProfile(
+            id: current.id,
+            email: current.email,
+            fullName: current.fullName,
+            role: newRole,
+            storeId: current.storeId,
+            avatarURL: current.avatarURL,
+            phone: current.phone,
+            isActive: current.isActive,
+            createdAt: current.createdAt,
+            updatedAt: current.updatedAt
+        )
+        withAnimation(.smooth(duration: 0.6)) {
+            self.currentUser = updatedUser
+        }
+    }
+
     /// Re-fetch the current user's profile from Supabase and update `currentUser`.
     /// Call this on profile page appear to get the latest avatar URL and details.
     func refreshCurrentUser() async {

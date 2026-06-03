@@ -178,28 +178,90 @@ struct AllStaffListView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
+    @State private var searchText = ""
+    @State private var selectedRole: UserRole? = nil
+    
+    var filteredStaff: [UserProfile] {
+        var list = shiftPlanningVM.allStaff.filter { $0.id != appVM.currentUser?.id }
+        
+        if let role = selectedRole {
+            list = list.filter { $0.role == role }
+        }
+        
+        if !searchText.isEmpty {
+            list = list.filter { 
+                $0.fullName.localizedCaseInsensitiveContains(searchText) ||
+                $0.role.displayName.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+        
+        return list
+    }
+    
     var body: some View {
         ScrollView {
-            let columns = horizontalSizeClass == .compact 
-                ? [GridItem(.flexible())] 
-                : [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-                
-            LazyVGrid(columns: columns, spacing: 24) {
-                let filteredStaff = shiftPlanningVM.allStaff.filter { $0.id != appVM.currentUser?.id }
-                ForEach(filteredStaff) { staff in
-                    Button {
-                        navPath.append(.staffProfile(staff))
-                    } label: {
-                        StaffCardViewStandalone(staff: staff)
+            VStack(spacing: 24) {
+                // Role Filters
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        filterChip(title: "All", isSelected: selectedRole == nil) {
+                            selectedRole = nil
+                        }
+                        
+                        // We likely only care about staff roles here
+                        let staffRoles: [UserRole] = [.salesAssociate, .inventoryController, .boutiqueManager]
+                        ForEach(staffRoles, id: \.self) { role in
+                            filterChip(title: role.displayName, isSelected: selectedRole == role) {
+                                selectedRole = role
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
+                }
+                .padding(.top, 16)
+                
+                let columns = horizontalSizeClass == .compact 
+                    ? [GridItem(.flexible())] 
+                    : [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+                    
+                if filteredStaff.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
+                        .padding(.top, 64)
+                } else {
+                    LazyVGrid(columns: columns, spacing: 24) {
+                        ForEach(filteredStaff) { staff in
+                            Button {
+                                navPath.append(.staffProfile(staff))
+                            } label: {
+                                StaffCardViewStandalone(staff: staff)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
                 }
             }
-            .padding(horizontalSizeClass == .compact ? 16 : 32)
         }
         .background(RSMSTheme.background.ignoresSafeArea())
         .navigationTitle("All Staff Members")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, prompt: "Search staff or designation...")
+    }
+    
+    private func filterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? RSMSTheme.primaryDark : RSMSTheme.surfaceSecondary)
+                .foregroundStyle(isSelected ? RSMSTheme.cream : RSMSTheme.textSecondary)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(isSelected ? Color.clear : RSMSTheme.border, lineWidth: 1)
+                )
+        }
     }
 }
 

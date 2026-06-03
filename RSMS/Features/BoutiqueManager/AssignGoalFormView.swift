@@ -55,7 +55,7 @@ struct AssignGoalFormView: View {
                             .foregroundStyle(RSMSTheme.textTertiary)
                         
                         Picker("Period", selection: $viewModel.draftPeriod) {
-                            ForEach(GoalPeriod.allCases, id: \.self) { period in
+                            ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
                                 Text(period.rawValue.capitalized).tag(period)
                             }
                         }

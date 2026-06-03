@@ -59,16 +59,12 @@ struct VIPDotIndicator: View {
 
     private var tierColor: Color {
         switch tier {
-        case .standard:
-            return .clear
-        case .silver:
-            return Color(red: 192/255, green: 192/255, blue: 192/255)
-        case .gold:
-            return RSMSTheme.primary
-        case .platinum:
-            return Color(red: 176/255, green: 196/255, blue: 222/255)
-        case .prive:
-            return RSMSTheme.danger
+        case .standard: return RSMSTheme.textSecondary
+        case .silver:   return Color(red: 192/255, green: 192/255, blue: 192/255)
+        case .gold:     return RSMSTheme.primary
+        case .platinum: return Color(red: 176/255, green: 196/255, blue: 222/255)
+        case .prive:    return RSMSTheme.danger
+        case .vip:      return RSMSTheme.primaryDark
         }
     }
 }
