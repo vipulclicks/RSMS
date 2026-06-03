@@ -126,15 +126,38 @@ final class InventorySourcingViewModel {
             try await dataStore.updateInventorySourcingRequest(updated)
             self.requests = dataStore.inventorySourcingRequests
             
-            // If marked available, notify sales associate
-            if status == .available {
-                try? await dataStore.createNotification(
-                    recipientId: request.salesAssociateId,
-                    title: "Sourcing Request Available",
-                    message: "Requested item '\(request.productName)' is now available in inventory.",
-                    type: .sourcingRequest,
-                    relatedEntityId: request.id
-                )
+            // Notify the sales associate on meaningful status transitions
+            let notificationInfo: (title: String, message: String)? = {
+                switch status {
+                case .stockFound:
+                    return ("Stock Located", "Stock for '\(request.productName)' has been located at another store.")
+                case .transferInitiated:
+                    return ("Transfer Initiated", "A transfer for '\(request.productName)' has been initiated.")
+                case .inTransit:
+                    return ("Item In Transit", "'\(request.productName)' is now in transit to your store.")
+                case .received:
+                    return ("Item Received at Store", "'\(request.productName)' has been received at your store.")
+                case .available:
+                    return ("Item Available in Catalog", "Requested item '\(request.productName)' is now available in inventory. You can add it to client carts.")
+                case .cancelled:
+                    return ("Sourcing Request Cancelled", "The sourcing request for '\(request.productName)' has been cancelled.")
+                default:
+                    return nil
+                }
+            }()
+            
+            if let info = notificationInfo {
+                do {
+                    try await dataStore.createNotification(
+                        recipientId: request.salesAssociateId,
+                        title: info.title,
+                        message: info.message,
+                        type: .sourcingRequest,
+                        relatedEntityId: request.id
+                    )
+                } catch {
+                    print("[InventorySourcingVM] ⚠️ Failed to create sourcing notification for status '\(status.rawValue)': \(error)")
+                }
             }
         } catch {
             self.errorMessage = error.localizedDescription
@@ -308,13 +331,17 @@ final class InventorySourcingViewModel {
             try await dataStore.updateInventorySourcingRequest(updatedRequest)
             
             // 5. Send notification to Sales Associate
-            try await dataStore.createNotification(
-                recipientId: request.salesAssociateId,
-                title: "Requested Item Available",
-                message: "Requested item '\(request.productName)' is now available in inventory.",
-                type: .sourcingRequest,
-                relatedEntityId: request.id
-            )
+            do {
+                try await dataStore.createNotification(
+                    recipientId: request.salesAssociateId,
+                    title: "Item Available in Catalog",
+                    message: "Requested item '\(request.productName)' is now available in inventory. You can add it to client carts.",
+                    type: .sourcingRequest,
+                    relatedEntityId: request.id
+                )
+            } catch {
+                print("[InventorySourcingVM] ⚠️ Failed to send 'available' notification to SA \(request.salesAssociateId): \(error)")
+            }
             
             // Refresh data stores
             try await dataStore.fetchInventorySourcingRequests()

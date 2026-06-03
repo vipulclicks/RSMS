@@ -24,6 +24,8 @@ struct ShowroomCartView: View {
     @State private var isSharing = false
     @State private var shareSuccess = false
     @State private var currentStatus: CartStatus = .active
+    @State private var showStockLimitToast = false
+    @State private var stockLimitMessage = ""
     
     // Discount State
     @State private var showDiscountSheet = false
@@ -107,6 +109,17 @@ struct ShowroomCartView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 .animation(.spring(), value: showShareToast || shareSuccess)
+            }
+            
+            // Stock limit notification toast
+            if showStockLimitToast {
+                VStack {
+                    Spacer()
+                    ToastView(message: stockLimitMessage)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .padding(.bottom, 80) // To stay above the action bar
+                .animation(.spring(), value: showStockLimitToast)
             }
         }
         .navigationTitle("Curated Cart")
@@ -363,17 +376,26 @@ struct ShowroomCartView: View {
                                     .frame(minWidth: 24, alignment: .center)
                                 
                                 Button {
-                                    let updated = UniversalCartItem(
-                                        id: item.id,
-                                        cartId: item.cartId,
-                                        productId: item.productId,
-                                        quantity: currentQty + 1,
-                                        unitPrice: item.unitPrice,
-                                        discountApplied: item.discountApplied,
-                                        note: item.note
-                                    )
-                                    Task {
-                                        try? await ds.updateUniversalCartItem(updated)
+                                    let availableStock = ds.stockItems.filter { $0.productId == item.productId && $0.status == .available && $0.storeId == appVM.currentStoreId }.reduce(0) { $0 + $1.quantity }
+                                    if currentQty < availableStock {
+                                        let updated = UniversalCartItem(
+                                            id: item.id,
+                                            cartId: item.cartId,
+                                            productId: item.productId,
+                                            quantity: currentQty + 1,
+                                            unitPrice: item.unitPrice,
+                                            discountApplied: item.discountApplied,
+                                            note: item.note
+                                        )
+                                        Task {
+                                            try? await ds.updateUniversalCartItem(updated)
+                                        }
+                                    } else {
+                                        stockLimitMessage = "Only \(availableStock) pieces are in stock."
+                                        showStockLimitToast = true
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                            showStockLimitToast = false
+                                        }
                                     }
                                 } label: {
                                     Image(systemName: "plus.circle")

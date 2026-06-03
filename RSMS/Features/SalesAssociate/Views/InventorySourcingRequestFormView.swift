@@ -160,9 +160,6 @@ struct InventorySourcingRequestFormView: View {
                                 associateId: associateId,
                                 storeId: storeId
                             )
-                            if sourcingVM.showSuccess {
-                                dismiss()
-                            }
                         }
                     } label: {
                         HStack {
@@ -187,5 +184,12 @@ struct InventorySourcingRequestFormView: View {
         }
         .navigationTitle("Request From Another Store")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Request Submitted Successfully", isPresented: Bindable(sourcingVM).showSuccess) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Your request for \(quantity)x \(product.name) has been sent to the inventory controller.")
+        }
     }
 }

@@ -25,13 +25,28 @@ struct InventorySourcingRequestListView: View {
                         .padding(.top, 16)
                 }
                 
-                // Segmented Control
-                Picker("Filter Requests", selection: $selectedSegment) {
-                    Text("Pending").tag(0)
-                    Text("Active").tag(1)
-                    Text("Completed").tag(2)
+                // Status Filter Row with Menu
+                HStack {
+                    Text(selectedSegmentName)
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    
+                    Spacer()
+                    
+                    Menu {
+                        Button("Pending") { selectedSegment = 0 }
+                        Button("Active") { selectedSegment = 1 }
+                        Button("Completed") { selectedSegment = 2 }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(RSMSTheme.primary)
+                            .padding(10)
+                            .background(RSMSTheme.surfacePrimary)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(RSMSTheme.border, lineWidth: 1))
+                    }
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
                 
@@ -66,6 +81,15 @@ struct InventorySourcingRequestListView: View {
         }
         .refreshable {
             await sourcingVM.load(dataStore: appViewModel.dataStore)
+        }
+    }
+    
+    private var selectedSegmentName: String {
+        switch selectedSegment {
+        case 0: return "Pending Requests"
+        case 1: return "Active Requests"
+        case 2: return "Completed Requests"
+        default: return "Requests"
         }
     }
     

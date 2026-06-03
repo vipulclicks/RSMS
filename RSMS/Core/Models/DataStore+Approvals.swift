@@ -113,7 +113,18 @@ extension DataStore {
     
     @MainActor
     func fetchAppNotifications() async throws {
-        self.appNotifications = try await api.fetch("app_notifications")
+        do {
+            let fetched: [AppNotification] = try await api.fetch("app_notifications")
+            // Merge: keep any locally-created notifications that haven't been persisted yet
+            let localOnlyNotifications = self.appNotifications.filter { local in
+                !fetched.contains(where: { $0.id == local.id })
+            }
+            self.appNotifications = fetched + localOnlyNotifications
+        } catch {
+            print("[DataStore] ⚠️ Failed to fetch app_notifications from Supabase: \(error)")
+            print("[DataStore] ℹ️ Keeping \(self.appNotifications.count) locally cached notifications. If this persists, check RLS SELECT policies on app_notifications table.")
+            // Keep existing local notifications instead of wiping them
+        }
     }
     
     @MainActor
@@ -135,7 +146,13 @@ extension DataStore {
             createdAt: Date()
         )
         
-        _ = try await api.insert("app_notifications", record: notification)
+        do {
+            _ = try await api.insert("app_notifications", record: notification)
+        } catch {
+            print("[DataStore] ⚠️ Supabase insert failed for app_notifications (type: \(type.rawValue), recipient: \(recipientId)): \(error)")
+            print("[DataStore] ℹ️ If this is an RLS or constraint error, verify the app_notifications table allows INSERT for the current role and that the 'type' column accepts '\(type.rawValue)'.")
+        }
+        // Always append locally so the notification is visible within the current session
         self.appNotifications.append(notification)
     }
     

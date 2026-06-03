@@ -64,10 +64,16 @@ struct SalesAssociateHomeView: View {
                 }
             }
         }
-        .tint(RSMSTheme.primary)
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active && horizontalSizeClass == .regular {
-                columnVisibility = .automatic
+            if newPhase == .active {
+                if horizontalSizeClass == .regular {
+                    columnVisibility = .automatic
+                }
+                // Auto-refresh notifications and sourcing requests when the app comes back to foreground
+                Task {
+                    try? await appViewModel.dataStore.fetchAppNotifications()
+                    try? await appViewModel.dataStore.fetchInventorySourcingRequests()
+                }
             }
         }
     }
@@ -333,22 +339,20 @@ struct SalesAssociateHomeView: View {
 
                             greetingHeaderSection
 
-                            KPIGridView(appointmentVM: appointmentVM, viewWidth: min(width, 1200))
+                            KPIGridView(appointmentVM: appointmentVM, viewWidth: width)
 
                             VStack(alignment: .leading, spacing: 32) {
                                 UpcomingAppointmentsSection(appointmentVM: appointmentVM)
                                 
                                 QuickActionsSection(
-                                    columnsCount: min(width, 1200) >= 700 ? 4 : 2,
+                                    columnsCount: width >= 700 ? 4 : (width >= 500 ? 3 : 2),
                                     onNewClient: { showNewClientSheet = true },
                                     onOmnichannel: { navigationPath.append("Omnichannel") }
                                 )
                             }
                             .padding(.horizontal, 20)
                         }
-                        .frame(maxWidth: 1200)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.bottom, 32)
+                        .padding(.vertical, 32)
                     }
                 }
             }

@@ -53,10 +53,74 @@ struct NotificationsSheetView: View {
                 }
             }
             .task {
-                // Fetch latest notifications and stock items from Supabase
+                // Fetch latest notifications, sourcing requests, and stock items from Supabase
                 try? await appViewModel.dataStore.fetchAppNotifications()
+                try? await appViewModel.dataStore.fetchInventorySourcingRequests()
                 if let storeId = appViewModel.currentUser?.storeId {
                     try? await appViewModel.dataStore.fetchStockItems(storeId: storeId)
+                }
+                
+                // Synthesize local notifications from the fetched sourcing requests
+                if let currentUser = appViewModel.currentUser {
+                    let sourcingRequests = appViewModel.dataStore.inventorySourcingRequests
+                        .filter { $0.salesAssociateId == currentUser.id }
+                    
+                    for req in sourcingRequests {
+                        // Check if we already have a notification for this request and state in appNotifications
+                        let statusText: String
+                        let title: String
+                        let message: String
+                        
+                        switch req.status {
+                        case .stockFound:
+                            statusText = "Stock Located"
+                            title = "Stock Located"
+                            message = "Stock for '\(req.productName)' has been located at another store."
+                        case .transferInitiated:
+                            statusText = "Transfer Initiated"
+                            title = "Transfer Initiated"
+                            message = "A transfer for '\(req.productName)' has been initiated."
+                        case .inTransit:
+                            statusText = "Item In Transit"
+                            title = "Item In Transit"
+                            message = "'\(req.productName)' is now in transit to your store."
+                        case .received:
+                            statusText = "Item Received at Store"
+                            title = "Item Received at Store"
+                            message = "'\(req.productName)' has been received at your store."
+                        case .available:
+                            statusText = "Item Available in Catalog"
+                            title = "Item Available in Catalog"
+                            message = "Requested item '\(req.productName)' is now available in inventory. You can add it to client carts."
+                        case .cancelled:
+                            statusText = "Sourcing Request Cancelled"
+                            title = "Sourcing Request Cancelled"
+                            message = "The sourcing request for '\(req.productName)' has been cancelled."
+                        default:
+                            continue
+                        }
+                        
+                        // Check if this specific notification already exists locally or remotely
+                        let exists = appViewModel.dataStore.appNotifications.contains { notification in
+                            notification.recipientId == currentUser.id &&
+                            notification.relatedEntityId == req.id &&
+                            notification.title == title
+                        }
+                        
+                        if !exists {
+                            let synthesized = AppNotification(
+                                id: UUID(),
+                                recipientId: currentUser.id,
+                                title: title,
+                                message: message,
+                                type: .sourcingRequest,
+                                relatedEntityId: req.id,
+                                isRead: false,
+                                createdAt: req.createdAt // backdate or use current
+                            )
+                            appViewModel.dataStore.appNotifications.append(synthesized)
+                        }
+                    }
                 }
             }
         }

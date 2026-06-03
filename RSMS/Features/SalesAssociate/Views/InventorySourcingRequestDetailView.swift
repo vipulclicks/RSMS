@@ -96,11 +96,11 @@ struct InventorySourcingRequestDetailView: View {
     // MARK: - Subviews
     
     private var statusHeaderCard: some View {
-        VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             HStack {
-                Text("Request Lifecycle")
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
+                Text("Sourcing Lifecycle")
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 
                 // Status Badge
@@ -117,30 +117,106 @@ struct InventorySourcingRequestDetailView: View {
             
             Divider().overlay(RSMSTheme.divider)
             
-            // Progress Bar Track
-            VStack(spacing: 8) {
-                ProgressView(value: progressFraction)
-                    .tint(currentRequest.status.color)
-                
-                HStack {
-                    Text("Requested")
-                        .font(.caption2.weight(currentRequest.status == .requested ? .bold : .regular))
-                        .foregroundStyle(currentRequest.status == .requested ? currentRequest.status.color : RSMSTheme.textTertiary)
-                    Spacer()
-                    Text("In Transfer")
-                        .font(.caption2.weight(isInTransfer ? .bold : .regular))
-                        .foregroundStyle(isInTransfer ? RSMSTheme.warning : RSMSTheme.textTertiary)
-                    Spacer()
-                    Text("Available")
-                        .font(.caption2.weight(currentRequest.status == .available || currentRequest.status == .completed ? .bold : .regular))
-                        .foregroundStyle(currentRequest.status == .available || currentRequest.status == .completed ? RSMSTheme.success : RSMSTheme.textTertiary)
+            // Vertical stepper steps definition
+            let steps: [(status: InventorySourcingStatus, title: String, subtitle: String)] = [
+                (.requested, "Request Created", "Sales associate requested the product"),
+                (.searching, "Locating Stock", "Checking stock availability in nearby boutiques"),
+                (.stockFound, "Stock Located", "Available stock has been identified"),
+                (.transferInitiated, "Transfer Initiated", "Inventory controller initiated transfer"),
+                (.inTransit, "Shipped & In Transit", "Item is on its way to your boutique"),
+                (.received, "Received at Boutique", "Shipment received and being verified"),
+                (.available, "Available in Catalog", "Product back in catalog and ready for client checkout")
+            ]
+            
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(0..<steps.count, id: \.self) { idx in
+                    let step = steps[idx]
+                    
+                    // Determine status of this step relative to current status
+                    let isCompleted = isStepCompleted(stepStatus: step.status, currentStatus: currentRequest.status)
+                    let isCurrent = currentRequest.status == step.status
+                    
+                    HStack(alignment: .top, spacing: 16) {
+                        // Vertical Indicator Line & Bullet
+                        VStack(spacing: 0) {
+                            if isCompleted {
+                                Circle()
+                                    .fill(RSMSTheme.success)
+                                    .frame(width: 22, height: 22)
+                                    .overlay(
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(Color.white)
+                                    )
+                            } else if isCurrent {
+                                Circle()
+                                    .fill(currentRequest.status.color)
+                                    .frame(width: 22, height: 22)
+                                    .overlay(
+                                        Circle()
+                                            .fill(Color.white)
+                                            .frame(width: 8, height: 8)
+                                    )
+                            } else {
+                                Circle()
+                                    .stroke(RSMSTheme.border, lineWidth: 2)
+                                    .background(Circle().fill(RSMSTheme.surfaceSecondary))
+                                    .frame(width: 22, height: 22)
+                            }
+                            
+                            // Line connecting to next bullet (except last)
+                            if idx < steps.count - 1 {
+                                Rectangle()
+                                    .fill(isCompleted ? RSMSTheme.success : RSMSTheme.border)
+                                    .frame(width: 2, height: 32)
+                            }
+                        }
+                        
+                        // Text Details
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(step.title)
+                                .font(.system(size: 14, weight: isCurrent ? .semibold : .medium))
+                                .foregroundStyle(isCurrent ? currentRequest.status.color : (isCompleted ? RSMSTheme.textPrimary : RSMSTheme.textTertiary))
+                            
+                            Text(step.subtitle)
+                                .font(.system(size: 11))
+                                .foregroundStyle(isCurrent ? RSMSTheme.textSecondary : RSMSTheme.textTertiary)
+                        }
+                        .padding(.top, 2)
+                        
+                        Spacer()
+                    }
                 }
             }
+            .padding(.vertical, 8)
         }
         .padding(20)
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+    }
+    
+    private func isStepCompleted(stepStatus: InventorySourcingStatus, currentStatus: InventorySourcingStatus) -> Bool {
+        // Special case: cancelled requests have no completed status sequence
+        if currentStatus == .cancelled { return false }
+        
+        let statusOrder: [InventorySourcingStatus] = [
+            .requested,
+            .searching,
+            .stockFound,
+            .transferInitiated,
+            .inTransit,
+            .received,
+            .available,
+            .completed
+        ]
+        
+        guard let stepIdx = statusOrder.firstIndex(of: stepStatus),
+              let currentIdx = statusOrder.firstIndex(of: currentStatus) else {
+            return false
+        }
+        
+        return stepIdx < currentIdx
     }
     
     private var detailsCard: some View {
@@ -280,7 +356,6 @@ struct InventorySourcingRequestDetailView: View {
                         if sourcingVM.isLoading {
                             ProgressView().tint(.white)
                         } else {
-                            Image(systemName: "arrow.left.arrow.right")
                             Text("Initiate Inventory Transfer")
                         }
                     }
