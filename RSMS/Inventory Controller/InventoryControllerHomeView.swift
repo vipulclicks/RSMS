@@ -218,6 +218,15 @@ struct InventoryControllerHomeView: View {
                 await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
             }
         }
+        .onChange(of: viewModel.dataStore.auditTrails.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.inventoryVariances.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.stockItems.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
     }
 }
 
