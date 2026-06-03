@@ -39,9 +39,64 @@ struct TransferDetailView: View {
                 
                 // Action Buttons
                 let isDestination = appVM.currentStoreId?.uuidString.lowercased() == transfer.destinationId.lowercased()
-                let canReceive = (transfer.status == .inTransit || transfer.status == .approved || transfer.status == .requested) && isDestination
+                let isSource = appVM.currentStoreId?.uuidString.lowercased() == transfer.sourceId.lowercased()
+                let canReceive = (transfer.status == .inTransit || transfer.status == .approved) && isDestination
+                let canApprove = transfer.status == .requested && isSource
                 
-                if canReceive {
+                if canApprove {
+                    HStack(spacing: 16) {
+                        Button {
+                            Task {
+                                if let user = appVM.currentUser {
+                                    await viewModel.rejectTransfer(movement: transfer, dataStore: appVM.dataStore, user: user)
+                                    dismiss()
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                if viewModel.isReceiving {
+                                    ProgressView().tint(RSMSTheme.danger)
+                                } else {
+                                    Image(systemName: "xmark.circle.fill")
+                                    Text("Reject")
+                                }
+                            }
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.danger)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(RSMSTheme.danger.opacity(0.15))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .disabled(viewModel.isReceiving)
+
+                        Button {
+                            Task {
+                                if let user = appVM.currentUser {
+                                    await viewModel.approveTransfer(movement: transfer, dataStore: appVM.dataStore, user: user)
+                                    dismiss()
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                if viewModel.isReceiving {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                    Text("Approve")
+                                }
+                            }
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.cream)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(RSMSTheme.success)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: RSMSTheme.success.opacity(0.3), radius: 10, y: 4)
+                        }
+                        .disabled(viewModel.isReceiving)
+                    }
+                } else if canReceive {
                     Button {
                         Task {
                             await viewModel.receiveTransfer(movement: transfer, dataStore: appVM.dataStore)

@@ -1009,6 +1009,88 @@ final class DataStore {
         stockItems.removeAll { $0.id == id }
     }
 
+    /// Reserves stock for an outbound transfer, preventing double selling.
+    func reserveStockForTransfer(productId: UUID, storeId: UUID, quantity: Int) async throws {
+        // Fetch fresh to ensure we have the latest quantities
+        let query = ["product_id": "eq.\(productId)", "store_id": "eq.\(storeId)"]
+        let currentStock: [StockItem] = try await api.fetch("stock_items", query: query)
+        
+        guard let existing = currentStock.first(where: { $0.status == .available }), existing.quantity >= quantity else {
+            throw NSError(domain: "DataStore", code: 400, userInfo: [
+                NSLocalizedDescriptionKey: "Insufficient available stock to reserve for transfer."
+            ])
+        }
+        
+        // Deduct the requested quantity from available stock
+        let updatedAvailable = StockItem(
+            id: existing.id,
+            productId: existing.productId,
+            storeId: existing.storeId,
+            quantity: existing.quantity - quantity, // Remove reserved quantity
+            rfidTag: existing.rfidTag,
+            location: existing.location,
+            status: .available,
+            lastScannedAt: existing.lastScannedAt,
+            updatedAt: .now
+        )
+        try await updateStockItem(updatedAvailable)
+        
+        // Check if an inTransit record already exists for this product at this store
+        if let existingInTransit = currentStock.first(where: { $0.status == .inTransit }) {
+            let updatedInTransit = StockItem(
+                id: existingInTransit.id,
+                productId: existingInTransit.productId,
+                storeId: existingInTransit.storeId,
+                quantity: existingInTransit.quantity + quantity,
+                rfidTag: existingInTransit.rfidTag,
+                location: existingInTransit.location,
+                status: .inTransit,
+                lastScannedAt: existingInTransit.lastScannedAt,
+                updatedAt: .now
+            )
+            try await updateStockItem(updatedInTransit)
+        } else {
+            // Create a new inTransit stock item for the reserved quantity
+            let inTransitItem = StockItem(
+                id: UUID(),
+                productId: existing.productId,
+                storeId: existing.storeId, // Stays at source store until received
+                quantity: quantity,
+                rfidTag: nil, // RFID transfers with the physical item
+                location: "Transfer staging",
+                status: .inTransit,
+                lastScannedAt: .now,
+                updatedAt: .now
+            )
+            try await createStockItem(inTransitItem)
+        }
+    }
+
+    /// Permanently deducts stock (e.g. for a vendor return or adjustment)
+    func deductStock(productId: UUID, storeId: UUID, quantity: Int) async throws {
+        let query = ["product_id": "eq.\(productId)", "store_id": "eq.\(storeId)"]
+        let currentStock: [StockItem] = try await api.fetch("stock_items", query: query)
+        
+        guard let existing = currentStock.first(where: { $0.status == .available }), existing.quantity >= quantity else {
+            throw NSError(domain: "DataStore", code: 400, userInfo: [
+                NSLocalizedDescriptionKey: "Insufficient available stock to deduct."
+            ])
+        }
+        
+        let updated = StockItem(
+            id: existing.id,
+            productId: existing.productId,
+            storeId: existing.storeId,
+            quantity: existing.quantity - quantity,
+            rfidTag: existing.rfidTag,
+            location: existing.location,
+            status: existing.status,
+            lastScannedAt: existing.lastScannedAt,
+            updatedAt: .now
+        )
+        try await updateStockItem(updated)
+    }
+
     // ══════════════════════════════════════════════════════════
     // MARK: - rfid_scan_records
     // ══════════════════════════════════════════════════════════

@@ -136,7 +136,17 @@ final class POSCheckoutViewModel {
         // Then try backend (will fail if RLS prevents it, but UI is already updated)
         try? await dataStore.updateUniversalCart(completed)
 
-        // 4. Audit
+        // 4. Deduct sold items from inventory
+        let itemsToDeduct = cartItems(for: cart.id)
+        for item in itemsToDeduct {
+            do {
+                try await dataStore.deductStock(productId: item.productId, storeId: _storeId, quantity: item.quantity)
+            } catch {
+                print("[POSCheckoutViewModel] ⚠️ Failed to deduct stock for product \(item.productId): \(error)")
+            }
+        }
+
+        // 5. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
         // 5. Update Sales Goal Achieved Amount

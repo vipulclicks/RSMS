@@ -106,12 +106,14 @@ final class CycleCountViewModel {
         defer { isSaving = false }
 
         do {
-            // Update lastScannedAt on the stock item
+            // ✅ Write the physically-counted quantity back to the database.
+            //    This is the core of cycle counting — the actual count
+            //    becomes the new quantity of record.
             let updated = StockItem(
                 id: item.stockItem.id,
                 productId: item.stockItem.productId,
                 storeId: item.stockItem.storeId,
-                quantity: item.stockItem.quantity, // don't change qty — just record the check
+                quantity: actualQty,           // ← use the actual physical count
                 rfidTag: item.stockItem.rfidTag,
                 location: item.stockItem.location,
                 status: item.stockItem.status,
@@ -120,7 +122,11 @@ final class CycleCountViewModel {
             )
             try await dataStore.updateStockItem(updated)
 
-            // If count differs → create a variance
+            // Adjust the running totalInventory shown on the dashboard
+            let delta = actualQty - item.expectedQty
+            totalInventory = max(0, totalInventory + delta)
+
+            // If count differs → log a variance record for the audit trail
             if actualQty != item.expectedQty, let storeId = user.storeId {
                 let variance = InventoryVariance(
                     id: UUID(),
@@ -142,24 +148,27 @@ final class CycleCountViewModel {
 
             // Audit log
             if let storeId = user.storeId {
+                let changeNote = actualQty != item.expectedQty
+                    ? "Adjusted from \(item.expectedQty) → \(actualQty) (Δ \(actualQty - item.expectedQty))"
+                    : "Count confirmed: \(actualQty) units"
                 dataStore.logAudit(
                     storeId: storeId,
-                    action: "Cycle Count — Barcode Scan",
+                    action: "Cycle Count — Stock Adjusted",
                     entityType: "Product",
                     entityId: item.product.id,
                     performedBy: user.id,
-                    details: "SKU: \(item.product.sku) · Expected: \(item.expectedQty) · Actual: \(actualQty)"
+                    details: "SKU: \(item.product.sku) · \(changeNote)"
                 )
             }
 
-            // Move from pending → checked
+            // Move from pending → checked (use updated stock item so qty is live)
             pendingItems.removeAll { $0.id == item.id }
             checkedItems.insert(
                 CycleCountItem(
                     id: item.id,
                     product: item.product,
                     stockItem: updated,
-                    expectedQty: item.expectedQty,
+                    expectedQty: actualQty,    // expected is now the freshly-counted qty
                     lastChecked: .now
                 ),
                 at: 0

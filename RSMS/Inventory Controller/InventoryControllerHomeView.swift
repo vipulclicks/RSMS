@@ -14,7 +14,6 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case dashboard      = "Dashboard"
     case productLookup  = "Lookup & Stock In"
     case transfer       = "Transfer Inventory"
-    case dcReplenishment = "DC Replenishments"
     case vendorReturns  = "Vendor Returns"
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
@@ -32,7 +31,6 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .dashboard:       return "chart.bar.fill"
         case .productLookup:   return "magnifyingglass.circle.fill"
         case .transfer:        return "arrow.left.arrow.right"
-        case .dcReplenishment: return "truck.box.fill"
         case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
         case .cycleCounts:     return "arrow.triangle.2.circlepath"
         case .auditReconcile:  return "doc.text.magnifyingglass"
@@ -109,10 +107,6 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.transfer.rawValue,
                       systemImage: InventoryDestination.transfer.icon)
                     .tag(InventoryDestination.transfer)
-                
-                Label(InventoryDestination.dcReplenishment.rawValue,
-                      systemImage: InventoryDestination.dcReplenishment.icon)
-                    .tag(InventoryDestination.dcReplenishment)
 
                 Label(InventoryDestination.vendorReturns.rawValue,
                       systemImage: InventoryDestination.vendorReturns.icon)
@@ -191,8 +185,6 @@ struct InventoryControllerHomeView: View {
             ProductLookupView()
         case .transfer:
             InventoryTransferView()
-        case .dcReplenishment:
-            DCReplenishmentView()
         case .vendorReturns:
             VendorReturnView()
         case .cycleCounts:

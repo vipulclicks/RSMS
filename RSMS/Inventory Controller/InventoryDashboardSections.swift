@@ -200,7 +200,6 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
-                dcShipmentsCard
                 vendorReturnsCard
                 serviceTrackingCard
                 cycleCountCard
@@ -213,7 +212,6 @@ extension InventoryControllerHomeView {
 
                 lowStockCard
                 transferCard
-                dcShipmentsCard
                 vendorReturnsCard
                 serviceTrackingCard
                 cycleCountCard
@@ -344,18 +342,7 @@ extension InventoryControllerHomeView {
         }
     }
 
-    var dcShipmentsCard: some View {
 
-        actionCard(
-            title: "DC Shipments",
-            subtitle: "REPLENISHMENT",
-            icon: "shippingbox.and.arrow.backward.fill",
-            accentColor: Color(hue: 0.52, saturation: 0.6, brightness: 0.75),
-            badgeText: "Inbound"
-        ) {
-            selectedDestination = .dcReplenishment
-        }
-    }
 
     var vendorReturnsCard: some View {
 
