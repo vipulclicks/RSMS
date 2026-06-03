@@ -192,8 +192,8 @@ final class InventoryReceivingViewModel {
             let receivedAt = Date()
             let movement = InventoryMovement(
                 id: UUID(),
-                type: .dcReplenishment,
-                sourceId: "RECEIVING",
+                type: .storeTransfer,
+                sourceId: "INBOUND",
                 destinationId: storeId.uuidString.lowercased(),
                 status: .completed,
                 requestedBy: user.id,

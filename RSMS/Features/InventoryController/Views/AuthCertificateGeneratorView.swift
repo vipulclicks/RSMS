@@ -11,6 +11,7 @@ struct AuthCertificateGeneratorView: View {
     @State private var searchText = ""
     @State private var selectedProduct: Product?
     @State private var serialNumber = ""
+    @State private var customerName = ""  // ← The actual buyer/recipient
     
     @State private var generatedCertificate: AuthCertificate?
     @State private var isGenerating = false
@@ -25,9 +26,9 @@ struct AuthCertificateGeneratorView: View {
             product: product,
             serialNumber: cert.serialNumber,
             date: cert.issuedAt,
-            issuerName: appVM.currentUser?.fullName ?? "System"
+            ownerName: customerName.isEmpty ? (appVM.currentUser?.fullName ?? "Customer") : customerName
         )
-        .frame(width: 600, height: 800)
+        .frame(width: 800, height: 571)
         
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2.0
@@ -146,6 +147,23 @@ struct AuthCertificateGeneratorView: View {
                 }
             }
             
+            // Customer / Owner Name
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Customer Name")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                    .textCase(.uppercase)
+
+                TextField("Full name of the certificate recipient", text: $customerName)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .padding()
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(
+                        customerName.isEmpty ? RSMSTheme.border : RSMSTheme.gold, lineWidth: 1)
+                    )
+            }
+
             // Serial Number
             if selectedProduct != nil {
                 VStack(alignment: .leading, spacing: 8) {
@@ -181,7 +199,7 @@ struct AuthCertificateGeneratorView: View {
                 .background(selectedProduct == nil || serialNumber.isEmpty ? RSMSTheme.textTertiary : RSMSTheme.gold)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .disabled(selectedProduct == nil || serialNumber.isEmpty || isGenerating)
+            .disabled(selectedProduct == nil || serialNumber.isEmpty || customerName.isEmpty || isGenerating)
             .padding(.top, 12)
         }
     }
@@ -194,9 +212,9 @@ struct AuthCertificateGeneratorView: View {
                     product: product,
                     serialNumber: cert.serialNumber,
                     date: cert.issuedAt,
-                    issuerName: appVM.currentUser?.fullName ?? "System"
+                    ownerName: customerName.isEmpty ? (appVM.currentUser?.fullName ?? "Customer") : customerName
                 )
-                .frame(maxWidth: 600)
+                .frame(maxWidth: 800)
                 
                 HStack(spacing: 16) {
                     Button {
@@ -204,6 +222,7 @@ struct AuthCertificateGeneratorView: View {
                         generatedCertificate = nil
                         selectedProduct = nil
                         serialNumber = ""
+                        customerName = ""
                         searchText = ""
                     } label: {
                         Text("Create Another")
