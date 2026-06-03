@@ -484,9 +484,6 @@ final class DataStore {
     func fetchEventInvitations(eventId: UUID) async throws {
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "eq.\(eventId)"])
     }
-<<<<<<< HEAD
-    
-=======
 
     func fetchEventInvitations(eventIds: [UUID]) async throws {
         guard !eventIds.isEmpty else {
@@ -496,17 +493,12 @@ final class DataStore {
         let ids = eventIds.map { $0.uuidString.lowercased() }.joined(separator: ",")
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "in.(\(ids))"])
     }
-
->>>>>>> Prem_Email
     @discardableResult
     func createEventInvitation(_ inv: EventInvitation) async throws -> EventInvitation {
         let created: EventInvitation = try await api.insert("event_invitations", record: inv)
         eventInvitations.append(created)
         return created
     }
-<<<<<<< HEAD
-    
-=======
 
     @discardableResult
     func createEventInvitations(_ invitations: [EventInvitation]) async throws -> [EventInvitation] {
@@ -526,7 +518,6 @@ final class DataStore {
         try await api.invokeFunction("send_invite_email", body: payload)
     }
 
->>>>>>> Prem_Email
     func updateEventInvitation(_ inv: EventInvitation) async throws {
         try await api.update("event_invitations", id: inv.id, record: inv)
         if let i = eventInvitations.firstIndex(where: { $0.id == inv.id }) { eventInvitations[i] = inv }

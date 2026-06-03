@@ -11,23 +11,23 @@ import SwiftUI
 
 @Observable
 final class POSCheckoutViewModel {
-
+    
     private let dataStore: DataStore
     private let associateId: UUID
     private let _storeId: UUID
     
     /// Public read-only access for views that need just the storeId (e.g. to fetch sales goals)
     var currentStoreId: UUID { _storeId }
-
+    
     var isLoading = false
     var errorMessage: String?
-
+    
     init(dataStore: DataStore, associateId: UUID, storeId: UUID) {
         self.dataStore   = dataStore
         self.associateId = associateId
         self._storeId    = storeId
     }
-
+    
     @MainActor
     func loadData() async {
         isLoading = true
@@ -49,7 +49,7 @@ final class POSCheckoutViewModel {
             try? await dataStore.fetchInventoryReservations()
             
             // Run expiration check
-            await checkAndProcessExpiredSessions()
+            await checkAndProcessExpiredSession()
             
             // Tax Free
             try? await dataStore.fetchTaxFreeConfigs()
@@ -60,12 +60,12 @@ final class POSCheckoutViewModel {
         }
         isLoading = false
     }
-
+    
     // MARK: - Cart Sessions (POS)
     var activeCarts: [UniversalCart] {
         dataStore.universalCarts.filter { $0.type == .pos && $0.status == .active && $0.associateId == associateId }
     }
-
+    
     func createCartSession(clientId: UUID? = nil) async throws -> UniversalCart {
         let cart = UniversalCart(
             id: UUID(), type: .pos, associateId: associateId,
@@ -74,11 +74,11 @@ final class POSCheckoutViewModel {
         )
         return try await dataStore.createUniversalCart(cart)
     }
-
+    
     func cartItems(for cartId: UUID) -> [UniversalCartItem] {
         dataStore.universalCartItems.filter { $0.cartId == cartId }
     }
-
+    
     func addItemToCart(cartId: UUID, productId: UUID, quantity: Int = 1, unitPrice: Double) async throws {
         let item = UniversalCartItem(
             id: UUID(), cartId: cartId, productId: productId,
@@ -86,14 +86,14 @@ final class POSCheckoutViewModel {
         )
         try await dataStore.createUniversalCartItem(item)
     }
-
+    
     func removeItemFromCart(id: UUID) async throws {
         try await dataStore.deleteUniversalCartItem(id: id)
     }
-
+    
     // MARK: - Discounts
     var activeDiscounts: [Discount] { dataStore.discounts.filter(\.isActive) }
-
+    
     func applyDiscount(cartItemId: UUID, discountAmount: Double) async throws {
         guard let item = dataStore.universalCartItems.first(where: { $0.id == cartItemId }) else { return }
         let updated = UniversalCartItem(
@@ -103,7 +103,7 @@ final class POSCheckoutViewModel {
         )
         try await dataStore.updateUniversalCartItem(updated)
     }
-
+    
     // MARK: - Checkout
     func checkout(cart: UniversalCart, totalAmount: Double, taxAmount: Double, tenderMethod: TenderMethod, isTaxFree: Bool = false, razorpayPaymentId: String? = nil) async throws {
         // 1. Create transaction (ignore backend error so UI continues)
@@ -113,7 +113,7 @@ final class POSCheckoutViewModel {
             currency: "INR", status: .completed, isTaxFree: isTaxFree, createdAt: .now
         )
         try? await dataStore.createTransaction(txn)
-
+        
         // 2. Create tender
         let tender = Tender(
             id: UUID(), transactionId: txn.id, method: tenderMethod,
@@ -133,7 +133,7 @@ final class POSCheckoutViewModel {
             createdAt: .now
         )
         try? await dataStore.createCommission(commission)
-
+        
         // 3. Update cart status locally and persist to Supabase
         let completed = UniversalCart(
             id: cart.id, type: cart.type, associateId: cart.associateId,
@@ -146,7 +146,6 @@ final class POSCheckoutViewModel {
             dataStore.universalCarts[i] = completed
         }
         
-<<<<<<< HEAD
         // Then persist to Supabase — log if it fails so RLS issues are visible in the console
         do {
             try await dataStore.updateUniversalCart(completed)
@@ -154,27 +153,18 @@ final class POSCheckoutViewModel {
             print("[POSCheckoutViewModel] ⚠️ Failed to update cart status to 'completed' in Supabase: \(error)")
             print("[POSCheckoutViewModel] ℹ️ If this is an RLS error, add an UPDATE policy on 'universal_carts' for the sales_associate role.")
         }
-=======
         // Then try backend (will fail if RLS prevents it, but UI is already updated)
         try? await dataStore.updateUniversalCart(completed)
->>>>>>> Prem_Email
-
+        
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
         
         // 5. Update Sales Goal Achieved Amount
-<<<<<<< HEAD
+        // 5. Update Sales Goal Achieved Amount
         if let currentGoal = dataStore.salesGoals
             .filter({ $0.staffId == associateId && $0.period == .monthly })
             .sorted(by: { $0.createdAt > $1.createdAt })
             .first
-=======
-        let now = Date()
-        if let currentGoal = dataStore.salesGoals
-            .filter({ $0.staffId == associateId && $0.period == .monthly })
-            .sorted(by: { $0.createdAt > $1.createdAt })
-            .first 
->>>>>>> Prem_Email
         {
             let updatedGoal = SalesGoal(
                 id: currentGoal.id,
@@ -199,21 +189,20 @@ final class POSCheckoutViewModel {
             }
         }
         
-<<<<<<< HEAD
         // 6. Delete cart items from Supabase AND clear from memory
         // Each deleteUniversalCartItem call handles both the backend DELETE and the local removeAll.
         // Capture IDs first because the array mutates during deletion.
         let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
         for item in itemsToDelete {
             try? await dataStore.deleteUniversalCartItem(id: item.id)
-=======
-        // 6. Clear in-memory cart items so UI reflects empty cart post-payment
-        await MainActor.run {
-            dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
->>>>>>> Prem_Email
+            
+            // 6. Clear in-memory cart items so UI reflects empty cart post-payment
+            await MainActor.run {
+                dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
+            }
         }
     }
-
+    
     // MARK: - Gift Receipts
     func printGiftReceipt(transactionId: UUID, note: String?) async throws {
         let receipt = GiftReceipt(
@@ -222,10 +211,10 @@ final class POSCheckoutViewModel {
         )
         try await dataStore.createGiftReceipt(receipt)
     }
-
+    
     // MARK: - Returns / Exchanges
     var exchangeReturns: [ExchangeReturn] { dataStore.exchangeReturns.filter { $0.storeId == _storeId } }
-
+    
     func processReturn(originalTransactionId: UUID, type: ExchangeReturnType, reason: String, refundAmount: Double?) async throws {
         let er = ExchangeReturn(
             id: UUID(), originalTransactionId: originalTransactionId, storeId: _storeId,
@@ -235,14 +224,14 @@ final class POSCheckoutViewModel {
         try await dataStore.createExchangeReturn(er)
         dataStore.logAudit(storeId: _storeId, action: "\(type.rawValue.capitalized) Initiated", entityType: "ExchangeReturn", entityId: er.id, performedBy: associateId)
     }
-
+    
     // MARK: - Helpers
     func productName(for id: UUID) -> String { dataStore.productName(for: id) }
     func clientName(for id: UUID?) -> String {
         guard let id else { return "Walk-in" }
         return dataStore.clientName(for: id)
     }
-
+    
     func transactionStatusColor(_ status: TransactionStatus) -> Color {
         switch status {
         case .pending:   return RSMSTheme.warning
@@ -251,11 +240,11 @@ final class POSCheckoutViewModel {
         case .refunded:  return RSMSTheme.info
         }
     }
-
+    
     // ══════════════════════════════════════════════════════════
     // MARK: - BOPIS Link Generation & Status
     // ══════════════════════════════════════════════════════════
-
+    
     func generateCheckoutLink(for cart: UniversalCart) async throws -> CheckoutSession {
         let items = cartItems(for: cart.id)
         guard !items.isEmpty else {
@@ -341,7 +330,7 @@ final class POSCheckoutViewModel {
         
         return createdSession
     }
-
+    
     func fetchCheckoutSessionStatus(token: String) async throws -> CheckoutSession {
         try? await dataStore.fetchCheckoutSessions()
         if let session = dataStore.checkoutSessions.first(where: { $0.token == token }) {
@@ -349,7 +338,7 @@ final class POSCheckoutViewModel {
         }
         throw NSError(domain: "POSCheckoutViewModel", code: 404, userInfo: [NSLocalizedDescriptionKey: "Checkout session not found."])
     }
-
+    
     func cancelCheckoutSession(_ session: CheckoutSession) async {
         let updated = CheckoutSession(
             id: session.id,
@@ -404,8 +393,8 @@ final class POSCheckoutViewModel {
         
         dataStore.logAudit(storeId: _storeId, action: "Checkout Link Cancelled", entityType: "CheckoutSession", entityId: session.id, performedBy: associateId)
     }
-
-    func checkAndProcessExpiredSessions() async {
+    
+    func checkAndProcessExpiredSession() async {
         let now = Date()
         let expired = dataStore.checkoutSessions.filter {
             ($0.status == .linkGenerated || $0.status == .viewed || $0.status == .pendingPayment) && $0.expiresAt < now
