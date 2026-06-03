@@ -23,6 +23,8 @@ struct EditSalesAssociateProfileView: View {
     @State private var showPhotosPicker = false
 
     @State private var isSaving = false
+    @State private var alertMessage: String? = nil
+    @State private var showAlert = false
 
     init(profile: UserProfile) {
         self.profile = profile
@@ -135,6 +137,11 @@ struct EditSalesAssociateProfileView: View {
                         }
                     }
                 }
+            }
+            .alert("Error Saving Profile", isPresented: $showAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(alertMessage ?? "An unknown error occurred.")
             }
         }
     }
@@ -254,25 +261,22 @@ struct EditSalesAssociateProfileView: View {
         }
     }
 
-    private func uploadToSupabase(image: UIImage) async -> String? {
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-        do {
-            let pathName = "\(profile.id.uuidString.lowercased()).jpg"
-            print("[EditProfile] Uploading image to Supabase avatars/\(pathName)")
-            let path = try await appViewModel.dataStore.api.uploadStorage(
-                bucket: "avatars",
-                path: pathName,
-                data: data,
-                contentType: "image/jpeg"
-            )
-            // Construct public URL representation
-            let publicURL = "\(SupabaseConfig.projectURL)/storage/v1/object/public/\(path)"
-            print("[EditProfile] Uploaded. Public URL: \(publicURL)")
-            return publicURL
-        } catch {
-            print("[EditProfile] Supabase upload failed: \(error.localizedDescription)")
-            return nil
+    private func uploadToSupabase(image: UIImage) async throws -> String {
+        guard let data = image.jpegData(compressionQuality: 0.8) else {
+            throw NSError(domain: "EditProfile", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to JPEG data."])
         }
+        let pathName = "\(profile.id.uuidString.lowercased()).jpg"
+        print("[EditProfile] Uploading image to Supabase avatars/\(pathName)")
+        let path = try await appViewModel.dataStore.api.uploadStorage(
+            bucket: "avatars",
+            path: pathName,
+            data: data,
+            contentType: "image/jpeg"
+        )
+        // Construct public URL representation
+        let publicURL = "\(SupabaseConfig.projectURL)/storage/v1/object/public/\(path)"
+        print("[EditProfile] Uploaded. Public URL: \(publicURL)")
+        return publicURL
     }
 
     private func saveProfile() {
@@ -281,36 +285,34 @@ struct EditSalesAssociateProfileView: View {
         Task {
             var finalAvatarURL = avatarURL
             
-            if let pickedImage = uiImage {
-                // Save locally first so we always have a fallback
-                let localURL = saveImageLocally(image: pickedImage)
-                
-                // Try Supabase cloud upload — this URL works on ALL devices
-                if let cloudURL = await uploadToSupabase(image: pickedImage) {
+            do {
+                if let pickedImage = uiImage {
+                    // Resize to a maximum dimension of 256 pixels to keep request payload tiny
+                    let resizedImage = pickedImage.resized(toMaxDimension: 256)
+                    
+                    // Save locally first so we always have a fallback for instant display
+                    _ = saveImageLocally(image: resizedImage)
+                    
+                    // Try Supabase cloud upload — this URL works on ALL devices
+                    let cloudURL = try await uploadToSupabase(image: resizedImage)
                     // Append cache-bust so AsyncImage re-fetches after update
                     finalAvatarURL = cloudURL + "?t=\(Int(Date().timeIntervalSince1970))"
                     print("[EditProfile] ✅ Using cloud URL: \(finalAvatarURL)")
-                } else if let localURL = localURL {
-                    // Cloud failed — use local file URL (works on this device only)
-                    finalAvatarURL = localURL.absoluteString
-                    print("[EditProfile] ⚠️ Cloud upload failed, using local URL: \(finalAvatarURL)")
                 }
-            }
 
-            let updatedProfile = UserProfile(
-                id: profile.id,
-                email: profile.email, // Locked and uneditable
-                fullName: profile.fullName, // Locked and uneditable
-                role: profile.role,
-                storeId: profile.storeId,
-                avatarURL: finalAvatarURL.isEmpty ? nil : finalAvatarURL,
-                phone: phone.trimmingCharacters(in: .whitespaces).isEmpty ? nil : phone.trimmingCharacters(in: .whitespaces),
-                isActive: profile.isActive,
-                createdAt: profile.createdAt,
-                updatedAt: Date()
-            )
+                let updatedProfile = UserProfile(
+                    id: profile.id,
+                    email: profile.email, // Locked and uneditable
+                    fullName: profile.fullName, // Locked and uneditable
+                    role: profile.role,
+                    storeId: profile.storeId,
+                    avatarURL: finalAvatarURL.isEmpty ? nil : finalAvatarURL,
+                    phone: phone.trimmingCharacters(in: .whitespaces).isEmpty ? nil : phone.trimmingCharacters(in: .whitespaces),
+                    isActive: profile.isActive,
+                    createdAt: profile.createdAt,
+                    updatedAt: Date()
+                )
 
-            do {
                 try await appViewModel.dataStore.updateEmployeeProfile(updatedProfile)
                 
                 await MainActor.run {
@@ -321,18 +323,12 @@ struct EditSalesAssociateProfileView: View {
                     dismiss()
                 }
             } catch {
-                print("[EditSalesAssociateProfileView] Failed to save profile to database: \(error.localizedDescription)")
+                print("[EditSalesAssociateProfileView] Failed to save profile: \(error.localizedDescription)")
                 
-                // Fallback local update to keep UI in sync
                 await MainActor.run {
-                    if let idx = appViewModel.dataStore.users.firstIndex(where: { $0.id == profile.id }) {
-                        appViewModel.dataStore.users[idx] = updatedProfile
-                    }
-                    withAnimation(.smooth(duration: 0.3)) {
-                        appViewModel.currentUser = updatedProfile
-                    }
-                    isSaving = false
-                    dismiss()
+                    self.alertMessage = error.localizedDescription
+                    self.showAlert = true
+                    self.isSaving = false
                 }
             }
         }
@@ -344,4 +340,23 @@ struct EditSalesAssociateProfileView: View {
     vm.currentUser = .previewAssociate
     return EditSalesAssociateProfileView(profile: .previewAssociate)
         .environment(vm)
+}
+
+extension UIImage {
+    func resized(toMaxDimension maxDimension: CGFloat) -> UIImage {
+        let size = self.size
+        let aspectRatio = size.width / size.height
+        
+        var newSize: CGSize
+        if aspectRatio > 1 {
+            newSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+        } else {
+            newSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
+        }
+        
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            self.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
 }

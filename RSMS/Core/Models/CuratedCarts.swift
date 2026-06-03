@@ -5,7 +5,7 @@ extension DataStore {
     /// Returns curated carts for a given client based on the universal_carts table.
     func curatedCarts(for clientID: UUID) -> [CuratedCart] {
         // Map universal carts that belong to the client and are of type 'curated'
-        let carts = universalCarts.filter { $0.clientId == clientID && $0.type == .curated }
+        let carts = universalCarts.filter { $0.clientId == clientID && $0.type == .curated && $0.status == .active }
         
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -28,14 +28,15 @@ extension DataStore {
     /// This ensures there is always exactly one curated cart per client.
     func getOrCreateCuratedCart(forClient clientId: UUID, associateId: UUID) async throws -> UniversalCart {
         // Check local state first
-        if let existing = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated }) {
+        if let existing = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated && $0.status == .active }) {
             return existing
         }
         
         // Check database
         let fetched: [UniversalCart] = try await SupabaseClient.shared.fetch("universal_carts", query: [
             "client_id": "eq.\(clientId)",
-            "type": "eq.curated"
+            "type": "eq.curated",
+            "status": "eq.active"
         ])
         
         if let existing = fetched.first {
@@ -99,7 +100,7 @@ extension DataStore {
     
     /// Removes a single product from the client's curated cart.
     func removeItemFromCuratedCart(productId: UUID, forClient clientId: UUID) async throws {
-        guard let cart = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated }) else { return }
+        guard let cart = universalCarts.first(where: { $0.clientId == clientId && $0.type == .curated && $0.status == .active }) else { return }
         guard let item = universalCartItems.first(where: { $0.cartId == cart.id && $0.productId == productId }) else { return }
         
         try await SupabaseClient.shared.delete("universal_cart_items", id: item.id)
@@ -111,8 +112,8 @@ extension DataStore {
     // MARK: - Full cart replace (used by Guided Catalog save)
 
     func saveCuratedCart(_ cart: CuratedCart, forClient clientId: UUID, associateId: UUID) async throws {
-        // Enforce one curated cart per client: delete any existing ones first
-        let existing = self.universalCarts.filter { $0.clientId == clientId && $0.type == .curated }
+        // Enforce one curated cart per client: delete any existing active ones first
+        let existing = self.universalCarts.filter { $0.clientId == clientId && $0.type == .curated && $0.status == .active }
         if !existing.isEmpty {
             try await withThrowingTaskGroup(of: UUID.self) { group in
                 for oldCart in existing {

@@ -21,6 +21,8 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case auditTrail     = "Audit Trail"
     case authCertificates = "Auth Certificates"
     case notify         = "Notify Manager"
+    case serviceTracking = "Service Center"
+    case loanerManagement = "Loaner Management"
     case profile        = "My Profile"
 
     var id: String { rawValue }
@@ -37,6 +39,8 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
         case .authCertificates:return "seal.fill"
         case .notify:          return "paperplane.fill"
+        case .serviceTracking: return "wrench.and.screwdriver.fill"
+        case .loanerManagement: return "clock.arrow.circlepath"
         case .profile:         return "person.crop.circle.fill"
         }
     }
@@ -113,6 +117,14 @@ struct InventoryControllerHomeView: View {
                 Label(InventoryDestination.vendorReturns.rawValue,
                       systemImage: InventoryDestination.vendorReturns.icon)
                     .tag(InventoryDestination.vendorReturns)
+
+                Label(InventoryDestination.serviceTracking.rawValue,
+                      systemImage: InventoryDestination.serviceTracking.icon)
+                    .tag(InventoryDestination.serviceTracking)
+                    
+                Label(InventoryDestination.loanerManagement.rawValue,
+                      systemImage: InventoryDestination.loanerManagement.icon)
+                    .tag(InventoryDestination.loanerManagement)
             }
 
             Section {
@@ -193,6 +205,10 @@ struct InventoryControllerHomeView: View {
             AuthCertificateGeneratorView()
         case .notify:
             NotifyBoutiqueManagerView()
+        case .serviceTracking:
+            ServiceCenterTrackingView()
+        case .loanerManagement:
+            LoanerProductManagementView()
         case .profile:
             InventoryControllerProfileView()
         }
@@ -217,6 +233,15 @@ struct InventoryControllerHomeView: View {
             if dashVM.snapshot == nil {
                 await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
             }
+        }
+        .onChange(of: viewModel.dataStore.auditTrails.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.inventoryVariances.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
+        }
+        .onChange(of: viewModel.dataStore.stockItems.count) { _, _ in
+            dashVM.refreshSnapshot(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
         }
     }
 }

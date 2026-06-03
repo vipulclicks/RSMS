@@ -17,6 +17,7 @@ struct InventoryTransferView: View {
     @State private var vm = InventoryTransferViewModel()
     @State private var appeared = false
     @State private var showAvailability = true
+    @State private var selectedTab = 0 // 0 = Transfers, 1 = Sourcing Requests
 
     private let kpiColumns = [
         GridItem(.flexible()),
@@ -27,20 +28,34 @@ struct InventoryTransferView: View {
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
-            if vm.isLoading && vm.movements.isEmpty {
-                loadingView
-            } else {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
-                        headerSection
-                        heroOverviewCard
-                        miniCardsSection
-                        createTransferButton
-                        availabilitySection
-                        recentTransfersSection
+            VStack(spacing: 0) {
+                Picker("Fulfillment Tab", selection: $selectedTab) {
+                    Text("Transfers Feed").tag(0)
+                    Text("Sourcing Requests").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+
+                if selectedTab == 0 {
+                    if vm.isLoading && vm.movements.isEmpty {
+                        loadingView
+                    } else {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: 24) {
+                                headerSection
+                                heroOverviewCard
+                                miniCardsSection
+                                createTransferButton
+                                availabilitySection
+                                recentTransfersSection
+                            }
+                            .padding(24)
+                            .padding(.bottom, 24)
+                        }
                     }
-                    .padding(24)
-                    .padding(.bottom, 24)
+                } else {
+                    InventorySourcingRequestListView()
                 }
             }
 
@@ -52,21 +67,23 @@ struct InventoryTransferView: View {
         .navigationTitle("Transfer Inventory")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    vm.resetForm()
-                    vm.showCreateSheet = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("New Transfer")
+            if selectedTab == 0 {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        vm.resetForm()
+                        vm.showCreateSheet = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("New Transfer")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.gold)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(RSMSTheme.gold.opacity(0.15))
+                        .clipShape(Capsule())
                     }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.gold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RSMSTheme.gold.opacity(0.15))
-                    .clipShape(Capsule())
                 }
             }
         }

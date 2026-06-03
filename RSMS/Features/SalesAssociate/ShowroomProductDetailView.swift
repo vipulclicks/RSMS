@@ -144,18 +144,30 @@ struct ShowroomProductDetailView: View {
                     }
                     .disabled(wishlistAdded)
                     
-                    Button(action: {
-                        viewModel.toggleCartItem(product)
-                        if isInCart {
-                            dismiss()
+                    if viewModel.stockQuantity(for: product.id) == 0 && !isInCart {
+                        Button(action: {}) {
+                            Text("Out of Stock")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(RSMSTheme.surfaceSecondary, in: Capsule())
                         }
-                    }) {
-                        Text(isInCart ? "Remove from Edit" : "Add to Edit")
-                            .font(.headline)
-                            .foregroundStyle(isInCart ? RSMSTheme.textPrimary : .white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(isInCart ? RSMSTheme.surfaceSecondary : RSMSTheme.primary, in: Capsule())
+                        .disabled(true)
+                    } else {
+                        Button(action: {
+                            viewModel.toggleCartItem(product)
+                            if isInCart {
+                                dismiss()
+                            }
+                        }) {
+                            Text(isInCart ? "Remove from Edit" : "Add to Edit")
+                                .font(.headline)
+                                .foregroundStyle(isInCart ? RSMSTheme.textPrimary : .white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(isInCart ? RSMSTheme.surfaceSecondary : RSMSTheme.primary, in: Capsule())
+                        }
                     }
                 }
                 .padding(.horizontal, 24)
