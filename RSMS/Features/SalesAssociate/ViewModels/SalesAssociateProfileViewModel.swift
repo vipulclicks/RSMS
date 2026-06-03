@@ -17,6 +17,7 @@ final class SalesAssociateProfileViewModel {
     // Lists for drill-down views
     var todayTransactionsList: [Transaction] = []
     var todayAppointmentsList: [Appointment] = []
+    var allTransactionsList: [Transaction] = []
     
     // MARK: - User Information Extensions
     var department: String = "—"
@@ -45,6 +46,11 @@ final class SalesAssociateProfileViewModel {
         } else {
             self.todaySales = "₹0"
         }
+
+        // All Transactions
+        self.allTransactionsList = dataStore.transactions.filter {
+            $0.associateId == staffId
+        }.sorted(by: { $0.createdAt > $1.createdAt })
 
         // Appointments Handled (Today)
         let todayAppointments = dataStore.appointments.filter { 

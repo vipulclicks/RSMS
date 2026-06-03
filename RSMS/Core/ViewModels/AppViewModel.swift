@@ -15,7 +15,7 @@ class AppViewModel {
     var currentUser: UserProfile?
 
     /// Base URL for remote checkout links (ngrok, public server, etc.)
-    var customCheckoutBaseURL: String = UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "http://localhost:3000" {
+    var customCheckoutBaseURL: String = UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "https://wttkl-152-57-76-254.run.pinggy-free.link" {
         didSet {
             UserDefaults.standard.set(customCheckoutBaseURL, forKey: "custom_checkout_base_url")
         }

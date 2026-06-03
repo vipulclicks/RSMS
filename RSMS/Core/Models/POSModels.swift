@@ -204,6 +204,7 @@ enum NotificationType: String, Codable, CaseIterable {
     case approvalDecision = "approval_decision"
     case sourcingRequest = "sourcing_request"
     case wishlistRestock = "wishlist_restock"
+    case complianceAlert = "compliance_alert"
 }
 
 struct AppNotification: Codable, Identifiable, Hashable {
