@@ -70,7 +70,6 @@ struct StoreDashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
-                        notificationBell
                         profileButton
                     }
                 }
