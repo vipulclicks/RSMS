@@ -18,6 +18,7 @@ struct ShowroomCartView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.dismiss) private var dismiss
     @State private var showShareToast = false
+    @State private var toastMessage = "Shared curated link successfully!"
     @State private var navigateToCheckout = false
     
     // States for saved cart mode
@@ -117,7 +118,7 @@ struct ShowroomCartView: View {
             if showShareToast || shareSuccess {
                 VStack {
                     Spacer()
-                    ToastView(message: "Shared curated link successfully!")
+                    ToastView(message: shareSuccess ? "Shared curated link successfully!" : toastMessage)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 .animation(.spring(), value: showShareToast || shareSuccess)
@@ -756,6 +757,7 @@ struct ShowroomCartView: View {
     }
     
     private func triggerShare() {
+        toastMessage = "Shared curated link successfully!"
         showShareToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             showShareToast = false
@@ -913,6 +915,20 @@ struct ShowroomCartView: View {
                                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
                             }
                             .buttonStyle(ScaleButtonStyle())
+                            
+                            Button {
+                                emailLink(url: url, clientId: session.clientId)
+                            } label: {
+                                Label("Email", systemImage: "envelope.fill")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+                                    .padding(.vertical, 8)
+                                    .frame(maxWidth: .infinity)
+                                    .background(RSMSTheme.surfaceSecondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                            }
+                            .buttonStyle(ScaleButtonStyle())
                         }
                         
                         HStack(spacing: 12) {
@@ -1011,6 +1027,30 @@ struct ShowroomCartView: View {
         }
         
         rootViewController.present(activityVC, animated: true, completion: nil)
+    }
+    
+    private func emailLink(url: String, clientId: UUID) {
+        let client = appVM.dataStore.clients.first(where: { $0.id == clientId })
+        let email = client?.email ?? ""
+        let clientName = client?.fullName ?? "Client"
+        let subject = "Your Curated Cart Checkout"
+        let body = "Dear \(clientName),\n\nPlease find your curated cart checkout link here: \(url)\n\nThank you,\nLuxora Boutique"
+        
+        if let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let mailtoURL = URL(string: "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)") {
+            if UIApplication.shared.canOpenURL(mailtoURL) {
+                UIApplication.shared.open(mailtoURL)
+            } else {
+                UIPasteboard.general.string = url
+                toastMessage = "No email client. Copied link and opened share menu!"
+                showShareToast = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    showShareToast = false
+                }
+                shareLink(url: url)
+            }
+        }
     }
     
     private func checkoutSessionStatusColor(_ status: CheckoutStatus) -> Color {

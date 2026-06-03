@@ -8,6 +8,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case appointments = "Appointments"
     case pos          = "POS & Checkout"
     case returnsExchange = "Returns & Exchanges"
+//    case selling      = "Assisted Selling"
     case omnichannel  = "Omnichannel"
     case profile      = "Profile"
 
@@ -20,6 +21,7 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
         case .appointments:    return "calendar"
         case .pos:             return "cart.fill"
         case .returnsExchange: return "arrow.uturn.backward.circle.fill"
+//        case .selling:      return "wand.and.stars"
         case .omnichannel:     return "shippingbox.and.arrow.backward.fill"
         case .profile:         return "person.circle.fill"
         }
@@ -236,6 +238,7 @@ struct SalesAssociateHomeView: View {
                 POSCheckoutView()
             case .returnsExchange:
                 ReturnsDashboardView(dataStore: appViewModel.dataStore)
+
             case .omnichannel:
                 OmnichannelView()
                     .toolbar {
@@ -297,6 +300,7 @@ struct SalesAssociateHomeView: View {
                     POSCheckoutView()
                 case "ReturnsExchange":
                     ReturnsDashboardView(dataStore: appViewModel.dataStore)
+
                 case "Omnichannel":
                     OmnichannelView()
                 case "Profile":

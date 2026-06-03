@@ -496,14 +496,40 @@ final class DataStore {
     func fetchEventInvitations(eventId: UUID) async throws {
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "eq.\(eventId)"])
     }
-    
+
+    func fetchEventInvitations(eventIds: [UUID]) async throws {
+        guard !eventIds.isEmpty else {
+            eventInvitations = []
+            return
+        }
+        let ids = eventIds.map { $0.uuidString.lowercased() }.joined(separator: ",")
+        eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "in.(\(ids))"])
+    }
     @discardableResult
     func createEventInvitation(_ inv: EventInvitation) async throws -> EventInvitation {
         let created: EventInvitation = try await api.insert("event_invitations", record: inv)
         eventInvitations.append(created)
         return created
     }
-    
+
+    @discardableResult
+    func createEventInvitations(_ invitations: [EventInvitation]) async throws -> [EventInvitation] {
+        let created: [EventInvitation] = try await api.insertMany("event_invitations", records: invitations)
+        eventInvitations.removeAll { existing in
+            created.contains { $0.id == existing.id }
+        }
+        eventInvitations.append(contentsOf: created)
+        return created
+    }
+
+    func sendInviteEmails(invitationIds: [UUID]) async throws {
+        struct SendInvitePayload: Encodable {
+            let invitation_ids: [String]
+        }
+        let payload = SendInvitePayload(invitation_ids: invitationIds.map { $0.uuidString })
+        try await api.invokeFunction("send_invite_email", body: payload)
+    }
+
     func updateEventInvitation(_ inv: EventInvitation) async throws {
         try await api.update("event_invitations", id: inv.id, record: inv)
         if let i = eventInvitations.firstIndex(where: { $0.id == inv.id }) { eventInvitations[i] = inv }
@@ -866,7 +892,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchTenders(transactionId: UUID) async throws {
-        tenders = try await api.fetch("tenders", query: ["transaction_id": "eq.\(transactionId)"])
+        let fetched: [Tender] = try await api.fetch("tenders", query: ["transaction_id": "eq.\(transactionId)"])
+        await MainActor.run {
+            self.tenders.removeAll { $0.transactionId == transactionId }
+            self.tenders.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult
@@ -881,7 +911,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchGiftReceipts(transactionId: UUID) async throws {
-        giftReceipts = try await api.fetch("gift_receipts", query: ["transaction_id": "eq.\(transactionId)"])
+        let fetched: [GiftReceipt] = try await api.fetch("gift_receipts", query: ["transaction_id": "eq.\(transactionId)"])
+        await MainActor.run {
+            self.giftReceipts.removeAll { $0.transactionId == transactionId }
+            self.giftReceipts.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult
@@ -1200,6 +1234,90 @@ final class DataStore {
         return created
     }
     
+    /// Fetches or creates an `omnichannel_orders` row for a checkout session.
+    /// This must be called before inserting a `ship_from_store_slips` row
+    /// because the FK `ship_from_store_slips_order_id_fkey` references `omnichannel_orders.id`.
+    ///
+    /// Uses a slim payload struct to avoid sending columns (`quantity`, `unit_price`, etc.)
+    /// that exist in the Swift model but not in the actual Supabase table schema.
+    @discardableResult
+    func findOrCreateOmnichannelOrder(for session: CheckoutSession, storeId: UUID) async throws -> OmnichannelOrder {
+        // Slim struct matching only the columns that exist in the Supabase table.
+        // JSONDecoder ignores extra keys in the response, so this safely decodes.
+        struct GatewayPayload: Codable, Identifiable {
+            let id: UUID
+            let type: OmnichannelOrderType
+            let onlineOrderId: String?
+            let storeId: UUID
+            let clientId: UUID
+            let associateId: UUID?
+            let status: OmnichannelOrderStatus
+            let createdAt: Date
+
+            enum CodingKeys: String, CodingKey {
+                case id, type, status
+                case onlineOrderId = "online_order_id"
+                case storeId       = "store_id"
+                case clientId      = "client_id"
+                case associateId   = "associate_id"
+                case createdAt     = "created_at"
+            }
+        }
+
+        // Helper to convert slim payload → full model
+        func toFullModel(_ p: GatewayPayload) -> OmnichannelOrder {
+            OmnichannelOrder(
+                id: p.id, type: p.type, onlineOrderId: p.onlineOrderId,
+                storeId: p.storeId, clientId: p.clientId, associateId: p.associateId,
+                productId: nil, sourceStoreId: nil, sourceDCId: nil,
+                status: p.status, shippingAddress: nil, estimatedDelivery: nil,
+                preparedBy: nil, preparedAt: nil, pickedUpAt: nil, notes: nil,
+                createdAt: p.createdAt, quantity: 1, unitPrice: nil,
+                reservationDate: nil, customerPhone: nil
+            )
+        }
+
+        // 1. Check local cache
+        if let existing = omnichannelOrders.first(where: {
+            $0.clientId == session.clientId && $0.storeId == storeId
+        }) {
+            return existing
+        }
+
+        // 2. Query Supabase (decode with slim struct to avoid missing-column failures)
+        let fetched: [GatewayPayload] = (try? await api.fetch(
+            "omnichannel_orders",
+            query: [
+                "client_id": "eq.\(session.clientId.uuidString)",
+                "store_id":  "eq.\(storeId.uuidString)",
+                "select":    "id,type,online_order_id,store_id,client_id,associate_id,status,created_at"
+            ]
+        )) ?? []
+        if let hit = fetched.first {
+            let full = toFullModel(hit)
+            if !omnichannelOrders.contains(where: { $0.id == full.id }) {
+                omnichannelOrders.append(full)
+            }
+            return full
+        }
+
+        // 3. Insert using slim payload (only sends columns that exist in the table)
+        let payload = GatewayPayload(
+            id: UUID(),
+            type: .bopis,
+            onlineOrderId: session.token,
+            storeId: storeId,
+            clientId: session.clientId,
+            associateId: session.associateId,
+            status: .pending,
+            createdAt: Date()
+        )
+        let inserted: GatewayPayload = try await api.insert("omnichannel_orders", record: payload)
+        let full = toFullModel(inserted)
+        omnichannelOrders.append(full)
+        return full
+    }
+    
     func updateOmnichannelOrder(_ o: OmnichannelOrder) async throws {
         try await api.update("omnichannel_orders", id: o.id, record: o)
         if let i = omnichannelOrders.firstIndex(where: { $0.id == o.id }) { omnichannelOrders[i] = o }
@@ -1339,6 +1457,16 @@ final class DataStore {
             }
             
             // 3. Auto-reconciliation: create missing Transaction/Tender for completed/paid online sessions
+            try? await fetchInventoryReservations()
+            if products.isEmpty {
+                try? await fetchProducts()
+            }
+            if users.isEmpty {
+                try? await fetchUsers()
+            }
+            if stores.isEmpty {
+                try? await fetchStores()
+            }
             let terminalStatuses: Set<CheckoutStatus> = [.readyForPickup, .readyForShipping, .completed]
             var didReconcile = false
             for s in checkoutSessions {
@@ -1347,7 +1475,13 @@ final class DataStore {
                         let amt = cartTotal(for: s.cartId)
                         if amt > 0 {
                             let txId = UUID()
-                            let storeId = universalCarts.first(where: { $0.id == s.cartId })?.storeId ?? s.associateId
+                            guard let storeId = universalCarts.first(where: { $0.id == s.cartId })?.storeId
+                                ?? inventoryReservations.first(where: { $0.checkoutSessionId == s.id })?.storeId
+                                ?? users.first(where: { $0.id == s.associateId })?.storeId
+                                ?? stores.first?.id else {
+                                print("[DataStore] ⚠️ Auto-reconciliation skipped for session \(s.token): store ID not resolved")
+                                continue
+                            }
                             let newTx = Transaction(
                                 id: txId,
                                 cartId: s.cartId,
@@ -1369,14 +1503,12 @@ final class DataStore {
                                 reference: "ONLINE (\(s.token))"
                             )
                             didReconcile = true
-                            Task {
-                                do {
-                                    try await createTransaction(newTx)
-                                    try await createTender(newTender)
-                                    print("[DataStore] 🚀 Automatically reconciled transaction and tender for online session \(s.token)")
-                                } catch {
-                                    print("[DataStore] ⚠️ Auto-reconciliation failed for session \(s.token): \(error.localizedDescription)")
-                                }
+                            do {
+                                try await createTransaction(newTx)
+                                try await createTender(newTender)
+                                print("[DataStore] 🚀 Automatically reconciled transaction and tender for online session \(s.token)")
+                            } catch {
+                                print("[DataStore] ⚠️ Auto-reconciliation failed for session \(s.token): \(error.localizedDescription)")
                             }
                         }
                     }
@@ -1477,6 +1609,37 @@ final class DataStore {
             print("[DataStore] ⚠️ updateCheckoutSession in Supabase failed: \(error.localizedDescription). Updated locally in-memory.")
         }
     }
+    
+    func deleteCheckoutSession(id: UUID) async throws {
+        // Delete related ship-from-store slips
+        let slipsToDelete = shipFromStoreSlips.filter { $0.orderId == id }
+        for slip in slipsToDelete {
+            try? await api.delete("ship_from_store_slips", id: slip.id)
+        }
+        
+        // Delete related inventory reservations
+        let reservationsToDelete = inventoryReservations.filter { $0.checkoutSessionId == id }
+        for res in reservationsToDelete {
+            try? await api.delete("inventory_reservations", id: res.id)
+        }
+        
+        // Delete related shipping addresses
+        let addressesToDelete = checkoutShippingAddresses.filter { $0.checkoutSessionId == id }
+        for addr in addressesToDelete {
+            try? await api.delete("checkout_shipping_addresses", id: addr.id)
+        }
+        
+        // Delete the checkout session itself
+        try await api.delete("checkout_sessions", id: id)
+        
+        await MainActor.run {
+            checkoutSessions.removeAll { $0.id == id }
+            inventoryReservations.removeAll { $0.checkoutSessionId == id }
+            checkoutShippingAddresses.removeAll { $0.checkoutSessionId == id }
+            shipFromStoreSlips.removeAll { $0.orderId == id }
+        }
+    }
+
     
     func syncSessionWithLocalServer(_ session: CheckoutSession) {
 #if DEBUG

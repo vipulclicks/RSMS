@@ -33,11 +33,17 @@ struct SalesAssociateProfileView: View {
                         // 2. Performance Snapshot
                         performanceSnapshotSection()
                         
+                        // 2.5 Total Transactions
+                        totalTransactionsSection()
+                        
                         // 3. Commission & Goals Progress
                         commissionAndGoalsSection(user: user)
                         
                         // 4. Personal Information (Grouped List Style)
                         personalInformationSection(user: user)
+                        
+                        // 5. Security Settings
+                        securitySettingsSection()
                         
                         // 6. Sign Out Button
                         signOutButton()
@@ -279,6 +285,70 @@ struct SalesAssociateProfileView: View {
         }
     }
     
+    private func totalTransactionsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Total Transactions")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Spacer()
+                NavigationLink(destination: SalesAssociateAllTransactionsView(transactions: viewModel.allTransactionsList)) {
+                    Text("View All (\(viewModel.allTransactionsList.count))")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+            
+            if viewModel.allTransactionsList.isEmpty {
+                Text("No transactions completed yet.")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                    )
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.allTransactionsList.prefix(3)) { txn in
+                        transactionCardMini(txn)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func transactionCardMini(_ txn: Transaction) -> some View {
+        let clientName = appViewModel.dataStore.clientName(for: txn.clientId ?? UUID())
+        let dateString = txn.createdAt.formatted(date: .abbreviated, time: .omitted)
+        
+        return HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(clientName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text(dateString)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("₹\(Int(txn.totalAmount).formatted())")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.primary)
+                Text(txn.status.rawValue.capitalized)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(txn.status == .completed ? RSMSTheme.success : RSMSTheme.warning)
+            }
+        }
+        .padding(14)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
+    }
+    
     private func personalInformationSection(user: UserProfile) -> some View {
         let department: String = {
             if user.role == .salesAssociate { return "Sales Floor" }
@@ -504,6 +574,40 @@ struct SalesAssociateProfileView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
             .shadow(color: Color.black.opacity(0.02), radius: 10, y: 2)
+        }
+    }
+    
+    private func securitySettingsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Security")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+            
+            VStack(spacing: 0) {
+                NavigationLink(destination: MFASettingsView()) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "shield.checkered")
+                            .font(.body)
+                            .foregroundStyle(RSMSTheme.primary)
+                            .frame(width: 24)
+                        
+                        Text("Multi-Factor Authentication")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
         }
     }
     

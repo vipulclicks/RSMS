@@ -41,7 +41,7 @@ struct CheckoutSession: Codable, Identifiable, Hashable {
     let token: String
     let clientId: UUID
     let associateId: UUID
-    let status: CheckoutStatus
+    var status: CheckoutStatus
     let fulfillmentMethod: FulfillmentMethod?
     let paymentMethod: CheckoutPaymentMethod?
     let expiresAt: Date
@@ -91,7 +91,7 @@ struct InventoryReservation: Codable, Identifiable, Hashable {
     let productId: UUID
     let quantity: Int
     let storeId: UUID
-    let status: ReservationStatus
+    var status: ReservationStatus
     let createdAt: Date
     let expiresAt: Date
 

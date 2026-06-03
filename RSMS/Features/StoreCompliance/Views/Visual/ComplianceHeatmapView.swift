@@ -60,6 +60,13 @@ struct ComplianceHeatmapView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(statusColor, lineWidth: 3)
                             )
+                    case .cashWrap:
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(white: 0.98))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(statusColor, lineWidth: 3)
+                            )
                     }
                     
                     VStack(spacing: 8) {
@@ -140,6 +147,7 @@ struct ComplianceHeatmapView: View {
         case .table: return "table.furniture"
         case .wall: return "cabinet"
         case .window: return "rectangle.split.3x1"
+        case .cashWrap: return "creditcard.and.123"
         }
     }
 }

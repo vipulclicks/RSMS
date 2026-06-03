@@ -14,6 +14,7 @@ struct AuthSession: Codable {
     let expiresIn: Int
     let refreshToken: String
     let user: AuthUser
+    let aal: String?
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
@@ -21,6 +22,7 @@ struct AuthSession: Codable {
         case expiresIn = "expires_in"
         case refreshToken = "refresh_token"
         case user
+        case aal
     }
 }
 
@@ -29,6 +31,7 @@ struct AuthUser: Codable {
     let id: UUID
     let email: String
     let role: String?
+    let factors: [MFAFactor]?
 }
 
 struct AuthError: Decodable, LocalizedError {

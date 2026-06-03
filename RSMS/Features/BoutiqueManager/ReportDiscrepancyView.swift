@@ -41,7 +41,7 @@ struct ReportDiscrepancyView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("Stock Discrepancy")
+                    Text("Mismatch")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
