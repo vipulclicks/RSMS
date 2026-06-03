@@ -249,6 +249,35 @@ struct InventoryControllerProfileView: View {
 
                 divider
 
+                NavigationLink(destination: MFASettingsView()) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(RSMSTheme.primary.opacity(0.12))
+                                .frame(width: 40, height: 40)
+                            Image(systemName: "shield.checkered")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Multi-Factor Authentication")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("Manage two-step verification")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                    .padding(16)
+                }
+                .buttonStyle(.plain)
+
+                divider
+
                 settingsRow(
                     icon: "bell.badge.fill",
                     iconColor: RSMSTheme.warning,

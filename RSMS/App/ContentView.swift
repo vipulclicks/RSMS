@@ -6,7 +6,9 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if let user = viewModel.currentUser {
+            if viewModel.mfaRequired {
+                MFAVerificationView()
+            } else if let user = viewModel.currentUser {
                 switch user.role {
                 case .boutiqueManager:
                     BoutiqueManagerHomeView()
