@@ -279,7 +279,13 @@ struct ClientProfileDetailView: View {
         let tender = viewModel.dataStore.tenders.first { $0.transactionId == transaction.id }
         let items = viewModel.dataStore.universalCartItems.filter { $0.cartId == transaction.cartId }
         
-        VStack(alignment: .leading, spacing: 12) {
+        let isOnline = viewModel.dataStore.tenders.contains(where: {
+            $0.transactionId == transaction.id && ($0.reference?.contains("ONLINE") == true || $0.reference == "online")
+        }) || viewModel.dataStore.checkoutSessions.contains(where: {
+            $0.cartId == transaction.cartId && $0.paymentMethod == .online
+        })
+        
+        return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(transaction.createdAt, format: .dateTime.year().month().day().hour().minute())
                     .font(.subheadline.weight(.semibold))
@@ -300,12 +306,23 @@ struct ClientProfileDetailView: View {
                 
                 Spacer()
                 
-                Text(transaction.status.rawValue.capitalized)
-                    .font(.caption.weight(.bold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(viewModel.transactionStatusColor(transaction.status).opacity(0.15), in: Capsule())
-                    .foregroundStyle(viewModel.transactionStatusColor(transaction.status))
+                HStack(spacing: 4) {
+                    if isOnline {
+                        Text("ONLINE")
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(RSMSTheme.primary.opacity(0.15))
+                            .foregroundStyle(RSMSTheme.primary)
+                            .cornerRadius(4)
+                    }
+                    Text(transaction.status.rawValue.capitalized)
+                        .font(.caption.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(viewModel.transactionStatusColor(transaction.status).opacity(0.15), in: Capsule())
+                        .foregroundStyle(viewModel.transactionStatusColor(transaction.status))
+                }
             }
             
             if !items.isEmpty {

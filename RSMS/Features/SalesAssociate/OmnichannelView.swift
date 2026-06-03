@@ -18,7 +18,7 @@ struct OmnichannelView: View {
 
             VStack(spacing: 0) {
                 Picker("Fulfilment", selection: $viewModel.selectedTab) {
-                    Text("BOPIS").tag(0)
+                    Text("Online Orders").tag(0)
                     Text("Endless Aisle").tag(1)
                     Text("Ship From Store").tag(2)
                 }
@@ -28,16 +28,20 @@ struct OmnichannelView: View {
 
                 ScrollView {
                     switch viewModel.selectedTab {
+
                     case 0:
-                        BOPISPickupView(isScrollable: false)
+                        OnlineOrdersView()
+
                     case 1:
                         InventorySourcingRequestListView(isScrollable: false)
+
                     case 2:
                         shipFromStoreSection
                             .padding(.horizontal, 24)
                             .padding(.bottom, 40)
+
                     default:
-                        BOPISPickupView(isScrollable: false)
+                        OnlineOrdersView()
                     }
                 }
             }

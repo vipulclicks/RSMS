@@ -35,8 +35,6 @@ final class BOPISPickupViewModel {
         switch selectedStatusFilter {
         case .readyForPickup:
             statusFiltered = allBOPISOrders.filter { $0.status == .ready }
-        case .reserved:
-            statusFiltered = allBOPISOrders.filter { $0.status == .reserved }
         case .pickedUp:
             statusFiltered = allBOPISOrders.filter { $0.status == .pickedUp }
         case .cancelled:
@@ -225,7 +223,6 @@ final class BOPISPickupViewModel {
 
 enum BOPISStatusFilter: String, CaseIterable, Identifiable {
     case readyForPickup = "Ready for Pickup"
-    case reserved       = "Reserved"
     case pickedUp       = "Picked Up"
     case cancelled      = "Cancelled"
     case all            = "All"
