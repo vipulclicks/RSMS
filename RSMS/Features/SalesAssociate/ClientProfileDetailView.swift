@@ -95,7 +95,7 @@ struct ClientProfileDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(RSMSTheme.primary)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showEditClientSheet = true
                 } label: {
@@ -142,6 +142,13 @@ struct ClientProfileDetailView: View {
         }
         .navigationDestination(isPresented: $navigateToGuidedCatalog) {
             ProductCatalogView(activeClient: currentClient)
+        }
+        .navigationDestination(for: Order.self) { order in
+            OrderOptionsView(
+                order: order,
+                returnVM: POSReturnViewModel(dataStore: dataStore),
+                exchangeVM: POSExchangeViewModel(dataStore: dataStore)
+            )
         }
         .task {
             do {
@@ -285,6 +292,18 @@ struct ClientProfileDetailView: View {
             $0.cartId == transaction.cartId && $0.paymentMethod == .online
         })
         
+        let order = dataStore.orders.first { $0.transactionId == transaction.id } ?? Order(
+            id: UUID(),
+            clientId: client.id,
+            transactionId: transaction.id,
+            cartId: transaction.cartId,
+            status: .confirmed,
+            totalAmount: transaction.totalAmount,
+            discountAmount: 0,
+            finalAmount: transaction.totalAmount,
+            createdAt: transaction.createdAt
+        )
+        
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(transaction.createdAt, format: .dateTime.year().month().day().hour().minute())
@@ -355,17 +374,6 @@ struct ClientProfileDetailView: View {
             HStack(spacing: 12) {
                 // View Customer Receipt
                 Button {
-                    let order = dataStore.orders.first { $0.transactionId == transaction.id } ?? Order(
-                        id: UUID(),
-                        clientId: client.id,
-                        transactionId: transaction.id,
-                        cartId: transaction.cartId,
-                        status: .confirmed,
-                        totalAmount: transaction.totalAmount,
-                        discountAmount: 0,
-                        finalAmount: transaction.totalAmount,
-                        createdAt: transaction.createdAt
-                    )
                     selectedHistoryOrder = order
                     selectedHistoryPaymentId = tender?.reference ?? transaction.id.uuidString.prefix(8).uppercased()
                     showHistoryReceipt = true
@@ -388,17 +396,7 @@ struct ClientProfileDetailView: View {
                 if !grs.isEmpty {
                     Button {
                         selectedHistoryGiftReceipt = grs.first
-                        selectedHistoryOrder = dataStore.orders.first { $0.transactionId == transaction.id } ?? Order(
-                            id: UUID(),
-                            clientId: client.id,
-                            transactionId: transaction.id,
-                            cartId: transaction.cartId,
-                            status: .confirmed,
-                            totalAmount: transaction.totalAmount,
-                            discountAmount: 0,
-                            finalAmount: transaction.totalAmount,
-                            createdAt: transaction.createdAt
-                        )
+                        selectedHistoryOrder = order
                         showHistoryGiftReceipt = true
                     } label: {
                         HStack(spacing: 6) {
@@ -414,6 +412,21 @@ struct ClientProfileDetailView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
+                
+                // Return / Exchange Button
+                NavigationLink(value: order) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.uturn.backward")
+                        Text("Return/Exchange")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.primary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.top, 8)
         }

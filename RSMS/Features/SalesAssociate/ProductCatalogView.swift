@@ -693,7 +693,7 @@ struct CartSelectionPreviewSheet: View {
                     Button("Clear All") { onClear() }
                         .foregroundStyle(.red)
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }

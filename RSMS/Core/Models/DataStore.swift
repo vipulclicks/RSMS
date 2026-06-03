@@ -73,6 +73,18 @@ final class DataStore {
     var taxFreeTransactions: [TaxFreeTransaction] = []
     var taxFreeAudits: [TaxFreeAudit] = []
     
+    // ── Returns & Exchanges ─────────────────────────────
+    var posReturnRequests: [POSReturnRequest] = []
+    var posExchangeRequests: [POSExchangeRequest] = []
+    var posReturnAuditLogs: [POSReturnAuditLog] = []
+    
+    // Offline Sync Queues
+    var pendingReturnRequests: [POSReturnRequest] = []
+    var pendingExchangeRequests: [POSExchangeRequest] = []
+    var pendingReturnUpdates: [POSReturnRequest] = []
+    var pendingExchangeUpdates: [POSExchangeRequest] = []
+    var pendingAuditLogs: [POSReturnAuditLog] = []
+    
     private var isRecalculating = false
     
     func recalculateVIPTiers() {
@@ -760,7 +772,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchUniversalCartItems(cartId: UUID) async throws {
-        universalCartItems = try await api.fetch("universal_cart_items", query: ["cart_id": "eq.\(cartId)"])
+        let fetched: [UniversalCartItem] = try await api.fetch("universal_cart_items", query: ["cart_id": "eq.\(cartId)"])
+        await MainActor.run {
+            self.universalCartItems.removeAll { $0.cartId == cartId }
+            self.universalCartItems.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult

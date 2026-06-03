@@ -153,6 +153,47 @@ final class POSCheckoutViewModel {
             print("[POSCheckoutViewModel] ⚠️ Failed to update cart status to 'completed' in Supabase: \(error)")
             print("[POSCheckoutViewModel] ℹ️ If this is an RLS error, add an UPDATE policy on 'universal_carts' for the sales_associate role.")
         }
+        
+        // 3.1 Decrement stock for each item in the cart
+        let cartItemList = dataStore.universalCartItems.filter { $0.cartId == cart.id }
+        // Fetch fresh stock data to ensure accurate counts
+        try? await dataStore.fetchStockItems(storeId: _storeId)
+        
+        for item in cartItemList {
+            // Find the stock record: prefer exact status match (.available), then any
+            let stockIdx = dataStore.stockItems.firstIndex(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId &&
+                $0.status == .available
+            }) ?? dataStore.stockItems.firstIndex(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId
+            })
+            
+            if let idx = stockIdx {
+                let currentStock = dataStore.stockItems[idx]
+                let newQty = max(0, currentStock.quantity - item.quantity)
+                let updatedStock = StockItem(
+                    id: currentStock.id,
+                    productId: currentStock.productId,
+                    storeId: currentStock.storeId,
+                    quantity: newQty,
+                    rfidTag: currentStock.rfidTag,
+                    location: currentStock.location,
+                    status: currentStock.status,
+                    lastScannedAt: Date(),
+                    updatedAt: Date()
+                )
+                do {
+                    try await dataStore.updateStockItem(updatedStock)
+                    print("[POSCheckout] Stock decremented for product \(item.productId): \(currentStock.quantity) → \(newQty)")
+                } catch {
+                    print("[POSCheckout] ⚠️ Failed to decrement stock for product \(item.productId): \(error)")
+                }
+            } else {
+                print("[POSCheckout] ⚠️ No stock record found for product \(item.productId) at store \(_storeId)")
+            }
+        }
 
         // 4. Audit
         dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
@@ -186,13 +227,8 @@ final class POSCheckoutViewModel {
             }
         }
         
-        // 6. Delete cart items from Supabase AND clear from memory
-        // Each deleteUniversalCartItem call handles both the backend DELETE and the local removeAll.
-        // Capture IDs first because the array mutates during deletion.
-        let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
-        for item in itemsToDelete {
-            try? await dataStore.deleteUniversalCartItem(id: item.id)
-        }
+        // 6. Keep cart items in Supabase for historical transaction and returns lookup.
+        // The active cart status is already updated to completed, so the active checkout cart will be cleared.
     }
 
     // MARK: - Gift Receipts
