@@ -205,6 +205,7 @@ extension InventoryControllerHomeView {
                 serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
+                complianceBoardCard
             }
 
         } else {
@@ -218,6 +219,7 @@ extension InventoryControllerHomeView {
                 serviceTrackingCard
                 cycleCountCard
                 auditReconcileCard
+                complianceBoardCard
             }
         }
     }
@@ -370,6 +372,7 @@ extension InventoryControllerHomeView {
         }
     }
     
+<<<<<<< Updated upstream
     var serviceTrackingCard: some View {
 
         actionCard(
@@ -380,6 +383,17 @@ extension InventoryControllerHomeView {
             badgeText: "Track"
         ) {
             selectedDestination = .serviceTracking
+=======
+    var complianceBoardCard: some View {
+        actionCard(
+            title: "Compliance Board",
+            subtitle: "STORE STANDARDS",
+            icon: "checklist.checked",
+            accentColor: RSMSTheme.info,
+            badgeText: "Review"
+        ) {
+            selectedDestination = .complianceBoard
+>>>>>>> Stashed changes
         }
     }
 
