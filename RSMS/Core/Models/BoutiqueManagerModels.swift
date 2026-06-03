@@ -424,6 +424,8 @@ enum RSVPStatus: String, Codable, CaseIterable {
         case .declined: return "Declined"
         case .attended: return "Attended"
         case .noShow: return "No Show"
+        case .pending:
+            return "Pending"
         }
     }
 
@@ -432,6 +434,8 @@ enum RSVPStatus: String, Codable, CaseIterable {
         case .invited, .pending: return RSMSTheme.warning
         case .confirmed, .attended: return RSMSTheme.success
         case .declined, .noShow: return RSMSTheme.danger
+        case .pending:
+            return RSMSTheme.success
         }
     }
 }
