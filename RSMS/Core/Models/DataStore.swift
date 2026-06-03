@@ -760,7 +760,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchUniversalCartItems(cartId: UUID) async throws {
-        universalCartItems = try await api.fetch("universal_cart_items", query: ["cart_id": "eq.\(cartId)"])
+        let fetched: [UniversalCartItem] = try await api.fetch("universal_cart_items", query: ["cart_id": "eq.\(cartId)"])
+        await MainActor.run {
+            self.universalCartItems.removeAll { $0.cartId == cartId }
+            self.universalCartItems.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult
@@ -850,7 +854,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchTenders(transactionId: UUID) async throws {
-        tenders = try await api.fetch("tenders", query: ["transaction_id": "eq.\(transactionId)"])
+        let fetched: [Tender] = try await api.fetch("tenders", query: ["transaction_id": "eq.\(transactionId)"])
+        await MainActor.run {
+            self.tenders.removeAll { $0.transactionId == transactionId }
+            self.tenders.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult
@@ -865,7 +873,11 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchGiftReceipts(transactionId: UUID) async throws {
-        giftReceipts = try await api.fetch("gift_receipts", query: ["transaction_id": "eq.\(transactionId)"])
+        let fetched: [GiftReceipt] = try await api.fetch("gift_receipts", query: ["transaction_id": "eq.\(transactionId)"])
+        await MainActor.run {
+            self.giftReceipts.removeAll { $0.transactionId == transactionId }
+            self.giftReceipts.append(contentsOf: fetched)
+        }
     }
     
     @discardableResult
@@ -1323,6 +1335,16 @@ final class DataStore {
             }
             
             // 3. Auto-reconciliation: create missing Transaction/Tender for completed/paid online sessions
+            try? await fetchInventoryReservations()
+            if products.isEmpty {
+                try? await fetchProducts()
+            }
+            if users.isEmpty {
+                try? await fetchUsers()
+            }
+            if stores.isEmpty {
+                try? await fetchStores()
+            }
             let terminalStatuses: Set<CheckoutStatus> = [.readyForPickup, .readyForShipping, .completed]
             var didReconcile = false
             for s in checkoutSessions {
@@ -1331,7 +1353,13 @@ final class DataStore {
                         let amt = cartTotal(for: s.cartId)
                         if amt > 0 {
                             let txId = UUID()
-                            let storeId = universalCarts.first(where: { $0.id == s.cartId })?.storeId ?? s.associateId
+                            guard let storeId = universalCarts.first(where: { $0.id == s.cartId })?.storeId
+                                ?? inventoryReservations.first(where: { $0.checkoutSessionId == s.id })?.storeId
+                                ?? users.first(where: { $0.id == s.associateId })?.storeId
+                                ?? stores.first?.id else {
+                                print("[DataStore] ⚠️ Auto-reconciliation skipped for session \(s.token): store ID not resolved")
+                                continue
+                            }
                             let newTx = Transaction(
                                 id: txId,
                                 cartId: s.cartId,
@@ -1353,14 +1381,12 @@ final class DataStore {
                                 reference: "ONLINE (\(s.token))"
                             )
                             didReconcile = true
-                            Task {
-                                do {
-                                    try await createTransaction(newTx)
-                                    try await createTender(newTender)
-                                    print("[DataStore] 🚀 Automatically reconciled transaction and tender for online session \(s.token)")
-                                } catch {
-                                    print("[DataStore] ⚠️ Auto-reconciliation failed for session \(s.token): \(error.localizedDescription)")
-                                }
+                            do {
+                                try await createTransaction(newTx)
+                                try await createTender(newTender)
+                                print("[DataStore] 🚀 Automatically reconciled transaction and tender for online session \(s.token)")
+                            } catch {
+                                print("[DataStore] ⚠️ Auto-reconciliation failed for session \(s.token): \(error.localizedDescription)")
                             }
                         }
                     }

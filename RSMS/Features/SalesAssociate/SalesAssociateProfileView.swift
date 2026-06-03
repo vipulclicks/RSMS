@@ -33,6 +33,9 @@ struct SalesAssociateProfileView: View {
                         // 2. Performance Snapshot
                         performanceSnapshotSection()
                         
+                        // 2.5 Total Transactions
+                        totalTransactionsSection()
+                        
                         // 3. Commission & Goals Progress
                         commissionAndGoalsSection(user: user)
                         
@@ -277,6 +280,70 @@ struct SalesAssociateProfileView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+    
+    private func totalTransactionsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Total Transactions")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Spacer()
+                NavigationLink(destination: SalesAssociateAllTransactionsView(transactions: viewModel.allTransactionsList)) {
+                    Text("View All (\(viewModel.allTransactionsList.count))")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+            
+            if viewModel.allTransactionsList.isEmpty {
+                Text("No transactions completed yet.")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(RSMSTheme.surfacePrimary)
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+                    )
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.allTransactionsList.prefix(3)) { txn in
+                        transactionCardMini(txn)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func transactionCardMini(_ txn: Transaction) -> some View {
+        let clientName = appViewModel.dataStore.clientName(for: txn.clientId ?? UUID())
+        let dateString = txn.createdAt.formatted(date: .abbreviated, time: .omitted)
+        
+        return HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(clientName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text(dateString)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("₹\(Int(txn.totalAmount).formatted())")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(RSMSTheme.primary)
+                Text(txn.status.rawValue.capitalized)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(txn.status == .completed ? RSMSTheme.success : RSMSTheme.warning)
+            }
+        }
+        .padding(14)
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
     }
     
     private func personalInformationSection(user: UserProfile) -> some View {

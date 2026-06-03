@@ -7,7 +7,6 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case clients  = "Clients"
     case appointments = "Appointments"
 //    case selling      = "Assisted Selling"
-    case pos          = "POS & Checkout"
     case omnichannel  = "Omnichannel"
     case profile      = "Profile"
 
@@ -19,7 +18,6 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
         case .clients:  return "person.crop.circle.fill"
         case .appointments: return "calendar"
 //        case .selling:      return "wand.and.stars"
-        case .pos:          return "cart.fill"
         case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
         case .profile:      return "person.circle.fill"
         }
@@ -232,8 +230,6 @@ struct SalesAssociateHomeView: View {
                     navigationPath: $navigationPath,
                     showNotifications: $showNotifications
                 )
-            case .pos:
-                POSCheckoutView()
             case .omnichannel:
                 OmnichannelView()
                     .toolbar {
@@ -291,10 +287,6 @@ struct SalesAssociateHomeView: View {
                         navigationPath: $navigationPath,
                         showNotifications: $showNotifications
                     )
-                case "POS":
-                    POSCheckoutView()
-//                case "LookBuilder":
-//                    LookBuilderView()
                 case "Omnichannel":
                     OmnichannelView()
                 case "Profile":
