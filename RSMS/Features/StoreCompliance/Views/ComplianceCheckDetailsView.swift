@@ -15,6 +15,7 @@ struct ComplianceCheckDetailsView: View {
     }
     
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.dismiss) private var dismiss
     
     @State private var showReport = false
     @State private var isUpdating = false
@@ -262,7 +263,10 @@ struct ComplianceCheckDetailsView: View {
                         
                         if appVM.currentUser?.role == .inventoryController && !isCompliant && onResolve != nil {
                             Button(action: {
-                                withAnimation {
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.success)
+                                
+                                withAnimation(.spring(duration: 0.5)) {
                                     onResolve?(cp.text, cp.status)
                                 }
                             }) {
@@ -327,6 +331,12 @@ struct ComplianceCheckDetailsView: View {
         }
         
         updateStatus(to: check.status)
+        
+        if check.status == .compliant {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                dismiss()
+            }
+        }
     }
 
     private func updateStatus(to newStatus: ComplianceStatus) {

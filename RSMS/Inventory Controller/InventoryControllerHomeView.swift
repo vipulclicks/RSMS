@@ -20,6 +20,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
     case auditReconcile = "Audit & Reconcile"
     case auditTrail     = "Audit Trail"
     case authCertificates = "Auth Certificates"
+    case complianceBoard = "Compliance Board"
     case notify         = "Notify Manager"
     case serviceTracking = "Service Center"
     case loanerManagement = "Loaner Management"
@@ -38,6 +39,7 @@ enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
         case .auditReconcile:  return "doc.text.magnifyingglass"
         case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
         case .authCertificates:return "seal.fill"
+        case .complianceBoard: return "checklist.checked"
         case .notify:          return "paperplane.fill"
         case .serviceTracking: return "wrench.and.screwdriver.fill"
         case .loanerManagement: return "clock.arrow.circlepath"
@@ -203,6 +205,8 @@ struct InventoryControllerHomeView: View {
             AuditTrailView()
         case .authCertificates:
             AuthCertificateGeneratorView()
+        case .complianceBoard:
+            InventoryIssueBoardWrapperView()
         case .notify:
             NotifyBoutiqueManagerView()
         case .serviceTracking:
@@ -305,4 +309,53 @@ struct SidebarAvatarButton: View {
 #Preview {
     InventoryControllerHomeView()
         .environment(AppViewModel())
+}
+
+// MARK: - Inventory Issue Board Wrapper
+
+struct InventoryIssueBoardWrapperView: View {
+    @Environment(AppViewModel.self) var appVM
+    @State private var viewModel = ComplianceViewModel()
+    
+    var body: some View {
+        ZStack {
+            if viewModel.isLoading {
+                VStack {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading compliance checks...")
+                        .foregroundColor(RSMSTheme.textSecondary)
+                        .padding(.top, 16)
+                }
+            } else if let error = viewModel.errorMessage {
+                VStack {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(RSMSTheme.danger)
+                    Text("Failed to load")
+                        .font(.headline)
+                        .padding(.top, 8)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundColor(RSMSTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                }
+            } else {
+                ComplianceIssueBoardView(viewModel: viewModel)
+                    .navigationDestination(for: ComplianceRoute.self) { route in
+                        if case .details(let check) = route {
+                            ComplianceCheckDetailsView(viewModel: viewModel, check: check)
+                        }
+                    }
+            }
+        }
+        .task(id: appVM.currentStoreId) {
+            if let storeId = appVM.currentStoreId {
+                // Ensure users are fetched so inspector names can be resolved
+                try? await appVM.dataStore.fetchUsers(storeId: storeId)
+                await viewModel.fetchChecks(for: storeId)
+            }
+        }
+    }
 }
