@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct NotifyBoutiqueManagerView: View {
+    @Environment(AppViewModel.self) private var appVM
     @State private var viewModel = NotifyBoutiqueManagerViewModel()
     @State private var appeared = false
     
@@ -34,6 +35,22 @@ struct NotifyBoutiqueManagerView: View {
                     lowStockAlertSection
                 }
                 .padding(24)
+                
+                if viewModel.isLoading {
+                    ProgressView("Loading inventory data...")
+                        .tint(RSMSTheme.gold)
+                        .padding(.top, 40)
+                } else if viewModel.lowStockItems.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(RSMSTheme.success)
+                        Text("All stock levels are optimal.")
+                            .font(.headline)
+                            .foregroundColor(RSMSTheme.textSecondary)
+                    }
+                    .padding(.top, 40)
+                }
             }
             .navigationTitle("Notify Manager")
             .navigationBarTitleDisplayMode(.inline)
@@ -55,10 +72,14 @@ struct NotifyBoutiqueManagerView: View {
                 }
             }
         }
-        .onAppear {
+        .task {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
             }
+        }
+        .refreshable {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
         }
     }
     
@@ -415,4 +436,5 @@ struct NotifyBoutiqueManagerView: View {
 
 #Preview {
     NotifyBoutiqueManagerView()
+        .environment(AppViewModel())
 }

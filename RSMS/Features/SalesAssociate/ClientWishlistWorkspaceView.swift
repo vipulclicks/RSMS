@@ -61,7 +61,7 @@ struct ClientWishlistWorkspaceView: View {
         .navigationTitle("Wishlist")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     // Share action
                 } label: {

@@ -88,7 +88,7 @@ struct ClientProfileDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .tint(RSMSTheme.primary)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     showEditClientSheet = true
                 } label: {
