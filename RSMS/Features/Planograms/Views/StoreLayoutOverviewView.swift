@@ -8,6 +8,14 @@ import SwiftUI
 struct StoreLayoutOverviewView: View {
     @State private var viewModel = PlanogramViewModel()
     @State private var isShowingEdit = false
+    @State private var isEditingLayout = false
+    @State private var showRenameAlert = false
+    @State private var zoneToRename: MerchandisingZone?
+    @State private var newName = ""
+    @State private var errorMessage: String? = nil
+    @State private var showErrorAlert = false
+    @State private var isSaving = false
+    @State private var showSuccessMessage = false
     @Environment(AppViewModel.self) private var appVM
     
     // Luxury Colors
@@ -25,13 +33,76 @@ struct StoreLayoutOverviewView: View {
                         Text("Store Layout Overview")
                             .font(.system(size: 24, weight: .bold, design: .default))
                             .foregroundColor(textPrimary)
-                        Text("Select a merchandising zone to view capacity and stock health.")
+                        Text(isEditingLayout ? "Drag items to position them, or add new fixtures." : "Select a merchandising zone to view capacity and stock health.")
                             .font(.system(size: 15))
                             .foregroundColor(textSecondary)
                     }
                     Spacer()
                     
-
+                    if isEditingLayout {
+                        Button("Cancel") {
+                            Task {
+                                viewModel.zones.removeAll()
+                                await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                                await MainActor.run {
+                                    isEditingLayout = false
+                                }
+                            }
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.red)
+                        .padding(.trailing, 16)
+                        
+                        Button(action: {
+                            Task {
+                                isSaving = true
+                                do {
+                                    try await viewModel.saveZonesLayout(storeId: appVM.currentStoreId ?? UUID())
+                                    await MainActor.run {
+                                        isEditingLayout = false
+                                        isSaving = false
+                                        showSuccessMessage = true
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                            await MainActor.run { showSuccessMessage = false }
+                                        }
+                                    }
+                                } catch {
+                                    await MainActor.run {
+                                        isSaving = false
+                                        errorMessage = error.localizedDescription
+                                        showErrorAlert = true
+                                    }
+                                }
+                            }
+                        }) {
+                            HStack {
+                                if isSaving {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .padding(.trailing, 4)
+                                }
+                                Text(isSaving ? "Saving..." : "Save Layout")
+                            }
+                        }
+                        .disabled(isSaving)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(textPrimary)
+                        .clipShape(Capsule())
+                    } else {
+                        Button("Edit Layout") {
+                            isEditingLayout = true
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(textPrimary)
+                        .clipShape(Capsule())
+                    }
                 }
                 .padding(.horizontal, 32)
                 .padding(.vertical, 24)
@@ -43,10 +114,30 @@ struct StoreLayoutOverviewView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(32)
                     .background(backgroundGray)
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            if showSuccessMessage {
+                                Text("Layout successfully saved!")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(Color.green)
+                                    .clipShape(Capsule())
+                                    .shadow(radius: 5)
+                                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                                    .padding(.bottom, 32)
+                            }
+                        }
+                        .animation(.spring(), value: showSuccessMessage)
+                    )
             }
             .background(Color.white)
             .task {
-                await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                if viewModel.zones.isEmpty {
+                    await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
+                }
             }
             .navigationDestination(isPresented: $isShowingEdit) {
                 if let zone = viewModel.selectedZone {
@@ -105,6 +196,13 @@ struct StoreLayoutOverviewView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(isSelected ? Color.blue : Color.blue.opacity(0.3), lineWidth: isSelected ? 2 : 1)
                             )
+                    case .cashWrap:
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(white: 0.98))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(isSelected ? Color.black : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                            )
                     }
                     
                     VStack(spacing: 8) {
@@ -128,11 +226,75 @@ struct StoreLayoutOverviewView: View {
                     .padding(8)
                 }
                 .frame(width: zone.frame.width, height: zone.frame.height)
+                .overlay(
+                    Group {
+                        if isEditingLayout {
+                            Button(action: {
+                                viewModel.zones.removeAll(where: { $0.id == zone.id })
+                            }) {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.red)
+                                    .background(Color.white.clipShape(Circle()))
+                            }
+                            .offset(x: -8, y: -8)
+                        }
+                    },
+                    alignment: .topLeading
+                )
                 .position(x: zone.frame.midX, y: zone.frame.midY)
+                .gesture(
+                    isEditingLayout ? DragGesture()
+                        .onChanged { value in
+                            if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                                viewModel.zones[idx].xPosition = value.location.x - (zone.frame.width / 2)
+                                viewModel.zones[idx].yPosition = value.location.y - (zone.frame.height / 2)
+                            }
+                        }
+                        .onEnded { value in
+                            if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                                let finalX = value.location.x - (zone.frame.width / 2)
+                                let finalY = value.location.y - (zone.frame.height / 2)
+                                viewModel.zones[idx].xPosition = round(finalX / 20) * 20
+                                viewModel.zones[idx].yPosition = round(finalY / 20) * 20
+                            }
+                        }
+                    : nil
+                )
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        viewModel.selectZone(zone)
-                        isShowingEdit = true
+                    if isEditingLayout {
+                        zoneToRename = zone
+                        newName = zone.name
+                        showRenameAlert = true
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            viewModel.selectZone(zone)
+                            isShowingEdit = true
+                        }
+                    }
+                }
+            }
+            
+            if isEditingLayout {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Menu {
+                            Button("Wall Unit") { addZone(type: .wall) }
+                            Button("Table") { addZone(type: .table) }
+                            Button("Window Display") { addZone(type: .window) }
+                            Button("Cash Wrap") { addZone(type: .cashWrap) }
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 56, height: 56)
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                                .shadow(color: .blue.opacity(0.3), radius: 10, y: 5)
+                        }
+                        .padding(32)
                     }
                 }
             }
@@ -140,6 +302,24 @@ struct StoreLayoutOverviewView: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.05), radius: 20)
+        .alert("Rename Zone", isPresented: $showRenameAlert) {
+            TextField("Zone Name", text: $newName)
+            Button("Cancel", role: .cancel) {
+                zoneToRename = nil
+            }
+            Button("Save") {
+                if let zone = zoneToRename,
+                   let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
+                    viewModel.zones[idx].name = newName
+                }
+                zoneToRename = nil
+            }
+        }
+        .alert("Error Saving Layout", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage ?? "Unknown error occurred.")
+        }
     }
     
     // MARK: - Helpers
@@ -148,6 +328,47 @@ struct StoreLayoutOverviewView: View {
         case .table: return "table.furniture"
         case .wall: return "cabinet"
         case .window: return "rectangle.split.3x1"
+        case .cashWrap: return "creditcard.and.123"
         }
+    }
+    
+    private func addZone(type: ZoneType) {
+        let newId = UUID()
+        let name: String
+        let width: Double
+        let height: Double
+        let capacity: Int
+        
+        switch type {
+        case .table:
+            name = "New Table"
+            width = 160; height = 100; capacity = 20
+        case .wall:
+            name = "New Wall Unit"
+            width = 60; height = 180; capacity = 40
+        case .window:
+            name = "New Window"
+            width = 240; height = 80; capacity = 10
+        case .cashWrap:
+            name = "Cash Wrap"
+            width = 200; height = 80; capacity = 0
+        }
+        
+        let newZone = MerchandisingZone(
+            id: newId,
+            storeId: appVM.currentStoreId ?? UUID(),
+            name: name,
+            type: type,
+            xPosition: 400,
+            yPosition: 400,
+            width: width,
+            height: height,
+            totalCapacity: capacity
+        )
+        
+        viewModel.zones.append(newZone)
+        zoneToRename = newZone
+        newName = newZone.name
+        showRenameAlert = true
     }
 }

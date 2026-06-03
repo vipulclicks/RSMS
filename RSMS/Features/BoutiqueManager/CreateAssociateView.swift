@@ -15,6 +15,8 @@ struct CreateAssociateView: View {
     
     @State private var isSubmitting = false
     @State private var errorMessage: String?
+    @State private var emailBannerMessage: String?
+    @State private var emailBannerIsSuccess: Bool = true
     
     var onCreated: (() -> Void)?
     
@@ -130,6 +132,20 @@ struct CreateAssociateView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     
+                    if let emailBannerMessage {
+                        HStack(spacing: 10) {
+                            Image(systemName: emailBannerIsSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .foregroundStyle(emailBannerIsSuccess ? RSMSTheme.success : RSMSTheme.warning)
+                            Text(emailBannerMessage)
+                                .font(.callout)
+                                .foregroundStyle(emailBannerIsSuccess ? RSMSTheme.success : RSMSTheme.warning)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background((emailBannerIsSuccess ? RSMSTheme.success : RSMSTheme.warning).opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    
                     // SAVE BUTTON
                     Button {
                         Task { await saveAssociate() }
@@ -213,9 +229,10 @@ struct CreateAssociateView: View {
     private func saveAssociate() async {
         isSubmitting = true
         errorMessage = nil
+        emailBannerMessage = nil
         
         do {
-            try await EmployeeCreationService.shared.createEmployee(
+            let emailResult = try await EmployeeCreationService.shared.createEmployee(
                 fullName: full_name,
                 email: email,
                 phone: phone,
@@ -226,6 +243,18 @@ struct CreateAssociateView: View {
                 dataStore: appVM.dataStore,
                 currentStoreId: appVM.currentStoreId
             )
+            
+            switch emailResult {
+            case .success:
+                emailBannerMessage = "Employee created — credentials sent to \(email)"
+                emailBannerIsSuccess = true
+            case .failed(let reason):
+                emailBannerMessage = "Employee created but email failed: \(reason). Share credentials manually."
+                emailBannerIsSuccess = false
+            }
+            
+            // Brief delay so the user can see the banner before dismissal
+            try? await Task.sleep(for: .seconds(2))
             
             onCreated?()
             dismiss()

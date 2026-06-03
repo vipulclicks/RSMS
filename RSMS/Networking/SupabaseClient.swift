@@ -120,6 +120,7 @@ final class SupabaseClient: Sendable {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         applyHeaders(&request)
 
         let (data, response) = try await session.data(for: request)
@@ -250,13 +251,27 @@ final class SupabaseClient: Sendable {
 
     /// Delete a row by its UUID primary key.
     func delete(_ table: String, id: UUID) async throws {
-        guard let url = URL(string: "\(SupabaseConfig.restURL)/\(table)?id=eq.\(id.uuidString)") else {
-            throw SupabaseError.invalidURL
-        }
-
+        let url = URL(string: "\(SupabaseConfig.restURL)/\(table)?id=eq.\(id.uuidString)")!
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         applyHeaders(&request)
+
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response, data: data)
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MARK: - FUNCTIONS
+    // ══════════════════════════════════════════════════════════
+
+    /// Invoke a Supabase Edge Function
+    func invokeFunction<T: Encodable>(_ functionName: String, body: T) async throws {
+        let url = URL(string: "\(SupabaseConfig.projectURL)/functions/v1/\(functionName)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyHeaders(&request)
+        
+        request.httpBody = try encoder.encode(body)
 
         let (data, response) = try await session.data(for: request)
         try validateResponse(response, data: data)
@@ -309,7 +324,7 @@ final class SupabaseClient: Sendable {
         request.setValue("true", forHTTPHeaderField: "x-upsert")
         request.httpBody = data
         
-        let (responseData, response) = try await session.data(for: request)
+        let (responseData, response) = try await session.upload(for: request, from: data)
         try validateResponse(response, data: responseData)
         
         return "\(bucket)/\(path)"

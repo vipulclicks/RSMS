@@ -33,7 +33,7 @@ struct ComplianceHeatmapView: View {
             // Zones Overlay
             ForEach(planogramVM.zones) { zone in
                 let latestCheck = getLatestCheck(for: zone)
-                let statusColor = color(for: latestCheck?.status)
+                let isChecked = latestCheck != nil
                 
                 ZStack {
                     // Base shape based on type
@@ -41,24 +41,31 @@ struct ComplianceHeatmapView: View {
                     case .table:
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(white: 0.98))
-                            .shadow(color: statusColor.opacity(0.3), radius: 10, y: 5)
+                            .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(statusColor, lineWidth: 3)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                     case .wall:
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color(white: 0.95))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(statusColor, lineWidth: 3)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                     case .window:
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.blue.opacity(0.05))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(statusColor, lineWidth: 3)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    case .cashWrap:
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(white: 0.98))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                     }
                     
@@ -71,12 +78,12 @@ struct ComplianceHeatmapView: View {
                             .foregroundColor(RSMSTheme.textPrimary)
                             .multilineTextAlignment(.center)
                         
-                        if let check = latestCheck {
+                        if isChecked {
                             HStack(spacing: 4) {
-                                Circle().fill(statusColor).frame(width: 8, height: 8)
-                                Text(check.status.displayName)
+                                Circle().fill(RSMSTheme.success).frame(width: 8, height: 8)
+                                Text("Checked")
                                     .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(statusColor)
+                                    .foregroundColor(RSMSTheme.success)
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -115,18 +122,25 @@ struct ComplianceHeatmapView: View {
     // MARK: - Helpers
     
     private func getLatestCheck(for zone: MerchandisingZone) -> ComplianceCheck? {
-        // Find the corresponding planogram for this zone.
-        // Actually, in the current DB, compliance_checks point to a Planogram ID.
-        // Wait, earlier I found out planograms actually match the merchandising zones 1:1 in the user's DB.
-        // The compliance check is tied to planogramId. The zone.id is technically the shelf_zone_id.
-        // The Planogram name is typically matching the zone name.
-        let matchingPlanogram = complianceVM.availablePlanograms.first(where: { $0.name == zone.name })
-        
-        guard let pId = matchingPlanogram?.id else { return nil }
+        let zoneTag = "[Zone: \(zone.name)]"
         
         return complianceVM.complianceChecks
-            .filter { $0.planogramId == pId }
-            .sorted { $0.checkedAt > $1.checkedAt }
+            .filter { check in
+                guard let notes = check.notes else { return false }
+                return notes.contains(zoneTag)
+            }
+            .sorted { a, b in
+                // If they were created at the exact same time (like in our split report logic),
+                // prioritize showing the more severe status on the heatmap.
+                if abs(a.checkedAt.timeIntervalSince(b.checkedAt)) < 1.0 {
+                    if a.status == .nonCompliant { return true }
+                    if b.status == .nonCompliant { return false }
+                    if a.status == .needsReview { return true }
+                    if b.status == .needsReview { return false }
+                    return true
+                }
+                return a.checkedAt > b.checkedAt
+            }
             .first
     }
     
@@ -140,6 +154,7 @@ struct ComplianceHeatmapView: View {
         case .table: return "table.furniture"
         case .wall: return "cabinet"
         case .window: return "rectangle.split.3x1"
+        case .cashWrap: return "creditcard.and.123"
         }
     }
 }

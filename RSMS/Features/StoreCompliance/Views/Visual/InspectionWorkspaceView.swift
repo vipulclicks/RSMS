@@ -17,14 +17,15 @@ struct InspectionWorkspaceView: View {
         let title: String
         var status: ComplianceStatus?
         var photoUrls: [String] = []
+        var notes: String = ""
     }
     
     @State private var checkpoints = [
-        InspectionCheckpoint(title: "Products match planogram exactly"),
-        InspectionCheckpoint(title: "All items properly aligned and spaced"),
-        InspectionCheckpoint(title: "Lighting is functional and aimed correctly"),
-        InspectionCheckpoint(title: "Marketing signage is current"),
-        InspectionCheckpoint(title: "Display is clean and dust-free")
+        InspectionCheckpoint(title: "Planogram Accuracy"),
+        InspectionCheckpoint(title: "Item Alignment & Spacing"),
+        InspectionCheckpoint(title: "Lighting & Illumination"),
+        InspectionCheckpoint(title: "Marketing Signage"),
+        InspectionCheckpoint(title: "Display Cleanliness")
     ]
     
     @State private var notes: String = ""
@@ -33,6 +34,7 @@ struct InspectionWorkspaceView: View {
     
     @State private var showPhotoUpload = false
     @State private var isSubmitting = false
+    @State private var showingSuccessMessage = false
     @State private var showAlert = false
     @State private var alertMessage = ""
     
@@ -41,7 +43,8 @@ struct InspectionWorkspaceView: View {
     }
     
     var body: some View {
-        GeometryReader { geo in
+        ZStack {
+            GeometryReader { geo in
                 HStack(spacing: 0) {
                     // Only the Inspection Workspace Form
                     
@@ -143,9 +146,48 @@ struct InspectionWorkspaceView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .background(RSMSTheme.background)
+                    .background(RSMSTheme.background)
                 }
             }
-            .navigationTitle("Check: \(zone.name)")
+            
+            if isSubmitting || showingSuccessMessage {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 24) {
+                    if showingSuccessMessage {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 64))
+                            .foregroundStyle(RSMSTheme.success)
+                            .transition(.scale.combined(with: .opacity))
+                        
+                        VStack(spacing: 8) {
+                            Text("Report Submitted")
+                                .font(.title3.bold())
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("The Inventory Controller has been notified.")
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
+                    } else {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .tint(RSMSTheme.primaryDark)
+                        
+                        Text("Submitting Report...")
+                            .font(.title3.bold())
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                }
+                .padding(40)
+                .background(RSMSTheme.surfacePrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
+                .padding(40)
+            }
+        }
+        .navigationTitle("Check: \(zone.name)")
             .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPhotoUpload, onDismiss: {
             editingCheckpointId = nil
@@ -195,7 +237,18 @@ struct InspectionWorkspaceView: View {
             }
             
             if checkpoint.wrappedValue.status == .nonCompliant || checkpoint.wrappedValue.status == .needsReview {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("Add notes explaining the issue...", text: checkpoint.notes, axis: .vertical)
+                        .lineLimit(2...4)
+                        .font(.subheadline)
+                        .padding(12)
+                        .background(RSMSTheme.surfaceSecondary)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                    
                     HStack {
                         Text("Evidence Required")
                             .font(.caption.weight(.bold))
@@ -263,6 +316,7 @@ struct InspectionWorkspaceView: View {
         case .table: return "table.furniture"
         case .wall: return "cabinet"
         case .window: return "rectangle.split.3x1"
+        case .cashWrap: return "creditcard.and.123"
         }
     }
     
@@ -292,53 +346,108 @@ struct InspectionWorkspaceView: View {
             return
         }
         
-        let finalStatus: ComplianceStatus
-        if checkpoints.contains(where: { $0.status == .nonCompliant }) {
-            finalStatus = .nonCompliant
-        } else if checkpoints.contains(where: { $0.status == .needsReview }) {
-            finalStatus = .needsReview
-        } else {
-            finalStatus = .compliant
+        let fails = checkpoints.filter { $0.status == .nonCompliant }
+        let reviews = checkpoints.filter { $0.status == .needsReview }
+        let passes = checkpoints.filter { $0.status == .compliant }
+        
+        var checksToCreate: [ComplianceCheck] = []
+        
+        // 1. Non-Compliant Report
+        if !fails.isEmpty {
+            var formattedNotes = "[Zone: \(zone.name)]\n[Checkpoints]\n"
+            for cp in fails + passes {
+                let icon = cp.status == .nonCompliant ? "❌" : "✅"
+                var line = "\(icon) \(cp.title)"
+                if !cp.notes.isEmpty { line += " - \(cp.notes)" }
+                formattedNotes += line + "\n"
+            }
+            if !notes.isEmpty { formattedNotes += "\n[Inspector Notes]\n\(notes)" }
+            
+            var allPhotos = uploadedPhotoUrls
+            for cp in fails { allPhotos.append(contentsOf: cp.photoUrls) }
+            
+            checksToCreate.append(ComplianceCheck(
+                id: UUID(), storeId: storeId, planogramId: pId, checkedBy: userId,
+                status: .nonCompliant, notes: formattedNotes,
+                photoURLs: allPhotos.isEmpty ? nil : allPhotos, checkedAt: Date()
+            ))
         }
         
-        var formattedNotes = "[Zone: \(zone.name)]\n[Checkpoints]\n"
-        for cp in checkpoints {
-            let icon: String
-            if cp.status == .compliant { icon = "✅" }
-            else if cp.status == .nonCompliant { icon = "❌" }
-            else { icon = "⚠️" }
-            formattedNotes += "\(icon) \(cp.title)\n"
+        // 2. Needs Review Report
+        if !reviews.isEmpty {
+            var formattedNotes = "[Zone: \(zone.name)]\n[Checkpoints]\n"
+            for cp in reviews + (fails.isEmpty ? passes : []) {
+                let icon = cp.status == .needsReview ? "⚠️" : "✅"
+                var line = "\(icon) \(cp.title)"
+                if !cp.notes.isEmpty { line += " - \(cp.notes)" }
+                formattedNotes += line + "\n"
+            }
+            // Only attach main inspector notes and general photos if this is the only report generated
+            if !notes.isEmpty && fails.isEmpty { formattedNotes += "\n[Inspector Notes]\n\(notes)" }
+            var allPhotos = fails.isEmpty ? uploadedPhotoUrls : []
+            for cp in reviews { allPhotos.append(contentsOf: cp.photoUrls) }
+            
+            checksToCreate.append(ComplianceCheck(
+                id: UUID(), storeId: storeId, planogramId: pId, checkedBy: userId,
+                status: .needsReview, notes: formattedNotes,
+                photoURLs: allPhotos.isEmpty ? nil : allPhotos, checkedAt: Date()
+            ))
         }
         
-        if !notes.isEmpty {
-            formattedNotes += "\n[Inspector Notes]\n\(notes)"
+        // 3. Fully Compliant Report
+        if fails.isEmpty && reviews.isEmpty {
+            var formattedNotes = "[Zone: \(zone.name)]\n[Checkpoints]\n"
+            for cp in checkpoints {
+                formattedNotes += "✅ \(cp.title)\n"
+            }
+            if !notes.isEmpty { formattedNotes += "\n[Inspector Notes]\n\(notes)" }
+            
+            checksToCreate.append(ComplianceCheck(
+                id: UUID(), storeId: storeId, planogramId: pId, checkedBy: userId,
+                status: .compliant, notes: formattedNotes,
+                photoURLs: uploadedPhotoUrls.isEmpty ? nil : uploadedPhotoUrls, checkedAt: Date()
+            ))
         }
-        
-        var allPhotos = uploadedPhotoUrls
-        for cp in checkpoints {
-            allPhotos.append(contentsOf: cp.photoUrls)
-        }
-        
-        let newCheck = ComplianceCheck(
-            id: UUID(),
-            storeId: storeId,
-            planogramId: pId,
-            checkedBy: userId,
-            status: finalStatus,
-            notes: formattedNotes,
-            photoURLs: allPhotos.isEmpty ? nil : allPhotos,
-            checkedAt: Date()
-        )
         
         isSubmitting = true
         Task {
             do {
-                try await viewModel.createCheck(newCheck)
-                dismiss()
+                // Fetch staff to find the Inventory Controller
+                try? await appViewModel.dataStore.fetchUsers(storeId: storeId)
+                let inventoryControllers = appViewModel.dataStore.users.filter { $0.role == .inventoryController }
+                
+                for check in checksToCreate {
+                    try await viewModel.createCheck(check)
+                    
+                    for ic in inventoryControllers {
+                        try? await appViewModel.dataStore.createNotification(
+                            recipientId: ic.id,
+                            title: "Compliance Check Submitted",
+                            message: "A new compliance check was submitted for \(zone.name). Status: \(check.status.displayName)",
+                            type: .complianceAlert,
+                            relatedEntityId: check.id
+                        )
+                    }
+                }
+                
+                await MainActor.run {
+                    isSubmitting = false
+                    withAnimation(.spring()) {
+                        showingSuccessMessage = true
+                    }
+                }
+                
+                try? await Task.sleep(nanoseconds: 2_000_000_000) // Show message for 2 seconds
+                
+                await MainActor.run {
+                    dismiss()
+                }
             } catch {
-                isSubmitting = false
-                alertMessage = "Failed to save: \(error.localizedDescription)"
-                showAlert = true
+                await MainActor.run {
+                    isSubmitting = false
+                    alertMessage = "Failed to save: \(error.localizedDescription)"
+                    showAlert = true
+                }
             }
         }
     }

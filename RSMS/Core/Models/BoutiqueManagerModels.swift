@@ -415,6 +415,28 @@ enum RSVPStatus: String, Codable, CaseIterable {
     case declined  = "declined"
     case attended  = "attended"
     case noShow    = "no_show"
-}
 
+    var displayName: String {
+        switch self {
+        case .invited: return "Invited"
+        case .pending: return "Pending"
+        case .confirmed: return "Accepted"
+        case .declined: return "Declined"
+        case .attended: return "Attended"
+        case .noShow: return "No Show"
+        case .pending:
+            return "Pending"
+        }
+    }
+
+    var color: SwiftUI.Color {
+        switch self {
+        case .invited, .pending: return RSMSTheme.warning
+        case .confirmed, .attended: return RSMSTheme.success
+        case .declined, .noShow: return RSMSTheme.danger
+        case .pending:
+            return RSMSTheme.success
+        }
+    }
+}
 

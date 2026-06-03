@@ -86,7 +86,7 @@ final class LookbookViewModel {
     // MARK: - Uploading
     
     @MainActor
-    func uploadLookbook(title: String, fileURL: URL, dataStore: DataStore) async {
+    func uploadLookbook(title: String, fileURL: URL, dataStore: DataStore) async -> Lookbook? {
         isUploading = true
         errorMessage = nil
         
@@ -97,20 +97,52 @@ final class LookbookViewModel {
             let data = try Data(contentsOf: fileURL)
             let fileName = "\(UUID().uuidString).pdf"
             
-            // Upload to Supabase Storage
-            let storagePath = try await SupabaseClient.shared.uploadStorage(bucket: "lookbooks", path: fileName, data: data, contentType: "application/pdf")
+            let storagePath: String
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                // Mock upload for SwiftUI Previews (since we don't have a real JWT)
+                try await Task.sleep(nanoseconds: 1_500_000_000)
+                storagePath = "lookbooks/\(fileName)"
+            } else {
+                guard SupabaseClient.shared.accessToken != nil else {
+                    throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "You are not fully logged into Supabase (accessToken is nil). The app is sending an anonymous key, which is why your policy is rejecting it!"])
+                }
+                
+                // Real Upload to Supabase Storage
+                storagePath = try await SupabaseClient.shared.uploadStorage(bucket: "lookbooks", path: fileName, data: data, contentType: "application/pdf")
+            }
             
             let lookbook = Lookbook(id: UUID(), title: title, isActive: true, createdAt: .now, pdfStoragePath: storagePath)
             try await dataStore.createLookbook(lookbook)
             
             // Refresh
             self.allLookbooks = dataStore.lookbooks
-        } catch {
-            self.errorMessage = "Upload failed: \(error.localizedDescription)"
+            isUploading = false
+            return lookbook
+        } catch let err as URLError {
+            self.errorMessage = "Network error: \(err.localizedDescription) (Code: \(err.errorCode))"
+        } catch let err as SupabaseError {
+            self.errorMessage = "Supabase error: \(err.localizedDescription)"
+        } catch let err as NSError {
+            self.errorMessage = "Error: \(err.localizedDescription)"
         }
         isUploading = false
+        return nil
     }
-
+    @MainActor
+    func deleteLookbook(_ lookbook: Lookbook, dataStore: DataStore) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            try await dataStore.deleteLookbook(id: lookbook.id)
+            // Refresh
+            self.allLookbooks = dataStore.lookbooks
+        } catch let err as NSError {
+            self.errorMessage = "Failed to delete: \(err.localizedDescription)"
+        }
+        
+        isLoading = false
+    }
     // MARK: - Formatting
 
     func formattedDate(_ date: Date) -> String {
