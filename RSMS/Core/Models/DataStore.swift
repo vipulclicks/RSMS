@@ -24,6 +24,7 @@ final class DataStore {
 
     // ── Core ────────────────────────────────────────────
     var stores: [Store] = []
+    var inventorySourcingRequests: [InventorySourcingRequest] = []
     var users: [UserProfile] = []
 
     // ── Boutique Manager ────────────────────────────────
@@ -66,6 +67,12 @@ final class DataStore {
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
+    
+    // ── Tax-Free Shopping ─────────────────────────────
+    var taxFreeConfigs: [TaxFreeConfig] = []
+    var taxFreeTransactions: [TaxFreeTransaction] = []
+    var taxFreeAudits: [TaxFreeAudit] = []
+    
     private var isRecalculating = false
 
         func recalculateVIPTiers() {
@@ -110,6 +117,10 @@ final class DataStore {
     var serialCaptures: [SerialCapture] = []
     var authCertificates: [AuthCertificate] = []
     var shrinkageAnalytics: [ShrinkageAnalytics] = []
+    var serviceRequests: [ServiceRequest] = []
+    var serviceActivities: [ServiceActivity] = []
+    var loanerAssignments: [LoanerAssignment] = []
+    var loanerActivities: [LoanerActivity] = []
 
     // ── Omnichannel ────────────────────────────────────
     var omnichannelOrders: [OmnichannelOrder] = []
@@ -928,10 +939,15 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
 
     func fetchStockItems(storeId: UUID? = nil) async throws {
-        if let id = storeId {
-            stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
-        } else {
-            stockItems = try await api.fetch("stock_items")
+        do {
+            if let id = storeId {
+                stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
+            } else {
+                stockItems = try await api.fetch("stock_items")
+            }
+        } catch {
+            print("FAILED TO FETCH STOCK ITEMS: \(error)")
+            throw error
         }
     }
 
@@ -1224,6 +1240,52 @@ final class DataStore {
         if let i = shipFromStoreSlips.firstIndex(where: { $0.id == s.id }) { shipFromStoreSlips[i] = s }
     }
 
+    // ══════════════════════════════════════════════════════════
+    // MARK: - service_requests
+    // ══════════════════════════════════════════════════════════
+
+    func fetchServiceRequests(storeId: UUID? = nil) async throws {
+        var query: [String: String] = [:]
+        if let sid = storeId { query["store_id"] = "eq.\(sid)" }
+        serviceRequests = try await api.fetch("service_requests", query: query)
+    }
+
+    @discardableResult
+    func createServiceRequest(_ sr: ServiceRequest) async throws -> ServiceRequest {
+        let created: ServiceRequest = try await api.insert("service_requests", record: sr)
+        serviceRequests.append(created)
+        return created
+    }
+
+    func updateServiceRequest(_ sr: ServiceRequest) async throws {
+        try await api.update("service_requests", id: sr.id, record: sr)
+        if let i = serviceRequests.firstIndex(where: { $0.id == sr.id }) { serviceRequests[i] = sr }
+    }
+
+    func deleteServiceRequest(id: UUID) async throws {
+        try await api.delete("service_requests", id: id)
+        await MainActor.run {
+            serviceRequests.removeAll { $0.id == id }
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MARK: - service_activities
+    // ══════════════════════════════════════════════════════════
+
+    func fetchServiceActivities(requestId: String? = nil) async throws {
+        var query: [String: String] = [:]
+        if let rid = requestId { query["request_id"] = "eq.\(rid)" }
+        serviceActivities = try await api.fetch("service_activities", query: query)
+    }
+
+    @discardableResult
+    func createServiceActivity(_ sa: ServiceActivity) async throws -> ServiceActivity {
+        let created: ServiceActivity = try await api.insert("service_activities", record: sa)
+        serviceActivities.append(created)
+        return created
+    }
+
     @MainActor
     func clearAllCaches() {
         stores = []
@@ -1268,5 +1330,42 @@ final class DataStore {
         discountApprovalRequests = []
         appNotifications = []
         orders = []
+    }
+    
+    // ══════════════════════════════════════════════════════════
+    // MARK: - loaner_assignments
+    // ══════════════════════════════════════════════════════════
+    
+    func fetchLoanerAssignments(storeId: UUID? = nil) async throws {
+        let endpoint = storeId != nil ? "loaner_assignments?store_id=eq.\(storeId!)" : "loaner_assignments"
+        loanerAssignments = try await api.fetch(endpoint)
+    }
+    
+    @discardableResult
+    func createLoanerAssignment(_ assignment: LoanerAssignment) async throws -> LoanerAssignment {
+        let created: LoanerAssignment = try await api.insert("loaner_assignments", record: assignment)
+        loanerAssignments.append(created)
+        return created
+    }
+    
+    func updateLoanerAssignment(_ assignment: LoanerAssignment) async throws {
+        try await api.update("loaner_assignments", id: assignment.id, record: assignment)
+        if let i = loanerAssignments.firstIndex(where: { $0.id == assignment.id }) { loanerAssignments[i] = assignment }
+    }
+    
+    // ══════════════════════════════════════════════════════════
+    // MARK: - loaner_activities
+    // ══════════════════════════════════════════════════════════
+    
+    func fetchLoanerActivities(assignmentId: String? = nil) async throws {
+        let endpoint = assignmentId != nil ? "loaner_activities?assignment_id=eq.\(assignmentId!)" : "loaner_activities"
+        loanerActivities = try await api.fetch(endpoint)
+    }
+    
+    @discardableResult
+    func createLoanerActivity(_ activity: LoanerActivity) async throws -> LoanerActivity {
+        let created: LoanerActivity = try await api.insert("loaner_activities", record: activity)
+        loanerActivities.append(created)
+        return created
     }
 }

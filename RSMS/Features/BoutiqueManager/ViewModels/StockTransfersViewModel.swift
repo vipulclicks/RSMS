@@ -159,6 +159,30 @@ final class StockTransfersViewModel {
             try await dataStore.fetchInventoryMovements(type: .storeTransfer)
             allTransfers = dataStore.inventoryMovements
             
+            // Check wishlists and notify sales associates in the destination store
+            let destAssociates = dataStore.users.filter { $0.storeId == destUUID && $0.role == .salesAssociate }
+            
+            for item in items {
+                // Find any client wishlists for this product
+                let matchingWishlists = dataStore.wishlistItems.filter { $0.productId == item.productId && $0.notifyOnRestock }
+                
+                if !matchingWishlists.isEmpty {
+                    // Fetch product name safely
+                    let productName = dataStore.products.first(where: { $0.id == item.productId })?.name ?? "A product"
+                    
+                    // Notify all sales associates in the destination store
+                    for associate in destAssociates {
+                        try? await dataStore.createNotification(
+                            recipientId: associate.id,
+                            title: "Wishlist Item Back in Stock",
+                            message: "\(productName) is now back in stock at your store.",
+                            type: .wishlistRestock,
+                            relatedEntityId: item.productId
+                        )
+                    }
+                }
+            }
+            
             if selectedTransfer?.id == movement.id {
                 selectedTransfer = updatedMovement
             }
