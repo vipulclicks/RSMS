@@ -21,6 +21,13 @@ struct MovementsHubView: View {
                 )
                 
                 HubNavigationCard(
+                    title: "Returns and Exchanges",
+                    icon: "arrow.uturn.backward.circle.fill",
+                    color: RSMSTheme.primary,
+                    destination: InspectionQueueView()
+                )
+                
+                HubNavigationCard(
                     title: "Service Center",
                     icon: "wrench.and.screwdriver.fill",
                     color: RSMSTheme.info,
