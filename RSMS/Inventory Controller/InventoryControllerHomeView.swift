@@ -16,6 +16,7 @@ enum InventoryDestination: String, Hashable, Identifiable {
     case transfer       = "Transfer Inventory"
     case dcReplenishment = "DC Replenishments"
     case vendorReturns  = "Vendor Returns"
+    case returnsExchangeInspection = "Returns & Exchanges"
     case cycleCounts    = "Cycle Counts & Verify"
     case auditReconcile = "Audit & Reconcile"
     case auditTrail     = "Audit Trail"
@@ -33,27 +34,25 @@ enum InventoryDestination: String, Hashable, Identifiable {
 
     var icon: String {
         switch self {
-        case .dashboard:       return "chart.bar.fill"
-        case .productLookup:   return "magnifyingglass.circle.fill"
-        case .transfer:        return "arrow.left.arrow.right"
-        case .dcReplenishment: return "truck.box.fill"
-        case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
-        case .cycleCounts:     return "arrow.triangle.2.circlepath"
-        case .auditReconcile:  return "doc.text.magnifyingglass"
-        case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
-        case .authCertificates:return "seal.fill"
-        case .complianceBoard: return "checklist.checked"
-        case .notify:          return "paperplane.fill"
-        case .serviceTracking: return "wrench.and.screwdriver.fill"
-        case .loanerManagement: return "clock.arrow.circlepath"
-        case .profile:         return "person.crop.circle.fill"
-        case .dashboard: return "chart.bar.fill"
-        case .movements: return "shippingbox.fill"
-        case .audits:    return "checkmark.shield.fill"
-        case .catalog:   return "book.fill"
-        case .profile:   return "person.crop.circle.fill"
-        }
-    }
+        case .dashboard:                  return "chart.bar.fill"
+        case .productLookup:              return "magnifyingglass.circle.fill"
+        case .transfer:                   return "arrow.left.arrow.right"
+        case .dcReplenishment:            return "truck.box.fill"
+        case .vendorReturns:              return "arrow.uturn.backward.circle.fill"
+        case .returnsExchangeInspection:  return "arrow.uturn.backward.circle.fill"
+        case .cycleCounts:                return "arrow.triangle.2.circlepath"
+        case .auditReconcile:             return "doc.text.magnifyingglass"
+        case .auditTrail:                 return "list.bullet.rectangle.portrait.fill"
+        case .authCertificates:           return "seal.fill"
+        case .complianceBoard:            return "checklist.checked"
+        case .notify:                     return "paperplane.fill"
+        case .serviceTracking:            return "wrench.and.screwdriver.fill"
+        case .loanerManagement:           return "clock.arrow.circlepath"
+        case .movements:                  return "shippingbox.fill"
+        case .audits:                     return "checkmark.shield.fill"
+        case .catalog:                    return "book.fill"
+        case .profile:                    return "person.crop.circle.fill"
+        }    }
     
     static var tabs: [InventoryDestination] {
         [.dashboard, .movements, .audits, .catalog]
@@ -117,10 +116,12 @@ struct InventoryControllerHomeView: View {
 
     private var sidebar: some View {
         List(selection: $selectedDestination) {
+
             ForEach(InventoryDestination.tabs) { dest in
                 NavigationLink(value: dest) {
                     Label(dest.rawValue, systemImage: dest.icon)
                 }
+
             }
         }
         .listStyle(.sidebar)
@@ -167,6 +168,8 @@ struct InventoryControllerHomeView: View {
 //            DCReplenishmentView()
         case .vendorReturns:
             VendorReturnView()
+        case .returnsExchangeInspection:
+            InspectionQueueView()
         case .cycleCounts:
             CycleCountView()
         case .auditReconcile:

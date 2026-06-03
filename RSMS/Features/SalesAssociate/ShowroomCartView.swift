@@ -651,7 +651,6 @@ struct ShowroomCartView: View {
             }
             Spacer()
         }
-        .padding()
         .background((status == .pending ? Color.orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger)).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
@@ -662,100 +661,21 @@ struct ShowroomCartView: View {
         VStack(spacing: 12) {
             Divider().overlay(RSMSTheme.divider)
             
-            HStack(spacing: 16) {
-                // Save Cart
-                Button {
-                    switch mode {
-                    case .activeSession(let vm):
-                        vm.isSaving = true
-                        Task { await vm.saveShowroom() }
-                    case .savedCart:
-                        dismiss()
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        if isSavingFromViewModel {
-                            ProgressView().tint(RSMSTheme.cream)
-                        }
-                        Text(isSavingText)
-                    }
-                    .font(.headline)
-                    .foregroundStyle((isEmpty || isSavingFromViewModel) ? RSMSTheme.textTertiary : RSMSTheme.cream)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background((isEmpty || isSavingFromViewModel) ? RSMSTheme.surfaceTertiary : RSMSTheme.primaryDark)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(isEmpty || isSavingFromViewModel)
-                
-                // Share Cart
-                Button {
-                    switch mode {
-                    case .activeSession:
-                        triggerShare()
-                    case .savedCart(let cart, let ds):
-                        shareCart(cart: cart, ds: ds)
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        if isSharing {
-                            ProgressView().tint(RSMSTheme.primaryDark)
-                        } else {
-                            Image(systemName: "square.and.arrow.up")
-                            Text("Share")
-                        }
-                    }
-                    .font(.headline)
-                    .foregroundStyle((isEmpty || isSharing) ? RSMSTheme.textTertiary : RSMSTheme.primaryDark)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke((isEmpty || isSharing) ? RSMSTheme.border : RSMSTheme.primaryDark, lineWidth: 1)
-                    )
-                }
-                .disabled(isEmpty || isSharing)
-            }
+            // Proceed to Checkout — blocked only if a real DB approval request is pending or rejected
+            let isCheckoutBlocked = (activeApprovalRequest?.status == .pending) || (activeApprovalRequest?.status == .rejected)
             
-            HStack(spacing: 16) {
-                // Continue Browsing
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Continue Browsing")
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.primaryDark)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(RSMSTheme.primaryDark, lineWidth: 1)
-                        )
-                }
-                
-                // Proceed to Checkout — blocked only if a real DB approval request is pending or rejected
-                let isCheckoutBlocked = (activeApprovalRequest?.status == .pending) || (activeApprovalRequest?.status == .rejected)
-                
-                Button {
-                    navigateToCheckout = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: isCheckoutBlocked ? "lock.fill" : "creditcard.fill")
-                        Text(isCheckoutBlocked ? "Checkout Locked" : "Checkout")
-                    }
+            Button {
+                navigateToCheckout = true
+            } label: {
+                Text(isCheckoutBlocked ? "Checkout Locked" : "Checkout")
                     .font(.headline)
                     .foregroundStyle((isEmpty || isCheckoutBlocked) ? RSMSTheme.textTertiary : RSMSTheme.cream)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background((isEmpty || isCheckoutBlocked) ? RSMSTheme.surfaceTertiary : RSMSTheme.primaryDark)
+                    .background((isEmpty || isCheckoutBlocked) ? RSMSTheme.surfaceTertiary : RSMSTheme.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(isEmpty || isCheckoutBlocked)
             }
+            .disabled(isEmpty || isCheckoutBlocked)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 24)

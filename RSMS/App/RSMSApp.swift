@@ -24,6 +24,9 @@ struct RSMSApp: App {
         
         // Execute unit tests for Tax-Free Module
         TaxFreeTests.runAllTests()
+        
+        // Execute unit tests for Returns & Exchanges Module
+        ReturnsExchangeTests.runAllTests()
     }
 
     var body: some Scene {

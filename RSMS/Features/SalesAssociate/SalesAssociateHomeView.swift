@@ -4,8 +4,10 @@ import SwiftUI
 
 enum SalesAssociateSection: String, CaseIterable, Identifiable {
     case dashboard    = "Dashboard"
-    case clients  = "Clients"
+    case clients      = "Clients"
     case appointments = "Appointments"
+    case pos          = "POS & Checkout"
+    case returnsExchange = "Returns & Exchanges"
 //    case selling      = "Assisted Selling"
     case omnichannel  = "Omnichannel"
     case profile      = "Profile"
@@ -14,12 +16,14 @@ enum SalesAssociateSection: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .dashboard:    return "house.fill"
-        case .clients:  return "person.crop.circle.fill"
-        case .appointments: return "calendar"
+        case .dashboard:       return "house.fill"
+        case .clients:         return "person.crop.circle.fill"
+        case .appointments:    return "calendar"
+        case .pos:             return "cart.fill"
+        case .returnsExchange: return "arrow.uturn.backward.circle.fill"
 //        case .selling:      return "wand.and.stars"
-        case .omnichannel:  return "shippingbox.and.arrow.backward.fill"
-        case .profile:      return "person.circle.fill"
+        case .omnichannel:     return "shippingbox.and.arrow.backward.fill"
+        case .profile:         return "person.circle.fill"
         }
     }
 }
@@ -230,6 +234,11 @@ struct SalesAssociateHomeView: View {
                     navigationPath: $navigationPath,
                     showNotifications: $showNotifications
                 )
+            case .pos:
+                POSCheckoutView()
+            case .returnsExchange:
+                ReturnsDashboardView(dataStore: appViewModel.dataStore)
+
             case .omnichannel:
                 OmnichannelView()
                     .toolbar {
@@ -287,6 +296,11 @@ struct SalesAssociateHomeView: View {
                         navigationPath: $navigationPath,
                         showNotifications: $showNotifications
                     )
+                case "POS":
+                    POSCheckoutView()
+                case "ReturnsExchange":
+                    ReturnsDashboardView(dataStore: appViewModel.dataStore)
+
                 case "Omnichannel":
                     OmnichannelView()
                 case "Profile":

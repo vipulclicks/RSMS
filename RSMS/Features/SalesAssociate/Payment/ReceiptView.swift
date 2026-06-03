@@ -16,6 +16,7 @@ struct ReceiptView: View {
     // In a real app we might fetch the items from the cart.
     // Here we'll pass them in or fetch them from DataStore
     let cartItems: [UniversalCartItem]
+    @State private var localCartItems: [UniversalCartItem] = []
 
     var body: some View {
         NavigationStack {
@@ -52,7 +53,7 @@ struct ReceiptView: View {
                             .font(.headline)
                             .foregroundStyle(RSMSTheme.textPrimary)
                         
-                        ForEach(cartItems) { item in
+                        ForEach(localCartItems) { item in
                             HStack {
                                 Text("\(item.quantity)x")
                                     .foregroundStyle(RSMSTheme.textSecondary)
@@ -163,14 +164,26 @@ struct ReceiptView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    ShareLink(item: "Receipt for Order \(order.id.uuidString.prefix(8)) - ₹\(order.finalAmount)") {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    ShareLink(item: "Receipt for Order \(order.id.uuidString.prefix(8)) - ₹\(order.finalAmount)") {
-                        Image(systemName: "square.and.arrow.up")
+            }
+            .task {
+                if cartItems.isEmpty {
+                    do {
+                        try await appVM.dataStore.fetchUniversalCartItems(cartId: order.cartId)
+                        localCartItems = appVM.dataStore.universalCartItems.filter { $0.cartId == order.cartId }
+                    } catch {
+                        print("Error fetching items for receipt: \(error)")
                     }
+                } else {
+                    localCartItems = cartItems
                 }
             }
         }
