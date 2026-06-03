@@ -135,9 +135,27 @@ class StaffProfileViewModel {
         return result
     }
     
-    // For Line Chart: Commission over time
-    var chartCommissionData: [Commission] {
-        commissions.sorted { $0.createdAt < $1.createdAt }
+    struct CommissionListItem: Identifiable {
+        let id: UUID
+        let transactionDate: Date
+        let transactionAmount: Double
+        let commissionEarned: Double
+        let status: CommissionStatus
+    }
+    
+    var commissionList: [CommissionListItem] {
+        guard let ds = dataStore else { return [] }
+        return commissions.compactMap { commission in
+            // Find the associated transaction
+            guard let txn = ds.transactions.first(where: { $0.id == commission.transactionId }) else { return nil }
+            return CommissionListItem(
+                id: commission.id,
+                transactionDate: txn.createdAt,
+                transactionAmount: txn.totalAmount,
+                commissionEarned: commission.amount,
+                status: commission.status
+            )
+        }.sorted { $0.transactionDate > $1.transactionDate }
     }
     
     var dailyCommissionData: [DailyCommission] {

@@ -24,6 +24,7 @@ final class DataStore {
 
     // ── Core ────────────────────────────────────────────
     var stores: [Store] = []
+    var inventorySourcingRequests: [InventorySourcingRequest] = []
     var users: [UserProfile] = []
 
     // ── Boutique Manager ────────────────────────────────
@@ -66,6 +67,12 @@ final class DataStore {
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
+    
+    // ── Tax-Free Shopping ─────────────────────────────
+    var taxFreeConfigs: [TaxFreeConfig] = []
+    var taxFreeTransactions: [TaxFreeTransaction] = []
+    var taxFreeAudits: [TaxFreeAudit] = []
+    
     private var isRecalculating = false
 
         func recalculateVIPTiers() {
@@ -901,10 +908,15 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
 
     func fetchStockItems(storeId: UUID? = nil) async throws {
-        if let id = storeId {
-            stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
-        } else {
-            stockItems = try await api.fetch("stock_items")
+        do {
+            if let id = storeId {
+                stockItems = try await api.fetch("stock_items", query: ["store_id": "eq.\(id)"])
+            } else {
+                stockItems = try await api.fetch("stock_items")
+            }
+        } catch {
+            print("FAILED TO FETCH STOCK ITEMS: \(error)")
+            throw error
         }
     }
 

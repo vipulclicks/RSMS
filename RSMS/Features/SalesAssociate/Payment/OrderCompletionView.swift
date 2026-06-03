@@ -12,8 +12,11 @@ struct OrderCompletionView: View {
     let client: ClientProfile
     let paymentId: String
     let cartItems: [UniversalCartItem]
+    var giftReceipts: [GiftReceipt] = []     // default empty — no breaking change to existing call sites
     
     @State private var showReceipt = false
+    @State private var showGiftReceipt = false
+    @State private var selectedGiftReceipt: GiftReceipt?
     
     var body: some View {
         ZStack {
@@ -61,6 +64,26 @@ struct OrderCompletionView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     
+                    if !giftReceipts.isEmpty {
+                        Button {
+                            selectedGiftReceipt = giftReceipts.first
+                            showGiftReceipt = true
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "gift")
+                                Text(giftReceipts.count == 1
+                                     ? "View Gift Receipt"
+                                     : "View Gift Receipts (\(giftReceipts.count))")
+                            }
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(RSMSTheme.primary.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    
                     Button {
                         // Return to root or dismiss entirely
                         // In a real flow, you'd pop back to the client profile.
@@ -81,6 +104,15 @@ struct OrderCompletionView: View {
         }
         .sheet(isPresented: $showReceipt) {
             ReceiptView(order: order, client: client, paymentId: paymentId, cartItems: cartItems)
+        }
+        .sheet(isPresented: $showGiftReceipt) {
+            if let gr = selectedGiftReceipt {
+                GiftReceiptPreviewView(
+                    giftReceipt: gr,
+                    order: order,
+                    cartItems: cartItems
+                )
+            }
         }
     }
     

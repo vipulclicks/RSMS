@@ -26,28 +26,24 @@ struct OmnichannelView: View {
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
 
-                switch viewModel.selectedTab {
-                case 0:
-                    BOPISPickupView()
-                case 1:
-                    ScrollView {
-                        endlessAisleSection
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 40)
-                    }
-                case 2:
-                    ScrollView {
+                ScrollView {
+                    switch viewModel.selectedTab {
+                    case 0:
+                        BOPISPickupView(isScrollable: false)
+                    case 1:
+                        InventorySourcingRequestListView(isScrollable: false)
+                    case 2:
                         shipFromStoreSection
                             .padding(.horizontal, 24)
                             .padding(.bottom, 40)
+                    default:
+                        BOPISPickupView(isScrollable: false)
                     }
-                default:
-                    BOPISPickupView()
                 }
             }
         }
         .navigationTitle("Omnichannel")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showNewEndlessAisle) {
             OCNewEndlessAisleSheet()
         }

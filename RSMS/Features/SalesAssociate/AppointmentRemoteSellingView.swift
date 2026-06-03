@@ -12,10 +12,13 @@ import Combine
 struct AppointmentRemoteSellingView: View {
     @Bindable var viewModel: AppointmentViewModel
     @Binding var navigationPath: NavigationPath
+    @Binding var showNotifications: Bool
     @Environment(DataStore.self) private var dataStore
+    @Environment(AppViewModel.self) private var appViewModel
 
     // Search and Filters
     @State private var searchText = ""
+    @State private var isSearchExpanded = false
     @State private var selectedStatusFilter: AppointmentStatus? = nil
     @State private var showPastAppointments = false
 
@@ -33,49 +36,11 @@ struct AppointmentRemoteSellingView: View {
     @State private var consultationManager = VideoConsultationManager()
 
     var body: some View {
-        let scheduledCount = viewModel.appointments.count
-        
         ZStack {
             RSMSTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Appointments")
-                            .font(.system(size: 34, weight: .heavy))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                    }
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 12) {
-                        Button {
-                            showClientSelection = true
-                        } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(RSMSTheme.surfacePrimary)
-                                    .frame(width: 42, height: 42)
-                                    .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
-                                
-                                Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundStyle(RSMSTheme.primary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("New Appointment")
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 24)
-
-                // Search Bar
-                searchBar
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
+                Spacer().frame(height: 16)
 
                 // Appointments List
                 ScrollView {
@@ -209,9 +174,97 @@ struct AppointmentRemoteSellingView: View {
                 }
             }
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationTitle("Appointments")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if isSearchExpanded {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                                .font(.system(size: 14))
+                            
+                            TextField("Search...", text: $searchText)
+                                .font(.system(size: 15))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                            
+                            if !searchText.isEmpty {
+                                Button {
+                                    searchText = ""
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                        .font(.system(size: 14))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+                        .frame(width: 240)
+                        
+                        Button("Cancel") {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                searchText = ""
+                                isSearchExpanded = false
+                            }
+                        }
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(RSMSTheme.primary)
+                    }
+                } else {
+                    HStack(spacing: 16) {
+                        Button {
+                            withAnimation(.easeIn(duration: 0.2)) {
+                                isSearchExpanded = true
+                            }
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        
+                        Button {
+                            showClientSelection = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        
+                        Button {
+                            showNotifications = true
+                        } label: {
+                            let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "bell")
+                                    .font(.system(size: 18))
+                                    .foregroundStyle(RSMSTheme.primary)
+                                
+                                if unreadCount > 0 {
+                                    Circle()
+                                        .fill(RSMSTheme.danger)
+                                        .frame(width: 8, height: 8)
+                                        .offset(x: 2, y: -2)
+                                }
+                            }
+                        }
+                        
+                        Button {
+                            navigationPath.append("Profile")
+                        } label: {
+                            let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
+                                .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
+                            ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 30)
+                        }
+                    }
+                }
+            }
+        }
         .sheet(isPresented: $showClientSelection) {
             clientSelectionSheet
         }
@@ -279,18 +332,6 @@ struct AppointmentRemoteSellingView: View {
 
     // MARK: - Search & Filters
 
-    private var searchBar: some View {
-        HStack {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(RSMSTheme.textTertiary)
-            TextField("Search appointments by client...", text: $searchText)
-                .textFieldStyle(.plain)
-                .foregroundStyle(RSMSTheme.textPrimary)
-        }
-        .padding(10)
-        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-    }
     
     private func filterPill(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
