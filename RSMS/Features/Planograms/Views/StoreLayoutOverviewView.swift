@@ -14,6 +14,8 @@ struct StoreLayoutOverviewView: View {
     @State private var newName = ""
     @State private var errorMessage: String? = nil
     @State private var showErrorAlert = false
+    @State private var isSaving = false
+    @State private var showSuccessMessage = false
     @Environment(AppViewModel.self) private var appVM
     
     // Luxury Colors
@@ -51,26 +53,44 @@ struct StoreLayoutOverviewView: View {
                         .foregroundColor(.red)
                         .padding(.trailing, 16)
                         
-                        Button("Save Layout") {
+                        Button(action: {
                             Task {
+                                isSaving = true
                                 do {
                                     try await viewModel.saveZonesLayout(storeId: appVM.currentStoreId ?? UUID())
                                     await MainActor.run {
                                         isEditingLayout = false
+                                        isSaving = false
+                                        showSuccessMessage = true
+                                        Task {
+                                            try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                            await MainActor.run { showSuccessMessage = false }
+                                        }
                                     }
                                 } catch {
                                     await MainActor.run {
+                                        isSaving = false
                                         errorMessage = error.localizedDescription
                                         showErrorAlert = true
                                     }
                                 }
                             }
+                        }) {
+                            HStack {
+                                if isSaving {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .padding(.trailing, 4)
+                                }
+                                Text(isSaving ? "Saving..." : "Save Layout")
+                            }
                         }
+                        .disabled(isSaving)
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.black)
+                        .background(textPrimary)
                         .clipShape(Capsule())
                     } else {
                         Button("Edit Layout") {
@@ -80,7 +100,7 @@ struct StoreLayoutOverviewView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.black)
+                        .background(textPrimary)
                         .clipShape(Capsule())
                     }
                 }
@@ -94,6 +114,24 @@ struct StoreLayoutOverviewView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(32)
                     .background(backgroundGray)
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            if showSuccessMessage {
+                                Text("Layout successfully saved!")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(Color.green)
+                                    .clipShape(Capsule())
+                                    .shadow(radius: 5)
+                                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                                    .padding(.bottom, 32)
+                            }
+                        }
+                        .animation(.spring(), value: showSuccessMessage)
+                    )
             }
             .background(Color.white)
             .task {
@@ -209,16 +247,16 @@ struct StoreLayoutOverviewView: View {
                     isEditingLayout ? DragGesture()
                         .onChanged { value in
                             if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
-                                viewModel.zones[idx].xPosition = value.location.x
-                                viewModel.zones[idx].yPosition = value.location.y
+                                viewModel.zones[idx].xPosition = value.location.x - (zone.frame.width / 2)
+                                viewModel.zones[idx].yPosition = value.location.y - (zone.frame.height / 2)
                             }
                         }
                         .onEnded { value in
                             if let idx = viewModel.zones.firstIndex(where: { $0.id == zone.id }) {
-                                let snapX = round(value.location.x / 20) * 20
-                                let snapY = round(value.location.y / 20) * 20
-                                viewModel.zones[idx].xPosition = snapX
-                                viewModel.zones[idx].yPosition = snapY
+                                let finalX = value.location.x - (zone.frame.width / 2)
+                                let finalY = value.location.y - (zone.frame.height / 2)
+                                viewModel.zones[idx].xPosition = round(finalX / 20) * 20
+                                viewModel.zones[idx].yPosition = round(finalY / 20) * 20
                             }
                         }
                     : nil

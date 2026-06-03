@@ -335,6 +335,21 @@ struct InspectionWorkspaceView: View {
         Task {
             do {
                 try await viewModel.createCheck(newCheck)
+                
+                // Fetch staff to find the Inventory Controller
+                try? await appViewModel.dataStore.fetchUsers(storeId: storeId)
+                let inventoryControllers = appViewModel.dataStore.users.filter { $0.role == .inventoryController }
+                
+                for ic in inventoryControllers {
+                    try? await appViewModel.dataStore.createNotification(
+                        recipientId: ic.id,
+                        title: "Compliance Check Submitted",
+                        message: "A new compliance check was submitted for \(zone.name). Status: \(finalStatus.displayName)",
+                        type: .complianceAlert,
+                        relatedEntityId: newCheck.id
+                    )
+                }
+                
                 dismiss()
             } catch {
                 isSubmitting = false
