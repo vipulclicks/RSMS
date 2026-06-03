@@ -45,13 +45,6 @@ struct CycleCountSectionView: View {
             // KPI Cards Row
             cycleCountKPIRow
 
-            // Pending Items
-            if !cycleCountVM.pendingItems.isEmpty {
-                cycleCountPendingList
-            } else {
-                cycleCountAllClear
-            }
-
             // Verified / Checked toggle
             if !cycleCountVM.checkedItems.isEmpty {
                 cycleCountCheckedSection
@@ -68,6 +61,12 @@ struct CycleCountSectionView: View {
         }
         .sheet(isPresented: $showPendingSheet) {
             pendingChecksSheet
+        }
+        .fullScreenCover(item: $selectedProductToView) { product in
+            ProductDetailSheet(
+                product: product,
+                stockItem: stockItem(for: product)
+            )
         }
     }
 
@@ -276,32 +275,25 @@ struct CycleCountSectionView: View {
     // MARK: Cycle Count Checked Section
     private var cycleCountCheckedSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    showCheckedItems.toggle()
-                }
-            } label: {
-                HStack {
-                    Text("Verified this period")
-                        .font(.caption.weight(.semibold))
-                        .tracking(1.5)
-                        .foregroundStyle(RSMSTheme.gold)
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Text("\(cycleCountVM.checkedItems.count)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.success)
-                        Image(systemName: showCheckedItems ? "chevron.up" : "chevron.down")
-                            .font(.caption2)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-                }
+            HStack {
+                Text("Verified this period")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.5)
+                    .foregroundStyle(RSMSTheme.gold)
+                Spacer()
+                Text("\(cycleCountVM.checkedItems.count) items")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
             }
-            .buttonStyle(.plain)
 
-            if showCheckedItems {
-                VStack(spacing: 0) {
-                    ForEach(Array(cycleCountVM.checkedItems.prefix(10).enumerated()), id: \.element.id) { index, item in
+            VStack(spacing: 0) {
+                let limit = showCheckedItems ? cycleCountVM.checkedItems.count : 2
+                let visibleItems = Array(cycleCountVM.checkedItems.prefix(limit).enumerated())
+
+                ForEach(visibleItems, id: \.element.id) { index, item in
+                    Button {
+                        selectedProductToView = item.product
+                    } label: {
                         HStack(spacing: 14) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
@@ -332,27 +324,56 @@ struct CycleCountSectionView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
 
-                        if index < min(cycleCountVM.checkedItems.count, 10) - 1 {
-                            Rectangle()
-                                .fill(RSMSTheme.divider)
-                                .frame(height: 0.5)
-                                .padding(.horizontal, 16)
-                        }
+                    // Divider after every item except the last one (if not showing 'View more' button)
+                    if index < visibleItems.count - 1 || (!showCheckedItems && cycleCountVM.checkedItems.count > 2) {
+                        Rectangle()
+                            .fill(RSMSTheme.divider)
+                            .frame(height: 0.5)
+                            .padding(.horizontal, 16)
                     }
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(RSMSTheme.surfacePrimary)
-                        .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(RSMSTheme.success.opacity(0.2), lineWidth: 1)
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if !showCheckedItems && cycleCountVM.checkedItems.count > 2 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showCheckedItems = true
+                        }
+                    } label: {
+                        Text("View all")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.gold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                } else if showCheckedItems && cycleCountVM.checkedItems.count > 2 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showCheckedItems = false
+                        }
+                    } label: {
+                        Text("Show less")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(RSMSTheme.surfacePrimary)
+                    .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(RSMSTheme.success.opacity(0.2), lineWidth: 1)
+            )
         }
     }
 
@@ -380,6 +401,32 @@ struct CycleCountSectionView: View {
                             .foregroundStyle(RSMSTheme.gold)
                     }
                     .padding(.top, 8)
+
+                    // Serial Code Entry
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SERIAL CODE")
+                            .font(.caption.weight(.semibold))
+                            .tracking(1.5)
+                            .foregroundStyle(RSMSTheme.gold)
+                        
+                        HStack(spacing: 10) {
+                            Image(systemName: "number")
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            TextField("Enter serial or barcode number", text: $cycleCountVM.serialCode)
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.characters)
+                        }
+                        .padding(14)
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(RSMSTheme.border, lineWidth: 1)
+                        )
+                    }
 
                     // Expected vs entry
                     VStack(spacing: 0) {
@@ -465,20 +512,14 @@ struct CycleCountSectionView: View {
             }
             .background(RSMSTheme.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Enter Count")
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("ENTER COUNT")
-                        .font(.system(.caption, design: .serif, weight: .light))
-                        .tracking(4)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { cycleCountVM.itemToCount = nil }
-                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 
