@@ -67,6 +67,12 @@ final class DataStore {
     var tenders: [Tender] = []
     var giftReceipts: [GiftReceipt] = []
     var exchangeReturns: [ExchangeReturn] = []
+    
+    // ── Tax-Free Shopping ─────────────────────────────
+    var taxFreeConfigs: [TaxFreeConfig] = []
+    var taxFreeTransactions: [TaxFreeTransaction] = []
+    var taxFreeAudits: [TaxFreeAudit] = []
+    
     private var isRecalculating = false
 
         func recalculateVIPTiers() {

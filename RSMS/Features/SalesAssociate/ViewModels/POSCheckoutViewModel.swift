@@ -42,6 +42,9 @@ final class POSCheckoutViewModel {
             try await dataStore.fetchTransactions(storeId: _storeId)
             try await dataStore.fetchExchangeReturns(storeId: _storeId)
             try? await dataStore.fetchSalesGoals(storeId: _storeId)
+            try? await dataStore.fetchTaxFreeConfigs()
+            try? await dataStore.fetchTaxFreeTransactions()
+            try? await dataStore.fetchTaxFreeAudits()
         } catch {
             errorMessage = error.localizedDescription
         }
