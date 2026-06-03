@@ -16,6 +16,7 @@ final class CycleCountViewModel {
     // Sheet state
     var itemToCount: CycleCountItem? = nil
     var enteredCount: String = ""
+    var serialCode: String = ""
     var isSaving = false
 
     // MARK: - Load
