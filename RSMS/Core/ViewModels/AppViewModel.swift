@@ -28,6 +28,13 @@ class AppViewModel {
     var isAuthenticating = false
     var authError: String?
 
+    // MFA state
+    var mfaRequired = false
+    var mfaFactorId: String?
+    var isMFAVerifying = false
+    var mfaError: String?
+    var pendingSession: AuthSession?
+
     /// Attempt to log in with real Supabase Auth credentials.
     func login(email: String, password: String) async {
         isAuthenticating = true
@@ -37,6 +44,75 @@ class AppViewModel {
             // 1. Get JWT from Supabase GoTrue
             let session = try await SupabaseAuth.shared.signIn(email: email, password: password)
             
+            // Check if user has MFA factors enrolled
+            let factors = try await SupabaseMFA.shared.listFactors(accessToken: session.accessToken)
+            let verifiedFactors = factors.filter { $0.status == "verified" }
+            
+            if let totpFactor = verifiedFactors.first(where: { $0.factorType == "totp" }) {
+                // MFA required — park the session and show TOTP screen
+                await MainActor.run {
+                    withAnimation {
+                        self.pendingSession = session
+                        self.mfaFactorId = totpFactor.id
+                        self.mfaRequired = true
+                        self.isAuthenticating = false
+                    }
+                }
+            } else {
+                // No MFA — complete login normally
+                await completeLogin(session: session)
+            }
+        } catch {
+            withAnimation {
+                self.authError = error.localizedDescription
+                self.isAuthenticating = false
+            }
+        }
+    }
+    
+    /// Verify MFA TOTP code and complete login
+    func verifyMFA(code: String) async {
+        guard let pendingSession = pendingSession, let factorId = mfaFactorId else { return }
+        
+        isMFAVerifying = true
+        mfaError = nil
+        
+        do {
+            // 1. Challenge
+            let challenge = try await SupabaseMFA.shared.challenge(factorId: factorId, accessToken: pendingSession.accessToken)
+            
+            // 2. Verify
+            let newSession = try await SupabaseMFA.shared.verify(factorId: factorId, challengeId: challenge.id, code: code, accessToken: pendingSession.accessToken)
+            guard let newSession = newSession else { throw URLError(.badServerResponse) }
+            
+            // 3. Complete Login
+            await completeLogin(session: newSession)
+            
+            await MainActor.run {
+                self.mfaRequired = false
+                self.pendingSession = nil
+                self.mfaFactorId = nil
+            }
+        } catch {
+            withAnimation {
+                self.mfaError = "Invalid verification code. Please try again."
+            }
+        }
+        
+        isMFAVerifying = false
+    }
+    
+    func cancelMFA() {
+        withAnimation {
+            mfaRequired = false
+            pendingSession = nil
+            mfaFactorId = nil
+            mfaError = nil
+        }
+    }
+
+    private func completeLogin(session: AuthSession) async {
+        do {
             // 2. Set the global JWT so future DataStore requests bypass RLS
             SupabaseClient.shared.accessToken = session.accessToken
             
@@ -44,16 +120,20 @@ class AppViewModel {
             let profile: UserProfile = try await dataStore.fetchUser(id: session.user.id)
             
             // 4. Update UI
-            withAnimation(.spring(duration: 0.6)) {
-                self.currentUser = profile
+            await MainActor.run {
+                withAnimation(.spring(duration: 0.6)) {
+                    self.currentUser = profile
+                    self.isAuthenticating = false
+                }
             }
         } catch {
-            withAnimation {
-                self.authError = error.localizedDescription
+            await MainActor.run {
+                withAnimation {
+                    self.authError = "Failed to load user profile: \(error.localizedDescription)"
+                    self.isAuthenticating = false
+                }
             }
         }
-        
-        isAuthenticating = false
     }
 
     func logout() {
@@ -62,6 +142,26 @@ class AppViewModel {
             SupabaseClient.shared.accessToken = nil
         }
         dataStore.clearAllCaches()
+    }
+
+    /// Development/Demo helper to instantly switch personas
+    func demoSwitchRole(to newRole: UserRole) {
+        guard let current = currentUser else { return }
+        let updatedUser = UserProfile(
+            id: current.id,
+            email: current.email,
+            fullName: current.fullName,
+            role: newRole,
+            storeId: current.storeId,
+            avatarURL: current.avatarURL,
+            phone: current.phone,
+            isActive: current.isActive,
+            createdAt: current.createdAt,
+            updatedAt: current.updatedAt
+        )
+        withAnimation(.smooth(duration: 0.6)) {
+            self.currentUser = updatedUser
+        }
     }
 
     /// Re-fetch the current user's profile from Supabase and update `currentUser`.

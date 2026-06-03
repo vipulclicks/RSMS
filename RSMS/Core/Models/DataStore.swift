@@ -484,14 +484,49 @@ final class DataStore {
     func fetchEventInvitations(eventId: UUID) async throws {
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "eq.\(eventId)"])
     }
+<<<<<<< HEAD
     
+=======
+
+    func fetchEventInvitations(eventIds: [UUID]) async throws {
+        guard !eventIds.isEmpty else {
+            eventInvitations = []
+            return
+        }
+        let ids = eventIds.map { $0.uuidString.lowercased() }.joined(separator: ",")
+        eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "in.(\(ids))"])
+    }
+
+>>>>>>> Prem_Email
     @discardableResult
     func createEventInvitation(_ inv: EventInvitation) async throws -> EventInvitation {
         let created: EventInvitation = try await api.insert("event_invitations", record: inv)
         eventInvitations.append(created)
         return created
     }
+<<<<<<< HEAD
     
+=======
+
+    @discardableResult
+    func createEventInvitations(_ invitations: [EventInvitation]) async throws -> [EventInvitation] {
+        let created: [EventInvitation] = try await api.insertMany("event_invitations", records: invitations)
+        eventInvitations.removeAll { existing in
+            created.contains { $0.id == existing.id }
+        }
+        eventInvitations.append(contentsOf: created)
+        return created
+    }
+
+    func sendInviteEmails(invitationIds: [UUID]) async throws {
+        struct SendInvitePayload: Encodable {
+            let invitation_ids: [String]
+        }
+        let payload = SendInvitePayload(invitation_ids: invitationIds.map { $0.uuidString })
+        try await api.invokeFunction("send_invite_email", body: payload)
+    }
+
+>>>>>>> Prem_Email
     func updateEventInvitation(_ inv: EventInvitation) async throws {
         try await api.update("event_invitations", id: inv.id, record: inv)
         if let i = eventInvitations.firstIndex(where: { $0.id == inv.id }) { eventInvitations[i] = inv }

@@ -202,8 +202,12 @@ struct DiscountApprovalRequest: Codable, Identifiable, Hashable {
 enum NotificationType: String, Codable, CaseIterable {
     case approvalRequest = "approval_request"
     case approvalDecision = "approval_decision"
+<<<<<<< HEAD
     case sourcingRequest = "sourcing_request"
     case wishlistRestock = "wishlist_restock"
+=======
+    case complianceAlert = "compliance_alert"
+>>>>>>> Prem_Email
 }
 
 struct AppNotification: Codable, Identifiable, Hashable {

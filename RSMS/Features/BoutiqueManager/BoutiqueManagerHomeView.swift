@@ -11,7 +11,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
     case dashboard             = "Dashboard"
     case staff                 = "Staff"
     case transfers             = "Stock Transfers"
-    case events                = "Events & Previews"
+    case events                = "Client Events"
     case planograms            = "Planograms"
     case compliance            = "Store Compliance"
     case taxFreeDashboard      = "Tax-Free Reporting"
@@ -24,7 +24,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
         case .dashboard:             return "chart.bar.fill"
         case .staff:                 return "person.2.fill"
         case .transfers:             return "arrow.left.arrow.right"
-        case .events:                return "party.popper.fill"
+        case .events:                return "calendar.badge.clock"
         case .planograms:            return "photo.artframe"
         case .compliance:            return "checkmark.shield.fill"
         case .taxFreeDashboard:      return "globe"
@@ -112,7 +112,7 @@ struct BoutiqueManagerHomeView: View {
         case .transfers:
             StockTransfersView()
         case .events:
-            BoutiqueEventsView()
+            EventInvitationManagementView()
         case .planograms:
             StoreLayoutOverviewView()
         case .compliance:

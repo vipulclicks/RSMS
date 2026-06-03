@@ -80,4 +80,16 @@ final class PlanogramService {
         let query = ["store_id": "eq.\(storeId.uuidString)"]
         return try await api.fetch("merchandising_zones", query: query)
     }
+    
+    func createZone(_ zone: MerchandisingZone) async throws -> MerchandisingZone {
+        return try await api.insert("merchandising_zones", record: zone)
+    }
+    
+    func updateZone(_ zone: MerchandisingZone) async throws -> MerchandisingZone {
+        return try await api.update("merchandising_zones", id: zone.id, record: zone)
+    }
+    
+    func deleteZone(id: UUID) async throws {
+        try await api.delete("merchandising_zones", id: id)
+    }
 }

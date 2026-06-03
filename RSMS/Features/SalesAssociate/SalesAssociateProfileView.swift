@@ -42,6 +42,9 @@ struct SalesAssociateProfileView: View {
                         // 4. Personal Information (Grouped List Style)
                         personalInformationSection(user: user)
                         
+                        // 5. Security Settings
+                        securitySettingsSection()
+                        
                         // 6. Sign Out Button
                         signOutButton()
                         
@@ -571,6 +574,40 @@ struct SalesAssociateProfileView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
             .shadow(color: Color.black.opacity(0.02), radius: 10, y: 2)
+        }
+    }
+    
+    private func securitySettingsSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Security")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+            
+            VStack(spacing: 0) {
+                NavigationLink(destination: MFASettingsView()) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "shield.checkered")
+                            .font(.body)
+                            .foregroundStyle(RSMSTheme.primary)
+                            .frame(width: 24)
+                        
+                        Text("Multi-Factor Authentication")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
         }
     }
     

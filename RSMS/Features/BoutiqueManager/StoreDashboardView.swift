@@ -15,7 +15,7 @@ struct StoreDashboardView: View {
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var cycleCountVM = CycleCountViewModel()
     @State private var lookbookVM = LookbookViewModel()
-    @State private var navPath: [DashboardRoute] = []
+    @State private var navPath = NavigationPath()
     @State private var showingNotifications = false
     @State private var showingProfile = false
     @State private var showingSalesBreakdown = false
@@ -59,7 +59,7 @@ struct StoreDashboardView: View {
                         
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
                         
-                        LookbookSectionView(lookbookVM: lookbookVM)
+                        LookbookSectionView(lookbookVM: lookbookVM, navPath: $navPath)
                     }
                     .padding(24)
                 }
@@ -92,7 +92,7 @@ struct StoreDashboardView: View {
                 }
             }
             .navigationDestination(for: Lookbook.self) { lookbook in
-                LookbookDetailView(lookbook: lookbook)
+                LookbookDetailView(lookbook: lookbook, lookbookVM: lookbookVM)
             }
             .navigationDestination(isPresented: $showingProfile) {
                 BoutiqueManagerProfileView()
@@ -273,7 +273,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                navPath.append(.appointments)
+                navPath.append(DashboardRoute.appointments)
             } label: {
                 KPICard(
                     icon: "calendar.badge.clock",
@@ -285,7 +285,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                navPath.append(.lowStock)
+                navPath.append(DashboardRoute.lowStock)
             } label: {
                 KPICard(
                     icon: "exclamationmark.triangle.fill",
@@ -299,7 +299,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                navPath.append(.approvals)
+                navPath.append(DashboardRoute.approvals)
             } label: {
                 KPICard(
                     icon: "tag.fill",

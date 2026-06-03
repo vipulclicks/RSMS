@@ -8,6 +8,7 @@ final class CycleCountViewModel {
 
     var pendingItems: [CycleCountItem] = []
     var checkedItems: [CycleCountItem] = []
+    var openVarianceItems: [InventoryVariance] = []
     var openMismatches: Int = 0
     var totalInventory: Int = 0
     var isLoading = false
@@ -40,7 +41,9 @@ final class CycleCountViewModel {
             : dataStore.stockItems.filter { $0.storeId == storeId }
 
         totalInventory = storeItems.reduce(0) { $0 + $1.quantity }
-        openMismatches = dataStore.inventoryVariances.filter { $0.status == .open }.count
+        
+        openVarianceItems = dataStore.inventoryVariances.filter { $0.status == .open }
+        openMismatches = openVarianceItems.count
 
         let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         let thirtyDaysAgo = cutoff

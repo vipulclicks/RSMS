@@ -7,6 +7,7 @@ enum EmployeeCreationError: LocalizedError {
     case authSignupFailed(String)
     case profileCreationFailed(String)
     case networkError(String)
+    case emailSendFailed(String)
     
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,8 @@ enum EmployeeCreationError: LocalizedError {
             return "User login was created, but we couldn't save their profile. You may need to manually add them or contact support. Details: \(reason)"
         case .networkError(let reason):
             return "Network connection issue: \(reason)"
+        case .emailSendFailed(let reason):
+            return "Employee created, but credentials email could not be sent: \(reason)"
         }
     }
 }
@@ -41,7 +44,7 @@ final class EmployeeCreationService {
         password: String,
         dataStore: DataStore,
         currentStoreId: UUID?
-    ) async throws {
+    ) async throws -> EmailSendResult {
         
         let trimmedName = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -78,7 +81,18 @@ final class EmployeeCreationService {
         // 3. The backend trigger `handle_new_user` automatically creates the fully-populated Profile in `public.user_profiles`
         // by reading the `raw_user_meta_data` we just sent. We do NOT need a post-signup UPDATE.
         
-        // 4. Authoritative Refresh: We just need to trigger a re-fetch in the UI.
-        // We can optionally fetch the created user to cache it immediately, or let the UI handle it.
+        // 4. Send onboarding credentials email via Resend
+        let storeName = dataStore.storeName(for: storeId)
+        let roleName = role.rawValue.replacingOccurrences(of: "_", with: " ").capitalized
+        
+        let emailResult = await ResendEmailService.shared.sendOnboardingEmail(
+            toEmail: trimmedEmail,
+            fullName: trimmedName,
+            password: password,
+            role: roleName,
+            storeName: storeName
+        )
+        
+        return emailResult
     }
 }
