@@ -7,8 +7,26 @@
 
 import SwiftUI
 
-extension InventoryControllerHomeView {
+struct DashboardView: View {
 
+    @Environment(AppViewModel.self) var viewModel
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+
+    var dashVM: InventoryDashboardViewModel
+    @Binding var selectedDestination: InventoryDestination?
+    @Binding var showNotifyManager: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                greetingSection
+                heroKPICard
+                actionGrid
+                activityFeedSection
+            }
+            .padding(24)
+        }
+    }
     // MARK: - Greeting Section
 
     var greetingSection: some View {
@@ -197,7 +215,6 @@ extension InventoryControllerHomeView {
         if horizontalSizeClass == .regular {
 
             LazyVGrid(columns: columns, spacing: 16) {
-
                 lowStockCard
                 transferCard
                 vendorReturnsCard
@@ -285,6 +302,7 @@ extension InventoryControllerHomeView {
                         lineWidth: 1
                     )
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -300,9 +318,10 @@ extension InventoryControllerHomeView {
             accentColor: RSMSTheme.gold,
             badgeText: "+\(dashVM.snapshot?.newLowStockCount ?? 0) New"
         ) {
-            selectedDestination = .notify
+            showNotifyManager = true
         }
     }
+
     var cycleCountCard: some View {
 
         actionCard(
@@ -312,7 +331,7 @@ extension InventoryControllerHomeView {
             accentColor: RSMSTheme.success,
             badgeText: "\(dashVM.snapshot?.pendingTaskCount ?? 0) Tasks"
         ) {
-            selectedDestination = .cycleCounts
+            selectedDestination = .audits
         }
     }
 
@@ -325,7 +344,7 @@ extension InventoryControllerHomeView {
             accentColor: RSMSTheme.warning,
             badgeText: "Audit"
         ) {
-            selectedDestination = .auditReconcile
+            selectedDestination = .audits
         }
     }
 
@@ -338,7 +357,7 @@ extension InventoryControllerHomeView {
             accentColor: RSMSTheme.info,
             badgeText: "Manage"
         ) {
-            selectedDestination = .transfer
+            selectedDestination = .movements
         }
     }
 
@@ -353,7 +372,7 @@ extension InventoryControllerHomeView {
             accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
             badgeText: "Manage"
         ) {
-            selectedDestination = .vendorReturns
+            selectedDestination = .movements
         }
     }
     
@@ -366,7 +385,7 @@ extension InventoryControllerHomeView {
             accentColor: RSMSTheme.primary,
             badgeText: "Track"
         ) {
-            selectedDestination = .serviceTracking
+            selectedDestination = .movements
         }
     }
 
@@ -418,7 +437,7 @@ extension InventoryControllerHomeView {
             )
             
             Button {
-                selectedDestination = .auditTrail
+                selectedDestination = .audits
             } label: {
                 Text("View All Activity")
                     .font(.subheadline.weight(.semibold))

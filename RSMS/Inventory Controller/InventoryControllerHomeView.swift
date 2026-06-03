@@ -10,37 +10,29 @@ import SwiftUI
 
 // MARK: - Navigation Destinations
 
-enum InventoryDestination: String, CaseIterable, Hashable, Identifiable {
+enum InventoryDestination: String, Hashable, Identifiable {
     case dashboard      = "Dashboard"
-    case productLookup  = "Lookup & Stock In"
-    case transfer       = "Transfer Inventory"
-    case vendorReturns  = "Vendor Returns"
-    case cycleCounts    = "Cycle Counts & Verify"
-    case auditReconcile = "Audit & Reconcile"
-    case auditTrail     = "Audit Trail"
-    case authCertificates = "Auth Certificates"
-    case notify         = "Notify Manager"
-    case serviceTracking = "Service Center"
-    case loanerManagement = "Loaner Management"
+    case movements      = "Movements"
+    case audits         = "Audits & Counts"
+    case catalog        = "Catalog"
+    case loaners        = "Loaner Management"
     case profile        = "My Profile"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:       return "chart.bar.fill"
-        case .productLookup:   return "magnifyingglass.circle.fill"
-        case .transfer:        return "arrow.left.arrow.right"
-        case .vendorReturns:   return "arrow.uturn.backward.circle.fill"
-        case .cycleCounts:     return "arrow.triangle.2.circlepath"
-        case .auditReconcile:  return "doc.text.magnifyingglass"
-        case .auditTrail:      return "list.bullet.rectangle.portrait.fill"
-        case .authCertificates:return "seal.fill"
-        case .notify:          return "paperplane.fill"
-        case .serviceTracking: return "wrench.and.screwdriver.fill"
-        case .loanerManagement: return "clock.arrow.circlepath"
-        case .profile:         return "person.crop.circle.fill"
+        case .dashboard: return "chart.bar.fill"
+        case .movements: return "shippingbox.fill"
+        case .audits:    return "checkmark.shield.fill"
+        case .catalog:   return "book.fill"
+        case .loaners:   return "clock.arrow.circlepath"
+        case .profile:   return "person.crop.circle.fill"
         }
+    }
+    
+    static var tabs: [InventoryDestination] {
+        [.dashboard, .movements, .audits, .catalog, .loaners]
     }
 }
 
@@ -55,7 +47,7 @@ struct InventoryControllerHomeView: View {
     var body: some View {
         if horizontalSizeClass == .compact {
             TabView(selection: $selectedDestination) {
-                ForEach(InventoryDestination.allCases) { destination in
+                ForEach(InventoryDestination.tabs) { destination in
                     NavigationStack {
                         detailViewFor(destination)
                             .toolbar {
@@ -76,6 +68,14 @@ struct InventoryControllerHomeView: View {
                 }
             }
             .tint(RSMSTheme.gold)
+            .sheet(item: Binding(
+                get: { selectedDestination == .profile ? InventoryDestination.profile : nil },
+                set: { if $0 == nil { selectedDestination = .dashboard } }
+            )) { _ in
+                NavigationStack {
+                    InventoryControllerProfileView()
+                }
+            }
         } else {
             NavigationSplitView(columnVisibility: $columnVisibility) {
                 sidebar
@@ -93,56 +93,10 @@ struct InventoryControllerHomeView: View {
 
     private var sidebar: some View {
         List(selection: $selectedDestination) {
-            Section {
-                Label(InventoryDestination.dashboard.rawValue,
-                      systemImage: InventoryDestination.dashboard.icon)
-                    .tag(InventoryDestination.dashboard)
-
-                Label(InventoryDestination.productLookup.rawValue,
-                      systemImage: InventoryDestination.productLookup.icon)
-                    .tag(InventoryDestination.productLookup)
-            }
-
-            Section {
-                Label(InventoryDestination.transfer.rawValue,
-                      systemImage: InventoryDestination.transfer.icon)
-                    .tag(InventoryDestination.transfer)
-
-                Label(InventoryDestination.vendorReturns.rawValue,
-                      systemImage: InventoryDestination.vendorReturns.icon)
-                    .tag(InventoryDestination.vendorReturns)
-
-                Label(InventoryDestination.serviceTracking.rawValue,
-                      systemImage: InventoryDestination.serviceTracking.icon)
-                    .tag(InventoryDestination.serviceTracking)
-                    
-                Label(InventoryDestination.loanerManagement.rawValue,
-                      systemImage: InventoryDestination.loanerManagement.icon)
-                    .tag(InventoryDestination.loanerManagement)
-            }
-
-            Section {
-                Label(InventoryDestination.cycleCounts.rawValue,
-                      systemImage: InventoryDestination.cycleCounts.icon)
-                    .tag(InventoryDestination.cycleCounts)
-
-                Label(InventoryDestination.auditReconcile.rawValue,
-                      systemImage: InventoryDestination.auditReconcile.icon)
-                    .tag(InventoryDestination.auditReconcile)
-                
-                Label(InventoryDestination.authCertificates.rawValue,
-                      systemImage: InventoryDestination.authCertificates.icon)
-                    .tag(InventoryDestination.authCertificates)
-
-                Label(InventoryDestination.notify.rawValue,
-                      systemImage: InventoryDestination.notify.icon)
-                    .tag(InventoryDestination.notify)
-            }
-
-            Section {
-                Label(InventoryDestination.profile.rawValue,
-                      systemImage: InventoryDestination.profile.icon)
-                    .tag(InventoryDestination.profile)
+            ForEach(InventoryDestination.tabs) { dest in
+                NavigationLink(value: dest) {
+                    Label(dest.rawValue, systemImage: dest.icon)
+                }
             }
         }
         .listStyle(.sidebar)
@@ -181,25 +135,13 @@ struct InventoryControllerHomeView: View {
         switch destination {
         case .dashboard:
             dashboardView
-        case .productLookup:
-            ProductLookupView()
-        case .transfer:
-            InventoryTransferView()
-        case .vendorReturns:
-            VendorReturnView()
-        case .cycleCounts:
-            CycleCountView()
-        case .auditReconcile:
-            StockReconciliationView()
-        case .auditTrail:
-            AuditTrailView()
-        case .authCertificates:
-            AuthCertificateGeneratorView()
-        case .notify:
-            NotifyBoutiqueManagerView()
-        case .serviceTracking:
-            ServiceCenterTrackingView()
-        case .loanerManagement:
+        case .movements:
+            MovementsHubView()
+        case .audits:
+            AuditsHubView()
+        case .catalog:
+            CatalogHubView()
+        case .loaners:
             LoanerProductManagementView()
         case .profile:
             InventoryControllerProfileView()
@@ -208,19 +150,23 @@ struct InventoryControllerHomeView: View {
 
     // MARK: - Dashboard View
 
+    @State var showNotifyManager = false
+
     private var dashboardView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                greetingSection
-                heroKPICard
-                actionGrid
-                activityFeedSection
-            }
-            .padding(24)
-        }
+        DashboardView(
+            dashVM: dashVM,
+            selectedDestination: $selectedDestination,
+            showNotifyManager: $showNotifyManager
+        )
         .background(RSMSTheme.background)
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.inline)
+
+        .sheet(isPresented: $showNotifyManager) {
+            NavigationStack {
+                NotifyBoutiqueManagerView()
+            }
+        }
         .task {
             if dashVM.snapshot == nil {
                 await dashVM.load(dataStore: viewModel.dataStore, storeId: viewModel.currentStoreId ?? UUID())
