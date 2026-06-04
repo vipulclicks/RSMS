@@ -13,15 +13,24 @@ import SwiftUI
 struct InventoryTransferView: View {
 
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var vm = InventoryTransferViewModel()
     @State private var appeared = false
     @State private var showAvailability = true
 
-    private let kpiColumns = [
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    private var columns: [GridItem] {
+        if sizeClass == .compact {
+            return [GridItem(.flexible()), GridItem(.flexible())]
+        } else {
+            return [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ]
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -174,7 +183,7 @@ struct InventoryTransferView: View {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private var miniCardsSection: some View {
-        LazyVGrid(columns: kpiColumns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: 12) {
             miniCard(
                 icon: "exclamationmark.triangle.fill",
                 title: "Urgent Transfers",
@@ -355,30 +364,36 @@ struct InventoryTransferView: View {
                         emptyAvailabilityView
                     } else {
                         VStack(spacing: 0) {
-                            // Column header
-                            HStack(spacing: 0) {
-                                Text("PRODUCT")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text(vm.sourceStore != nil ? shortStoreName(for: vm.sourceStore).uppercased() : "AT SOURCE")
-                                    .frame(width: 160, alignment: .leading)
-                                    .lineLimit(1)
-                                Text(vm.destinationStore != nil ? shortStoreName(for: vm.destinationStore).uppercased() : "AT DEST")
-                                    .frame(width: 160, alignment: .leading)
-                                    .lineLimit(1)
-                                Text("RECOMMENDED")
-                                    .frame(width: 140, alignment: .leading)
-                                Text("STATUS")
-                                    .frame(width: 80, alignment: .leading)
+                            if sizeClass != .compact {
+                                // Column header
+                                HStack(spacing: 0) {
+                                    Text("PRODUCT")
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(vm.sourceStore != nil ? shortStoreName(for: vm.sourceStore).uppercased() : "AT SOURCE")
+                                        .frame(width: 160, alignment: .leading)
+                                        .lineLimit(1)
+                                    Text(vm.destinationStore != nil ? shortStoreName(for: vm.destinationStore).uppercased() : "AT DEST")
+                                        .frame(width: 160, alignment: .leading)
+                                        .lineLimit(1)
+                                    Text("RECOMMENDED")
+                                        .frame(width: 140, alignment: .leading)
+                                    Text("STATUS")
+                                        .frame(width: 80, alignment: .leading)
+                                }
+                                .font(.caption.weight(.semibold))
+                                .tracking(1.5)
+                                .foregroundStyle(RSMSTheme.gold)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(RSMSTheme.surfaceSecondary)
                             }
-                            .font(.caption.weight(.semibold))
-                            .tracking(1.5)
-                            .foregroundStyle(RSMSTheme.gold)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(RSMSTheme.surfaceSecondary)
 
                             ForEach(Array(vm.availabilityRows.enumerated()), id: \.element.id) { index, row in
-                                availabilityRow(row)
+                                if sizeClass == .compact {
+                                    availabilityRowCompact(row)
+                                } else {
+                                    availabilityRow(row)
+                                }
 
                                 if index < vm.availabilityRows.count - 1 {
                                     Rectangle()
@@ -401,6 +416,66 @@ struct InventoryTransferView: View {
         }
         .opacity(appeared ? 1 : 0)
         .animation(.easeOut(duration: 0.4).delay(0.2), value: appeared)
+    }
+
+    private func availabilityRowCompact(_ row: InventoryTransferViewModel.AvailabilityRow) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Product Name and Status
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.product.name)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .lineLimit(1)
+                    Text(row.product.sku)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                }
+                Spacer(minLength: 8)
+                statusBadge(for: row)
+            }
+            
+            // Stock details
+            HStack(spacing: 0) {
+                // Source
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("SOURCE")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text("\(row.sourceStock)")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(row.isLowStock ? RSMSTheme.danger : RSMSTheme.textPrimary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Destination
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DEST")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text("\(row.destStock)")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Recommended
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("RECOM.")
+                        .font(.system(size: 9, weight: .bold))
+                        .tracking(1)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text(row.recommendedQty > 0 ? "\(row.recommendedQty)" : "—")
+                        .font(.subheadline.weight(.bold))
+                        .foregroundStyle(row.recommendedQty > 0 ? RSMSTheme.info : RSMSTheme.textTertiary)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private func availabilityRow(_ row: InventoryTransferViewModel.AvailabilityRow) -> some View {
