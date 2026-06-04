@@ -343,8 +343,6 @@ struct OnlineOrdersView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            searchBar
-            
             filterPills
             
             ScrollView {
@@ -422,6 +420,7 @@ struct OnlineOrdersView: View {
                 await loadData()
             }
         }
+        .searchable(text: $viewModel.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by client name or token...")
     }
     
     // MARK: - Helper Load
@@ -440,31 +439,6 @@ struct OnlineOrdersView: View {
     }
     
     // MARK: - Subviews
-    
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(RSMSTheme.textTertiary)
-            TextField("Search by client name or token…", text: $viewModel.searchText)
-                .font(.subheadline)
-                .foregroundStyle(RSMSTheme.textPrimary)
-                .autocorrectionDisabled()
-            if !viewModel.searchText.isEmpty {
-                Button {
-                    viewModel.searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                }
-            }
-        }
-        .padding(12)
-        .background(RSMSTheme.surfacePrimary.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(RSMSTheme.border, lineWidth: 1))
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-    }
     
     private var filterPills: some View {
         ScrollView(.horizontal, showsIndicators: false) {
