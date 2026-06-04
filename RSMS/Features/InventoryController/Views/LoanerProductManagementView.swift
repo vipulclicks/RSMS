@@ -106,7 +106,7 @@ struct LoanerProductManagementView: View {
                         .fill(color.opacity(0.12))
                         .frame(width: 40, height: 40)
                     Image(systemName: icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(color)
                 }
                 Spacer()
@@ -115,7 +115,7 @@ struct LoanerProductManagementView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(count)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text(title)
@@ -159,7 +159,7 @@ struct LoanerProductManagementView: View {
             if assignments.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "tray.fill")
-                        .font(.system(size: 40))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Text("No loaner assignments found.")
                         .font(.subheadline)

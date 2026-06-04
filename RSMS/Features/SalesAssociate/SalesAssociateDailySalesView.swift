@@ -43,7 +43,7 @@ struct SalesAssociateDailySalesView: View {
                 .foregroundStyle(RSMSTheme.textSecondary)
             
             Text("₹\(Int(totalSales).formatted())")
-                .font(.system(size: 34, weight: .heavy))
+                .font(.largeTitle.weight(.heavy))
                 .foregroundStyle(RSMSTheme.primary)
         }
         .padding(.vertical, 16)
@@ -84,7 +84,7 @@ struct SalesAssociateDailySalesView: View {
                     HStack(spacing: 4) {
                         if isOnline {
                             Text("ONLINE")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(RSMSTheme.primary.opacity(0.15))

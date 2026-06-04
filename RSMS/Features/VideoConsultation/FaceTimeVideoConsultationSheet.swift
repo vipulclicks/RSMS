@@ -95,8 +95,8 @@ struct FaceTimeVideoConsultationSheet: View {
                         Button {
                             showNotesEditor.toggle()
                         } label: {
-                            Image(systemName: "square.and.pencil")
-                                .font(.system(size: 24))
+                            Image(systemName: "square.and.pencil").accessibilityLabel("Edit")
+                                .font(.title)
                                 .frame(width: 64, height: 64)
                                 .background(Color.white.opacity(0.2))
                                 .foregroundStyle(.white)
@@ -111,8 +111,8 @@ struct FaceTimeVideoConsultationSheet: View {
                         Button {
                             showEndConfirmation = true
                         } label: {
-                            Image(systemName: "phone.down.fill")
-                                .font(.system(size: 28))
+                            Image(systemName: "phone.down.fill").accessibilityLabel("End Call")
+                                .font(.title)
                                 .frame(width: 72, height: 72)
                                 .background(Color.red)
                                 .foregroundStyle(.white)

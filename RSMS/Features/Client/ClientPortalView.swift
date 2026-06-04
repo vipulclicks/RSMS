@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ClientPortalView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppViewModel.self) private var appViewModel
     @Environment(DataStore.self) private var dataStore
     
@@ -90,7 +91,7 @@ struct ClientPortalView: View {
                             .font(.subheadline)
                             .foregroundStyle(RSMSTheme.primaryGradient)
                         Text("MAISON LUMIÈRE")
-                            .font(.system(size: 15, weight: .light))
+                            .font(.subheadline.weight(.light))
                             .tracking(4)
                             .foregroundStyle(RSMSTheme.textPrimary)
                     }
@@ -153,7 +154,7 @@ struct ClientPortalView: View {
                 .font(.subheadline)
                 .foregroundStyle(RSMSTheme.primary)
             Text(title)
-                .font(.system(size: 18, weight: .bold))
+                .font(.headline.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Spacer()
         }
@@ -174,18 +175,18 @@ struct ClientPortalView: View {
                     .frame(width: 72, height: 72)
                 
                 Text(appViewModel.currentUser?.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased() ?? "IF")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(.white)
             }
             
             VStack(alignment: .leading, spacing: 6) {
                 Text("\(luxuryGreeting),")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.headline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .italic()
                 
                 Text(appViewModel.currentUser?.fullName ?? "Isabelle Fontaine")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 HStack(spacing: 12) {
@@ -248,7 +249,7 @@ struct ClientPortalView: View {
                             }
                             
                             Text("FaceTime Luxury Styling Session")
-                                .font(.system(size: 20, weight: .bold))
+                                .font(.title3.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         Spacer()
@@ -443,7 +444,7 @@ struct ClientPortalView: View {
                             
                             // Elegant Badge representing status
                             Text(appt.status.rawValue.uppercased())
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(appt.status == .confirmed ? RSMSTheme.success : RSMSTheme.warning)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -471,7 +472,7 @@ struct ClientPortalView: View {
                     .fill(RSMSTheme.primary.opacity(0.1))
                     .frame(width: 54, height: 54)
                 Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 40))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.primary)
             }
             
@@ -481,7 +482,7 @@ struct ClientPortalView: View {
                     .foregroundStyle(RSMSTheme.textSecondary)
                 
                 Text("Lucas Dubois")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text("Maison Lumière Vendôme, Paris")
@@ -554,7 +555,7 @@ struct ClientPortalView: View {
             if clientWishlist.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "heart")
-                        .font(.system(size: 36))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Text("Your Wishlist is Empty")
                         .font(.subheadline.weight(.semibold))
@@ -587,14 +588,14 @@ struct ClientPortalView: View {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(RSMSTheme.surfaceSecondary)
-                    .frame(height: 140)
+                    .frame(minHeight: 140)
                     .overlay(
                         VStack(spacing: 8) {
                             Image(systemName: product.category == "Watches" ? "clock.fill" : "sparkles")
-                                .font(.system(size: 24))
+                                .font(.title)
                                 .foregroundStyle(RSMSTheme.primary.opacity(0.4))
                             Text(product.collection ?? "Collection")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .tracking(1)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         }
@@ -602,7 +603,7 @@ struct ClientPortalView: View {
                 
                 // Remove Wishlist item button
                 Button(action: {
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         // Optimistic local deletion
                         dataStore.wishlistItems.removeAll { $0.id == wishlistItem.id }
                     }
@@ -618,17 +619,17 @@ struct ClientPortalView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(1)
                 
                 Text(product.material ?? "Platinum")
-                    .font(.system(size: 11))
+                    .font(.caption2)
                     .foregroundStyle(RSMSTheme.textSecondary)
                 
                 HStack(alignment: .bottom) {
                     Text("\(product.price, format: .currency(code: product.currency))")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                     Spacer()
                     
@@ -638,7 +639,7 @@ struct ClientPortalView: View {
                         showingInquiryAlert = true
                     }) {
                         Text("Reserve to Try")
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(RSMSTheme.cream)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)

@@ -59,7 +59,7 @@ struct LookBuilderView: View {
             if viewModel.outfits.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "tshirt")
-                        .font(.system(size: 48))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Text("No Looks Created")
                         .font(.headline)
@@ -91,7 +91,7 @@ private struct LBOutfitCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(outfit.name)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text(viewModel.clientName(for: outfit.clientId))
                         .font(.subheadline)
@@ -152,7 +152,7 @@ private struct LBProductChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "diamond.fill")
-                .font(.system(size: 8))
+                .font(.caption2)
                 .foregroundStyle(RSMSTheme.primary)
             Text(product.name)
                 .font(.caption2.weight(.medium))
@@ -206,7 +206,7 @@ private struct LBOutfitEditorSheet: View {
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                                 TextEditor(text: $viewModel.outfitNotes)
-                                    .frame(height: 60)
+                                    .frame(minHeight: 60)
                                     .scrollContentBackground(.hidden)
                                     .padding(12)
                                     .background(RSMSTheme.background)
@@ -272,7 +272,7 @@ private struct LBOutfitEditorSheet: View {
                                 } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: viewModel.selectedProductIds.contains(product.id)
-                                              ? "checkmark.circle.fill" : "circle")
+                                              ? "checkmark.circle.fill" : "circle").accessibilityLabel("Toggle Product")
                                             .foregroundStyle(viewModel.selectedProductIds.contains(product.id)
                                                              ? RSMSTheme.primary : RSMSTheme.textTertiary)
                                         VStack(alignment: .leading, spacing: 2) {

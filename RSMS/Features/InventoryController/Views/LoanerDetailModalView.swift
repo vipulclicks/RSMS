@@ -150,7 +150,7 @@ struct LoanerDetailModalView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.title3)
                 Text(title)
                     .font(.subheadline.bold())
                 Spacer()

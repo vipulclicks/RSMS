@@ -88,7 +88,7 @@ struct POSCheckoutView: View {
             if viewModel.cartItems.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "cart")
-                        .font(.system(size: 40))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Text("Cart is empty")
                         .font(.subheadline)
@@ -203,7 +203,7 @@ struct POSCheckoutView: View {
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 Text("₹\(Int(viewModel.cartTotal).formatted())")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 
@@ -399,7 +399,7 @@ private struct POSCartItemRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(viewModel.productName(for: item.productId))
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Text("Qty: \(item.quantity)")
                     .font(.caption)
@@ -411,7 +411,7 @@ private struct POSCartItemRow: View {
             VStack(alignment: .trailing, spacing: 3) {
                 let displayPrice = viewModel.dataStore?.resolvedPrice(for: item) ?? item.unitPrice ?? 0
                 Text("₹\(Int(displayPrice).formatted())")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
                 if let discount = item.discountApplied, discount > 0 {
                     Text("-₹\(Int(discount).formatted())")
@@ -463,7 +463,7 @@ private struct POSTransactionCard: View {
                 Spacer()
 
                 Text("₹\(Int(transaction.totalAmount).formatted())")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 

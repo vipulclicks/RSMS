@@ -69,7 +69,7 @@ struct GiftReceiptPreviewView: View {
                     VStack(spacing: 28) {
                         VStack(spacing: 8) {
                             Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 48))
+                                .font(.largeTitle)
                                 .foregroundStyle(RSMSTheme.primary)
                             Text("Maison Lumière")
                                 .font(.title2.weight(.bold))
@@ -158,14 +158,14 @@ struct GiftReceiptPreviewView: View {
                         Button {
                             shareReceipt()
                         } label: {
-                            Image(systemName: "square.and.arrow.up")
+                            Image(systemName: "square.and.arrow.up").accessibilityLabel("Share")
                                 .foregroundStyle(RSMSTheme.primary)
                         }
 
                         Button {
                             printReceipt()
                         } label: {
-                            Image(systemName: "printer")
+                            Image(systemName: "printer").accessibilityLabel("Print")
                                 .foregroundStyle(RSMSTheme.primary)
                         }
                     }

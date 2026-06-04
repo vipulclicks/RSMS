@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ServiceCenterTrackingView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel = ServiceCenterTrackingViewModel()
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(AppViewModel.self) var appViewModel
@@ -102,7 +103,7 @@ struct ServiceCenterTrackingView: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(count)")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text(title)
@@ -215,6 +216,7 @@ struct ServiceCenterTrackingView: View {
                         Image(systemName: "chevron.right")
                             .foregroundStyle(RSMSTheme.primary)
                     }
+                    .accessibilityLabel("View Request Details")
                     .frame(width: 80, alignment: .trailing)
                 }
                 .padding(.horizontal, 16)
@@ -356,6 +358,7 @@ struct NewServiceRequestView: View {
     @Bindable var viewModel: ServiceCenterTrackingViewModel
     @Environment(\.dismiss) var dismiss
     @Environment(AppViewModel.self) var appViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var isShowingScanner = false
     
@@ -396,6 +399,7 @@ struct NewServiceRequestView: View {
                                         Image(systemName: "barcode.viewfinder")
                                             .foregroundStyle(RSMSTheme.textPrimary)
                                     }
+                                    .accessibilityLabel("Scan Barcode")
                                 }
                                 .padding()
                                 .background(RSMSTheme.surfacePrimary)
@@ -406,7 +410,7 @@ struct NewServiceRequestView: View {
                                     VStack(spacing: 0) {
                                         ForEach(viewModel.searchResults) { product in
                                             Button {
-                                                withAnimation {
+                                                withAnimation(reduceMotion ? nil : .default) {
                                                     viewModel.selectedProduct = product
                                                     viewModel.newProductSearch = ""
                                                     viewModel.newSku = product.sku
@@ -437,11 +441,11 @@ struct NewServiceRequestView: View {
                                     if let p = viewModel.selectedProduct {
                                         HStack {
                                             VStack(alignment: .leading) {
-                                                Text(p.name).font(.headline).foregroundStyle(RSMSTheme.textPrimary)
+                                                Text(p.name).font(.headline).foregroundStyle(RSMSTheme.textPrimary).accessibilityAddTraits(.isHeader)
                                             }
                                             Spacer()
                                             Button {
-                                                withAnimation {
+                                                withAnimation(reduceMotion ? nil : .default) {
                                                     viewModel.selectedProduct = nil
                                                     viewModel.newSku = ""
                                                 }
@@ -527,7 +531,7 @@ struct NewServiceRequestView: View {
                                         .padding(.horizontal)
                                         .padding(.top)
                                     TextEditor(text: $viewModel.newIssueDescription)
-                                        .frame(height: 100)
+                                        .frame(minHeight: 100)
                                         .padding(.horizontal)
                                         .scrollContentBackground(.hidden)
                                 }
@@ -592,7 +596,7 @@ struct NewServiceRequestView: View {
                 NavigationStack {
                     VStack {
                         Image(systemName: "barcode.viewfinder")
-                            .font(.system(size: 80))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.primary)
                         Text("Camera Scanner")
                             .font(.headline)

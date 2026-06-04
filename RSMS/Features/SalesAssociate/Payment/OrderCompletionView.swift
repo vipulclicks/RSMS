@@ -26,7 +26,7 @@ struct OrderCompletionView: View {
                 Spacer()
                 
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 80))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.success)
                 
                 VStack(spacing: 8) {

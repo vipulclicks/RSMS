@@ -28,11 +28,11 @@ struct ShowroomProductCard: View {
                             placeholder
                         }
                     }
-                    .frame(height: 240)
+                    .frame(minHeight: 240)
                     .clipped()
                 } else {
                     placeholder
-                        .frame(height: 240)
+                        .frame(minHeight: 240)
                 }
                 
                 // Availability Badge (Top-Left overlay)
@@ -52,24 +52,24 @@ struct ShowroomProductCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let col = product.collection {
                     Text(col.uppercased())
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textTertiary)
                         .tracking(1.5)
                 } else {
                     Text(product.brand.uppercased())
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textTertiary)
                         .tracking(1.5)
                 }
                 
                 Text(product.name)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(1)
                 
                 HStack(alignment: .bottom) {
                     Text(product.formattedPrice)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Spacer()
@@ -78,7 +78,7 @@ struct ShowroomProductCard: View {
                     if stockQty == 0 && !isInCart {
                         Button(action: {}) {
                             Text("OUT OF STOCK")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textTertiary)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
@@ -96,7 +96,7 @@ struct ShowroomProductCard: View {
                                     Text("ADD")
                                 }
                             }
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.caption2.weight(.bold))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
@@ -124,7 +124,7 @@ struct ShowroomProductCard: View {
             .fill(RSMSTheme.surfaceSecondary)
             .overlay(
                 Image(systemName: product.categoryIconName)
-                    .font(.system(size: 40))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.textTertiary.opacity(0.5))
             )
     }

@@ -77,8 +77,8 @@ struct SalesAssociateAllTransactionsView: View {
                 Button {
                     showDatePickerPopover.toggle()
                 } label: {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 18, weight: .semibold))
+                    Image(systemName: "calendar").accessibilityLabel("Action")
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 .popover(isPresented: $showDatePickerPopover) {
@@ -120,7 +120,7 @@ struct SalesAssociateAllTransactionsView: View {
                     }
                 } label: {
                     Text(filter.rawValue)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(selectedFilter == filter ? .white : RSMSTheme.textSecondary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -145,7 +145,7 @@ struct SalesAssociateAllTransactionsView: View {
                 .foregroundStyle(RSMSTheme.textSecondary)
             
             Text("₹\(Int(totalSales).formatted())")
-                .font(.system(size: 34, weight: .heavy))
+                .font(.largeTitle.weight(.heavy))
                 .foregroundStyle(RSMSTheme.primary)
         }
         .padding(.vertical, 16)
@@ -186,7 +186,7 @@ struct SalesAssociateAllTransactionsView: View {
                     HStack(spacing: 4) {
                         if isOnline {
                             Text("ONLINE")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(RSMSTheme.primary.opacity(0.15))

@@ -139,6 +139,7 @@ struct AssignLoanerModalView: View {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         }
+                        .accessibilityLabel("Clear Selected Product")
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
@@ -236,7 +237,7 @@ struct AssignLoanerModalView: View {
                     .foregroundStyle(RSMSTheme.textSecondary)
                 
                 TextEditor(text: $viewModel.newNotes)
-                    .frame(height: 100)
+                    .frame(minHeight: 100)
                     .scrollContentBackground(.hidden)
                     .padding(8)
                     .background(RSMSTheme.surfacePrimary)

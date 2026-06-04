@@ -9,6 +9,7 @@ import SwiftUI
 import PhotosUI
 
 struct EditSalesAssociateProfileView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let profile: UserProfile
     @Environment(AppViewModel.self) private var appViewModel
     @Environment(\.dismiss) private var dismiss
@@ -171,7 +172,7 @@ struct EditSalesAssociateProfileView: View {
                         .fill(RSMSTheme.primary)
                         .frame(width: 32, height: 32)
                     Image(systemName: "camera.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.white)
                 }
                 .offset(x: 4, y: 4)
@@ -194,7 +195,7 @@ struct EditSalesAssociateProfileView: View {
 
                     if uiImage != nil || !avatarURL.isEmpty {
                         Button(role: .destructive) {
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 self.uiImage = nil
                                 self.avatarURL = ""
                                 self.selectedPhotoItem = nil

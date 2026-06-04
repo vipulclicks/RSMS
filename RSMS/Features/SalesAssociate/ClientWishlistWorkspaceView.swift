@@ -79,7 +79,7 @@ struct ClientWishlistWorkspaceView: View {
                         .shadow(color: .black.opacity(0.03), radius: 8, y: 4)
                     
                     Text(viewModel.initials)
-                        .font(.system(size: 24, weight: .light))
+                        .font(.title.weight(.light))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 
@@ -87,13 +87,13 @@ struct ClientWishlistWorkspaceView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     
                     Text(viewModel.clientName)
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.title.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     
                     HStack(spacing: 8) {
                         if viewModel.isVIP {
                             Text(viewModel.vipBadgeText)
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .tracking(1.5)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
@@ -103,7 +103,7 @@ struct ClientWishlistWorkspaceView: View {
                         }
                         
                         Text(viewModel.lastUpdatedFormatted)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.caption2.weight(.medium))
                             .foregroundStyle(RSMSTheme.textTertiary)
                             .textCase(.uppercase)
                             .tracking(0.5)
@@ -174,12 +174,12 @@ struct ClientWishlistWorkspaceView: View {
             Spacer().frame(height: 40)
             
             Image(systemName: "sparkles.square.filled.on.square")
-                .font(.system(size: 64, weight: .ultraLight))
+                .font(.largeTitle.weight(.ultraLight))
                 .foregroundStyle(RSMSTheme.primary.opacity(0.3))
             
             VStack(spacing: 8) {
                 Text("An Empty Canvas")
-                    .font(.system(size: 24, weight: .light))
+                    .font(.title.weight(.light))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text("Explore curated recommendations below to begin building this client's personal collection.")
@@ -200,13 +200,13 @@ struct ClientWishlistWorkspaceView: View {
             HStack {
                 Rectangle()
                     .fill(RSMSTheme.border)
-                    .frame(height: 0.5)
+                    .frame(minHeight: 0.5)
                 Image(systemName: "sparkles")
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.primary.opacity(0.5))
                 Rectangle()
                     .fill(RSMSTheme.border)
-                    .frame(height: 0.5)
+                    .frame(minHeight: 0.5)
             }
             .padding(.horizontal, 40)
             .padding(.top, 16)
@@ -310,11 +310,11 @@ struct RecommendationCarousel: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Image(systemName: icon)
-                        .font(.system(size: 14))
+                        .font(.footnote)
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Text(title)
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
                 
@@ -372,7 +372,7 @@ struct RecommendationProductCard: View {
                     }
                 } label: {
                     Image(systemName: "heart")
-                        .font(.system(size: 14))
+                        .font(.footnote)
                         .foregroundStyle(RSMSTheme.primary)
                         .padding(8)
                         .background(Circle().fill(Color.white.opacity(0.9)))
@@ -386,18 +386,18 @@ struct RecommendationProductCard: View {
             // Product Details Area
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.brand.uppercased())
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .tracking(1.2)
                     .foregroundStyle(RSMSTheme.textTertiary)
                 
                 Text(product.name)
-                    .font(.system(size: 14, weight: .regular))
+                    .font(.footnote.weight(.regular))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                     .frame(width: 176, alignment: .leading) // 200 - padding
                 
                 Text(product.formattedPrice)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(RSMSTheme.primary)
                     .padding(.top, 2)
             }
@@ -416,11 +416,11 @@ struct RecommendationProductCard: View {
             
             VStack(spacing: 8) {
                 Image(systemName: product.categoryIconName)
-                    .font(.system(size: 32, weight: .ultraLight))
+                    .font(.largeTitle.weight(.ultraLight))
                     .foregroundStyle(RSMSTheme.textTertiary.opacity(0.5))
                 
                 Text(product.category.uppercased())
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .tracking(1.5)
                     .foregroundStyle(RSMSTheme.textTertiary.opacity(0.4))
             }
@@ -447,12 +447,12 @@ struct WishlistProductEditorialCard: View {
                             Color.gray.opacity(0.1)
                         }
                     }
-                    .frame(height: 240)
+                    .frame(minHeight: 240)
                     .clipped()
                 } else {
                     Rectangle()
                         .fill(RSMSTheme.surfaceSecondary)
-                        .frame(height: 240)
+                        .frame(minHeight: 240)
                         .overlay(
                             Image(systemName: "bag.fill")
                                 .font(.largeTitle)
@@ -469,7 +469,7 @@ struct WishlistProductEditorialCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
                 
                 Text(product.name)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                 

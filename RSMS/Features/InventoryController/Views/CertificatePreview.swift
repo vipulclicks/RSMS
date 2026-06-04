@@ -109,7 +109,7 @@ struct CertificatePreview: View {
 
                 // Subtext paragraph
                 Text("This certificate verifies the authenticity of the luxury item detailed below and\naffirms that it is an original design produced by the listed designer.")
-                    .font(.system(size: 14, weight: .light))
+                    .font(.footnote.weight(.light))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(textCream.opacity(0.7))
                     .lineSpacing(4)
@@ -123,11 +123,11 @@ struct CertificatePreview: View {
                     // Owner (now the real customer name)
                     VStack(spacing: 6) {
                         Text("OWNER:")
-                            .font(.system(size: 12, weight: .regular))
+                            .font(.caption.weight(.regular))
                             .tracking(1)
                             .foregroundStyle(textCream.opacity(0.9))
                         Text(ownerName)
-                            .font(.system(size: 15, weight: .light))
+                            .font(.subheadline.weight(.light))
                             .foregroundStyle(textCream.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
@@ -136,11 +136,11 @@ struct CertificatePreview: View {
                     // Material (from product data)
                     VStack(spacing: 6) {
                         Text("MATERIAL:")
-                            .font(.system(size: 12, weight: .regular))
+                            .font(.caption.weight(.regular))
                             .tracking(1)
                             .foregroundStyle(textCream.opacity(0.9))
                         Text(product.material ?? product.category.capitalized)
-                            .font(.system(size: 15, weight: .light))
+                            .font(.subheadline.weight(.light))
                             .foregroundStyle(textCream.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
@@ -149,11 +149,11 @@ struct CertificatePreview: View {
                     // Designer / Brand (from product data)
                     VStack(spacing: 6) {
                         Text("DESIGNER:")
-                            .font(.system(size: 12, weight: .regular))
+                            .font(.caption.weight(.regular))
                             .tracking(1)
                             .foregroundStyle(textCream.opacity(0.9))
                         Text(product.brand)
-                            .font(.system(size: 15, weight: .light))
+                            .font(.subheadline.weight(.light))
                             .foregroundStyle(textCream.opacity(0.7))
                             .multilineTextAlignment(.center)
                     }
@@ -177,7 +177,7 @@ struct CertificatePreview: View {
                         .background(navyBackground)
 
                         Text("SN: \(serialNumber)")
-                            .font(.system(size: 10, weight: .light))
+                            .font(.caption2.weight(.light))
                             .foregroundStyle(textCream.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
@@ -197,7 +197,7 @@ struct CertificatePreview: View {
                             Text(product.brand)
                             Text("Authorized Representative")
                         }
-                        .font(.system(size: 11, weight: .light))
+                        .font(.caption2.weight(.light))
                         .foregroundStyle(textCream.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
@@ -215,18 +215,18 @@ struct CertificatePreview: View {
                                 .frame(width: 44, height: 44)
 
                             Image(systemName: "star.fill")
-                                .font(.system(size: 14))
+                                .font(.footnote)
                                 .foregroundStyle(navyBackground)
                                 .offset(y: -8)
 
                             Text("OFFICIAL")
-                                .font(.system(size: 8, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(navyBackground)
                                 .offset(y: 6)
                         }
 
                         Text("Issued: \(date.formatted(.dateTime.year().month().day()))")
-                            .font(.system(size: 10, weight: .light))
+                            .font(.caption2.weight(.light))
                             .foregroundStyle(textCream.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
@@ -263,7 +263,7 @@ struct CornerOrnaments: View {
 
     var cornerPiece: some View {
         Image(systemName: "camera.macro")
-            .font(.system(size: 60, weight: .ultraLight))
+            .font(.largeTitle.weight(.ultraLight))
             .foregroundStyle(color)
             .offset(x: -15, y: -15)
             .frame(width: 70, height: 70, alignment: .topLeading)

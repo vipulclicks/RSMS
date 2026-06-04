@@ -180,8 +180,8 @@ struct AppointmentRemoteSellingView: View {
                             Button {
                                 showClientSelection = true
                             } label: {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .semibold))
+                                Image(systemName: "plus").accessibilityLabel("Add")
+                                    .font(.headline.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             
@@ -191,7 +191,7 @@ struct AppointmentRemoteSellingView: View {
                                 let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
                                 ZStack(alignment: .topTrailing) {
                                     Image(systemName: "bell")
-                                        .font(.system(size: 18))
+                                        .font(.headline)
                                         .foregroundStyle(RSMSTheme.primary)
                                     
                                     if unreadCount > 0 {
@@ -327,13 +327,13 @@ struct AppointmentRemoteSellingView: View {
                         .fill(RSMSTheme.primary.opacity(0.1))
                         .frame(width: 44, height: 44)
                     Text(clientInitials(for: client))
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(client?.fullName ?? "Unknown Client")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                         .lineLimit(1)
                     
@@ -448,7 +448,7 @@ struct AppointmentRemoteSellingView: View {
             }
         }
         .padding(16)
-        .frame(height: 220, alignment: .top)
+        .frame(minHeight: 220, alignment: .top)
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.04), radius: 10, y: 4)
@@ -515,7 +515,7 @@ struct AppointmentRemoteSellingView: View {
     private func emptyStateCard(title: String, message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 54))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text(title)
                 .font(.headline)
@@ -579,7 +579,7 @@ private struct ClientSearchPickerSheet: View {
                     if filtered.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "person.crop.circle.badge.questionmark")
-                                .font(.system(size: 44))
+                                .font(.largeTitle)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("No clients matched search")
                                 .font(.subheadline.weight(.semibold))
@@ -625,14 +625,14 @@ private struct ClientSearchPickerSheet: View {
                     .fill(RSMSTheme.primary.opacity(0.12))
                     .frame(width: 50, height: 50)
                 Text(initials)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 // Name (No loyalty tiers!)
                 Text(client.fullName)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.body.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
 
                 // Pref categories
@@ -752,12 +752,12 @@ private struct AppointmentBookingFormSheet: View {
                                     .fill(RSMSTheme.primary.opacity(0.12))
                                     .frame(width: 44, height: 44)
                                 Text(String(client.fullName.prefix(1)))
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(.body.weight(.bold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(client.fullName)
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.body.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Text(client.email ?? client.phone ?? "No contact logged")
                                     .font(.caption)
@@ -1464,7 +1464,7 @@ private struct AddNotesAppointmentSheet: View {
                 VStack(spacing: 20) {
                     LuxuryFormCard(title: "Add Consultation Note", icon: "square.and.pencil") {
                         TextEditor(text: $newNotes)
-                            .frame(height: 140)
+                            .frame(minHeight: 140)
                             .scrollContentBackground(.hidden)
                             .padding(10)
                             .background(RSMSTheme.background)

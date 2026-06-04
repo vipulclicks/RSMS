@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct TaxFreeEligibilityView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
     
@@ -125,7 +126,7 @@ struct TaxFreeEligibilityView: View {
                             isEligible = true
                             dismiss()
                         } else {
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 validationChecked = true
                             }
                         }

@@ -19,7 +19,7 @@ struct NonCompliantFindingsView: View {
             if nonCompliantChecks.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "checkmark.shield.fill")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
                         .foregroundColor(RSMSTheme.success)
                     Text("No Non-Compliant Findings")
                         .font(.title2)

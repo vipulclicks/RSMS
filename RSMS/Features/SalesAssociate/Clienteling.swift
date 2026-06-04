@@ -430,7 +430,7 @@ struct ClientListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { vm.showNewClientSheet = true } label: {
-                    Image(systemName: "person.badge.plus").fontWeight(.medium)
+                    Image(systemName: "person.badge.plus").accessibilityLabel("Add").fontWeight(.medium)
                 }
                 .tint(.brandCrimson)
             }
@@ -461,12 +461,12 @@ struct ClientRowView: View {
                     .fill(Color.brandCrimson.opacity(0.12))
                     .frame(width: 48, height: 48)
                 Text(initials)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(Color.brandCrimson)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(client.fullName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                 if let contact = client.email ?? client.phone {
                     Text(contact)
@@ -674,7 +674,7 @@ struct AnniversaryRow: View {
                     .fill(ann.type.color.opacity(0.12))
                     .frame(width: 36, height: 36)
                 Image(systemName: ann.type.symbolName)
-                    .font(.system(size: 15))
+                    .font(.subheadline)
                     .foregroundStyle(ann.type.color)
             }
 
@@ -695,7 +695,7 @@ struct AnniversaryRow: View {
                 Button {
                     onToggleReminder()
                 } label: {
-                    Image(systemName: ann.reminderEnabled ? "bell.fill" : "bell.slash")
+                    Image(systemName: ann.reminderEnabled ? "bell.fill" : "bell.slash").accessibilityLabel("Action")
                         .font(.caption)
                         .foregroundStyle(ann.reminderEnabled ? Color.brandCrimson : .secondary)
                 }
@@ -800,7 +800,7 @@ struct WishlistManagementView: View {
                     Button {
                         showAddSheet = true
                     } label: {
-                        Image(systemName: "plus").fontWeight(.medium)
+                        Image(systemName: "plus").accessibilityLabel("Add").fontWeight(.medium)
                     }
                     .tint(.brandCrimson)
                 }
@@ -832,7 +832,7 @@ struct WishlistDetailRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.productName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                 HStack(spacing: 6) {
                     Text(item.sku)
                         .font(.caption).foregroundStyle(.tertiary)
@@ -967,7 +967,7 @@ struct AddToWishlistSheet: View {
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(product.productName)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(.primary)
                                 HStack(spacing: 6) {
                                     Text(product.sku).font(.caption).foregroundStyle(.tertiary)
@@ -1141,13 +1141,13 @@ struct ClientHeroCell: View {
                     .fill(Color.brandCrimson.opacity(0.12))
                     .frame(width: 80, height: 80)
                 Text(initials)
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(Color.brandCrimson)
             }
             .padding(.top, 24)
 
             Text(client.fullName)
-                .font(.system(size: 22, weight: .bold))
+                .font(.title2.weight(.bold))
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -1207,7 +1207,7 @@ struct TransactionRow: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("\(txn.currency)\(txn.totalAmount, format: .number.precision(.fractionLength(0)))")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundStyle(Color.brandCrimson)
                     Text(txn.status.rawValue.capitalized)
                         .font(.caption.weight(.medium)).foregroundStyle(statusColor)

@@ -38,8 +38,8 @@ struct InventorySourcingRequestListView: View {
                         Button("Active") { selectedSegment = 1 }
                         Button("Completed") { selectedSegment = 2 }
                     } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 18, weight: .semibold))
+                        Image(systemName: "line.3.horizontal.decrease.circle").accessibilityLabel("Filter")
+                            .font(.headline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.primary)
                             .padding(10)
                             .background(RSMSTheme.surfacePrimary)
@@ -177,7 +177,7 @@ struct InventorySourcingRequestListView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "shippingbox.fill")
-                .font(.system(size: 48))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             
             Text("No requests found")

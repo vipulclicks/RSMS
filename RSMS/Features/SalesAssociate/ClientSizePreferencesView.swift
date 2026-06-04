@@ -60,7 +60,7 @@ struct ClientSizePreferencesView: View {
                         .background(.ultraThinMaterial, in: Circle())
                     
                     Text("EC")
-                        .font(.system(size: 32, weight: .light))
+                        .font(.largeTitle.weight(.light))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 
@@ -71,7 +71,7 @@ struct ClientSizePreferencesView: View {
                             .foregroundStyle(RSMSTheme.textPrimary)
                         
                         Text("PLATINUM VIP")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.caption2.weight(.bold))
                             .tracking(1)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -171,7 +171,7 @@ struct ClientSizePreferencesView: View {
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
                 TextEditor(text: $viewModel.additionalNotes)
-                    .frame(height: 80)
+                    .frame(minHeight: 80)
                     .scrollContentBackground(.hidden)
                     .padding(12)
                     .background(RSMSTheme.background)

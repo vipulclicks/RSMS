@@ -168,15 +168,15 @@ private struct ASProductCard: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(RSMSTheme.primary.opacity(0.06))
-                    .frame(height: 120)
+                    .frame(minHeight: 120)
                 Image(systemName: categoryIcon)
-                    .font(.system(size: 32))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.primary.opacity(0.3))
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(product.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
@@ -186,7 +186,7 @@ private struct ASProductCard: View {
 
                 HStack {
                     Text("₹\(Int(product.price).formatted())")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
 
                     Spacer()
@@ -239,9 +239,9 @@ private struct ASProductDetailSheet: View {
                         ZStack {
                             RoundedRectangle(cornerRadius: 20)
                                 .fill(RSMSTheme.primary.opacity(0.06))
-                                .frame(height: 200)
+                                .frame(minHeight: 200)
                             Image(systemName: "sparkles")
-                                .font(.system(size: 60))
+                                .font(.largeTitle)
                                 .foregroundStyle(RSMSTheme.primary.opacity(0.2))
                         }
                         .padding(.horizontal, 24)
@@ -249,11 +249,11 @@ private struct ASProductDetailSheet: View {
                         // Info
                         VStack(alignment: .leading, spacing: 16) {
                             Text(product.name)
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
 
                             Text("₹\(Int(product.price).formatted())")
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.primary)
 
                             Divider().overlay(RSMSTheme.divider)

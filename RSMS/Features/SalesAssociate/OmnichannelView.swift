@@ -251,7 +251,7 @@ private struct OCBOPISCard: View {
             }
 
             Text(viewModel.clientName(for: order.clientId))
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline.weight(.semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
 
             Text(viewModel.productName(for: order.productId))
@@ -294,7 +294,7 @@ private struct OCEndlessAisleCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(viewModel.clientName(for: order.clientId))
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 StatusBadge(
@@ -439,7 +439,7 @@ private struct OCEmptyState: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 40))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text(message)
                 .font(.subheadline)
@@ -476,7 +476,7 @@ private struct OCNewEndlessAisleSheet: View {
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                                 TextEditor(text: $notes)
-                                    .frame(height: 60)
+                                    .frame(minHeight: 60)
                                     .scrollContentBackground(.hidden)
                                     .padding(12)
                                     .background(RSMSTheme.background)

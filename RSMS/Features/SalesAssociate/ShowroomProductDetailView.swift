@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ShowroomProductDetailView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let product: Product
     let viewModel: ProductCatalogViewModel
     @Environment(\.dismiss) private var dismiss
@@ -32,7 +33,7 @@ struct ShowroomProductDetailView: View {
                         .clipped()
                     } else {
                         placeholder
-                            .frame(height: 500)
+                            .frame(minHeight: 500)
                     }
                     
                     VStack(spacing: 16) {
@@ -98,7 +99,7 @@ struct ShowroomProductDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: "xmark.circle.fill").accessibilityLabel("Close")
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(RSMSTheme.textPrimary)
                             .font(.title2)
@@ -111,7 +112,7 @@ struct ShowroomProductDetailView: View {
                             viewModel.toggleCartItem(product)
                             dismiss()
                         }) {
-                            Image(systemName: "trash")
+                            Image(systemName: "trash").accessibilityLabel("Action")
                                 .font(.body.weight(.bold))
                                 .foregroundStyle(RSMSTheme.danger)
                         }
@@ -125,11 +126,11 @@ struct ShowroomProductDetailView: View {
                     Button {
                         Task {
                             await viewModel.toggleWishlist(for: product)
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 wishlistAdded = true
                             }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation {
+                                withAnimation(reduceMotion ? nil : .default) {
                                     wishlistAdded = false
                                 }
                             }
@@ -182,7 +183,7 @@ struct ShowroomProductDetailView: View {
             .fill(RSMSTheme.surfaceSecondary)
             .overlay(
                 Image(systemName: product.categoryIconName)
-                    .font(.system(size: 80))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.textTertiary.opacity(0.3))
             )
     }

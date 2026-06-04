@@ -31,10 +31,10 @@ struct StoreLayoutOverviewView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Store Layout Overview")
-                            .font(.system(size: 24, weight: .bold, design: .default))
+                            .font(.system(.title, design: .default).weight(.bold))
                             .foregroundColor(textPrimary)
                         Text(isEditingLayout ? "Drag items to position them, or add new fixtures." : "Select a merchandising zone to view capacity and stock health.")
-                            .font(.system(size: 15))
+                            .font(.subheadline)
                             .foregroundColor(textSecondary)
                     }
                     Spacer()
@@ -49,7 +49,7 @@ struct StoreLayoutOverviewView: View {
                                 }
                             }
                         }
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundColor(.red)
                         .padding(.trailing, 16)
                         
@@ -86,7 +86,7 @@ struct StoreLayoutOverviewView: View {
                             }
                         }
                         .disabled(isSaving)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -96,7 +96,7 @@ struct StoreLayoutOverviewView: View {
                         Button("Edit Layout") {
                             isEditingLayout = true
                         }
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
@@ -119,7 +119,7 @@ struct StoreLayoutOverviewView: View {
                             Spacer()
                             if showSuccessMessage {
                                 Text("Layout successfully saved!")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.footnote.weight(.semibold))
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
@@ -200,16 +200,16 @@ struct StoreLayoutOverviewView: View {
                     
                     VStack(spacing: 8) {
                         Image(systemName: zoneIcon(for: zone.type))
-                            .font(.system(size: 24))
+                            .font(.title)
                             .foregroundColor(zone.type == .window ? .blue : textPrimary)
                         Text(zone.name)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundColor(zone.type == .window ? .blue : textPrimary)
                             .multilineTextAlignment(.center)
                         
                         if isSelected {
                             Text("● ACTIVE")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(badgeBg)
@@ -225,8 +225,8 @@ struct StoreLayoutOverviewView: View {
                             Button(action: {
                                 viewModel.zones.removeAll(where: { $0.id == zone.id })
                             }) {
-                                Image(systemName: "minus.circle.fill")
-                                    .font(.system(size: 24))
+                                Image(systemName: "minus.circle.fill").accessibilityLabel("Remove")
+                                    .font(.title)
                                     .foregroundColor(.red)
                                     .background(Color.white.clipShape(Circle()))
                             }
@@ -279,8 +279,8 @@ struct StoreLayoutOverviewView: View {
                             Button("Window Display") { addZone(type: .window) }
                             Button("Cash Wrap") { addZone(type: .cashWrap) }
                         } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 24, weight: .bold))
+                            Image(systemName: "plus").accessibilityLabel("Add")
+                                .font(.title.weight(.bold))
                                 .foregroundColor(.white)
                                 .frame(width: 56, height: 56)
                                 .background(Color.blue)

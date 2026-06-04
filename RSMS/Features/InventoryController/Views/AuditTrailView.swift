@@ -60,7 +60,7 @@ struct AuditTrailView: View {
                 // Fixed Header
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Inventory Audit Trail")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .font(.system(.title, design: .rounded).weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text("Review all system-recorded inventory stock activities.")
                         .font(.subheadline)
@@ -76,7 +76,7 @@ struct AuditTrailView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 44)
+                        .frame(minHeight: 44)
                         .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         
@@ -87,7 +87,7 @@ struct AuditTrailView: View {
                         }
                         .pickerStyle(.menu)
                         .padding(.horizontal, 16)
-                        .frame(height: 44)
+                        .frame(minHeight: 44)
                         .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .tint(RSMSTheme.textPrimary)
@@ -111,7 +111,7 @@ struct AuditTrailView: View {
                     VStack {
                         Spacer()
                         Image(systemName: "doc.text.magnifyingglass")
-                            .font(.system(size: 48))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.textTertiary)
                             .padding(.bottom, 8)
                         Text("No audit records found.")
@@ -243,7 +243,7 @@ struct AuditTrailView: View {
                     .foregroundStyle(RSMSTheme.danger)
                     .strikethrough()
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 9))
+                    .font(.caption2)
                     .foregroundStyle(RSMSTheme.textTertiary)
                 Text(String(new))
                     .font(.caption.weight(.bold))

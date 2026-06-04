@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct AuthCertificateGeneratorView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppViewModel.self) private var appVM
     
     @State private var searchText = ""
@@ -75,7 +76,7 @@ struct AuthCertificateGeneratorView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Generate Certificate")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(.title, design: .rounded).weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             Text("Issue proof of originality for eligible products.")
                 .font(.subheadline)
@@ -281,7 +282,7 @@ struct AuthCertificateGeneratorView: View {
                 appVM.dataStore.logAudit(storeId: storeId, action: "Certificate Issued", entityType: "AuthCertificate", entityId: created.id, performedBy: userId, details: details)
             }
             
-            withAnimation {
+            withAnimation(reduceMotion ? nil : .default) {
                 self.generatedCertificate = created
             }
         } catch {

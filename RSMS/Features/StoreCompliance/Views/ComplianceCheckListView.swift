@@ -49,7 +49,7 @@ struct ComplianceCheckListView: View {
             } else if viewModel.complianceChecks.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
                         .foregroundColor(RSMSTheme.textTertiary)
                     Text("No Compliance Checks Found")
                         .font(.title2)

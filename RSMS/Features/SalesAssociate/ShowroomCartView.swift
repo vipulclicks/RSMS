@@ -13,6 +13,7 @@ enum ShowroomCartMode {
 }
 
 struct ShowroomCartView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let mode: ShowroomCartMode
     
     @Environment(AppViewModel.self) private var appVM
@@ -270,7 +271,7 @@ struct ShowroomCartView: View {
     private var emptyView: some View {
         VStack(spacing: 16) {
             Image(systemName: "cart.badge.questionmark")
-                .font(.system(size: 64))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
                 .padding(.top, 60)
             
@@ -320,7 +321,7 @@ struct ShowroomCartView: View {
                                 .lineLimit(1)
                             Spacer()
                             Button {
-                                withAnimation {
+                                withAnimation(reduceMotion ? nil : .default) {
                                     vm.toggleCartItem(item.product)
                                 }
                             } label: {
@@ -631,7 +632,7 @@ struct ShowroomCartView: View {
     private func approvalStatusBanner(status: DiscountApprovalStatus, managerNotes: String?) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: status == .pending ? "clock.fill" : (status == .approved ? "checkmark.seal.fill" : "xmark.octagon.fill"))
-                .font(.system(size: 20))
+                .font(.title3)
                 .foregroundStyle(status == .pending ? .orange : (status == .approved ? RSMSTheme.success : RSMSTheme.danger))
                 
             VStack(alignment: .leading, spacing: 4) {
@@ -784,11 +785,11 @@ struct ShowroomCartView: View {
                 await MainActor.run {
                     currentStatus = .shared
                     isSharing = false
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         shareSuccess = true
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        withAnimation {
+                        withAnimation(reduceMotion ? nil : .default) {
                             shareSuccess = false
                         }
                     }
@@ -816,7 +817,7 @@ struct ShowroomCartView: View {
                 Spacer()
                 Button {
                     tempBaseURLSetting = appVM.customCheckoutBaseURL
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         showURLConfig.toggle()
                     }
                 } label: {
@@ -846,7 +847,7 @@ struct ShowroomCartView: View {
                         
                         Button {
                             appVM.customCheckoutBaseURL = tempBaseURLSetting
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 showURLConfig = false
                             }
                         } label: {
@@ -889,7 +890,7 @@ struct ShowroomCartView: View {
                             Button {
                                 UIPasteboard.general.string = url
                             } label: {
-                                Image(systemName: "doc.on.doc")
+                                Image(systemName: "doc.on.doc").accessibilityLabel("Action")
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                             }

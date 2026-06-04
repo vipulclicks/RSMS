@@ -120,7 +120,7 @@ struct InspectionWorkspaceView: View {
                 VStack(spacing: 24) {
                     if showingSuccessMessage {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.success)
                             .transition(.scale.combined(with: .opacity))
                         
@@ -178,6 +178,7 @@ struct InspectionWorkspaceView: View {
                 Text(checkpoint.wrappedValue.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(RSMSTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 Spacer()
             }
             
@@ -231,7 +232,7 @@ struct InspectionWorkspaceView: View {
                         )
                     
                     HStack {
-                        Text("Evidence Required")
+                        Label("Evidence Required", systemImage: "exclamationmark.circle.fill")
                             .font(.caption.weight(.bold))
                             .foregroundColor(RSMSTheme.danger)
                         Spacer()
@@ -306,7 +307,7 @@ struct InspectionWorkspaceView: View {
                             .fill(RSMSTheme.surfaceSecondary)
                             .frame(width: 60, height: 60)
                         Image(systemName: "photo")
-                            .font(.system(size: 24))
+                            .font(.title)
                             .foregroundColor(RSMSTheme.textTertiary)
                     }
                     Text("No evidence attached")
@@ -317,7 +318,7 @@ struct InspectionWorkspaceView: View {
                         .foregroundColor(RSMSTheme.textTertiary)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 180)
+                .frame(minHeight: 180)
                 .background(RSMSTheme.surfacePrimary)
                 .cornerRadius(16)
                 .overlay(

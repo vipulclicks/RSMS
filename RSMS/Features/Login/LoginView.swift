@@ -78,7 +78,7 @@ struct LoginView: View {
         VStack(spacing: 12) {
             // Diamond icon
             Image(systemName: "diamond.fill")
-                .font(.system(size: isCompact ? 28 : 32))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.goldGradient)
 
             Text("Luxora")
@@ -133,7 +133,7 @@ struct LoginView: View {
                         .font(.body)
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.surfaceSecondary)
                 .cornerRadius(12)
                 .overlay(
@@ -152,7 +152,7 @@ struct LoginView: View {
                         .font(.body)
                 }
                 .padding(.horizontal, 16)
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.surfaceSecondary)
                 .cornerRadius(12)
                 .overlay(
@@ -192,7 +192,7 @@ struct LoginView: View {
                     }
                     Spacer()
                 }
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.goldGradient)
                 .foregroundColor(.white)
                 .cornerRadius(12)
@@ -287,7 +287,7 @@ struct LoginView: View {
                 Image(systemName: "checkmark.seal.fill")
             }
         }
-        .font(.system(size: 48))
+        .font(.largeTitle)
         .foregroundStyle(RSMSTheme.goldGradient)
     }
 
@@ -376,7 +376,7 @@ struct LoginView: View {
                     .font(.body)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.surfaceSecondary)
             .cornerRadius(12)
 
@@ -404,7 +404,7 @@ struct LoginView: View {
                     }
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.surfaceSecondary)
             .cornerRadius(12)
 
@@ -439,7 +439,7 @@ struct LoginView: View {
                     .font(.body)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.surfaceSecondary)
             .cornerRadius(12)
 
@@ -452,7 +452,7 @@ struct LoginView: View {
                     .font(.body)
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.surfaceSecondary)
             .cornerRadius(12)
 
@@ -495,7 +495,7 @@ struct LoginView: View {
                         .font(.headline.weight(.semibold))
                     Spacer()
                 }
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.goldGradient)
                 .foregroundColor(.white)
                 .cornerRadius(12)
@@ -520,7 +520,7 @@ struct LoginView: View {
                 }
                 Spacer()
             }
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.goldGradient)
             .foregroundColor(.white)
             .cornerRadius(12)
