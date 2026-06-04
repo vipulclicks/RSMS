@@ -1033,22 +1033,25 @@ struct ShowroomCartView: View {
         let client = appVM.dataStore.clients.first(where: { $0.id == clientId })
         let email = client?.email ?? ""
         let clientName = client?.fullName ?? "Client"
-        let subject = "Your Curated Cart Checkout"
-        let body = "Dear \(clientName),\n\nPlease find your curated cart checkout link here: \(url)\n\nThank you,\nLuxora Boutique"
         
-        if let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-           let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-           let mailtoURL = URL(string: "mailto:\(email)?subject=\(encodedSubject)&body=\(encodedBody)") {
-            if UIApplication.shared.canOpenURL(mailtoURL) {
-                UIApplication.shared.open(mailtoURL)
-            } else {
-                UIPasteboard.general.string = url
-                toastMessage = "No email client. Copied link and opened share menu!"
+        Task {
+            let result = await ResendEmailService.shared.sendCuratedCartEmail(
+                toEmail: email,
+                clientName: clientName,
+                cartLink: url
+            )
+            
+            await MainActor.run {
+                switch result {
+                case .success:
+                    toastMessage = "Email sent successfully via Resend!"
+                case .failed(let error):
+                    toastMessage = "Failed to send email: \(error)"
+                }
                 showShareToast = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     showShareToast = false
                 }
-                shareLink(url: url)
             }
         }
     }
