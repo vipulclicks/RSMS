@@ -10,7 +10,7 @@ struct NotificationsSheetView: View {
                 RSMSTheme.background.ignoresSafeArea()
                 
                 let myNotifications = appViewModel.dataStore.appNotifications
-                    .filter { $0.recipientId == appViewModel.currentUser?.id }
+                    .filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }
                     .sorted(by: { $0.createdAt > $1.createdAt })
                 
                 if myNotifications.isEmpty {
@@ -31,6 +31,7 @@ struct NotificationsSheetView: View {
                         .onDelete { indexSet in
                             for index in indexSet {
                                 let notification = myNotifications[index]
+                                appViewModel.dataStore.appNotifications.removeAll(where: { $0.id == notification.id })
                                 Task {
                                     try? await appViewModel.dataStore.deleteNotification(id: notification.id)
                                 }
@@ -50,6 +51,17 @@ struct NotificationsSheetView: View {
                     }
                     .fontWeight(.semibold)
                     .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+            .onDisappear {
+                if let currentUser = appViewModel.currentUser {
+                    let unreadNotifications = appViewModel.dataStore.appNotifications
+                        .filter { $0.recipientId == currentUser.id && !$0.isRead }
+                    for notif in unreadNotifications {
+                        Task {
+                            try? await appViewModel.dataStore.markNotificationAsRead(id: notif.id)
+                        }
+                    }
                 }
             }
             .task {
