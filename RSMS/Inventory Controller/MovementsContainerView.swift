@@ -11,8 +11,15 @@ import SwiftUI
 struct MovementsContainerView: View {
 
     @State private var selectedSegment = 0
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
-    private let segments = ["Transfers", "Sourcing", "Vendor Returns", "Returns/Exch."]
+    private var segments: [String] {
+        if sizeClass == .compact {
+            return ["Transfers", "Sourcing", "Vendor", "Returns"]
+        } else {
+            return ["Transfers", "Sourcing", "Vendor Returns", "Returns & Exchanges"]
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,8 +33,9 @@ struct MovementsContainerView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
             .background(RSMSTheme.background)
+
 
             Divider()
                 .foregroundStyle(RSMSTheme.divider)

@@ -197,22 +197,6 @@ struct ProductLookupView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
-                
-                Button {
-                    showScanner = true
-                } label: {
-                    HStack {
-                        Image(systemName: "barcode.viewfinder")
-                        Text("Scan to Find")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.background)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(RSMSTheme.gold)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                
                 kpiSection
                 searchBar
                 productList
@@ -327,28 +311,39 @@ struct ProductLookupView: View {
 
     private var searchBar: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.body.weight(.medium))
-                .foregroundStyle(RSMSTheme.textTertiary)
-            TextField("Name, SKU, brand, category…", text: $searchText)
-                .foregroundStyle(RSMSTheme.textPrimary)
-                .autocorrectionDisabled()
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(RSMSTheme.textTertiary)
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                TextField("Name, SKU, brand, category…", text: $searchText)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                    .autocorrectionDisabled()
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
                 }
             }
+            .padding(14)
+            .background(RSMSTheme.surfacePrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(RSMSTheme.border, lineWidth: 1)
+            )
+            
+            Button(action: { showScanner = true }) {
+                Image(systemName: "barcode.viewfinder")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(RSMSTheme.background)
+                    .frame(width: 50, height: 50)
+                    .background(RSMSTheme.gold)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
         }
-        .padding(14)
-        .background(RSMSTheme.surfacePrimary)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(RSMSTheme.border, lineWidth: 1)
-        )
     }
 
     private var productList: some View {
