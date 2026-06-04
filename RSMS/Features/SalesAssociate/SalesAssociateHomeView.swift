@@ -1024,15 +1024,15 @@ private struct SalesGoalProgressCard: View {
                         ZStack(alignment: .leading) {
                             Capsule()
                                 .fill(RSMSTheme.primary.opacity(0.10))
-                                .frame(minHeight: 8)
+                                .frame(height: 8)
 
                             Capsule()
                                 .fill(isComplete ? RSMSTheme.success : RSMSTheme.primary)
-                                .frame(width: geo.size.width * progress, height: 8)
+                                .frame(width: max(0, geo.size.width * progress), height: 8)
                                 .animation(.easeOut(duration: 0.6), value: progress)
                         }
                     }
-                    .frame(minHeight: 8)
+                    .frame(height: 8)
                     .accessibilityElement()
                     .accessibilityLabel("Goal progress")
                     .accessibilityValue("\(percent) percent of \(goal.period.rawValue) target reached")
