@@ -116,8 +116,7 @@ struct ClientPortalView: View {
             }
             .alert("Product Inquiry", isPresented: $showingInquiryAlert, presenting: inquiredProduct) { product in
                 Button("Confirm Reservation", role: .none) {
-                    // Optimistic private boutique reservation
-                    if let client = dataStore.clients.first(where: { $0.id == appViewModel.currentUser?.id }) {
+                    if dataStore.clients.contains(where: { $0.id == appViewModel.currentUser?.id }) {
                         let note = "Client requested private showroom reservation of \(product.name)"
                         print(note)
                     }

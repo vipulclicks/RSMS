@@ -31,7 +31,7 @@ class RSMSTestRunner: ObservableObject {
     private func testStoreTransferWorkflow(dataStore: DataStore) async throws {
         log("--- Testing Store Transfer Workflow ---")
         guard let sourceStore = dataStore.stores.first,
-              let destStore = dataStore.stores.last,
+              dataStore.stores.last != nil,
               let product = dataStore.products.first else {
             log("⚠️ Not enough mock data to test store transfer.")
             return
