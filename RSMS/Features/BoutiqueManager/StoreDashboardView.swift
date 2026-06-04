@@ -610,12 +610,14 @@ struct StoreDashboardView: View {
                             .gesture(
                                 DragGesture(minimumDistance: 0)
                                     .onChanged { value in
-                                        let location = value.location
-                                        let x = location.x - geometry[proxy.plotAreaFrame].origin.x
-                                        if let date: Date = proxy.value(atX: x) {
-                                            let closest = dashboardVM.chartSalesData.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
-                                            if let closestDate = closest?.date {
-                                                selectedSalesDate = closestDate
+                                        if let plotFrame = proxy.plotFrame {
+                                            let location = value.location
+                                            let x = location.x - geometry[plotFrame].origin.x
+                                            if let date: Date = proxy.value(atX: x) {
+                                                let closest = dashboardVM.chartSalesData.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
+                                                if let closestDate = closest?.date {
+                                                    selectedSalesDate = closestDate
+                                                }
                                             }
                                         }
                                     }
