@@ -6,9 +6,8 @@ struct StockTransfersView: View {
     @State private var selectedTab: TransferTab = .inbound
     
     enum TransferTab: String, CaseIterable {
-        case inbound = "Inbound Transfers"
-        case outbound = "Outbound Transfers"
-        case sourcing = "Sourcing Requests"
+        case inbound = "Incoming"
+        case outbound = "Outgoing"
     }
     
     var body: some View {
@@ -31,8 +30,6 @@ struct StockTransfersView: View {
                         Spacer()
                         ProgressView("Loading Transfers...")
                         Spacer()
-                    } else if selectedTab == .sourcing {
-                        InventorySourcingRequestListView()
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 16) {
@@ -76,8 +73,6 @@ struct StockTransfersView: View {
             return viewModel.inboundTransfers(for: storeId)
         case .outbound:
             return viewModel.outboundTransfers(for: storeId)
-        case .sourcing:
-            return []
         }
     }
     

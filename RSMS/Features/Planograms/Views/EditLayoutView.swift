@@ -8,10 +8,17 @@ import SwiftUI
 struct EditLayoutView: View {
     @Bindable var viewModel: PlanogramViewModel
     let zone: MerchandisingZone
+    struct ProductSelection: Identifiable {
+        let id = UUID()
+        let product: StoreProduct
+        let shelf: Int
+        let position: Int
+    }
+    
     @State private var isShowingProductPicker = false
     @State private var productToSwap: StoreProduct? = nil
     @State private var selectedItemForSwap: StoreProduct? = nil
-    @State private var selectedProductForDetail: StoreProduct? = nil
+    @State private var selectedProductSelection: ProductSelection? = nil
     @Environment(AppViewModel.self) private var appVM
     
     @State private var showingSaveAlert = false
@@ -117,7 +124,7 @@ struct EditLayoutView: View {
                                 return itemIndex < zone.items.count ? zone.items[itemIndex] : nil
                             }
                             
-                            shelfView(rowItems: rowItems)
+                            shelfView(rowItems: rowItems, rowIndex: rowIndex)
                         }
                     }
                     .padding(40)
@@ -137,13 +144,19 @@ struct EditLayoutView: View {
                     productToSwap = nil
                 }
         }
-        .sheet(item: $selectedProductForDetail) { product in
-            PlanogramProductDetailSheet(product: product)
+        .sheet(item: $selectedProductSelection) { selection in
+            let locString = "SL\(selection.shelf)00\(selection.position)"
+            if let product = appVM.dataStore.products.first(where: { $0.id == selection.product.id }) {
+                let stockItem = appVM.dataStore.stockItems.first(where: { $0.productId == product.id && $0.storeId == appVM.currentStoreId })
+                ProductDetailSheet(product: product, stockItem: stockItem, shelfLocation: locString)
+            } else {
+                PlanogramProductDetailSheet(product: selection.product, shelfLocation: locString)
+            }
         }
     }
     
     // MARK: - Shelf Renderer
-    private func shelfView(rowItems: [StoreProduct?]) -> some View {
+    private func shelfView(rowItems: [StoreProduct?], rowIndex: Int) -> some View {
         VStack(spacing: 0) {
             // Dotted Background
             ZStack {
@@ -159,11 +172,11 @@ struct EditLayoutView: View {
                 
                 // Products
                 LazyVGrid(columns: columns, spacing: 24) {
-                    ForEach(Array(rowItems.enumerated()), id: \.offset) { _, item in
+                    ForEach(Array(rowItems.enumerated()), id: \.offset) { offset, item in
                         if let product = item {
-                            productCard(product)
+                            productCard(product, shelf: rowIndex + 1, position: offset + 1)
                         } else {
-                            placeholderCard()
+                            placeholderCard(shelf: rowIndex + 1, position: offset + 1)
                         }
                     }
                 }
@@ -201,7 +214,7 @@ struct EditLayoutView: View {
     }
     
     // MARK: - Product Card
-    private func productCard(_ product: StoreProduct) -> some View {
+    private func productCard(_ product: StoreProduct, shelf: Int, position: Int) -> some View {
         VStack(spacing: 0) {
             // Image Area
             ZStack(alignment: .topTrailing) {
@@ -276,6 +289,11 @@ struct EditLayoutView: View {
                     .font(.system(size: 12))
                     .foregroundColor(textSecondary)
                 
+                Text("SL\(shelf)00\(position)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(textSecondary)
+                    .padding(.top, 2)
+                
                 // Stock Badge
                 Text(product.isLowStock ? "LOW STOCK: \(product.stockCount)" : "STOCK: \(product.stockCount)")
                     .font(.system(size: 11, weight: .bold))
@@ -307,13 +325,13 @@ struct EditLayoutView: View {
                     selectedItemForSwap = nil
                 }
             } else {
-                selectedProductForDetail = product
+                selectedProductSelection = ProductSelection(product: product, shelf: shelf, position: position)
             }
         }
     }
     
     // MARK: - Placeholder
-    private func placeholderCard() -> some View {
+    private func placeholderCard(shelf: Int, position: Int) -> some View {
         Button(action: {
             isShowingProductPicker = true
         }) {
@@ -323,6 +341,10 @@ struct EditLayoutView: View {
                 Text("ADD ITEM")
                     .font(.system(size: 12, weight: .bold))
                     .tracking(1)
+                
+                Text("SL\(shelf)00\(position)")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color.gray.opacity(0.8))
             }
             .foregroundColor(Color.gray.opacity(0.6))
             .frame(maxWidth: .infinity)
@@ -341,6 +363,7 @@ struct EditLayoutView: View {
 
 struct PlanogramProductDetailSheet: View {
     let product: StoreProduct
+    var shelfLocation: String? = nil
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -359,6 +382,12 @@ struct PlanogramProductDetailSheet: View {
                         .foregroundColor(RSMSTheme.textPrimary)
                     Text("SKU: \(product.sku)")
                         .foregroundColor(RSMSTheme.textSecondary)
+                    
+                    if let loc = shelfLocation {
+                        Text("Location: \(loc)")
+                            .font(.subheadline)
+                            .foregroundColor(RSMSTheme.textSecondary)
+                    }
                     
                     Text(product.isLowStock ? "Low Stock: \(product.stockCount) remaining" : "In Stock: \(product.stockCount) units")
                         .font(.headline)

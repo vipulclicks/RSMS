@@ -35,9 +35,6 @@ struct CycleCountSectionView: View {
                     Text("Cycle Counts")
                         .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
-                    Text("Physical verification of stock levels")
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
                 Spacer()
             }
@@ -169,8 +166,7 @@ struct CycleCountSectionView: View {
             VStack(spacing: 0) {
                 ForEach(Array(cycleCountVM.pendingItems.prefix(6).enumerated()), id: \.element.id) { index, item in
                     Button {
-                        cycleCountVM.enteredCount = "\(item.expectedQty)"
-                        cycleCountVM.itemToCount = item
+                        selectedProductToView = item.product
                     } label: {
                         cycleCountPendingRow(item)
                     }
@@ -632,8 +628,7 @@ struct CycleCountSectionView: View {
                             Button {
                                 showPendingSheet = false
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                    cycleCountVM.enteredCount = "\(item.expectedQty)"
-                                    cycleCountVM.itemToCount = item
+                                    selectedProductToView = item.product
                                 }
                             } label: {
                                 HStack(spacing: 14) {
@@ -696,7 +691,14 @@ struct CycleCountSectionView: View {
             }
         }
         .presentationDragIndicator(.visible)
+        .fullScreenCover(item: $selectedProductToView) { product in
+            ProductDetailSheet(
+                product: product,
+                stockItem: stockItem(for: product)
+            )
+        }
     }
+
 
     // ═══════════════════════════════════════════════════════════
     // MARK: - Mismatches List Sheet

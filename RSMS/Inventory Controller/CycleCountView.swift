@@ -109,9 +109,6 @@ struct CycleCountView: View {
             Text("Cycle Counts")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Physical verification of stock levels")
-                .font(.subheadline)
-                .foregroundStyle(RSMSTheme.textTertiary)
         }
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : -8)

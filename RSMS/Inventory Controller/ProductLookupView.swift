@@ -892,6 +892,7 @@ struct ProductDetailSheet: View {
 
     let product: Product
     let stockItem: StockItem?
+    var shelfLocation: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     private var qty: Int { stockItem?.quantity ?? 0 }
@@ -975,6 +976,10 @@ struct ProductDetailSheet: View {
                                 .padding(.top, 14)
 
                             VStack(spacing: 0) {
+                                if let loc = shelfLocation {
+                                    detailRow("Shelf Location", loc)
+                                    divider
+                                }
                                 detailRow("Category", product.category)
                                 divider
                                 if let sub = product.subcategory {

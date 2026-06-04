@@ -491,7 +491,7 @@ final class DataStore {
     
     // ══════════════════════════════════════════════════════════
     // MARK: - event_invitations
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════ 
     
     func fetchEventInvitations(eventId: UUID) async throws {
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "eq.\(eventId)"])

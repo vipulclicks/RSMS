@@ -47,7 +47,11 @@ class SalesGoalViewModel {
             try await dataStore.fetchTransactions(storeId: storeId)
             
             try await dataStore.fetchUsers(storeId: storeId)
-            self.availableStaff = dataStore.users.filter { $0.role == .salesAssociate }
+            self.availableStaff = dataStore.users.filter { $0.role == .salesAssociate }.sorted { userA, userB in
+                let aLast = dataStore.transactions.filter { $0.associateId == userA.id }.map { $0.createdAt }.max() ?? Date.distantPast
+                let bLast = dataStore.transactions.filter { $0.associateId == userB.id }.map { $0.createdAt }.max() ?? Date.distantPast
+                return aLast > bLast
+            }
             
         } catch {
             print("Failed to load sales goals: \(error)")
