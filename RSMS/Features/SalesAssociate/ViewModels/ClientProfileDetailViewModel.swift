@@ -127,6 +127,7 @@ final class ClientProfileDetailViewModel {
         case .gold:     return RSMSTheme.primary
         case .platinum: return Color(red: 176/255, green: 196/255, blue: 222/255)
         case .prive:    return RSMSTheme.danger
+        case .vip:      return RSMSTheme.primaryDark
         }
     }
 

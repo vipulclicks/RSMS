@@ -249,6 +249,35 @@ struct InventoryControllerProfileView: View {
 
                 divider
 
+                NavigationLink(destination: MFASettingsView()) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(RSMSTheme.primary.opacity(0.12))
+                                .frame(width: 40, height: 40)
+                            Image(systemName: "shield.checkered")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Multi-Factor Authentication")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("Manage two-step verification")
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+                    .padding(16)
+                }
+                .buttonStyle(.plain)
+
+                divider
+
                 settingsRow(
                     icon: "bell.badge.fill",
                     iconColor: RSMSTheme.warning,
@@ -460,20 +489,22 @@ private struct EditProfileSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                Section {
+                    Button("Save Profile") {
+                        // TODO: Persist changes via DataStore.updateUser
+                        dismiss()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(RSMSTheme.background)
+                    .listRowBackground(RSMSTheme.gold)
+                }
             }
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        // TODO: Persist changes via DataStore.updateUser
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                    .tint(RSMSTheme.gold)
                 }
             }
             .onAppear {
@@ -505,15 +536,8 @@ private struct ChangePasswordSheet: View {
                     SecureField("New Password", text: $newPassword)
                     SecureField("Confirm New Password", text: $confirmPassword)
                 }
-            }
-            .navigationTitle("Change Password")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Update") {
+                Section {
+                    Button("Update Password") {
                         guard newPassword == confirmPassword, !newPassword.isEmpty else { return }
                         Task {
                             isUpdating = true
@@ -522,9 +546,22 @@ private struct ChangePasswordSheet: View {
                             dismiss()
                         }
                     }
+                    .frame(maxWidth: .infinity)
                     .fontWeight(.semibold)
-                    .tint(RSMSTheme.gold)
-                    .disabled(isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
+                    .foregroundStyle(RSMSTheme.background)
+                    .listRowBackground(
+                        (isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
+                        ? RSMSTheme.gold.opacity(0.5)
+                        : RSMSTheme.gold
+                    )
+                }
+                .disabled(isUpdating || newPassword.isEmpty || newPassword != confirmPassword)
+            }
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
@@ -560,7 +597,7 @@ private struct NotificationPrefsSheet: View {
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                         .tint(RSMSTheme.gold)
@@ -595,7 +632,7 @@ private struct AboutSheet: View {
             .navigationTitle("About RSMS")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                         .tint(RSMSTheme.gold)

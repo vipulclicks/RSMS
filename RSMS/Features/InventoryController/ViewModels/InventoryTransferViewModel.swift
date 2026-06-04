@@ -253,6 +253,14 @@ final class InventoryTransferViewModel {
                     reason: nil
                 )
                 _ = try await dataStore.createMovementItem(item)
+
+                // ✅ Reserve stock at source — marks items inTransit so they
+                //    cannot be sold again while the transfer is pending/approved.
+                try? await dataStore.reserveStockForTransfer(
+                    productId: cartItem.product.id,
+                    storeId: src.id,
+                    quantity: cartItem.quantity
+                )
             }
 
             withAnimation(.spring()) {

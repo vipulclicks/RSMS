@@ -140,11 +140,14 @@ final class BarcodeScannerViewModel {
                 )
                 try await dataStore.updateStockItem(updated)
             } else if scanMode == .verification, let existing = stockItem {
+                let actualQty = enteredCount ?? existing.quantity
+                // ✅ In verification mode, write the physically-counted quantity
+                //    to the database so stock levels stay accurate.
                 let updated = StockItem(
                     id: existing.id,
                     productId: existing.productId,
                     storeId: existing.storeId,
-                    quantity: existing.quantity, // don't change qty — just record the check
+                    quantity: actualQty,         // ← use the actual count
                     rfidTag: existing.rfidTag,
                     location: existing.location,
                     status: existing.status,
@@ -153,7 +156,7 @@ final class BarcodeScannerViewModel {
                 )
                 try await dataStore.updateStockItem(updated)
 
-                if let actualQty = enteredCount, actualQty != existing.quantity, let storeId = user.storeId {
+                if actualQty != existing.quantity, let storeId = user.storeId {
                     let variance = InventoryVariance(
                         id: UUID(),
                         storeId: storeId,

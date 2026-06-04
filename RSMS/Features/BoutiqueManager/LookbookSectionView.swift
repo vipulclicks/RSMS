@@ -11,6 +11,8 @@ import UniformTypeIdentifiers
 
 struct LookbookSectionView: View {
     @Bindable var lookbookVM: LookbookViewModel
+    @Binding var navPath: NavigationPath
+    
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -179,7 +181,10 @@ struct LookbookSectionView: View {
             Button("Upload") {
                 if let url = selectedFileURL, !newLookbookTitle.isEmpty {
                     Task {
-                        await lookbookVM.uploadLookbook(title: newLookbookTitle, fileURL: url, dataStore: appVM.dataStore)
+                        if let newLookbook = await lookbookVM.uploadLookbook(title: newLookbookTitle, fileURL: url, dataStore: appVM.dataStore) {
+                            // Automatically open the PDF after uploading!
+                            navPath.append(newLookbook)
+                        }
                     }
                 }
             }
@@ -277,7 +282,7 @@ struct LookbookSectionView: View {
 #Preview {
     NavigationStack {
         ScrollView {
-            LookbookSectionView(lookbookVM: LookbookViewModel())
+            LookbookSectionView(lookbookVM: LookbookViewModel(), navPath: .constant(NavigationPath()))
                 .padding(24)
         }
         .background(RSMSTheme.background)

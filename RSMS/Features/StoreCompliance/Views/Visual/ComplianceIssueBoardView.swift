@@ -16,11 +16,33 @@ struct ComplianceIssueBoardView: View {
         .nonCompliant: [],
         .compliant: []
     ]
+    enum BoardFilter: String, CaseIterable {
+        case unsolved = "Unsolved"
+        case solved = "Solved"
+    }
+    
+    @State private var selectedFilter: BoardFilter = .unsolved
     
     var body: some View {
-        HStack(spacing: 24) {
-            boardColumn(title: "Needs Review", status: .needsReview)
-            boardColumn(title: "Non-Compliant", status: .nonCompliant)
+        let _ = viewModel.complianceChecks // Force SwiftUI observation tracking
+        VStack(spacing: 24) {
+            Picker("Filter", selection: $selectedFilter) {
+                ForEach(BoardFilter.allCases, id: \.self) { filter in
+                    Text(filter.rawValue).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 400)
+            .padding(.bottom, 8)
+            
+            HStack(spacing: 24) {
+                if selectedFilter == .unsolved {
+                    boardColumn(title: "Needs Review", status: .needsReview)
+                    boardColumn(title: "Non-Compliant", status: .nonCompliant)
+                } else {
+                    boardColumn(title: "Solved", status: .compliant)
+                }
+            }
         }
         .padding(32)
         .background(RSMSTheme.background.ignoresSafeArea())

@@ -60,16 +60,7 @@ struct ClientWishlistWorkspaceView: View {
         }
         .navigationTitle("Wishlist")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    // Share action
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(RSMSTheme.primary)
-                }
-            }
-        }
+
         .task {
             await viewModel.loadData()
         }
@@ -88,7 +79,7 @@ struct ClientWishlistWorkspaceView: View {
                         .shadow(color: .black.opacity(0.03), radius: 8, y: 4)
                     
                     Text(viewModel.initials)
-                        .font(.system(size: 24, weight: .light, design: .serif))
+                        .font(.system(size: 24, weight: .light))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 
@@ -96,7 +87,7 @@ struct ClientWishlistWorkspaceView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     
                     Text(viewModel.clientName)
-                        .font(.system(size: 28, weight: .regular, design: .serif))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     
                     HStack(spacing: 8) {
@@ -188,7 +179,7 @@ struct ClientWishlistWorkspaceView: View {
             
             VStack(spacing: 8) {
                 Text("An Empty Canvas")
-                    .font(.system(size: 24, weight: .light, design: .serif))
+                    .font(.system(size: 24, weight: .light))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 Text("Explore curated recommendations below to begin building this client's personal collection.")
@@ -323,7 +314,7 @@ struct RecommendationCarousel: View {
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Text(title)
-                        .font(.system(size: 20, weight: .regular, design: .serif))
+                        .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
                 
@@ -400,7 +391,7 @@ struct RecommendationProductCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
                 
                 Text(product.name)
-                    .font(.system(size: 14, weight: .regular, design: .serif))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                     .frame(width: 176, alignment: .leading) // 200 - padding
@@ -478,7 +469,7 @@ struct WishlistProductEditorialCard: View {
                     .foregroundStyle(RSMSTheme.textTertiary)
                 
                 Text(product.name)
-                    .font(.system(size: 16, weight: .regular, design: .serif))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
                 

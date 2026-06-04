@@ -4,9 +4,10 @@
 -- ==========================================
 -- 0. PREREQUISITES (STORES & USERS)
 -- ==========================================
-INSERT INTO stores (id, name, code, country, city, address, timezone, phone, email, is_active, created_at, updated_at) VALUES
-('00000000-0000-0000-0000-000000000001', 'Maison Lumière — Paris Vendôme', 'PAR-VND-01', 'France', 'Paris', '23 Place Vendôme, 75001 Paris', 'Europe/Paris', '+33 1 42 60 00 00', 'vendome@maisonlumiere.com', true, NOW(), NOW()),
-('00000000-0000-0000-0000-000000000002', 'Maison Lumière — Mumbai Palladium', 'MUM-PLD-01', 'India', 'Mumbai', 'Palladium Mall, Lower Parel, Mumbai 400013', 'Asia/Kolkata', '+91 22 4000 0000', 'mumbai@maisonlumiere.com', true, NOW(), NOW())
+INSERT INTO stores (id, name, code, country, city, address, timezone, phone, email, is_dc, is_active, created_at, updated_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'Maison Lumière — Paris Vendôme', 'PAR-VND-01', 'France', 'Paris', '23 Place Vendôme, 75001 Paris', 'Europe/Paris', '+33 1 42 60 00 00', 'vendome@maisonlumiere.com', false, true, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000002', 'Maison Lumière — Mumbai Palladium', 'MUM-PLD-01', 'India', 'Mumbai', 'Palladium Mall, Lower Parel, Mumbai 400013', 'Asia/Kolkata', '+91 22 4000 0000', 'mumbai@maisonlumiere.com', false, true, NOW(), NOW()),
+('00000000-0000-0000-0000-000000000003', 'Maison Lumière — Europe DC', 'DC-EUROPE-01', 'France', 'Paris', 'Logistics Park, Paris', 'Europe/Paris', '+33 1 42 60 00 01', 'dc.europe@maisonlumiere.com', true, true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 UPDATE user_profiles SET store_id = '00000000-0000-0000-0000-000000000001', role = 'inventory_controller' WHERE id = 'ada6eb74-0b6d-43bb-8612-3f265960dae1';
@@ -85,7 +86,11 @@ INSERT INTO inventory_movements (id, type, source_id, destination_id, status, re
 ('30000000-0000-0000-0000-000000000062', 'dc_replenishment', 'DC-ASIA-01', '00000000-0000-0000-0000-000000000002', 'partial', NULL, NULL, NULL, NOW() - INTERVAL '4 days', NOW() - INTERVAL '2 days', 'ASN-2026-05-654321', 20, 17, NULL, '3 items back-ordered, expected next shipment.'),
 ('30000000-0000-0000-0000-000000000063', 'dc_replenishment', 'DC-EUROPE-02', '00000000-0000-0000-0000-000000000001', 'in_transit', NULL, NULL, NULL, NOW() - INTERVAL '3 days', NULL, 'ASN-2026-05-888888', 8, NULL, NULL, 'High-end watches restock.'),
 ('30000000-0000-0000-0000-000000000064', 'store_transfer', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'in_transit', 'ada6eb74-0b6d-43bb-8612-3f265960dae1', 'ada6eb74-0b6d-43bb-8612-3f265960dae1', NOW() - INTERVAL '5 days', NOW() - INTERVAL '2 days', NULL, 'ASN-2026-05-777777', 12, NULL, 'Mumbai boutique transfer.', 'Jewelry collection transfer.'),
-('30000000-0000-0000-0000-000000000065', 'dc_replenishment', 'DC-EUROPE-01', '00000000-0000-0000-0000-000000000001', 'in_transit', NULL, NULL, NULL, NOW() - INTERVAL '12 hours', NULL, 'ASN-2026-05-999999', 40, NULL, NULL, 'Monthly leather goods replenishment.')
+('30000000-0000-0000-0000-000000000065', 'dc_replenishment', 'DC-EUROPE-01', '00000000-0000-0000-0000-000000000001', 'in_transit', NULL, NULL, NULL, NOW() - INTERVAL '12 hours', NULL, 'ASN-2026-05-999999', 40, NULL, NULL, 'Monthly leather goods replenishment.'),
+('30000000-0000-0000-0000-000000000066', 'dc_replenishment', 'DC-EUROPE-01', '00000000-0000-0000-0000-000000000001', 'received', NULL, NULL, NULL, NOW() - INTERVAL '10 days', NOW() - INTERVAL '8 days', 'ASN-2026-05-111111', 20, 20, NULL, 'Accessories and eyewear restock. All items received.'),
+('30000000-0000-0000-0000-000000000067', 'dc_replenishment', 'DC-EUROPE-02', '00000000-0000-0000-0000-000000000001', 'completed', NULL, NULL, NULL, NOW() - INTERVAL '18 days', NOW() - INTERVAL '15 days', 'ASN-2026-04-555555', 10, 10, NULL, 'Bracelets and handbags quarterly replenishment.'),
+('30000000-0000-0000-0000-000000000068', 'vendor_return', '00000000-0000-0000-0000-000000000001', 'VEND-LUMIERE-HQ', 'in_transit', 'ada6eb74-0b6d-43bb-8612-3f265960dae1', NULL, NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NULL, NULL, 5, NULL, 'Overstock return for previous season items.', '[OVERSTOCK]'),
+('30000000-0000-0000-0000-000000000069', 'vendor_return', '00000000-0000-0000-0000-000000000001', 'VEND-EXT-042', 'completed', 'ada6eb74-0b6d-43bb-8612-3f265960dae1', 'ada6eb74-0b6d-43bb-8612-3f265960dae1', NOW() - INTERVAL '14 days', NOW() - INTERVAL '12 days', NOW() - INTERVAL '10 days', NULL, 2, 2, 'Defective smart watch mechanisms.', '[DEFECTIVE]')
 ON CONFLICT (id) DO NOTHING;
 
 -- ==========================================
@@ -101,7 +106,21 @@ INSERT INTO movement_items (id, movement_id, product_id, quantity, reason) VALUE
 ('30000000-0000-0000-0000-00000000004B', '30000000-0000-0000-0000-000000000064', '30000000-0000-0000-0000-000000000002', 6, NULL),
 ('30000000-0000-0000-0000-00000000004C', '30000000-0000-0000-0000-000000000064', '30000000-0000-0000-0000-000000000003', 6, NULL),
 ('30000000-0000-0000-0000-00000000004E', '30000000-0000-0000-0000-000000000065', '30000000-0000-0000-0000-000000000005', 20, NULL),
-('30000000-0000-0000-0000-00000000004F', '30000000-0000-0000-0000-000000000065', '30000000-0000-0000-0000-000000000006', 20, NULL)
+('30000000-0000-0000-0000-00000000004F', '30000000-0000-0000-0000-000000000065', '30000000-0000-0000-0000-000000000006', 20, NULL),
+-- Movement items for ASN-2026-05-987654 (DC replenishment to Paris, 15 items expected)
+('30000000-0000-0000-0000-000000000051', '30000000-0000-0000-0000-000000000050', '30000000-0000-0000-0000-000000000009', 8, 'Nuit Royale EDP restock'),
+('30000000-0000-0000-0000-000000000052', '30000000-0000-0000-0000-000000000050', '30000000-0000-0000-0000-000000000006', 4, 'Crocodile wallet restock'),
+('30000000-0000-0000-0000-000000000053', '30000000-0000-0000-0000-000000000050', '30000000-0000-0000-0000-00000000000B', 3, 'Belt restock'),
+-- Movement items for completed DC replenishments
+('30000000-0000-0000-0000-000000000054', '30000000-0000-0000-0000-000000000066', '30000000-0000-0000-0000-000000000007', 10, 'Sunglasses seasonal push'),
+('30000000-0000-0000-0000-000000000055', '30000000-0000-0000-0000-000000000066', '30000000-0000-0000-0000-000000000008', 8, 'Scarf restock'),
+('30000000-0000-0000-0000-000000000056', '30000000-0000-0000-0000-000000000066', '30000000-0000-0000-0000-00000000000A', 2, 'Diamond earrings replenishment'),
+('30000000-0000-0000-0000-000000000057', '30000000-0000-0000-0000-000000000067', '30000000-0000-0000-0000-000000000004', 6, NULL),
+('30000000-0000-0000-0000-000000000058', '30000000-0000-0000-0000-000000000067', '30000000-0000-0000-0000-000000000005', 4, NULL),
+-- Vendor Return items
+('30000000-0000-0000-0000-000000000059', '30000000-0000-0000-0000-000000000068', '30000000-0000-0000-0000-000000000004', 3, 'Overstock'),
+('30000000-0000-0000-0000-00000000005A', '30000000-0000-0000-0000-000000000068', '30000000-0000-0000-0000-00000000000B', 2, 'Overstock'),
+('30000000-0000-0000-0000-00000000005B', '30000000-0000-0000-0000-000000000069', '30000000-0000-0000-0000-00000000000C', 2, 'Defective')
 ON CONFLICT (id) DO NOTHING;
 
 -- ==========================================

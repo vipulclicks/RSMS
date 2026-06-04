@@ -7,7 +7,10 @@ struct CycleCountSectionView: View {
     
     @State private var showCheckedItems = false
     @State private var showDiscrepancySheet = false
-    @State private var discrepancyVM = DiscrepancyReportViewModel()
+    @State private var showInventorySheet = false
+    @State private var showPendingSheet = false
+    @State private var showMismatchesSheet = false
+    @State private var selectedProductToView: Product? = nil
 
     private var columns: [GridItem] {
         if horizontalSizeClass == .compact {
@@ -17,7 +20,6 @@ struct CycleCountSectionView: View {
             ]
         } else {
             return [
-                GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible())
@@ -43,13 +45,6 @@ struct CycleCountSectionView: View {
             // KPI Cards Row
             cycleCountKPIRow
 
-            // Pending Items
-            if !cycleCountVM.pendingItems.isEmpty {
-                cycleCountPendingList
-            } else {
-                cycleCountAllClear
-            }
-
             // Verified / Checked toggle
             if !cycleCountVM.checkedItems.isEmpty {
                 cycleCountCheckedSection
@@ -58,85 +53,70 @@ struct CycleCountSectionView: View {
         .sheet(item: $cycleCountVM.itemToCount) { item in
             cycleCountSheet(for: item)
         }
-        .sheet(isPresented: $showDiscrepancySheet) {
-            ReportDiscrepancyView(viewModel: discrepancyVM)
-                .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showMismatchesSheet) {
+            mismatchesListSheet
         }
-        .task {
-            await discrepancyVM.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+        .sheet(isPresented: $showInventorySheet) {
+            inventoryListSheet
+        }
+        .sheet(isPresented: $showPendingSheet) {
+            pendingChecksSheet
+        }
+        .fullScreenCover(item: $selectedProductToView) { product in
+            ProductDetailSheet(
+                product: product,
+                stockItem: stockItem(for: product)
+            )
         }
     }
 
     // MARK: Cycle Count KPI Row
     private var cycleCountKPIRow: some View {
         LazyVGrid(columns: columns, spacing: 16) {
-            cycleCountKPICard(
-                icon: "shippingbox.fill",
-                value: "\(cycleCountVM.totalInventory)",
-                label: "Total Inventory",
-                color: RSMSTheme.gold
-            )
-            cycleCountKPICard(
-                icon: "clock.badge.exclamationmark.fill",
-                value: "\(cycleCountVM.pendingItems.count)",
-                label: "Pending Checks",
-                color: RSMSTheme.warning
-            )
-            cycleCountKPICard(
-                icon: "exclamationmark.triangle.fill",
-                value: "\(cycleCountVM.openMismatches)",
-                label: "Mismatches",
-                color: cycleCountVM.openMismatches > 0 ? RSMSTheme.danger : RSMSTheme.success
-            )
-            
-            // Reported Issues — tappable card
+            // Total Inventory — tappable
             Button {
-                showDiscrepancySheet = true
+                showInventorySheet = true
             } label: {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .center) {
-                        Image(systemName: "exclamationmark.bubble.fill")
-                            .font(.title3)
-                            .foregroundStyle(RSMSTheme.danger)
-                        Spacer()
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(RSMSTheme.danger.opacity(0.5))
-                    }
-                    
-                    Spacer(minLength: 0)
-                    
-                    Text("\(discrepancyVM.submittedReports.filter { $0.status == .open }.count)")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                    
-                    Text("Reported Issues")
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.8)
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 100)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(RSMSTheme.surfacePrimary)
+                tappableKPICard(
+                    icon: "shippingbox.fill",
+                    value: "\(cycleCountVM.totalInventory)",
+                    label: "Total Inventory",
+                    color: RSMSTheme.gold
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(RSMSTheme.danger.opacity(0.2), lineWidth: 1)
+            }
+            .buttonStyle(.plain)
+            
+            // Pending Checks — tappable
+            Button {
+                showPendingSheet = true
+            } label: {
+                tappableKPICard(
+                    icon: "clock.badge.exclamationmark.fill",
+                    value: "\(cycleCountVM.pendingItems.count)",
+                    label: "Pending Checks",
+                    color: RSMSTheme.warning
                 )
-                .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
+            }
+            .buttonStyle(.plain)
+            
+            // Mismatches — tappable
+            Button {
+                showMismatchesSheet = true
+            } label: {
+                tappableKPICard(
+                    icon: "exclamationmark.triangle.fill",
+                    value: "\(cycleCountVM.openMismatches)",
+                    label: "Mismatches",
+                    color: cycleCountVM.openMismatches > 0 ? RSMSTheme.danger : RSMSTheme.success
+                )
             }
             .buttonStyle(.plain)
         }
     }
 
-    private func cycleCountKPICard(icon: String, value: String, label: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    // MARK: - Tappable KPI Card
+    private func tappableKPICard(icon: String, value: String, label: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center) {
                 Image(systemName: icon)
                     .font(.title3)
@@ -147,7 +127,7 @@ struct CycleCountSectionView: View {
             Spacer(minLength: 0)
             
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
@@ -158,9 +138,9 @@ struct CycleCountSectionView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.8)
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 100)
+        .frame(height: 128)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(RSMSTheme.surfacePrimary)
@@ -295,32 +275,25 @@ struct CycleCountSectionView: View {
     // MARK: Cycle Count Checked Section
     private var cycleCountCheckedSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    showCheckedItems.toggle()
-                }
-            } label: {
-                HStack {
-                    Text("Verified this period")
-                        .font(.caption.weight(.semibold))
-                        .tracking(1.5)
-                        .foregroundStyle(RSMSTheme.gold)
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Text("\(cycleCountVM.checkedItems.count)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.success)
-                        Image(systemName: showCheckedItems ? "chevron.up" : "chevron.down")
-                            .font(.caption2)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-                }
+            HStack {
+                Text("Verified this period")
+                    .font(.caption.weight(.semibold))
+                    .tracking(1.5)
+                    .foregroundStyle(RSMSTheme.gold)
+                Spacer()
+                Text("\(cycleCountVM.checkedItems.count) items")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textTertiary)
             }
-            .buttonStyle(.plain)
 
-            if showCheckedItems {
-                VStack(spacing: 0) {
-                    ForEach(Array(cycleCountVM.checkedItems.prefix(10).enumerated()), id: \.element.id) { index, item in
+            VStack(spacing: 0) {
+                let limit = showCheckedItems ? cycleCountVM.checkedItems.count : 2
+                let visibleItems = Array(cycleCountVM.checkedItems.prefix(limit).enumerated())
+
+                ForEach(visibleItems, id: \.element.id) { index, item in
+                    Button {
+                        selectedProductToView = item.product
+                    } label: {
                         HStack(spacing: 14) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
@@ -351,27 +324,56 @@ struct CycleCountSectionView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
+                    }
+                    .buttonStyle(.plain)
 
-                        if index < min(cycleCountVM.checkedItems.count, 10) - 1 {
-                            Rectangle()
-                                .fill(RSMSTheme.divider)
-                                .frame(height: 0.5)
-                                .padding(.horizontal, 16)
-                        }
+                    // Divider after every item except the last one (if not showing 'View more' button)
+                    if index < visibleItems.count - 1 || (!showCheckedItems && cycleCountVM.checkedItems.count > 2) {
+                        Rectangle()
+                            .fill(RSMSTheme.divider)
+                            .frame(height: 0.5)
+                            .padding(.horizontal, 16)
                     }
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(RSMSTheme.surfacePrimary)
-                        .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(RSMSTheme.success.opacity(0.2), lineWidth: 1)
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if !showCheckedItems && cycleCountVM.checkedItems.count > 2 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showCheckedItems = true
+                        }
+                    } label: {
+                        Text("View all")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.gold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                } else if showCheckedItems && cycleCountVM.checkedItems.count > 2 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showCheckedItems = false
+                        }
+                    } label: {
+                        Text("Show less")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(RSMSTheme.surfacePrimary)
+                    .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(RSMSTheme.success.opacity(0.2), lineWidth: 1)
+            )
         }
     }
 
@@ -399,6 +401,32 @@ struct CycleCountSectionView: View {
                             .foregroundStyle(RSMSTheme.gold)
                     }
                     .padding(.top, 8)
+
+                    // Serial Code Entry
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("SERIAL CODE")
+                            .font(.caption.weight(.semibold))
+                            .tracking(1.5)
+                            .foregroundStyle(RSMSTheme.gold)
+                        
+                        HStack(spacing: 10) {
+                            Image(systemName: "number")
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(RSMSTheme.textTertiary)
+                            TextField("Enter serial or barcode number", text: $cycleCountVM.serialCode)
+                                .font(.subheadline)
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.characters)
+                        }
+                        .padding(14)
+                        .background(RSMSTheme.surfacePrimary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(RSMSTheme.border, lineWidth: 1)
+                        )
+                    }
 
                     // Expected vs entry
                     VStack(spacing: 0) {
@@ -484,20 +512,288 @@ struct CycleCountSectionView: View {
             }
             .background(RSMSTheme.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Enter Count")
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("ENTER COUNT")
-                        .font(.system(.caption, design: .serif, weight: .light))
-                        .tracking(4)
-                        .foregroundStyle(RSMSTheme.gold)
-                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { cycleCountVM.itemToCount = nil }
-                        .foregroundStyle(RSMSTheme.textSecondary)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MARK: - Total Inventory Sheet
+    // ═══════════════════════════════════════════════════════════
+    
+    private var inventoryListSheet: some View {
+        NavigationStack {
+            let allItems = cycleCountVM.pendingItems + cycleCountVM.checkedItems
+            
+            Group {
+                if allItems.isEmpty {
+                    ContentUnavailableView(
+                        "No Inventory",
+                        systemImage: "shippingbox",
+                        description: Text("No stock items found for this store.")
+                    )
+                } else {
+                    List {
+                        ForEach(allItems) { item in
+                            Button {
+                                selectedProductToView = item.product
+                            } label: {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(RSMSTheme.gold.opacity(0.1))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: "shippingbox.fill")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(RSMSTheme.gold)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(item.product.name)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                            .lineLimit(1)
+                                        Text(item.product.sku)
+                                            .font(.caption.monospaced())
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .trailing, spacing: 3) {
+                                        Text("\(item.expectedQty)")
+                                            .font(.headline.weight(.bold))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                        Text("units")
+                                            .font(.caption2)
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                        .padding(.leading, 4)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(RSMSTheme.surfacePrimary)
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationTitle("Total Inventory")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") { showInventorySheet = false }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .fullScreenCover(item: $selectedProductToView) { product in
+            ProductDetailSheet(
+                product: product,
+                stockItem: stockItem(for: product)
+            )
+        }
+    }
+
+    private func stockItem(for product: Product) -> StockItem? {
+        appVM.dataStore.stockItems.first {
+            $0.productId == product.id && $0.storeId == appVM.currentStoreId
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MARK: - Pending Checks Sheet
+    // ═══════════════════════════════════════════════════════════
+    
+    private var pendingChecksSheet: some View {
+        NavigationStack {
+            Group {
+                if cycleCountVM.pendingItems.isEmpty {
+                    ContentUnavailableView(
+                        "All Clear",
+                        systemImage: "checkmark.seal.fill",
+                        description: Text("No pending verification items.")
+                    )
+                } else {
+                    List {
+                        ForEach(cycleCountVM.pendingItems) { item in
+                            Button {
+                                showPendingSheet = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                    cycleCountVM.enteredCount = "\(item.expectedQty)"
+                                    cycleCountVM.itemToCount = item
+                                }
+                            } label: {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(RSMSTheme.warning.opacity(0.1))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: "clock.badge.exclamationmark.fill")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(RSMSTheme.warning)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(item.product.name)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                            .lineLimit(1)
+                                        HStack(spacing: 6) {
+                                            Text(item.product.sku)
+                                                .font(.caption.monospaced())
+                                                .foregroundStyle(RSMSTheme.textTertiary)
+                                            Text("·")
+                                                .foregroundStyle(RSMSTheme.textTertiary)
+                                            Text("Qty: \(item.expectedQty)")
+                                                .font(.caption)
+                                                .foregroundStyle(RSMSTheme.textTertiary)
+                                        }
+                                        if let last = item.lastChecked {
+                                            Text("Last: \(last.formatted(date: .abbreviated, time: .omitted))")
+                                                .font(.caption2)
+                                                .foregroundStyle(RSMSTheme.warning.opacity(0.8))
+                                        } else {
+                                            Text("Never verified")
+                                                .font(.caption2)
+                                                .foregroundStyle(RSMSTheme.danger.opacity(0.8))
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                }
+                            }
+                            .listRowBackground(RSMSTheme.surfacePrimary)
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationTitle("Pending Checks")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") { showPendingSheet = false }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MARK: - Mismatches List Sheet
+    // ═══════════════════════════════════════════════════════════
+    
+    private var mismatchesListSheet: some View {
+        NavigationStack {
+            Group {
+                if cycleCountVM.openVarianceItems.isEmpty {
+                    ContentUnavailableView(
+                        "No Mismatches",
+                        systemImage: "checkmark.circle.fill",
+                        description: Text("All stock levels match the system records.")
+                    )
+                } else {
+                    List {
+                        ForEach(cycleCountVM.openVarianceItems) { variance in
+                            Button {
+                                if let product = appVM.dataStore.products.first(where: { $0.id == variance.productId }) {
+                                    selectedProductToView = product
+                                }
+                            } label: {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(RSMSTheme.danger.opacity(0.1))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(RSMSTheme.danger)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        if let product = appVM.dataStore.products.first(where: { $0.id == variance.productId }) {
+                                            Text(product.name)
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(RSMSTheme.textPrimary)
+                                                .lineLimit(1)
+                                            HStack(spacing: 6) {
+                                                Text(product.sku)
+                                                    .font(.caption.monospaced())
+                                                    .foregroundStyle(RSMSTheme.textTertiary)
+                                            }
+                                        } else {
+                                            Text("Unknown Product")
+                                                .font(.subheadline.weight(.semibold))
+                                                .foregroundStyle(RSMSTheme.textPrimary)
+                                        }
+                                        
+                                        Text("Reported: \(variance.reportedAt.formatted(date: .abbreviated, time: .shortened))")
+                                            .font(.caption2)
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    VStack(alignment: .trailing, spacing: 3) {
+                                        let diff = variance.actualQty - variance.expectedQty
+                                        let isExcess = diff > 0
+                                        Text("\(isExcess ? "+" : "")\(diff)")
+                                            .font(.headline.weight(.bold))
+                                            .foregroundStyle(isExcess ? RSMSTheme.warning : RSMSTheme.danger)
+                                        
+                                        Text("Variance")
+                                            .font(.caption2)
+                                            .foregroundStyle(RSMSTheme.textTertiary)
+                                    }
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textTertiary)
+                                        .padding(.leading, 4)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(RSMSTheme.surfacePrimary)
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .background(RSMSTheme.background.ignoresSafeArea())
+            .navigationTitle("Mismatches")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") { showMismatchesSheet = false }
+                }
+            }
+        }
+        .presentationDragIndicator(.visible)
+        .fullScreenCover(item: $selectedProductToView) { product in
+            ProductDetailSheet(
+                product: product,
+                stockItem: stockItem(for: product)
+            )
+        }
     }
 }

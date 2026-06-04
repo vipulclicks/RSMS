@@ -19,7 +19,7 @@ struct UniversalCart: Codable, Identifiable, Hashable {
     let associateId: UUID
     let clientId: UUID?
     let storeId: UUID?
-    let status: CartStatus
+    var status: CartStatus
     let note: String?
     let createdAt: Date
     let updatedAt: Date
@@ -202,6 +202,9 @@ struct DiscountApprovalRequest: Codable, Identifiable, Hashable {
 enum NotificationType: String, Codable, CaseIterable {
     case approvalRequest = "approval_request"
     case approvalDecision = "approval_decision"
+    case complianceAlert = "compliance_alert"
+    case sourcingRequest = "sourcing_request"
+    case wishlistRestock = "wishlist_restock"
 }
 
 struct AppNotification: Codable, Identifiable, Hashable {

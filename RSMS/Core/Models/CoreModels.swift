@@ -41,12 +41,14 @@ struct Store: Codable, Identifiable, Hashable {
     let timezone: String
     let phone: String?
     let email: String?
+    let isDc: Bool
     let isActive: Bool
     let createdAt: Date
     let updatedAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, name, code, country, city, address, timezone, phone, email
+        case isDc        = "is_dc"
         case isActive    = "is_active"
         case createdAt   = "created_at"
         case updatedAt   = "updated_at"

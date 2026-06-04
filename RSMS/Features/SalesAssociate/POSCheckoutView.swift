@@ -310,6 +310,7 @@ struct POSCheckoutView: View {
             }
         }
     }
+
 }
 
 // MARK: - Screen ViewModel

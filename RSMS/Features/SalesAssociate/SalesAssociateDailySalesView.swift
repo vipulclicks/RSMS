@@ -59,6 +59,12 @@ struct SalesAssociateDailySalesView: View {
         let timeString = txn.createdAt.formatted(date: .omitted, time: .shortened)
         let commission = appViewModel.dataStore.commissions.first(where: { $0.transactionId == txn.id })?.amount ?? (txn.totalAmount * 0.05)
         
+        let isOnline = appViewModel.dataStore.tenders.contains(where: {
+            $0.transactionId == txn.id && ($0.reference?.contains("ONLINE") == true || $0.reference == "online")
+        }) || appViewModel.dataStore.checkoutSessions.contains(where: {
+            $0.cartId == txn.cartId && $0.paymentMethod == .online
+        })
+        
         return VStack(spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -75,9 +81,20 @@ struct SalesAssociateDailySalesView: View {
                     Text("₹\(Int(txn.totalAmount).formatted())")
                         .font(.title3.bold())
                         .foregroundStyle(RSMSTheme.primary)
-                    Text(txn.status.rawValue.capitalized)
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(RSMSTheme.success)
+                    HStack(spacing: 4) {
+                        if isOnline {
+                            Text("ONLINE")
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(RSMSTheme.primary.opacity(0.15))
+                                .foregroundStyle(RSMSTheme.primary)
+                                .cornerRadius(4)
+                        }
+                        Text(txn.status.rawValue.capitalized)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(RSMSTheme.success)
+                    }
                 }
             }
             

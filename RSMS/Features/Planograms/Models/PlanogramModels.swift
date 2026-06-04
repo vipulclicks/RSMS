@@ -127,6 +127,7 @@ enum ZoneType: String, Codable, Hashable, Sendable {
     case table
     case wall
     case window
+    case cashWrap
 }
 
 struct MerchandisingZone: Identifiable, Hashable, Codable, Sendable {

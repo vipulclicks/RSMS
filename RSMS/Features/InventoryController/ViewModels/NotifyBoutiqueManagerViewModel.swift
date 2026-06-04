@@ -44,6 +44,8 @@ final class NotifyBoutiqueManagerViewModel {
     // MARK: - State
     
     var lowStockItems: [LowStockAlertItem] = []
+    var isLoading = false
+    var errorMessage: String?
     
     // MARK: - Computed Properties for Summary Cards
     
@@ -60,60 +62,100 @@ final class NotifyBoutiqueManagerViewModel {
     }
     
     var activeRequestsCount: Int {
-        // Mock logic: some subset of items are awaiting refill. 
-        // For realism, let's say items that are notified are active requests.
+        // Items that are notified are considered active requests for replenishment.
         notifiedCount
     }
     
     // MARK: - Initialization
     
-    init() {
-        loadMockData()
-    }
+    init() {}
     
     // MARK: - Actions
     
-    func notifyManager(for itemID: UUID) {
+    func notifyManager(for itemID: UUID, dataStore: DataStore, user: UserProfile) {
         if let index = lowStockItems.firstIndex(where: { $0.id == itemID }) {
             lowStockItems[index].isManagerNotified = true
+            let item = lowStockItems[index]
+            
+            Task {
+                do {
+                    // Try to find the BM for this store
+                    if dataStore.users.isEmpty {
+                        try await dataStore.fetchUsers()
+                    }
+                    guard let storeId = user.storeId else { return }
+                    
+                    let bms = dataStore.users.filter { $0.role == .boutiqueManager && $0.storeId == storeId }
+                    guard let bm = bms.first else { return }
+                    
+                    try await dataStore.createNotification(
+                        recipientId: bm.id,
+                        title: "Low Stock Alert",
+                        message: "\(item.product.name) is running low (\(item.currentQty) left). Please review.",
+                        type: .sourcingRequest,
+                        relatedEntityId: item.product.id
+                    )
+                    
+                    dataStore.logAudit(
+                        storeId: storeId,
+                        action: "Manager Notified (Low Stock)",
+                        entityType: "Product",
+                        entityId: item.product.id,
+                        performedBy: user.id,
+                        details: "Notified BM about \(item.product.sku). Qty: \(item.currentQty)"
+                    )
+                } catch {
+                    print("Failed to notify manager: \(error)")
+                }
+            }
         }
     }
     
-    // MARK: - Mock Data Generation
-    
-    private func loadMockData() {
-        // Generating some realistic mock data based on the prompt's requested categories
-        // Handbags, Watches, Heels, Dresses
+    func load(dataStore: DataStore, storeId: UUID?) async {
+        guard let storeId = storeId else { return }
         
-        let bag = Product(
-            id: UUID(), sku: "LTH-BAG-CL-001", name: "Vendôme Clutch", category: "Handbags", subcategory: "Evening",
-            brand: "Maison Lumière", collection: "Vendôme", material: "Calfskin", price: 3200, currency: "EUR",
-            imageURL: nil, description: "", isActive: true, createdAt: .now, updatedAt: .now
-        )
-        
-        let watch = Product(
-            id: UUID(), sku: "WCH-AUT-RG-001", name: "Lumière Grande Complication", category: "Watches", subcategory: "Automatic",
-            brand: "Maison Lumière", collection: "Heritage", material: "Rose Gold", price: 38000, currency: "EUR",
-            imageURL: nil, description: "", isActive: true, createdAt: .now, updatedAt: .now
-        )
-        
-        let heel = Product(
-            id: UUID(), sku: "SHS-HL-BK-001", name: "Parisienne Stiletto", category: "Heels", subcategory: "Pumps",
-            brand: "Maison Lumière", collection: "Classics", material: "Patent Leather", price: 950, currency: "EUR",
-            imageURL: nil, description: "", isActive: true, createdAt: .now, updatedAt: .now
-        )
-        
-        let dress = Product(
-            id: UUID(), sku: "RTW-DRS-SL-001", name: "Midnight Silk Gown", category: "Dresses", subcategory: "Evening Wear",
-            brand: "Maison Lumière", collection: "Gala", material: "100% Silk", price: 4500, currency: "EUR",
-            imageURL: nil, description: "", isActive: true, createdAt: .now, updatedAt: .now
-        )
-        
-        lowStockItems = [
-            LowStockAlertItem(id: bag.id, product: bag, currentQty: 1, thresholdQty: 5, lastUpdated: Calendar.current.date(byAdding: .minute, value: -12, to: .now)!, isManagerNotified: false),
-            LowStockAlertItem(id: watch.id, product: watch, currentQty: 0, thresholdQty: 2, lastUpdated: Calendar.current.date(byAdding: .hour, value: -1, to: .now)!, isManagerNotified: false),
-            LowStockAlertItem(id: heel.id, product: heel, currentQty: 2, thresholdQty: 8, lastUpdated: Calendar.current.date(byAdding: .minute, value: -45, to: .now)!, isManagerNotified: true),
-            LowStockAlertItem(id: dress.id, product: dress, currentQty: 1, thresholdQty: 4, lastUpdated: Calendar.current.date(byAdding: .hour, value: -3, to: .now)!, isManagerNotified: false)
-        ]
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await dataStore.fetchProducts()
+            try await dataStore.fetchStockItems()
+            
+            // Filter stock items for the current store
+            let storeStock = dataStore.stockItems.filter { $0.storeId == storeId && $0.status == .available }
+            
+            // Group by product
+            var qtyByProduct: [UUID: Int] = [:]
+            for item in storeStock {
+                qtyByProduct[item.productId, default: 0] += item.quantity
+            }
+            
+            var alerts: [LowStockAlertItem] = []
+            
+            // Check all products for this store (assuming if it's not in stockItems, quantity is 0, but we only have what is returned. Wait, a store might have 0 of a product so it might not even appear in stockItems. For simplicity, we check products that have some stock or previously had stock.)
+            for product in dataStore.products {
+                let qty = qtyByProduct[product.id] ?? 0
+                let threshold = 3 // Hardcoded threshold since it's not in the database schema yet
+                
+                if qty <= threshold {
+                    alerts.append(
+                        LowStockAlertItem(
+                            id: product.id,
+                            product: product,
+                            currentQty: qty,
+                            thresholdQty: threshold,
+                            lastUpdated: .now,
+                            isManagerNotified: false
+                        )
+                    )
+                }
+            }
+            
+            // Sort by lowest quantity first
+            self.lowStockItems = alerts.sorted { $0.currentQty < $1.currentQty }
+            
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 }

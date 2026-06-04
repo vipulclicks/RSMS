@@ -15,10 +15,12 @@ struct StoreDashboardView: View {
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var cycleCountVM = CycleCountViewModel()
     @State private var lookbookVM = LookbookViewModel()
-    @State private var navPath: [DashboardRoute] = []
+    @State private var navPath = NavigationPath()
     @State private var showingNotifications = false
     @State private var showingProfile = false
+    @State private var showingSalesBreakdown = false
     @State private var carouselSelection: Int = 0
+    @State private var selectedSalesDate: Date? = nil
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
@@ -58,7 +60,7 @@ struct StoreDashboardView: View {
                         
                         CycleCountSectionView(cycleCountVM: cycleCountVM)
                         
-                        LookbookSectionView(lookbookVM: lookbookVM)
+                        LookbookSectionView(lookbookVM: lookbookVM, navPath: $navPath)
                     }
                     .padding(24)
                 }
@@ -91,7 +93,7 @@ struct StoreDashboardView: View {
                 }
             }
             .navigationDestination(for: Lookbook.self) { lookbook in
-                LookbookDetailView(lookbook: lookbook)
+                LookbookDetailView(lookbook: lookbook, lookbookVM: lookbookVM)
             }
             .navigationDestination(isPresented: $showingProfile) {
                 BoutiqueManagerProfileView()
@@ -107,6 +109,42 @@ struct StoreDashboardView: View {
                             }
                         }
                 }
+            }
+            .sheet(isPresented: $showingSalesBreakdown) {
+                NavigationStack {
+                    Group {
+                        if dashboardVM.todaySalesByStaff.isEmpty {
+                            ContentUnavailableView("No Sales Today", systemImage: "indianrupeesign.circle", description: Text("There are no completed transactions for today yet."))
+                        } else {
+                            List(dashboardVM.todaySalesByStaff) { staff in
+                                HStack {
+                                    Text(staff.staffName)
+                                        .font(.headline)
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                    Spacer()
+                                    Text(dashboardVM.formatCurrency(staff.totalSales))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.primaryDark)
+                                }
+                                .padding(.vertical, 4)
+                                .listRowBackground(RSMSTheme.surfacePrimary)
+                            }
+                            .listStyle(.insetGrouped)
+                            .scrollContentBackground(.hidden)
+                        }
+                    }
+                    .background(RSMSTheme.background.ignoresSafeArea())
+                    .navigationTitle("Today's Sales Breakdown")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { showingSalesBreakdown = false }
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.gold)
+                        }
+                    }
+                }
+                .presentationDetents([.medium, .large])
             }
             .task {
                 if let storeId = appVM.currentStoreId {
@@ -189,6 +227,7 @@ struct StoreDashboardView: View {
                 }
             }
         }
+        .buttonStyle(.plain)
     }
     
     private func getInitials(from name: String) -> String {
@@ -220,16 +259,21 @@ struct StoreDashboardView: View {
             alignment: .leading,
             spacing: 16
         ) {
-            KPICard(
-                icon: "indianrupeesign.square.fill",
-                value: dashboardVM.formatCurrency(dashboardVM.todaySales),
-                label: "Today's Sales",
-                trend: "\(dashboardVM.todayTransactions.count) transactions",
-                trendColor: RSMSTheme.success
-            )
+            Button {
+                showingSalesBreakdown = true
+            } label: {
+                KPICard(
+                    icon: "indianrupeesign.square.fill",
+                    value: dashboardVM.formatCurrency(dashboardVM.todaySales),
+                    label: "Today's Sales",
+                    trend: "\(dashboardVM.todayTransactions.count) transactions",
+                    trendColor: RSMSTheme.success
+                )
+            }
+            .buttonStyle(.plain)
             
             Button {
-                navPath.append(.appointments)
+                navPath.append(DashboardRoute.appointments)
             } label: {
                 KPICard(
                     icon: "calendar.badge.clock",
@@ -241,7 +285,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                navPath.append(.lowStock)
+                navPath.append(DashboardRoute.lowStock)
             } label: {
                 KPICard(
                     icon: "exclamationmark.triangle.fill",
@@ -255,7 +299,7 @@ struct StoreDashboardView: View {
             .buttonStyle(.plain)
             
             Button {
-                navPath.append(.approvals)
+                navPath.append(DashboardRoute.approvals)
             } label: {
                 KPICard(
                     icon: "tag.fill",
@@ -291,14 +335,12 @@ struct StoreDashboardView: View {
                 TabView(selection: $carouselSelection) {
                     storeSalesOverviewSlide
                         .tag(0)
-                    
-                    ForEach(Array(dashboardVM.periodAssociateProgress.enumerated()), id: \.element.id) { index, progress in
-                        associateProgressSlide(progress)
-                            .tag(index + 1)
-                    }
+                        
+                    storeSalesChartSlide
+                        .tag(1)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                .frame(height: 420)
+                .frame(height: 330)
                 .onAppear {
                     UIPageControl.appearance().currentPageIndicatorTintColor = UIColor(RSMSTheme.primaryDark)
                     UIPageControl.appearance().pageIndicatorTintColor = UIColor(RSMSTheme.surfaceTertiary)
@@ -326,14 +368,14 @@ struct StoreDashboardView: View {
     }
     
     private var storeSalesOverviewSlide: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .center, spacing: 20) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Store Sales")
                         .font(.headline)
                         .foregroundStyle(RSMSTheme.textSecondary)
                     Text(dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount))
-                        .font(.system(size: 34, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(RSMSTheme.primaryDark)
                 }
                 Spacer()
@@ -362,91 +404,248 @@ struct StoreDashboardView: View {
                     .clipShape(Capsule())
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            if !dashboardVM.previousDaysSales.isEmpty {
-                Chart {
-                    ForEach(dashboardVM.previousDaysSales) { daySales in
-                        LineMark(
-                            x: .value("Date", daySales.date),
-                            y: .value("Sales", daySales.amount)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [RSMSTheme.gold, RSMSTheme.primaryDark],
-                                startPoint: .leading,
-                                endPoint: .trailing
+            HStack(spacing: 32) {
+                ZStack {
+                    Chart {
+                        if dashboardVM.salesTarget > 0 {
+                            SectorMark(
+                                angle: .value("Achieved", dashboardVM.periodAchievedAmount),
+                                innerRadius: .ratio(0.8),
+                                angularInset: 2.0
                             )
-                        )
-                        .lineStyle(StrokeStyle(lineWidth: 4, lineCap: .round))
-                        
-                        PointMark(
-                            x: .value("Date", daySales.date),
-                            y: .value("Sales", daySales.amount)
-                        )
-                        .foregroundStyle(RSMSTheme.primaryDark)
-                        .annotation(position: .top) {
-                            if daySales.amount > 0 {
-                                Text(dashboardVM.formatCurrency(daySales.amount))
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            .cornerRadius(4)
+                            .foregroundStyle(RSMSTheme.gold)
+                            
+                            if dashboardVM.salesTarget > dashboardVM.periodAchievedAmount {
+                                SectorMark(
+                                    angle: .value("Remaining", dashboardVM.salesTarget - dashboardVM.periodAchievedAmount),
+                                    innerRadius: .ratio(0.8),
+                                    angularInset: 2.0
+                                )
+                                .cornerRadius(4)
+                                .foregroundStyle(RSMSTheme.surfaceTertiary)
                             }
-                        }
-                        
-                        AreaMark(
-                            x: .value("Date", daySales.date),
-                            y: .value("Sales", daySales.amount)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [RSMSTheme.gold.opacity(0.3), RSMSTheme.gold.opacity(0.0)],
-                                startPoint: .top,
-                                endPoint: .bottom
+                        } else {
+                            // Full ring when no target exists
+                            SectorMark(
+                                angle: .value("Achieved", 1.0),
+                                innerRadius: .ratio(0.8),
+                                angularInset: 2.0
                             )
-                        )
+                            .cornerRadius(4)
+                            .foregroundStyle(RSMSTheme.gold)
+                        }
+                    }
+                    .frame(width: 140, height: 140)
+                    
+                    VStack(spacing: 4) {
+                        if dashboardVM.salesTarget > 0 {
+                            Text("\(Int(dashboardVM.salesProgress * 100))%")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("of target")
+                                .font(.system(size: 11))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        } else {
+                            Text("0%")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                            Text("No Target")
+                                .font(.system(size: 11))
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                        }
                     }
                 }
-                .frame(height: 160)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day)) { _ in
-                        AxisGridLine()
-                        AxisTick()
-                        AxisValueLabel(format: .dateTime.weekday(.abbreviated))
-                    }
+                
+                VStack(spacing: 20) {
+                    metricRow(label: "Target", value: dashboardVM.formatCurrency(dashboardVM.salesTarget), color: RSMSTheme.textSecondary)
+                    metricRow(label: "Actual", value: dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount), color: RSMSTheme.gold)
+                    
+                    let remaining = max(0, dashboardVM.salesTarget - dashboardVM.periodAchievedAmount)
+                    metricRow(label: "Remaining", value: dashboardVM.formatCurrency(remaining), color: RSMSTheme.gold)
                 }
-                .chartYAxis(.hidden)
-                .padding(.top, 16)
             }
-            
-            if dashboardVM.salesTarget > 0 {
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text("Target")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        Text(dashboardVM.formatCurrency(dashboardVM.salesTarget))
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    Spacer()
-                    VStack(alignment: .trailing) {
-                        Text("Progress")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        Text("\(Int(dashboardVM.salesProgress * 100))%")
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(RSMSTheme.primaryDark)
-                    }
-                }
-                .padding()
-                .background(RSMSTheme.surfaceSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
+            .padding(24)
+            .background(RSMSTheme.surfaceSecondary)
+            .clipShape(RoundedRectangle(cornerRadius: 24))
             
             Spacer()
         }
         .padding(24)
+    }
+    
+    private var storeSalesChartSlide: some View {
+        VStack(alignment: .center, spacing: 16) {
+            HStack(alignment: .top) {
+                Text(dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount))
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(RSMSTheme.primaryDark)
+                
+                Spacer()
+                
+                if dashboardVM.salesIncrementPercentage > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.right")
+                        Text(String(format: "%.1f%%", dashboardVM.salesIncrementPercentage))
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RSMSTheme.success.opacity(0.15))
+                    .foregroundStyle(RSMSTheme.success)
+                    .clipShape(Capsule())
+                } else if dashboardVM.salesIncrementPercentage < 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.down.right")
+                        Text(String(format: "%.1f%%", abs(dashboardVM.salesIncrementPercentage)))
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(RSMSTheme.danger.opacity(0.15))
+                    .foregroundStyle(RSMSTheme.danger)
+                    .clipShape(Capsule())
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            VStack(spacing: 0) {
+                Chart {
+                    ForEach(dashboardVM.previousDaysSales) { dayData in
+                        LineMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 3))
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        
+                        AreaMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [RSMSTheme.primaryDark.opacity(0.3), .clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        
+                        PointMark(
+                            x: .value("Day", dayData.date, unit: .day),
+                            y: .value("Sales", dayData.amount)
+                        )
+                        .foregroundStyle(RSMSTheme.primaryDark)
+                        .symbolSize(selectedSalesDate == dayData.date ? 150 : 50)
+                        .annotation(position: .top) {
+                            if selectedSalesDate != dayData.date && dayData.amount > 0 {
+                                Text(dashboardVM.formatCurrency(dayData.amount))
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                        }
+                        
+                        if let selectedDate = selectedSalesDate, selectedDate == dayData.date {
+                            RuleMark(
+                                x: .value("Selected", selectedDate, unit: .day)
+                            )
+                            .foregroundStyle(Color.gray.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                            .annotation(position: .top, spacing: 10, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                                VStack {
+                                    Text(dashboardVM.formatCurrency(dayData.amount))
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundStyle(RSMSTheme.primaryDark)
+                                    Text(dayData.date, format: .dateTime.day().month())
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(RSMSTheme.surfacePrimary)
+                                        .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
+                                )
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: dashboardVM.previousDaysSales.map { $0.date }) { value in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .foregroundStyle(RSMSTheme.border)
+                        if let date = value.as(Date.self) {
+                            AxisValueLabel(anchor: .top) {
+                                Text(date, format: .dateTime.day().month())
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+                        }
+                    }
+                }
+                .chartYAxis(.hidden)
+                .chartOverlay { proxy in
+                    GeometryReader { geometry in
+                        Rectangle().fill(.clear).contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let location = value.location
+                                        let x = location.x - geometry[proxy.plotAreaFrame].origin.x
+                                        if let date: Date = proxy.value(atX: x) {
+                                            // Find closest date in previousDaysSales
+                                            let closest = dashboardVM.previousDaysSales.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
+                                            if let closestDate = closest?.date {
+                                                selectedSalesDate = closestDate
+                                            }
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        // Do nothing to keep it selected after a tap
+                                    }
+                            )
+                            .simultaneousGesture(
+                                TapGesture(count: 2)
+                                    .onEnded {
+                                        selectedSalesDate = nil
+                                    }
+                            )
+                    }
+                }
+                .frame(height: 150)
+                .padding(.top, 16)
+                .padding(.bottom, 24)
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Target")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        Text(dashboardVM.formatCurrency(dashboardVM.salesTarget))
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Progress")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        Text("\(Int(dashboardVM.salesProgress * 100))%")
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
     }
     
     private func associateProgressSlide(_ progress: BoutiqueDashboardViewModel.AssociateSalesProgress) -> some View {
@@ -508,9 +707,9 @@ struct StoreDashboardView: View {
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     } else {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 38))
-                            .foregroundStyle(RSMSTheme.gold)
+                        Text("0%")
+                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .foregroundStyle(RSMSTheme.primaryDark)
                         Text("No Target")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
