@@ -15,8 +15,10 @@ struct LuxuryFormCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .foregroundStyle(RSMSTheme.primary)
+                if !icon.isEmpty {
+                    Image(systemName: icon)
+                        .foregroundStyle(RSMSTheme.primary)
+                }
                 Text(title.uppercased())
                     .font(.subheadline.weight(.semibold))
                     .tracking(2)

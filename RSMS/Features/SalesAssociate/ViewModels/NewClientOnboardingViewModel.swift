@@ -55,7 +55,7 @@ final class NewClientOnboardingViewModel {
     var preferredMetal = ""
     var preferredGemstone = ""
     var stylePreference = "Classic"
-    var shoppingPreference = "VIP Appointment"
+    var shoppingPreference = "Instore visit"
     var notes = ""
 
     // MARK: - Form State — Important Dates (Anniversaries)
@@ -78,7 +78,7 @@ final class NewClientOnboardingViewModel {
     var isSaving = false
     var showSuccessBanner = false
 
-    static let stepTitles = ["Identity", "Preferences", "Special Dates", "Wishlist", "Privacy"]
+    static let stepTitles = ["Identity", "Preferences", "Special Dates", "Privacy"]
     var stepCount: Int { Self.stepTitles.count }
 
     // MARK: - Validation
