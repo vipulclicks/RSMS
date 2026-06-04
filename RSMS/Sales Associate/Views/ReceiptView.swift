@@ -21,148 +21,29 @@ struct ReceiptView: View {
     @State private var generatedPDFURL: URL? = nil
     @State private var showShareSheet = false
 
+    private var store: Store? {
+        guard let storeId = appVM.currentUser?.storeId else { return nil }
+        return appVM.dataStore.store(by: storeId)
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    
-                    // Header
-                    VStack(spacing: 8) {
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.largeTitle)
-                            .foregroundStyle(RSMSTheme.gold)
-                        Text("Maison Lumière")
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("Official Receipt")
-                            .font(.subheadline)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                    }
-                    .padding(.top, 24)
-                    
-                    // Order Info
-                    VStack(spacing: 12) {
-                        detailRow(title: "Order ID", value: order.id.uuidString.prefix(8).uppercased())
-                        detailRow(title: "Date", value: order.createdAt.formatted())
-                        detailRow(title: "Customer", value: client.fullName)
-                        detailRow(title: "Contact", value: client.phone ?? "")
-                    }
-                    .padding()
-                    .rsmsCard()
-                    
-                    // Items
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Items")
-                            .font(.headline)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        
-                        ForEach(localCartItems) { item in
-                            HStack {
-                                Text("\(item.quantity)x")
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                Text(appVM.dataStore.productName(for: item.productId))
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                Spacer()
-                                let price = appVM.dataStore.resolvedPrice(for: item)
-                                Text("₹\(Int(price).formatted())")
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                            }
-                            .font(.subheadline)
+            ZStack {
+                RSMSTheme.background.ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            receiptPaperView
+                                .padding()
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
                         }
-                    }
-                    .padding()
-                    .rsmsCard()
-                    
-                    // Financials
-                    VStack(spacing: 12) {
-                        detailRow(title: "Subtotal", value: "₹\(Int(order.totalAmount).formatted())")
-                        if order.discountAmount > 0 {
-                            detailRow(title: "Discount", value: "-₹\(Int(order.discountAmount).formatted())", color: RSMSTheme.success)
-                        }
-                        Divider()
-                        HStack {
-                            Text("Total Paid")
-                                .font(.headline)
-                            Spacer()
-                            Text("₹\(Int(order.finalAmount).formatted())")
-                                .font(.title3.weight(.bold))
-                                .foregroundStyle(RSMSTheme.primary)
-                        }
-                    }
-                    .padding()
-                    .rsmsCard()
-                    
-                    // Payment Info
-                    VStack(spacing: 12) {
-                        detailRow(title: "Payment Method", value: "Razorpay (Sandbox)")
-                        detailRow(title: "Transaction Ref", value: paymentId)
-                    }
-                    .padding()
-                    .rsmsCard()
-                    
-                    // Tax-Free Refund Section (If Applied)
-                    if let taxFree = appVM.dataStore.taxFreeTransactions.first(where: { $0.orderId == order.id }) {
-                        let layout = TaxFreeReceiptGenerator.generateLayout(
-                            transactionId: taxFree.id,
-                            passportNumber: taxFree.passportNumber,
-                            countryOfResidence: taxFree.countryOfResidence,
-                            taxAmount: taxFree.taxAmount,
-                            refundAmount: taxFree.refundAmount
-                        )
-                        
-                        VStack(alignment: .leading, spacing: 14) {
-                            HStack {
-                                Label("Tax-Free Shopping Receipt", systemImage: "globe")
-                                    .font(.headline)
-                                    .foregroundStyle(RSMSTheme.primary)
-                                Spacer()
-                            }
-                            
-                            Divider().overlay(RSMSTheme.divider)
-                            
-                            VStack(spacing: 10) {
-                                detailRow(title: "Tax-Free Ref", value: layout.refNumber)
-                                detailRow(title: "Passport Number", value: layout.passportNumber)
-                                detailRow(title: "Country of Residence", value: layout.country)
-                                detailRow(title: "VAT/GST Paid", value: "₹\(Int(truncating: layout.taxAmount as NSDecimalNumber).formatted())")
-                                detailRow(title: "Refund Amount", value: "₹\(Int(truncating: layout.refundAmount as NSDecimalNumber).formatted())", color: RSMSTheme.success)
-                            }
-                            
-                            Divider().overlay(RSMSTheme.divider)
-                            
-                            Text(layout.message)
-                                .font(.caption2.weight(.bold))
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
-                                .padding(.top, 4)
-                            
-                            // QR Code Customs Verification Placeholder
-                            VStack(spacing: 8) {
-                                Image(systemName: "qrcode")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                
-                                Text("Scan at Customs Airport Kiosk")
-                                    .font(.caption2.bold())
-                                    .foregroundStyle(RSMSTheme.textSecondary)
-                                
-                                Text(layout.qrCodeContent)
-                                    .font(.caption2.monospaced())
-                                    .foregroundStyle(RSMSTheme.textTertiary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(RSMSTheme.surfaceSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .padding()
-                        .rsmsCard()
+                        .padding(24)
                     }
                 }
-                .padding(.horizontal, 24)
             }
-            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Receipt")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -210,93 +91,245 @@ struct ReceiptView: View {
             }
         }
     }
+
+    // MARK: - Slip Helpers
     
-    private func detailRow(title: String, value: String, color: Color = RSMSTheme.textPrimary) -> some View {
-        HStack {
-            Text(title)
-                .foregroundStyle(RSMSTheme.textSecondary)
-            Spacer()
-            Text(value)
-                .foregroundStyle(color)
-        }
-        .font(.subheadline)
+    private var slipDivider: some View {
+        Rectangle()
+            .fill(Color(red: 0.8, green: 0.75, blue: 0.68))
+            .frame(minHeight: 0.75)
     }
 
-    // MARK: - PDF Rendering / Printing / Sharing
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(Color(red: 0.45, green: 0.05, blue: 0.1))
+            .tracking(1.5)
+    }
 
-    private var receiptPrintView: some View {
-        VStack(spacing: 24) {
-            // Header
-            VStack(spacing: 6) {
-                Text("Maison Lumière")
-                    .font(.title3.bold())
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                Text("Official Receipt")
-                    .font(.caption)
-                    .foregroundStyle(RSMSTheme.textSecondary)
+    private func labeledValue(_ label: String, _ value: String) -> some View {
+        HStack(spacing: 4) {
+            Text("\(label):")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.gray)
+            Text(value)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.black)
+        }
+    }
+
+    private func infoCell(label: String, value: String) -> some View {
+        VStack(spacing: 3) {
+            Text(label)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.gray)
+                .tracking(0.5)
+            Text(value)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.black)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 4)
+    }
+
+    // MARK: - Slip Paper View
+    private var receiptPaperView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+
+            // ── HEADER ──────────────────────────────────────────────
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("MAISON LUMIÈRE")
+                        .font(.headline.weight(.black))
+                        .tracking(3)
+                        .foregroundStyle(.black)
+                    Text("Luxury Boutique")
+                        .font(.caption2)
+                        .foregroundStyle(.gray)
+                        .tracking(1)
+                    if let store = store {
+                        Spacer().frame(height: 6)
+                        Text(store.name)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.3))
+                        Text(store.address)
+                            .font(.caption2)
+                            .foregroundStyle(.gray)
+                        if let phone = store.phone {
+                            Text("Tel: \(phone)")
+                                .font(.caption2)
+                                .foregroundStyle(.gray)
+                        }
+                    }
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("PAYMENT RECEIPT")
+                        .font(.title3.weight(.black))
+                        .foregroundStyle(Color(red: 0.45, green: 0.05, blue: 0.1))
+                        .tracking(1)
+                    Group {
+                        labeledValue("Order", order.id.uuidString.prefix(8).uppercased())
+                        labeledValue("Date", order.createdAt.formatted(date: .abbreviated, time: .omitted))
+                        labeledValue("Time", order.createdAt.formatted(date: .omitted, time: .shortened))
+                    }
+                }
             }
-            .padding(.top, 16)
-            
-            Divider()
-            
-            // Order Info
-            VStack(spacing: 8) {
-                detailRow(title: "Order ID", value: String(order.id.uuidString.prefix(8).uppercased()))
-                detailRow(title: "Date", value: order.createdAt.formatted())
-                detailRow(title: "Customer", value: client.fullName)
-                detailRow(title: "Contact", value: client.phone ?? "")
+            .padding(.bottom, 16)
+
+            slipDivider
+
+            // ── STORE / CLIENT ─────────────────────────────────
+            HStack(alignment: .top, spacing: 24) {
+                // Store
+                VStack(alignment: .leading, spacing: 4) {
+                    sectionHeader("STORE")
+                    if let store = store {
+                        Text(store.name)
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                        Text(store.address)
+                            .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                        if let phone = store.phone {
+                            Text(phone).font(.caption2).foregroundStyle(.gray)
+                        }
+                    } else {
+                        Text("Store details unavailable")
+                            .font(.caption2).foregroundStyle(.gray)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Divider
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 1)
+
+                // Client
+                VStack(alignment: .leading, spacing: 4) {
+                    sectionHeader("CLIENT")
+                    Text(client.fullName)
+                        .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                    if let phone = client.phone {
+                        Text(phone).font(.caption2).foregroundStyle(.gray)
+                    }
+                    if let email = client.email {
+                        Text(email).font(.caption2).foregroundStyle(.gray)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            
-            Divider()
-            
-            // Items
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Items")
-                    .font(.headline)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-                
-                ForEach(localCartItems) { item in
+            .padding(.vertical, 14)
+
+            slipDivider
+
+            // ── INFO ROW ───────────────────────────────────
+            HStack(spacing: 0) {
+                infoCell(label: "PAYMENT METHOD", value: "Razorpay")
+                Divider().frame(height: 36)
+                infoCell(label: "TRANSACTION REF.", value: paymentId.isEmpty ? "—" : paymentId)
+                Divider().frame(height: 36)
+                infoCell(label: "CASHIER", value: appVM.currentUser?.fullName ?? "Staff")
+            }
+            .padding(.vertical, 10)
+            .background(Color(red: 0.97, green: 0.96, blue: 0.94))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+
+            slipDivider
+
+            // ── ITEMS TABLE ─────────────────────────────────────────
+            VStack(alignment: .leading, spacing: 6) {
+                sectionHeader("ITEMS BOUGHT")
+                    .padding(.bottom, 4)
+
+                // Table Header
+                HStack {
+                    Text("DESCRIPTION").font(.caption2.weight(.bold)).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("SKU").font(.caption2.weight(.bold)).foregroundStyle(.white)
+                        .frame(width: 90, alignment: .leading)
+                    Text("QTY").font(.caption2.weight(.bold)).foregroundStyle(.white)
+                        .frame(width: 40, alignment: .center)
+                    Text("PRICE").font(.caption2.weight(.bold)).foregroundStyle(.white)
+                        .frame(width: 60, alignment: .trailing)
+                }
+                .padding(.vertical, 5)
+                .padding(.horizontal, 6)
+                .background(Color.black)
+
+                // Table Rows
+                ForEach(Array(localCartItems.enumerated()), id: \.element.id) { index, item in
+                    let product = appVM.dataStore.product(by: item.productId)
                     HStack {
-                        Text("\(item.quantity)x")
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                        Text(appVM.dataStore.productName(for: item.productId))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Spacer()
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(product?.name ?? appVM.dataStore.productName(for: item.productId))
+                                .font(.caption2.weight(.medium)).foregroundStyle(.black)
+                            if let category = product?.category {
+                                Text(category)
+                                    .font(.caption2).foregroundStyle(.gray)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(product?.sku ?? "—")
+                            .font(.system(.caption2, design: .monospaced)).foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.3))
+                            .frame(width: 90, alignment: .leading)
+
+                        Text("\(item.quantity)")
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                            .frame(width: 40, alignment: .center)
+
                         let price = appVM.dataStore.resolvedPrice(for: item)
                         Text("₹\(Int(price).formatted())")
-                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .font(.caption2.weight(.medium)).foregroundStyle(.black)
+                            .frame(width: 60, alignment: .trailing)
                     }
-                    .font(.subheadline)
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 6)
+                    .background(index % 2 == 0 ? Color.white : Color(red: 0.97, green: 0.97, blue: 0.97))
+
+                    Divider().overlay(Color.gray.opacity(0.15))
                 }
             }
-            
-            Divider()
-            
-            // Financials
-            VStack(spacing: 8) {
-                detailRow(title: "Subtotal", value: "₹\(Int(order.totalAmount).formatted())")
-                if order.discountAmount > 0 {
-                    detailRow(title: "Discount", value: "-₹\(Int(order.discountAmount).formatted())", color: RSMSTheme.success)
-                }
-                HStack {
-                    Text("Total Paid")
-                        .font(.headline)
-                    Spacer()
-                    Text("₹\(Int(order.finalAmount).formatted())")
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(RSMSTheme.primary)
+            .padding(.vertical, 14)
+
+            slipDivider
+
+            // ── FINANCIALS ─────────────────────────────────────────
+            HStack {
+                Spacer()
+                VStack(alignment: .trailing, spacing: 6) {
+                    HStack {
+                        Text("SUBTOTAL")
+                            .font(.caption2.weight(.bold)).foregroundStyle(.gray)
+                        Text("₹\(Int(order.totalAmount).formatted())")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(.black)
+                            .frame(width: 80, alignment: .trailing)
+                    }
+                    if order.discountAmount > 0 {
+                        HStack {
+                            Text("DISCOUNT")
+                                .font(.caption2.weight(.bold)).foregroundStyle(.gray)
+                            Text("-₹\(Int(order.discountAmount).formatted())")
+                                .font(.caption2.weight(.semibold)).foregroundStyle(RSMSTheme.success)
+                                .frame(width: 80, alignment: .trailing)
+                        }
+                    }
+                    HStack {
+                        Text("TOTAL PAID")
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                        Text("₹\(Int(order.finalAmount).formatted())")
+                            .font(.caption.weight(.bold)).foregroundStyle(.black)
+                            .frame(width: 80, alignment: .trailing)
+                    }
+                    .padding(.top, 4)
                 }
             }
+            .padding(.vertical, 12)
             
-            Divider()
+            slipDivider
             
-            // Payment Info
-            VStack(spacing: 8) {
-                detailRow(title: "Payment Method", value: "Razorpay (Sandbox)")
-                detailRow(title: "Transaction Ref", value: paymentId)
-            }
-            
-            // Tax-Free Refund Section (If Applied)
+            // ── TAX-FREE ─────────────────────────────────────────
             if let taxFree = appVM.dataStore.taxFreeTransactions.first(where: { $0.orderId == order.id }) {
                 let layout = TaxFreeReceiptGenerator.generateLayout(
                     transactionId: taxFree.id,
@@ -306,36 +339,68 @@ struct ReceiptView: View {
                     refundAmount: taxFree.refundAmount
                 )
                 
-                Divider()
-                
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Tax-Free Shopping Receipt")
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.primary)
+                    sectionHeader("TAX-FREE SHOPPING DETAILS")
                     
-                    VStack(spacing: 6) {
-                        detailRow(title: "Tax-Free Ref", value: layout.refNumber)
-                        detailRow(title: "Passport Number", value: layout.passportNumber)
-                        detailRow(title: "Country of Residence", value: layout.country)
-                        detailRow(title: "VAT/GST Paid", value: "₹\(Int(truncating: layout.taxAmount as NSDecimalNumber).formatted())")
-                        detailRow(title: "Refund Amount", value: "₹\(Int(truncating: layout.refundAmount as NSDecimalNumber).formatted())", color: RSMSTheme.success)
+                    HStack(alignment: .top, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("TAX-FREE REF: \(layout.refNumber)")
+                                .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                            Text("Passport: \(layout.passportNumber)")
+                                .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                            Text("Country: \(layout.country)")
+                                .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("VAT/GST PAID: ₹\(Int(truncating: layout.taxAmount as NSDecimalNumber).formatted())")
+                                .font(.caption2.weight(.bold)).foregroundStyle(.black)
+                            Text("REFUND AMT: ₹\(Int(truncating: layout.refundAmount as NSDecimalNumber).formatted())")
+                                .font(.caption2.weight(.bold)).foregroundStyle(RSMSTheme.success)
+                        }
+                        Spacer()
                     }
                     
                     Text(layout.message)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.gray)
+                        .padding(.top, 4)
                 }
+                .padding(.vertical, 12)
+                
+                slipDivider
             }
+
+            // ── FOOTER / BARCODE ──────────────────────────────────────────
+            Text("This is an official payment receipt. For returns or exchanges, please present this receipt within 14 days of purchase. Maison Lumière thanks you for your patronage.")
+                .font(.caption2)
+                .italic()
+                .foregroundStyle(.gray)
+                .padding(.top, 12)
+
+            HStack {
+                Spacer()
+                VStack(spacing: 2) {
+                    HStack(spacing: 1) {
+                        ForEach(Array(order.id.uuidString.prefix(12).unicodeScalars), id: \.value) { scalar in
+                            Rectangle()
+                                .fill(Color.black)
+                                .frame(width: scalar.value % 3 == 0 ? 3 : 1.5, height: 28)
+                        }
+                    }
+                    Text(order.id.uuidString.prefix(12).uppercased())
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(.black)
+                }
+                Spacer()
+            }
+            .padding(.top, 10)
         }
-        .padding(30)
-        .background(Color.white)
     }
 
     @MainActor
     private func generatePDF() -> URL? {
-        let printView = receiptPrintView
+        let printView = receiptPaperView
             .frame(width: 612, height: 792) // Letter size
             .padding(40)
             .background(Color.white)
