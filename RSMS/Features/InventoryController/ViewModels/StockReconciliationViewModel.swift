@@ -29,13 +29,29 @@ enum ReconciliationStatus: String, CaseIterable {
 // MARK: - Adjustment Reason
 
 enum AdjustmentReason: String, CaseIterable, Identifiable {
+    // Shortage Reasons
     case damagedItem        = "Damaged item"
     case theftLoss          = "Theft / loss"
+    case misplacedInventory = "Misplaced inventory"
+    
+    // Overage Reasons
+    case supplierOverDelivery = "Supplier over-delivery"
+    case returnNotProcessed   = "Return not processed"
+    case foundInventory       = "Found inventory"
+    
+    // Common
     case scanningError      = "Scanning error"
     case supplierIssue      = "Supplier issue"
-    case misplacedInventory = "Misplaced inventory"
 
     var id: String { rawValue }
+
+    static var shortageReasons: [AdjustmentReason] {
+        [.damagedItem, .theftLoss, .scanningError, .supplierIssue, .misplacedInventory]
+    }
+
+    static var overageReasons: [AdjustmentReason] {
+        [.scanningError, .supplierOverDelivery, .returnNotProcessed, .foundInventory]
+    }
 }
 
 // MARK: - Discrepancy Item

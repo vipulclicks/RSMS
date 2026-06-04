@@ -81,16 +81,7 @@ struct ProductLookupView: View {
         .navigationTitle("Lookup & Stock In")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if selectedTab == .productLookup {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showScanner.toggle()
-                    } label: {
-                        Image(systemName: "barcode.viewfinder")
-                            .foregroundStyle(RSMSTheme.gold)
-                    }
-                }
-            } else {
+            if selectedTab == .asnMatching {
                 // ASN back button when in review state
                 if asnVM.state == .matched {
                     ToolbarItem(placement: .topBarLeading) {
@@ -206,6 +197,22 @@ struct ProductLookupView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
+                
+                Button {
+                    showScanner = true
+                } label: {
+                    HStack {
+                        Image(systemName: "barcode.viewfinder")
+                        Text("Scan to Find")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RSMSTheme.gold)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
                 kpiSection
                 searchBar
                 productList
@@ -1044,7 +1051,6 @@ struct ProductDetailSheet: View {
                             AuthCertificateGeneratorView(preselectedProduct: product)
                         } label: {
                             HStack {
-                                Image(systemName: "checkmark.seal.fill")
                                 Text("Generate Authenticity Certificate")
                                     .font(.headline)
                             }

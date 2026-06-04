@@ -17,6 +17,7 @@ struct AuditTrailView: View {
         case all = "All Activity"
         case stock = "Stock Updates"
         case transfers = "Transfers"
+        case reconciliations = "Reconciliations"
         case exceptions = "Exceptions"
     }
     
@@ -30,6 +31,8 @@ struct AuditTrailView: View {
             result = result.filter { $0.action.lowercased().contains("stock") || $0.action.lowercased().contains("adjust") }
         case .transfers:
             result = result.filter { $0.action.lowercased().contains("transfer") || $0.action.lowercased().contains("shipped") || $0.action.lowercased().contains("receive") }
+        case .reconciliations:
+            result = result.filter { $0.action.lowercased() == "stock adjusted" && ($0.details?.contains("prev:") ?? false) }
         case .exceptions:
             result = result.filter { $0.action.lowercased().contains("variance") || $0.action.lowercased().contains("damage") }
         }
@@ -119,14 +122,14 @@ struct AuditTrailView: View {
                     .frame(maxWidth: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 12) {
+                        LazyVStack(spacing: 0) {
                             ForEach(filteredAudits) { audit in
                                 auditCard(audit)
                             }
                         }
-                        .padding(.horizontal, 24)
+                        .padding(.horizontal, 16)
                         .padding(.bottom, 24)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                     }
                 }
             }
@@ -154,49 +157,99 @@ struct AuditTrailView: View {
     }
     
     private func auditCard(_ audit: AuditTrail) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(RSMSTheme.primaryGradient)
-                    .frame(width: 40, height: 40)
-                Image(systemName: iconFor(action: audit.action))
-                    .foregroundStyle(RSMSTheme.cream)
-                    .font(.system(size: 16, weight: .bold))
+        let isRecon = audit.action == "Stock Adjusted" && (audit.details?.contains("prev:") ?? false)
+        
+        return VStack(spacing: 0) {
+            Rectangle()
+                .fill(RSMSTheme.divider)
+                .frame(height: 0.5)
+                .padding(.horizontal, 14)
+
+            HStack(alignment: .top, spacing: 12) {
+                // Timeline dot
+                VStack(spacing: 4) {
+                    Circle()
+                        .fill(isRecon ? RSMSTheme.gold : RSMSTheme.textTertiary)
+                        .frame(width: 10, height: 10)
+                    Rectangle()
+                        .fill(RSMSTheme.divider)
+                        .frame(width: 2)
+                }
+                .frame(width: 10)
+                .padding(.top, 4)
+
+                // Content
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        let name = userName(for: audit.performedBy.uuidString)
+                        Text(name ?? audit.action)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Spacer()
+                        Text(audit.timestamp.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption2)
+                            .foregroundStyle(RSMSTheme.textTertiary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        if userName(for: audit.performedBy.uuidString) != nil {
+                            Text("\(audit.action)")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                        }
+                        
+                        if isRecon {
+                            reconciliationDetails(audit.details)
+                        } else if let details = audit.details {
+                            Text(details)
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RSMSTheme.background)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+    }
+    
+    @ViewBuilder
+    private func reconciliationDetails(_ detailsString: String?) -> some View {
+        if let details = detailsString {
+            // Expected format: "SKU: 12345 · Product Name | prev: 10 | new: 15 | reason: Miscounted"
+            let parts = details.components(separatedBy: " | ")
+            if parts.count >= 1 {
+                Text("Reconciled **\(parts[0])**")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
             }
             
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(audit.action)
-                        .font(.headline)
-                        .foregroundStyle(RSMSTheme.textPrimary)
-                    Spacer()
-                    Text(audit.timestamp.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                }
-                
-                if let details = audit.details {
-                    Text(details)
-                        .font(.subheadline)
-                        .foregroundStyle(RSMSTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                
-                HStack {
-                    Label(audit.entityType, systemImage: "cube.box")
-                    Spacer()
-                    Label(userName(for: audit.performedBy.uuidString), systemImage: "person.fill")
-                }
+            let reason = parts.first(where: { $0.hasPrefix("reason: ") })?.dropFirst(8) ?? "Unknown"
+            Text("Reason: \(reason)")
                 .font(.caption)
                 .foregroundStyle(RSMSTheme.textTertiary)
-                .padding(.top, 4)
+            
+            let prev = parts.first(where: { $0.hasPrefix("prev: ") })?.dropFirst(6) ?? "0"
+            let new = parts.first(where: { $0.hasPrefix("new: ") })?.dropFirst(5) ?? "0"
+            
+            HStack(spacing: 6) {
+                Text(String(prev))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.danger)
+                    .strikethrough()
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 9))
+                    .foregroundStyle(RSMSTheme.textTertiary)
+                Text(String(new))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.success)
             }
         }
-        .padding(16)
-        .background(RSMSTheme.surfacePrimary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
     }
     
     private func iconFor(action: String) -> String {
@@ -210,12 +263,12 @@ struct AuditTrailView: View {
         return "doc.text.fill"
     }
     
-    private func userName(for userId: String) -> String {
+    private func userName(for userId: String) -> String? {
         // Find user by ID. If not found, check if it's "System"
         if userId == "System" { return "System" }
         if let uuid = UUID(uuidString: userId), let user = appVM.dataStore.users.first(where: { $0.id == uuid }) {
             return user.fullName
         }
-        return "Unknown User"
+        return nil
     }
 }

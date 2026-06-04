@@ -10,7 +10,7 @@ import SwiftUI
 
 struct AuditsContainerView: View {
 
-    @State private var selectedSegment = 0
+    @AppStorage("inventoryAuditSelectedSegment") private var selectedSegment = 0
 
     private let segments = ["Cycle Counts", "Reconcile", "Audit Trail"]
 

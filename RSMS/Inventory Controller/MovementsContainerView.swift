@@ -12,7 +12,7 @@ struct MovementsContainerView: View {
 
     @State private var selectedSegment = 0
 
-    private let segments = ["Transfers", "Vendor Returns", "Returns & Exch."]
+    private let segments = ["Transfers", "Sourcing", "Vendor Returns", "Returns/Exch."]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,6 +39,8 @@ struct MovementsContainerView: View {
                 case 0:
                     InventoryTransferView()
                 case 1:
+                    InventorySourcingRequestListView()
+                case 2:
                     VendorReturnView()
                 default:
                     InspectionQueueView()

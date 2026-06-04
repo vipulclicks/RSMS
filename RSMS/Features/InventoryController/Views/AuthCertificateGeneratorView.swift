@@ -192,7 +192,6 @@ struct AuthCertificateGeneratorView: View {
                     if isGenerating {
                         ProgressView().tint(RSMSTheme.cream)
                     } else {
-                        Image(systemName: "checkmark.seal.fill")
                         Text("Generate Certificate")
                     }
                 }
@@ -244,7 +243,6 @@ struct AuthCertificateGeneratorView: View {
                             preview: SharePreview("Authenticity Certificate", image: image)
                         ) {
                             HStack {
-                                Image(systemName: "square.and.arrow.up")
                                 Text("Share / Print")
                             }
                             .font(.headline)

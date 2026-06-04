@@ -19,12 +19,6 @@ struct StockReconciliationView: View {
     @State private var showFilterMenu = false
     @State private var showShrinkageAnalysis = false
 
-    // Segment control
-    enum ReconcileSegment: String, CaseIterable {
-        case mismatches = "Open Mismatches"
-        case auditLog   = "Audit History"
-    }
-    @State private var segment: ReconcileSegment = .mismatches
 
     // Reconciliation sheet
     @State private var selectedItem: DiscrepancyItem? = nil
@@ -45,15 +39,9 @@ struct StockReconciliationView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 24) {
                     headerSection
-                    segmentPicker
-
-                    if segment == .mismatches {
-                        if showSearchField { searchSection }
-                        analyticsSection
-                        discrepancySection
-                    } else {
-                        auditLogSection
-                    }
+                    if showSearchField { searchSection }
+                    analyticsSection
+                    discrepancySection
                 }
                 .padding(24)
                 .padding(.bottom, 80)
@@ -68,7 +56,6 @@ struct StockReconciliationView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-            if segment == .mismatches {
                 HStack(spacing: 12) {
                     Button {
                         withAnimation(.spring(response: 0.3)) {
@@ -89,7 +76,6 @@ struct StockReconciliationView: View {
                             .foregroundStyle(RSMSTheme.gold)
                     }
                 }
-            }
             }
         }
         .sheet(item: $selectedItem) { item in
@@ -116,38 +102,6 @@ struct StockReconciliationView: View {
 
     // MARK: - Header
 
-    // MARK: - Segment Picker
-
-    private var segmentPicker: some View {
-        HStack(spacing: 0) {
-            ForEach(ReconcileSegment.allCases, id: \.self) { seg in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) { segment = seg }
-                } label: {
-                    Text(seg.rawValue)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(
-                            segment == seg ? RSMSTheme.background : RSMSTheme.textSecondary
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            segment == seg
-                                ? RSMSTheme.textPrimary
-                                : Color.clear
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-            }
-        }
-        .padding(4)
-        .background(RSMSTheme.surfaceSecondary)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(RSMSTheme.border, lineWidth: 1)
-        )
-    }
 
     // MARK: - Header
 
@@ -374,135 +328,6 @@ struct StockReconciliationView: View {
         )
     }
 
-    // MARK: - Audit Log Section
-
-    private var auditLogSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("AUDIT HISTORY")
-                .font(.caption.weight(.semibold))
-                .tracking(3)
-                .foregroundStyle(RSMSTheme.gold)
-
-            VStack(spacing: 0) {
-                // Toggle header
-                Button {
-                    withAnimation(.spring(response: 0.35)) {
-                        isAuditExpanded.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(RSMSTheme.gold.opacity(0.12))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundStyle(RSMSTheme.gold)
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Reconciliation Timeline")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                            Text("\(viewModel.auditEntries.count) recent entries")
-                                .font(.caption)
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                            .rotationEffect(.degrees(isAuditExpanded ? 180 : 0))
-                    }
-                    .padding(14)
-                }
-                .buttonStyle(.plain)
-
-                // Expandable entries
-                if isAuditExpanded {
-                    ForEach(viewModel.auditEntries) { entry in
-                        auditEntryRow(entry)
-                    }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .background(RSMSTheme.surfaceSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(RSMSTheme.border, lineWidth: 1)
-            )
-        }
-        .opacity(appeared ? 1 : 0)
-    }
-
-    private func auditEntryRow(_ entry: ReconciliationAuditEntry) -> some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(RSMSTheme.divider)
-                .frame(height: 0.5)
-                .padding(.horizontal, 14)
-
-            HStack(alignment: .top, spacing: 12) {
-                // Timeline dot
-                VStack(spacing: 4) {
-                    Circle()
-                        .fill(RSMSTheme.gold)
-                        .frame(width: 10, height: 10)
-                    Rectangle()
-                        .fill(RSMSTheme.divider)
-                        .frame(width: 2)
-                }
-                .frame(width: 10)
-                .padding(.top, 4)
-
-                // Content
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        Text(entry.userName)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Spacer()
-                        Text(formatTimestamp(entry.timestamp))
-                            .font(.caption2)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Reconciled **\(entry.productName)**")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-
-                        Text("Reason: \(entry.reason.rawValue)")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textTertiary)
-
-                        HStack(spacing: 6) {
-                            Text("\(entry.previousQty)")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(RSMSTheme.danger)
-                                .strikethrough()
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 9))
-                                .foregroundStyle(RSMSTheme.textTertiary)
-                            Text("\(entry.updatedQty)")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(RSMSTheme.success)
-                        }
-                    }
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RSMSTheme.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-        }
-    }
-
 
     // MARK: - Reconciliation Bottom Sheet
 
@@ -569,6 +394,11 @@ struct StockReconciliationView: View {
                     LuxuryTextField(title: "Corrected Quantity", text: $viewModel.correctedQty)
                         .keyboardType(.numberPad)
 
+                    let currentQty = Int(viewModel.correctedQty) ?? item.actualQty
+                    let availableReasons = currentQty < item.expectedQty 
+                        ? AdjustmentReason.shortageReasons 
+                        : AdjustmentReason.overageReasons
+
                     LuxuryPicker(
                         title: "Adjustment Reason",
                         selection: Binding(
@@ -577,7 +407,7 @@ struct StockReconciliationView: View {
                                 viewModel.selectedReason = AdjustmentReason.allCases.first { $0.rawValue == newVal }
                             }
                         ),
-                        options: AdjustmentReason.allCases.map(\.rawValue)
+                        options: availableReasons.map(\.rawValue)
                     )
 
                     VStack(alignment: .leading, spacing: 8) {

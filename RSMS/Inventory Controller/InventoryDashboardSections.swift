@@ -14,6 +14,7 @@ struct DashboardView: View {
 
     var dashVM: InventoryDashboardViewModel
     @Binding var selectedDestination: InventoryDestination?
+    @AppStorage("inventoryAuditSelectedSegment") private var auditSegment = 0
 
     var body: some View {
         ScrollView {
@@ -220,7 +221,6 @@ struct DashboardView: View {
                 transferCard
                 vendorReturnsCard
                 serviceTrackingCard
-                cycleCountCard
             }
 
         } else {
@@ -232,7 +232,6 @@ struct DashboardView: View {
                 transferCard
                 vendorReturnsCard
                 serviceTrackingCard
-                cycleCountCard
             }
         }
     }
@@ -341,18 +340,6 @@ struct DashboardView: View {
         )
     }
 
-    var cycleCountCard: some View {
-
-        actionCard(
-            title: "Audits & Counts",
-            subtitle: "INVENTORY INTEGRITY",
-            icon: "doc.badge.gearshape.fill",
-            accentColor: RSMSTheme.success,
-            badgeText: "\(dashVM.snapshot?.pendingTaskCount ?? 0) Tasks",
-            destination: .audits
-        )
-    }
-
     var transferCard: some View {
 
         actionCard(
@@ -370,7 +357,7 @@ struct DashboardView: View {
         actionCard(
             title: "Vendor Returns",
             subtitle: "RMA / DEFECTIVE",
-            icon: "shippingbox.and.arrow.forward.fill",
+            icon: "shippingbox.and.arrow.backward.fill",
             accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
             badgeText: "Manage",
             destination: .movements
@@ -437,9 +424,12 @@ struct DashboardView: View {
             )
 
             Button {
-                selectedDestination = .audits
+                auditSegment = 2
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    selectedDestination = .audits
+                }
             } label: {
-                Text("View All Activity")
+                Text("View Activity Feed")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.primary)
                     .frame(maxWidth: .infinity)

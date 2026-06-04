@@ -54,12 +54,14 @@ struct InventoryControllerHomeView: View {
                         detailViewFor(destination)
                             .toolbar {
                                 ToolbarItem(placement: .topBarTrailing) {
-                                    Button {
-                                        selectedDestination = .profile
-                                    } label: {
-                                        SidebarAvatarButton(user: viewModel.currentUser)
+                                    if destination == .dashboard {
+                                        Button {
+                                            selectedDestination = .profile
+                                        } label: {
+                                            SidebarAvatarButton(user: viewModel.currentUser)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    .buttonStyle(.plain)
                                 }
                             }
                     }
@@ -115,12 +117,14 @@ struct InventoryControllerHomeView: View {
         detailContent
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        selectedDestination = .profile
-                    } label: {
-                        SidebarAvatarButton(user: viewModel.currentUser)
+                    if selectedDestination == .dashboard || selectedDestination == nil {
+                        Button {
+                            selectedDestination = .profile
+                        } label: {
+                            SidebarAvatarButton(user: viewModel.currentUser)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
             }
     }

@@ -109,26 +109,7 @@ struct InspectionQueueView: View {
         .navigationDestination(item: $selectedRequest) { reqType in
             InspectionDetailView(request: reqType)
         }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    Task {
-                        isRefreshing = true
-                        await appVM.dataStore.fetchPOSReturnsExchanges()
-                        isRefreshing = false
-                    }
-                } label: {
-                    if isRefreshing {
-                        ProgressView()
-                            .tint(RSMSTheme.primary)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundStyle(RSMSTheme.primary)
-                    }
-                }
-                .disabled(isRefreshing)
-            }
-        }
+
         .task {
             await appVM.dataStore.fetchPOSReturnsExchanges()
         }
