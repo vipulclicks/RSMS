@@ -1039,6 +1039,23 @@ struct ProductDetailSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
 
+                        // Authenticity Certificate Action
+                        NavigationLink {
+                            AuthCertificateGeneratorView(preselectedProduct: product)
+                        } label: {
+                            HStack {
+                                Image(systemName: "checkmark.seal.fill")
+                                Text("Generate Authenticity Certificate")
+                                    .font(.headline)
+                            }
+                            .foregroundStyle(RSMSTheme.background)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(RSMSTheme.gold)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.top, 8)
+
                         Spacer(minLength: 40)
                     }
                     .padding(24)

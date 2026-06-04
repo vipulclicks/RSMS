@@ -16,6 +16,10 @@ struct AuthCertificateGeneratorView: View {
     @State private var generatedCertificate: AuthCertificate?
     @State private var isGenerating = false
     @State private var showSuccess = false
+
+    init(preselectedProduct: Product? = nil) {
+        _selectedProduct = State(initialValue: preselectedProduct)
+    }
     
     @MainActor
     private var renderedImage: Image? {
