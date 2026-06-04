@@ -91,7 +91,7 @@ struct RazorpayCheckoutWebView: UIViewRepresentable {
                     "key": "\(RazorpayService.sandboxKeyId)",
                     "amount": "\(amount)",
                     "currency": "\(currency)",
-                    "name": "RSMS Luxury Retail",
+                    "name": "Luxora Boutique",
                     "description": "Order Payment",
                     "order_id": "\(orderId)",
                     "handler": function (response) {

@@ -247,14 +247,7 @@ final class POSCheckoutViewModel {
         }
         
         // 6. Preserve historical transaction records while clearing active cart UI.
-        // Each deleteUniversalCartItem call handles backend delete and local cleanup.
-        let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
-
-        for item in itemsToDelete {
-            try? await dataStore.deleteUniversalCartItem(id: item.id)
-        }
-
-        // Clear in-memory cart items so UI reflects empty cart post-payment
+        // Clear in-memory active cart items so UI reflects empty cart post-payment
         await MainActor.run {
             dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
         }

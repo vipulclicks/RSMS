@@ -86,6 +86,7 @@ struct GiftReceiptSheet: View {
                                     }
                                 }
                             }
+                            .listRowBackground(RSMSTheme.surfacePrimary)
                         }
                     }
 
@@ -105,6 +106,7 @@ struct GiftReceiptSheet: View {
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         }
                     }
+                    .listRowBackground(RSMSTheme.surfacePrimary)
 
                     if !generatedReceipts.isEmpty {
                         Section {
@@ -116,6 +118,7 @@ struct GiftReceiptSheet: View {
                             }
                             .foregroundStyle(RSMSTheme.success)
                         }
+                        .listRowBackground(RSMSTheme.surfacePrimary)
                     }
 
                     Section {
