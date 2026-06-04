@@ -177,19 +177,11 @@ extension DataStore {
             "type": "eq.curated"
         ])
         
-        // 2. Fetch items for all these carts concurrently
+        // 2. Fetch items for all these carts sequentially
         var allItems: [UniversalCartItem] = []
-        if !carts.isEmpty {
-            try await withThrowingTaskGroup(of: [UniversalCartItem].self) { group in
-                for cart in carts {
-                    group.addTask {
-                        try await SupabaseClient.shared.fetch("universal_cart_items", query: ["cart_id": "eq.\(cart.id)"])
-                    }
-                }
-                while let items = try await group.next() {
-                    allItems.append(contentsOf: items)
-                }
-            }
+        for cart in carts {
+            let items: [UniversalCartItem] = try await SupabaseClient.shared.fetch("universal_cart_items", query: ["cart_id": "eq.\(cart.id)"])
+            allItems.append(contentsOf: items)
         }
         
         // 3. Replace local state for this client's curated carts cleanly

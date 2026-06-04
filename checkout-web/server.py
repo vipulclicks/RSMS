@@ -229,6 +229,9 @@ def create_transaction_and_order(session, payment_id):
     memoryDb["carts"] = [c for c in memoryDb.get("carts", []) if c.get("id") != session["cart_id"]]
 
 class CheckoutHTTPHandler(http.server.SimpleHTTPRequestHandler):
+    def address_string(self):
+        return self.client_address[0]
+        
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')

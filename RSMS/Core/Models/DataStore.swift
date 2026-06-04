@@ -178,20 +178,7 @@ final class DataStore {
     
     func fetchStores() async throws {
         let fetched: [Store] = try await api.fetch("stores")
-        if fetched.isEmpty {
-            var seeded: [Store] = []
-            for store in Store.all {
-                do {
-                    let created: Store = try await api.insert("stores", record: store)
-                    seeded.append(created)
-                } catch {
-                    print("[RSMS Debug] Error seeding store \(store.name): \(error.localizedDescription)")
-                }
-            }
-            stores = seeded
-        } else {
-            stores = fetched
-        }
+        stores = fetched
     }
     
     func fetchStore(id: UUID) async throws -> Store {
@@ -1488,11 +1475,11 @@ final class DataStore {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoder = JSONDecoder()
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                let isoFormatterNoFractional = ISO8601DateFormatter()
-                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                 decoder.dateDecodingStrategy = .custom { decoder in
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    let isoFormatterNoFractional = ISO8601DateFormatter()
+                    isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                     let container = try decoder.singleValueContainer()
                     let dateStr = try container.decode(String.self)
                     if let date = formatter.date(from: dateStr) { return date }
@@ -1508,7 +1495,7 @@ final class DataStore {
                     }
                 }
             } catch {
-                print("[DataStore] ⚠️ Failed to fetch local sessions from Python server: \(error.localizedDescription)")
+                print("[DataStore] ⚠️ Failed to fetch local sessions from Checkout server: \(error.localizedDescription)")
             }
         }
 #endif
@@ -1879,11 +1866,11 @@ final class DataStore {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoder = JSONDecoder()
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                let isoFormatterNoFractional = ISO8601DateFormatter()
-                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                 decoder.dateDecodingStrategy = .custom { decoder in
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    let isoFormatterNoFractional = ISO8601DateFormatter()
+                    isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                     let container = try decoder.singleValueContainer()
                     let dateStr = try container.decode(String.self)
                     if let date = formatter.date(from: dateStr) { return date }
@@ -1899,7 +1886,7 @@ final class DataStore {
                     }
                 }
             } catch {
-                print("[DataStore] ⚠️ Failed to fetch local shipping addresses from Python server: \(error.localizedDescription)")
+                print("[DataStore] ⚠️ Failed to fetch local shipping addresses from Checkout server: \(error.localizedDescription)")
             }
         }
 #endif
