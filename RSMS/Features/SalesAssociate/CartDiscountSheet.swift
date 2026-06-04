@@ -104,21 +104,7 @@ struct CartDiscountSheet: View {
                     .foregroundStyle(isValid ? RSMSTheme.primary : RSMSTheme.textTertiary)
                 }
                 
-                if appliedDiscount != nil {
-                    ToolbarItem(placement: .destructiveAction) {
-                        Button("Remove") {
-                            if let pendingRequest = appVM.dataStore.discountApprovalRequests.first(where: { $0.cartId == cartId && $0.status == .pending }) {
-                                Task {
-                                    try? await appVM.dataStore.deleteApprovalRequest(id: pendingRequest.id)
-                                }
-                            }
-                            
-                            appliedDiscount = nil
-                            dismiss()
-                        }
-                        .foregroundStyle(RSMSTheme.danger)
-                    }
-                }
+
             }
             .onAppear {
                 if let existing = appliedDiscount {
