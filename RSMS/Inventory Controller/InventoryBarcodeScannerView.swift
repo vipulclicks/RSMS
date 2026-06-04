@@ -11,6 +11,8 @@
 
 import SwiftUI
 import VisionKit
+import AVFoundation
+import Vision
 
 // MARK: - Main Scanner View
 
@@ -25,6 +27,10 @@ struct InventoryBarcodeScannerView: View {
     @State private var rawScannedCode: String? = nil
     @State private var manualInput: String = ""
 
+    // Camera authorization
+    @State private var cameraAuthorized: Bool = false
+    @State private var cameraAuthDenied: Bool = false
+
     var body: some View {
         ZStack(alignment: .bottom) {
             RSMSTheme.background.ignoresSafeArea()
@@ -38,8 +44,8 @@ struct InventoryBarcodeScannerView: View {
                 viewfinderSection
                     .padding(.horizontal, 16)
 
-                if DataScannerViewController.isSupported {
-                    Text("Point the camera at a product barcode")
+                if DataScannerViewController.isSupported && cameraAuthorized {
+                    Text("Point the camera at a product barcode or QR code")
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textTertiary)
                         .multilineTextAlignment(.center)
@@ -79,6 +85,7 @@ struct InventoryBarcodeScannerView: View {
                 dataStore: appVM.dataStore,
                 storeId: appVM.currentStoreId
             )
+            await requestCameraAccess()
         }
         .onChange(of: rawScannedCode) { _, newCode in
             guard let code = newCode else { return }
@@ -143,7 +150,17 @@ struct InventoryBarcodeScannerView: View {
 
     private var viewfinderSection: some View {
         Group {
-            if DataScannerViewController.isSupported {
+            if cameraAuthDenied {
+                cameraDeniedView
+            } else if !cameraAuthorized {
+                // Still waiting for the permission prompt
+                ZStack {
+                    RSMSTheme.surfacePrimary
+                    ProgressView()
+                        .tint(RSMSTheme.gold)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            } else if DataScannerViewController.isSupported {
                 DataScannerRepresentable(scannedCode: $rawScannedCode)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(
@@ -157,6 +174,37 @@ struct InventoryBarcodeScannerView: View {
         .frame(maxWidth: .infinity)
         .frame(height: 300)
         .padding(.top, 8)
+    }
+
+    private var cameraDeniedView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "camera.slash.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(RSMSTheme.gold.opacity(0.5))
+            Text("Camera Access Required")
+                .font(.headline)
+                .foregroundStyle(RSMSTheme.textPrimary)
+            Text("Please allow camera access in Settings to scan barcodes and QR codes.")
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(RSMSTheme.background)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 10)
+            .background(RSMSTheme.gold)
+            .clipShape(Capsule())
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private var scannerUnavailableView: some View {
@@ -299,6 +347,26 @@ struct InventoryBarcodeScannerView: View {
         .padding(.vertical, 10)
     }
 
+    // MARK: - Camera Permission
+
+    @MainActor
+    private func requestCameraAccess() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraAuthorized = true
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            cameraAuthorized = granted
+            cameraAuthDenied = !granted
+        case .denied, .restricted:
+            cameraAuthorized = false
+            cameraAuthDenied = true
+        @unknown default:
+            cameraAuthorized = false
+            cameraAuthDenied = true
+        }
+    }
+
     // MARK: - Actions
 
     private func submitManualEntry() {
@@ -323,7 +391,15 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
         let scanner = DataScannerViewController(
-            recognizedDataTypes: [.barcode()],
+            recognizedDataTypes: [
+                .barcode(symbologies: [
+                    .qr,
+                    .ean13, .ean8,
+                    .code128, .code39, .code93,
+                    .upce, .dataMatrix, .pdf417,
+                    .aztec, .itf14
+                ])
+            ],
             qualityLevel: .balanced,
             recognizesMultipleItems: false,
             isPinchToZoomEnabled: true,
@@ -331,11 +407,22 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
             isHighlightingEnabled: true
         )
         scanner.delegate = context.coordinator
-        try? scanner.startScanning()
+        // Only start scanning if camera is already authorized
+        if AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
+            try? scanner.startScanning()
+        }
         return scanner
     }
 
-    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) { }
+    func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
+        // Resume scanning if it stopped and we now have permission
+        if AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
+           !uiViewController.isScanning {
+            try? uiViewController.startScanning()
+        }
+    }
+
+
 
     func makeCoordinator() -> Coordinator {
         Coordinator(scannedCode: $scannedCode)
