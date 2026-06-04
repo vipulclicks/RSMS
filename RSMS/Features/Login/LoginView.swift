@@ -22,14 +22,21 @@ struct LoginView: View {
     @State private var newPassword = ""
     @State private var confirmPassword = ""
 
+    @State private var isSplashCentered = true
+
     private var isCompact: Bool {
         horizontalSizeClass == .compact
     }
 
+    // MARK: - Theme Colors
+    let backgroundCream = Color(red: 0.94, green: 0.89, blue: 0.84)
+    let brandMaroon = Color(red: 0.55, green: 0.23, blue: 0.31)
+    let textMuted = Color(red: 0.45, green: 0.35, blue: 0.35)
+
     var body: some View {
         ZStack {
             // Background
-            RSMSTheme.background.ignoresSafeArea()
+            backgroundCream.ignoresSafeArea()
             backgroundDecoration
 
             GeometryReader { geometry in
@@ -37,37 +44,49 @@ struct LoginView: View {
                     VStack(spacing: 0) {
                         Spacer(minLength: isCompact ? 40 : 80)
 
-                        // Branding
+                        // Branding (Always visible, animated in)
                         brandingSection
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : -20)
+                            .scaleEffect(appeared ? 1.0 : 0.6)
+                            .opacity(appeared ? 1.0 : 0.0)
 
                         Spacer().frame(height: isCompact ? 40 : 60)
 
-                        // Login Form
-                        loginForm
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 20)
+                        if !isSplashCentered {
+                            // Login Form fades and slides up as the logo slides to the top
+                            loginForm
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
 
-                        Spacer(minLength: isCompact ? 40 : 80)
+                            Spacer(minLength: isCompact ? 40 : 80)
 
-                        // Store info
-                        HStack(spacing: 6) {
-                            Image(systemName: "mappin.circle.fill")
-                            Text("Mysore Karnataka, India")
+                            // Store info
+                            HStack(spacing: 6) {
+                                Image(systemName: "mappin.circle.fill")
+                                Text("Mysore Karnataka, India")
+                            }
+                            .font(.caption)
+                            .foregroundStyle(textMuted)
+                            .padding(.bottom, isCompact ? 16 : 30)
+                            .transition(.opacity)
+                        } else {
+                            // Bottom spacer keeps the branding perfectly centered during the splash phase
+                            Spacer(minLength: isCompact ? 40 : 80)
                         }
-                        .font(.caption)
-                        .foregroundStyle(RSMSTheme.textTertiary)
-                        .padding(.bottom, isCompact ? 16 : 30)
-                        .opacity(appeared ? 1 : 0)
                     }
                     .frame(maxWidth: .infinity, minHeight: geometry.size.height)
                 }
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8)) {
+            // 1. Instantly pop the logo in (Splash Phase)
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.6, blendDuration: 0).delay(0.2)) {
                 appeared = true
+            }
+            
+            // 2. After 2.0s, slide the logo up and reveal the form!
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.8, blendDuration: 0)) {
+                    isSplashCentered = false
+                }
             }
         }
     }
@@ -75,26 +94,37 @@ struct LoginView: View {
     // MARK: - Branding
 
     private var brandingSection: some View {
-        VStack(spacing: 12) {
-            // Diamond icon
-            Image(systemName: "diamond.fill")
-                .font(.largeTitle)
-                .foregroundStyle(RSMSTheme.goldGradient)
-
-            Text("Luxora")
-                .font(.largeTitle.weight(.light))
-                .tracking(isCompact ? 6 : 8)
-                .foregroundStyle(RSMSTheme.goldGradient)
-
-            Rectangle()
-                .fill(RSMSTheme.goldGradient)
-                .frame(width: isCompact ? 40 : 60, height: 1)
-
-            Text("Retail Store Management")
-                .font(.caption.weight(.medium))
-                .tracking(isCompact ? 3 : 4)
-                .foregroundStyle(RSMSTheme.textSecondary)
-                .textCase(.uppercase)
+        VStack(spacing: 24) {
+            // Custom Logo: Rounded Rhombus with subtle gradient
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red: 0.65, green: 0.28, blue: 0.38), brandMaroon],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 32, height: 32)
+                .rotationEffect(.degrees(45))
+            
+            VStack(spacing: 12) {
+                // Brand Name
+                Text("Luxora")
+                    .font(.system(size: 34, weight: .light, design: .serif))
+                    .foregroundColor(brandMaroon)
+                    .tracking(6)
+                
+                // Divider Line
+                Rectangle()
+                    .fill(brandMaroon.opacity(0.4))
+                    .frame(width: 65, height: 1.5)
+                
+                // Subtitle
+                Text("RETAIL STORE MANAGEMENT")
+                    .font(.system(size: 10, weight: .semibold, design: .default))
+                    .foregroundColor(textMuted)
+                    .tracking(3)
+            }
         }
     }
 
@@ -534,11 +564,11 @@ struct LoginView: View {
     private var backgroundDecoration: some View {
         ZStack {
             Circle()
-                .fill(RSMSTheme.gold.opacity(0.04))
+                .fill(brandMaroon.opacity(0.04))
                 .frame(width: isCompact ? 400 : 600, height: isCompact ? 400 : 600)
                 .offset(x: isCompact ? -150 : -200, y: isCompact ? -200 : -300)
             Circle()
-                .fill(RSMSTheme.gold.opacity(0.03))
+                .fill(brandMaroon.opacity(0.03))
                 .frame(width: isCompact ? 300 : 400, height: isCompact ? 300 : 400)
                 .offset(x: isCompact ? 150 : 300, y: isCompact ? 150 : 200)
         }
