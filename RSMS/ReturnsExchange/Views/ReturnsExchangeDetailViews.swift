@@ -471,6 +471,76 @@ struct ExchangePaymentSheet: View {
     
     private func handlePaymentCompletion(paymentId: String) {
         Task {
+            // 1. Create and record a new UniversalCart, UniversalCartItem, Transaction, Tender, and Commission records for the payment difference
+            let originalOrder = dataStore.orders.first(where: { $0.id == request.orderId })
+            let clientId = originalOrder?.clientId
+            
+            let exchangeCartId = UUID()
+            let newCart = UniversalCart(
+                id: exchangeCartId,
+                type: .pos,
+                associateId: request.associateId,
+                clientId: clientId,
+                storeId: request.storeId,
+                status: .completed,
+                note: "Exchange Cart",
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            
+            let cartItem = UniversalCartItem(
+                id: UUID(),
+                cartId: exchangeCartId,
+                productId: request.replacementProductId,
+                quantity: request.quantity,
+                unitPrice: NSDecimalNumber(decimal: request.replacementItemValue).doubleValue,
+                discountApplied: 0.0,
+                note: "Exchange Replacement"
+            )
+            
+            let txn = Transaction(
+                id: UUID(),
+                cartId: exchangeCartId,
+                storeId: request.storeId,
+                associateId: request.associateId,
+                clientId: clientId,
+                totalAmount: amountDue,
+                taxAmount: amountDue * 0.2 / 1.2,
+                currency: "INR",
+                status: .completed,
+                isTaxFree: false,
+                createdAt: Date()
+            )
+            
+            let tender = Tender(
+                id: UUID(),
+                transactionId: txn.id,
+                method: .card,
+                amount: amountDue,
+                reference: "online-payment-\(paymentId)"
+            )
+            
+            let commissionRate = 0.05
+            let commission = Commission(
+                id: UUID(),
+                staffId: request.associateId,
+                transactionId: txn.id,
+                amount: amountDue * commissionRate,
+                rate: commissionRate,
+                status: .pending,
+                createdAt: Date()
+            )
+            
+            do {
+                _ = try await dataStore.createUniversalCart(newCart)
+                _ = try await dataStore.createUniversalCartItem(cartItem)
+                _ = try await dataStore.createTransaction(txn)
+                _ = try await dataStore.createTender(tender)
+                _ = try await dataStore.createCommission(commission)
+            } catch {
+                print("[ExchangePayment] Failed to record transaction/tender: \(error)")
+            }
+
             // Update exchange status to completed in Supabase
             var updated = request
             updated.status = .completed

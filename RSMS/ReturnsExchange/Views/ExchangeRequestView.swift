@@ -259,7 +259,9 @@ struct ProductSelectionView: View {
                     onSelect(product)
                     dismiss()
                 } label: {
-                    HStack {
+                    HStack(spacing: 16) {
+                        ProductRowImageView(product: product)
+                        
                         VStack(alignment: .leading, spacing: 4) {
                             Text(product.name)
                                 .font(.headline)
