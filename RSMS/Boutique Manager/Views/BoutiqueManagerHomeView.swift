@@ -65,12 +65,12 @@ struct BoutiqueManagerHomeView: View {
                 HStack(spacing: 16) {
                     Image(systemName: section.icon)
                         .font(.headline)
-                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
                         .frame(width: 24)
                     
                     Text(section.rawValue)
                         .font(isSelected ? .body.weight(.semibold) : .body)
-                        .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
+                        .foregroundStyle(isSelected ? RSMSTheme.primary : RSMSTheme.textPrimary)
                     
                     Spacer()
                 }

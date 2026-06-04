@@ -79,7 +79,7 @@ struct StoreLayoutOverviewView: View {
                             HStack {
                                 if isSaving {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: backgroundGray))
                                         .padding(.trailing, 4)
                                 }
                                 Text(isSaving ? "Saving..." : "Save Layout")
@@ -87,7 +87,7 @@ struct StoreLayoutOverviewView: View {
                         }
                         .disabled(isSaving)
                         .font(.footnote.weight(.bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(backgroundGray)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(textPrimary)
@@ -97,7 +97,7 @@ struct StoreLayoutOverviewView: View {
                             isEditingLayout = true
                         }
                         .font(.footnote.weight(.bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(backgroundGray)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(textPrimary)
@@ -133,7 +133,7 @@ struct StoreLayoutOverviewView: View {
                         .animation(.spring(), value: showSuccessMessage)
                     )
             }
-            .background(Color.white)
+            .background(RSMSTheme.surfacePrimary)
             .task {
                 if viewModel.zones.isEmpty {
                     await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId ?? UUID())
@@ -169,18 +169,18 @@ struct StoreLayoutOverviewView: View {
                     switch zone.type {
                     case .table:
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(isSelected ? Color.white : Color(white: 0.98))
+                            .fill(isSelected ? RSMSTheme.surfacePrimary : RSMSTheme.surfaceSecondary)
                             .shadow(color: .black.opacity(isSelected ? 0.15 : 0), radius: 10, y: 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(isSelected ? Color.black : Color.gray.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+                                    .stroke(isSelected ? RSMSTheme.textPrimary : RSMSTheme.border, lineWidth: isSelected ? 2 : 1)
                             )
                     case .wall:
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(white: 0.95))
+                            .fill(RSMSTheme.surfaceSecondary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(isSelected ? Color.black : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                                    .stroke(isSelected ? RSMSTheme.textPrimary : RSMSTheme.border, lineWidth: isSelected ? 2 : 1)
                             )
                     case .window:
                         RoundedRectangle(cornerRadius: 8)
@@ -191,10 +191,10 @@ struct StoreLayoutOverviewView: View {
                             )
                     case .cashWrap:
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(white: 0.98))
+                            .fill(RSMSTheme.surfaceSecondary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(isSelected ? Color.black : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                                    .stroke(isSelected ? RSMSTheme.textPrimary : RSMSTheme.border, lineWidth: isSelected ? 2 : 1)
                             )
                     }
                     
@@ -228,7 +228,7 @@ struct StoreLayoutOverviewView: View {
                                 Image(systemName: "minus.circle.fill").accessibilityLabel("Remove")
                                     .font(.title)
                                     .foregroundColor(.red)
-                                    .background(Color.white.clipShape(Circle()))
+                                    .background(RSMSTheme.surfacePrimary.clipShape(Circle()))
                             }
                             .offset(x: -8, y: -8)
                         }
@@ -292,7 +292,7 @@ struct StoreLayoutOverviewView: View {
                 }
             }
         }
-        .background(Color.white)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.05), radius: 20)
         .alert("Rename Zone", isPresented: $showRenameAlert) {
