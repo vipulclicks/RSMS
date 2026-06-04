@@ -188,4 +188,120 @@ class ResendEmailService {
         </html>
         """
     }
+
+    /// Send curated cart checkout link to a client.
+    ///
+    /// On the free tier, the `to` address is overridden to `ResendConfig.testRecipientOverride`.
+    func sendCuratedCartEmail(
+        toEmail: String,
+        clientName: String,
+        cartLink: String
+    ) async -> EmailSendResult {
+        guard let url = URL(string: ResendConfig.apiURL) else {
+            return .failed("Invalid Resend API URL")
+        }
+
+        // On free tier, override recipient to the test email
+        let recipient = ResendConfig.testRecipientOverride ?? toEmail
+
+        let htmlBody = buildCuratedCartHTML(
+            clientName: clientName,
+            cartLink: cartLink
+        )
+
+        let body: [String: Any] = [
+            "from": ResendConfig.fromAddress,
+            "to": [recipient],
+            "subject": "Your Curated Cart Checkout",
+            "html": htmlBody
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(ResendConfig.apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failed("Invalid response from server")
+            }
+
+            if (200...299).contains(httpResponse.statusCode) {
+                return .success
+            } else {
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                return .failed("API Error (\(httpResponse.statusCode)): \(errorMessage)")
+            }
+        } catch {
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    private func buildCuratedCartHTML(
+        clientName: String,
+        cartLink: String
+    ) -> String {
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Your Curated Cart from Luxora</title>
+        </head>
+        <body style="margin:0;padding:0;background-color:#f4f1ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f1ec;padding:40px 20px;">
+                <tr>
+                    <td align="center">
+                        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.04);">
+                            <!-- Header -->
+                            <tr>
+                                <td style="background:linear-gradient(135deg,#1a1a2e,#2d2d44);padding:32px 40px;text-align:center;">
+                                    <h1 style="margin:0;color:#d4af37;font-size:28px;font-weight:700;letter-spacing:2px;">LUXORA</h1>
+                                    <p style="margin:8px 0 0;color:#c8bfa9;font-size:13px;letter-spacing:1px;">RETAIL STORE MANAGEMENT SYSTEM</p>
+                                </td>
+                            </tr>
+                            
+                            <!-- Body -->
+                            <tr>
+                                <td style="padding:40px;">
+                                    <h2 style="margin:0 0 8px;color:#1a1a2e;font-size:22px;font-weight:700;">Dear \(clientName),</h2>
+                                    <p style="margin:0 0 24px;color:#6b6b7b;font-size:15px;line-height:1.6;">
+                                        Please find your curated cart checkout link below.
+                                    </p>
+
+                                    <!-- Action Button -->
+                                    <div style="text-align:center;margin:32px 0;">
+                                        <a href="\(cartLink)" style="background-color:#1a1a2e;color:#ffffff;padding:16px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;display:inline-block;">Proceed to Checkout</a>
+                                    </div>
+                                    
+                                    <p style="margin:0 0 24px;color:#6b6b7b;font-size:15px;line-height:1.6;">
+                                        Or copy and paste this link into your browser:<br>
+                                        <a href="\(cartLink)" style="color:#d4af37;word-break:break-all;">\(cartLink)</a>
+                                    </p>
+                                    
+                                    <p style="margin:0;color:#8a8a9a;font-size:13px;line-height:1.5;">
+                                        Thank you,<br>Luxora Boutique
+                                    </p>
+                                </td>
+                            </tr>
+                            <!-- Footer -->
+                            <tr>
+                                <td style="background-color:#f8f6f2;padding:20px 40px;text-align:center;border-top:1px solid #e8e4dd;">
+                                    <p style="margin:0;color:#8a8a9a;font-size:12px;">
+                                        This is an automated message from Luxora. Please do not reply.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+    }
 }
