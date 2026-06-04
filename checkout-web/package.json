@@ -1,0 +1,13 @@
+{
+  "name": "rsms-checkout-web",
+  "version": "1.0.0",
+  "description": "Hosted checkout page and server for RSMS BOPIS payment links",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2"
+  }
+}

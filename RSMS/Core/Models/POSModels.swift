@@ -19,7 +19,7 @@ struct UniversalCart: Codable, Identifiable, Hashable {
     let associateId: UUID
     let clientId: UUID?
     let storeId: UUID?
-    let status: CartStatus
+    var status: CartStatus
     let note: String?
     let createdAt: Date
     let updatedAt: Date
@@ -31,6 +31,52 @@ struct UniversalCart: Codable, Identifiable, Hashable {
         case storeId     = "store_id"
         case createdAt   = "created_at"
         case updatedAt   = "updated_at"
+    }
+    
+    // MARK: - Cart Discount Helpers
+    
+    /// Parses the applied discount from the note field (as a fallback since DB columns are missing)
+    var appliedDiscount: CartDiscount? {
+        guard let note = note, note.contains("||DISCOUNT:"),
+              let range = note.range(of: "||DISCOUNT:") else {
+            return nil
+        }
+        let jsonString = String(note[range.upperBound...])
+        if let data = jsonString.data(using: .utf8) {
+            return try? JSONDecoder().decode(CartDiscount.self, from: data)
+        }
+        return nil
+    }
+    
+    /// Returns a new UniversalCart with the updated discount embedded in the note field
+    func applyingDiscount(_ discount: CartDiscount?) -> UniversalCart {
+        var baseNote = note ?? ""
+        if let range = baseNote.range(of: "||DISCOUNT:") {
+            baseNote = String(baseNote[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
+        }
+        
+        var newNote: String? = baseNote.isEmpty ? nil : baseNote
+        
+        if let discount = discount, let data = try? JSONEncoder().encode(discount), let json = String(data: data, encoding: .utf8) {
+            let discountString = "||DISCOUNT:\(json)"
+            if let existing = newNote {
+                newNote = existing + " " + discountString
+            } else {
+                newNote = discountString
+            }
+        }
+        
+        return UniversalCart(
+            id: id,
+            type: type,
+            associateId: associateId,
+            clientId: clientId,
+            storeId: storeId,
+            status: status,
+            note: newNote,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
     }
 }
 
@@ -97,8 +143,87 @@ struct Discount: Codable, Identifiable, Hashable {
 }
 
 enum DiscountType: String, Codable, CaseIterable {
-    case percentage = "percentage"
-    case fixed      = "fixed"
+    case percentage  = "percentage"
+    case vip         = "vip"
+    case promotional = "promotional"
+}
+
+// MARK: - Cart Discount (Applied)
+
+enum DiscountApprovalStatus: String, Codable, CaseIterable {
+    case pending  = "pending"
+    case approved = "approved"
+    case rejected = "rejected"
+}
+
+/// Represents a discount applied to a specific cart.
+/// Temporarily serialized into the cart's note field until DB schema is updated.
+struct CartDiscount: Codable, Hashable {
+    let type: DiscountType
+    let value: Double
+    var status: DiscountApprovalStatus
+    let appliedBy: UUID
+    let appliedAt: Date
+}
+
+// MARK: - Approval Workflow
+
+struct DiscountApprovalRequest: Codable, Identifiable, Hashable {
+    let id: UUID
+    let cartId: UUID
+    let clientId: UUID
+    let associateId: UUID
+    var managerId: UUID?
+    let discountType: DiscountType
+    let discountValue: Double
+    let cartTotal: Double
+    let reasonForDiscount: String?
+    var status: DiscountApprovalStatus
+    let createdAt: Date
+    var decisionDate: Date?
+    var managerNotes: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, status
+        case cartId = "cart_id"
+        case clientId = "client_id"
+        case associateId = "associate_id"
+        case managerId = "manager_id"
+        case discountType = "discount_type"
+        case discountValue = "discount_value"
+        case cartTotal = "cart_total"
+        case reasonForDiscount = "reason_for_discount"
+        case createdAt = "created_at"
+        case decisionDate = "decision_date"
+        case managerNotes = "manager_notes"
+    }
+}
+
+enum NotificationType: String, Codable, CaseIterable {
+    case approvalRequest = "approval_request"
+    case approvalDecision = "approval_decision"
+    case complianceAlert = "compliance_alert"
+    case sourcingRequest = "sourcing_request"
+    case wishlistRestock = "wishlist_restock"
+}
+
+struct AppNotification: Codable, Identifiable, Hashable {
+    let id: UUID
+    let recipientId: UUID
+    let title: String
+    let message: String
+    let type: NotificationType
+    let relatedEntityId: UUID
+    var isRead: Bool
+    let createdAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id, title, message, type
+        case recipientId = "recipient_id"
+        case relatedEntityId = "related_entity_id"
+        case isRead = "is_read"
+        case createdAt = "created_at"
+    }
 }
 
 // MARK: - Transaction

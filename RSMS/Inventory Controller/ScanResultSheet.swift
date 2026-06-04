@@ -18,6 +18,9 @@ struct ScanResultSheet: View {
 
     var scannerVM: BarcodeScannerViewModel
 
+    @State private var enteredCount: String = ""
+    @State private var hasInitializedCount: Bool = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -31,17 +34,17 @@ struct ScanResultSheet: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(navigationTitle)
-                        .font(.system(.headline, design: .serif, weight: .light))
+                        .font(.system(.headline, weight: .light))
                         .tracking(4)
                         .foregroundStyle(RSMSTheme.gold)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Done") { dismiss() }
                         .foregroundStyle(RSMSTheme.gold)
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
@@ -64,6 +67,12 @@ struct ScanResultSheet: View {
         switch scannerVM.state {
         case .found(let product, let stockItem):
             foundView(product: product, stockItem: stockItem)
+                .onAppear {
+                    if !hasInitializedCount {
+                        enteredCount = "\(stockItem?.quantity ?? 0)"
+                        hasInitializedCount = true
+                    }
+                }
         case .notFound(let barcode):
             notFoundView(barcode: barcode)
         case .duplicate(let product):
@@ -111,6 +120,48 @@ struct ScanResultSheet: View {
                             value: "\(stockItem.quantity) units",
                             valueColor: stockItem.quantity <= 5 ? RSMSTheme.warning : RSMSTheme.success
                         )
+                        
+                        if scannerVM.scanMode == .verification {
+                            Rectangle().fill(RSMSTheme.divider).frame(height: 1)
+                            
+                            HStack {
+                                Text("Actual Count")
+                                    .font(.subheadline)
+                                    .foregroundStyle(RSMSTheme.textTertiary)
+                                Spacer()
+                                HStack(spacing: 12) {
+                                    Button(action: {
+                                        if let val = Int(enteredCount), val > 0 {
+                                            enteredCount = "\(val - 1)"
+                                        } else if enteredCount.isEmpty {
+                                            enteredCount = "0"
+                                        }
+                                    }) {
+                                        Image(systemName: "minus.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    }
+                                    
+                                    TextField("0", text: $enteredCount)
+                                        .keyboardType(.numberPad)
+                                        .multilineTextAlignment(.center)
+                                        .font(.title3.bold())
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .frame(width: 50)
+                                    
+                                    Button(action: {
+                                        let val = Int(enteredCount) ?? 0
+                                        enteredCount = "\(val + 1)"
+                                    }) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.title2)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        
                         if let location = stockItem.location {
                             resultRow(label: "Location", value: location)
                         }
@@ -126,7 +177,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(RSMSTheme.border, lineWidth: 1))
 
@@ -163,7 +214,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -206,7 +257,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -222,6 +273,7 @@ struct ScanResultSheet: View {
                     await scannerVM.forceConfirm(
                         product: product,
                         stockItem: stockItem,
+                        enteredCount: Int(enteredCount),
                         dataStore: appVM.dataStore,
                         user: appVM.currentUser!
                     )
@@ -267,7 +319,7 @@ struct ScanResultSheet: View {
             }
             .padding(20)
             .frame(maxWidth: .infinity)
-            .background(RSMSTheme.cream)
+            .background(RSMSTheme.surfacePrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18))
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
@@ -312,6 +364,7 @@ struct ScanResultSheet: View {
                 await scannerVM.confirm(
                     product: product,
                     stockItem: stockItem,
+                    enteredCount: Int(enteredCount),
                     dataStore: appVM.dataStore,
                     user: user
                 )
@@ -338,7 +391,7 @@ struct ScanResultSheet: View {
     private var confirmButtonLabel: String {
         switch scannerVM.scanMode {
         case .stockIn:      return "Add to Inventory"
-        case .verification: return "Mark as Verified"
+        case .verification: return "Count"
         case .audit:        return "Record in Audit"
         }
     }
@@ -350,7 +403,7 @@ struct ScanResultSheet: View {
                 .foregroundStyle(RSMSTheme.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(RSMSTheme.cream)
+                .background(RSMSTheme.surfacePrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)

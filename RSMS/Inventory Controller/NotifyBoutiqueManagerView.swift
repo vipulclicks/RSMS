@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct NotifyBoutiqueManagerView: View {
+    @Environment(AppViewModel.self) private var appVM
     @State private var viewModel = NotifyBoutiqueManagerViewModel()
     @State private var appeared = false
     
@@ -32,9 +33,24 @@ struct NotifyBoutiqueManagerView: View {
                     headerSection
                     summarySection
                     lowStockAlertSection
-                    monitoringStatusSection
                 }
                 .padding(24)
+                
+                if viewModel.isLoading {
+                    ProgressView("Loading inventory data...")
+                        .tint(RSMSTheme.gold)
+                        .padding(.top, 40)
+                } else if viewModel.lowStockItems.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(RSMSTheme.success)
+                        Text("All stock levels are optimal.")
+                            .font(.headline)
+                            .foregroundColor(RSMSTheme.textSecondary)
+                    }
+                    .padding(.top, 40)
+                }
             }
             .navigationTitle("Notify Manager")
             .navigationBarTitleDisplayMode(.inline)
@@ -56,10 +72,14 @@ struct NotifyBoutiqueManagerView: View {
                 }
             }
         }
-        .onAppear {
+        .task {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
             withAnimation(.easeOut(duration: 0.5)) {
                 appeared = true
             }
+        }
+        .refreshable {
+            await viewModel.load(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
         }
     }
     
@@ -68,7 +88,7 @@ struct NotifyBoutiqueManagerView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Notify Boutique Manager")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold))
                 .foregroundColor(RSMSTheme.textPrimary)
             Text("Monitor low-stock products & request replenishment")
                 .font(.subheadline)
@@ -128,7 +148,7 @@ struct NotifyBoutiqueManagerView: View {
                 Spacer()
             }
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
                 .foregroundColor(valueColor)
             Text(label)
                 .font(.caption.weight(.bold))
@@ -143,10 +163,10 @@ struct NotifyBoutiqueManagerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.8))
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(RSMSTheme.surfacePrimary.opacity(0.6), lineWidth: 1)
+                        .stroke(RSMSTheme.border, lineWidth: 1)
                 )
         )
         .shadow(color: RSMSTheme.textPrimary.opacity(0.06), radius: 8, x: 0, y: 4)
@@ -177,7 +197,7 @@ struct NotifyBoutiqueManagerView: View {
                 // Product Image Placeholder
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(RSMSTheme.surfacePrimary.opacity(0.3))
+                        .fill(RSMSTheme.surfaceSecondary.opacity(0.3))
                         .frame(width: 56, height: 56)
                     Image(systemName: iconForCategory(item.product.category))
                         .font(.title2)
@@ -215,7 +235,7 @@ struct NotifyBoutiqueManagerView: View {
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(RSMSTheme.surfacePrimary.opacity(0.4))
+                            .fill(RSMSTheme.surfaceSecondary.opacity(0.4))
                             .frame(height: 8)
                         Capsule()
                             .fill(item.statusColor)
@@ -254,7 +274,7 @@ struct NotifyBoutiqueManagerView: View {
                     .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(item.isManagerNotified ? RSMSTheme.surfacePrimary.opacity(0.5) : RSMSTheme.primary)
+                            .fill(item.isManagerNotified ? RSMSTheme.surfaceSecondary.opacity(0.5) : RSMSTheme.primary)
                     )
                 }
                 .disabled(item.isManagerNotified)
@@ -263,68 +283,16 @@ struct NotifyBoutiqueManagerView: View {
         .padding(18)
         .background(
             RoundedRectangle(cornerRadius: 18)
-                .fill(Color.white.opacity(0.85))
+                .fill(RSMSTheme.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 18)
-                        .stroke(item.isManagerNotified ? RSMSTheme.success.opacity(0.3) : RSMSTheme.textPrimary.opacity(0.12), lineWidth: 1)
+                        .stroke(item.isManagerNotified ? RSMSTheme.success.opacity(0.3) : RSMSTheme.border, lineWidth: 1)
                 )
         )
         .shadow(color: RSMSTheme.textPrimary.opacity(0.06), radius: 10, x: 0, y: 4)
     }
     
-    // MARK: - Smart Monitoring Status
-    
-    private var monitoringStatusSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Smart System Status")
-                .font(.headline.weight(.semibold))
-                .foregroundColor(RSMSTheme.textPrimary)
-                .padding(.top, 10)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    monitoringChip(label: "Real-time Sync", dotColor: RSMSTheme.success, subtitle: "Active")
-                    monitoringChip(label: "Duplicate Prevention", dotColor: RSMSTheme.primary, subtitle: "Enabled")
-                    monitoringChip(label: "Auto Stock Monitoring", dotColor: RSMSTheme.gold, subtitle: "Enabled")
-                    monitoringChip(label: "Inventory DB", dotColor: RSMSTheme.success, subtitle: "Updated Automatically")
-                }
-            }
-        }
-        .opacity(appeared ? 1 : 0)
-    }
-    
-    private func monitoringChip(label: String, dotColor: Color, subtitle: String) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(dotColor)
-                .frame(width: 8, height: 8)
-                .overlay(
-                    Circle()
-                        .fill(dotColor.opacity(0.3))
-                        .frame(width: 16, height: 16)
-                )
-            
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(RSMSTheme.textPrimary)
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundColor(RSMSTheme.textPrimary.opacity(0.5))
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            Capsule()
-                .fill(RSMSTheme.surfacePrimary.opacity(0.35))
-                .overlay(
-                    Capsule()
-                        .stroke(RSMSTheme.surfacePrimary.opacity(0.5), lineWidth: 1)
-                )
-        )
-    }
-    
+
     // MARK: - Confirmation Modal
     
     private func successModal(for item: LowStockAlertItem) -> some View {
@@ -377,7 +345,7 @@ struct NotifyBoutiqueManagerView: View {
                 }
                 
                 Divider()
-                    .background(RSMSTheme.surfacePrimary)
+                    .background(RSMSTheme.surfaceSecondary)
                 
                 HStack {
                     Image(systemName: "clock")
@@ -389,7 +357,7 @@ struct NotifyBoutiqueManagerView: View {
                 .foregroundColor(RSMSTheme.textPrimary.opacity(0.5))
             }
             .padding(16)
-            .background(RSMSTheme.surfacePrimary.opacity(0.3))
+            .background(RSMSTheme.surfaceSecondary.opacity(0.3))
             .cornerRadius(12)
             
             // Duplicate prevention notice
@@ -434,8 +402,9 @@ struct NotifyBoutiqueManagerView: View {
     // MARK: - Actions
     
     private func handleNotifyAction(for item: LowStockAlertItem) {
+        guard let user = appVM.currentUser else { return }
         // Trigger logic to notify
-        viewModel.notifyManager(for: item.id)
+        viewModel.notifyManager(for: item.id, dataStore: appVM.dataStore, user: user)
         
         // Show modal
         selectedAlert = item
@@ -468,4 +437,5 @@ struct NotifyBoutiqueManagerView: View {
 
 #Preview {
     NotifyBoutiqueManagerView()
+        .environment(AppViewModel())
 }

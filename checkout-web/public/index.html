@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Checkout — RSMS</title>
+    <!-- Google Fonts: Outfit and Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Razorpay Checkout library -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <div class="checkout-container">
+        <!-- Luxury Brand Header -->
+        <header class="checkout-header">
+            <div class="logo-wrapper">
+                <span class="luxury-logo">LUXORA</span>
+            </div>
+            <div class="checkout-subtitle">Secure Remote Checkout</div>
+        </header>
+
+        <!-- Loading spinner -->
+        <div id="loading" class="spinner-container">
+            <div class="spinner"></div>
+            <p>Retrieving your curated order...</p>
+        </div>
+
+        <!-- Main Card wrapper -->
+        <main id="checkout-card" class="checkout-card hide">
+            <!-- Stepper indicators -->
+            <div class="stepper">
+                <div id="step-1-indicator" class="step active">1. Overview</div>
+                <div id="step-2-indicator" class="step">2. Fulfillment</div>
+                <div id="step-3-indicator" class="step">3. Payment</div>
+            </div>
+
+            <!-- SCREEN 1: ORDER OVERVIEW -->
+            <section id="screen-1" class="screen-section">
+                <h2 class="section-title">Review Your Selection</h2>
+                <div class="boutique-info-banner">
+                    <span class="icon">🏛️</span>
+                    <div>
+                        <div class="banner-title">Store Location</div>
+                        <div id="boutique-name" class="banner-desc">Loading boutique...</div>
+                    </div>
+                </div>
+
+                <div class="items-list-container">
+                    <div id="cart-items" class="cart-items-wrapper">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="pricing-summary-card">
+                    <div class="price-row">
+                        <span>Subtotal</span>
+                        <span id="price-subtotal">₹0</span>
+                    </div>
+                    <div id="price-discount-row" class="price-row" style="display:none;">
+                        <span class="price-label">Discount</span>
+                        <span id="price-discount" class="price-value discount-value" style="color: var(--success); font-weight: 500;">- ₹0</span>
+                    </div>
+                    <div class="price-row">
+                        <span>GST (20%)</span>
+                        <span id="price-tax">₹0</span>
+                    </div>
+                    <hr class="summary-divider">
+                    <div class="price-row total">
+                        <span>Grand Total</span>
+                        <span id="price-total" class="gold-text">₹0</span>
+                    </div>
+                </div>
+
+                <button id="btn-goto-step-2" class="primary-btn gold-gradient-btn">Proceed to Fulfillment</button>
+            </section>
+
+            <!-- SCREEN 2: FULFILLMENT -->
+            <section id="screen-2" class="screen-section hide">
+                <h2 class="section-title">Select Fulfillment</h2>
+                <div class="fulfillment-options-grid">
+                    <label class="option-card active" for="fulfillment-pickup">
+                        <input type="radio" id="fulfillment-pickup" name="fulfillment" value="pickup" checked>
+                        <div class="card-content">
+                            <span class="option-icon">🛍️</span>
+                            <span class="option-title">Pick Up In Store</span>
+                            <span class="option-desc">Collect at your convenience</span>
+                        </div>
+                    </label>
+                    <label class="option-card" for="fulfillment-shipping">
+                        <input type="radio" id="fulfillment-shipping" name="fulfillment" value="shipping">
+                        <div class="card-content">
+                            <span class="option-icon">📦</span>
+                            <span class="option-title">Home Delivery</span>
+                            <span class="option-desc">Shipped securely to you</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Sub-panel: Pickup Details -->
+                <div id="pickup-details-panel" class="details-panel">
+                    <h3 class="panel-subtitle">Boutique Details</h3>
+                    <p id="pickup-address" class="address-text">Boutique Address</p>
+                    <div class="boutique-meta-grid">
+                        <div>
+                            <strong>Hours:</strong> 10:00 AM — 08:00 PM
+                        </div>
+                        <div>
+                            <strong>Instructions:</strong> Please present a valid ID and this payment page upon arrival.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-panel: Shipping Address Form -->
+                <div id="shipping-address-panel" class="details-panel hide">
+                    <h3 class="panel-subtitle">Delivery Address</h3>
+                    <form id="shipping-form" class="address-form">
+                        <div class="form-group">
+                            <label for="shipping-name">Full Name</label>
+                            <input type="text" id="shipping-name" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="shipping-phone">Phone Number</label>
+                            <input type="tel" id="shipping-phone" required placeholder="+91 98765 43210">
+                        </div>
+                        <div class="form-group">
+                            <label for="shipping-address">Street Address</label>
+                            <input type="text" id="shipping-address" required placeholder="Apartment, Street name">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="shipping-city">City</label>
+                                <input type="text" id="shipping-city" required placeholder="Mumbai">
+                            </div>
+                            <div class="form-group">
+                                <label for="shipping-state">State</label>
+                                <input type="text" id="shipping-state" required placeholder="Maharashtra">
+                            </div>
+                            <div class="form-group">
+                                <label for="shipping-pincode">Pincode</label>
+                                <input type="text" id="shipping-pincode" required placeholder="400013">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="actions-row">
+                    <button id="btn-back-to-step-1" class="secondary-btn">Back</button>
+                    <button id="btn-goto-step-3" class="primary-btn gold-gradient-btn">Proceed to Payment</button>
+                </div>
+            </section>
+
+            <!-- SCREEN 3: PAYMENT -->
+            <section id="screen-3" class="screen-section hide">
+                <h2 class="section-title">Select Payment</h2>
+                
+                <div class="payment-options-grid">
+                    <label class="option-card active" for="payment-online">
+                        <input type="radio" id="payment-online" name="payment" value="online" checked>
+                        <div class="card-content">
+                            <span class="option-icon">💳</span>
+                            <span class="option-title">Pay Online Now</span>
+                            <span class="option-desc">Secure credit/debit/UPI via Razorpay</span>
+                        </div>
+                    </label>
+                    <label id="pay-in-store-card" class="option-card" for="payment-instore">
+                        <input type="radio" id="payment-instore" name="payment" value="instore">
+                        <div class="card-content">
+                            <span class="option-icon">🏛️</span>
+                            <span class="option-title">Pay In Store</span>
+                            <span class="option-desc">Complete payment upon pick up</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="actions-row">
+                    <button id="btn-back-to-step-2" class="secondary-btn">Back</button>
+                    <button id="btn-pay-confirm" class="primary-btn gold-gradient-btn">Pay ₹0</button>
+                </div>
+            </section>
+
+            <!-- SUCCESS SCREEN -->
+            <section id="screen-success" class="screen-section hide text-center">
+                <div class="success-icon-wrapper">
+                    <span class="success-icon">✓</span>
+                </div>
+                <h2 class="success-title">Order Confirmed</h2>
+                <p id="success-message" class="success-message">Your payment has been received successfully.</p>
+                <div class="success-summary-box">
+                    <div id="success-detail-method" class="detail-row"><strong>Method:</strong> Pickup In Store</div>
+                    <div id="success-detail-code" class="detail-row"><strong>Verification Token:</strong> a7f9x92b1k4</div>
+                </div>
+                <p class="outro-text">A confirmation receipt has been sent to your registered contact. Thank you for shopping with us.</p>
+            </section>
+        </main>
+    </div>
+    
+    <script src="/js/checkout.js"></script>
+</body>
+</html>
