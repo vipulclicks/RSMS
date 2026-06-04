@@ -1,6 +1,18 @@
 import SwiftUI
 import Charts
 
+fileprivate func formatCompactINR(_ amount: Double) -> String {
+    if amount >= 1_00_00_000 {
+        return String(format: "₹%.1fCr", amount / 1_00_00_000).replacingOccurrences(of: ".0", with: "")
+    } else if amount >= 1_00_000 {
+        return String(format: "₹%.1fL", amount / 1_00_000).replacingOccurrences(of: ".0", with: "")
+    } else if amount >= 1_000 {
+        return String(format: "₹%.1fK", amount / 1_000).replacingOccurrences(of: ".0", with: "")
+    } else {
+        return "₹\(Int(amount))"
+    }
+}
+
 struct StaffProfileDetailView: View {
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -207,7 +219,7 @@ struct StaffProfileDetailView: View {
                             .cornerRadius(4)
                             .annotation(position: .top) {
                                 if dayData.amount > 0 && isSelected {
-                                    Text(dayData.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                                    Text(formatCompactINR(dayData.amount))
                                         .font(.caption2.weight(.bold))
                                         .foregroundStyle(RSMSTheme.textSecondary)
                                 }
@@ -218,6 +230,16 @@ struct StaffProfileDetailView: View {
                             AxisMarks(values: .stride(by: .day)) { _ in
                                 AxisGridLine()
                                 AxisValueLabel(format: .dateTime.month(.abbreviated).day(), centered: true)
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks { value in
+                                if let amount = value.as(Double.self) {
+                                    AxisValueLabel {
+                                        Text(formatCompactINR(amount))
+                                    }
+                                    AxisGridLine()
+                                }
                             }
                         }
                     }
