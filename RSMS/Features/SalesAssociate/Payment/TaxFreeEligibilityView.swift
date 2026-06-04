@@ -52,6 +52,7 @@ struct TaxFreeEligibilityView: View {
                             }
                             .foregroundStyle(RSMSTheme.textPrimary)
                         }
+                        .listRowBackground(RSMSTheme.surfacePrimary)
                         
                         if validationChecked {
                             Section(header: Text("Eligibility Result").font(.caption.bold()).foregroundStyle(RSMSTheme.textSecondary)) {
@@ -99,6 +100,7 @@ struct TaxFreeEligibilityView: View {
                                     .padding(.vertical, 4)
                                 }
                             }
+                            .listRowBackground(RSMSTheme.surfacePrimary)
                         }
                     }
                     .scrollContentBackground(.hidden)

@@ -13,6 +13,9 @@ struct GiftReceiptPreviewView: View {
     let order: Order                          // for transaction ref and purchase date
     let cartItems: [UniversalCartItem]        // full cart items (we filter by selectedItemIds)
 
+    @State private var generatedPDFURL: URL? = nil
+    @State private var showShareSheet = false
+
     private struct GiftReceiptPayload: Codable {
         let selectedItemIds: [UUID]
         let customerNote: String       // "To: Priya, with love from Rahul"
@@ -152,7 +155,9 @@ struct GiftReceiptPreviewView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 16) {
-                        ShareLink(item: buildShareText()) {
+                        Button {
+                            shareReceipt()
+                        } label: {
                             Image(systemName: "square.and.arrow.up")
                                 .foregroundStyle(RSMSTheme.primary)
                         }
@@ -173,6 +178,11 @@ struct GiftReceiptPreviewView: View {
                     .foregroundStyle(RSMSTheme.primary)
                 }
             }
+            .sheet(isPresented: $showShareSheet) {
+                if let url = generatedPDFURL {
+                    GiftReceiptShareSheet(activityItems: [url])
+                }
+            }
         }
     }
 
@@ -187,52 +197,168 @@ struct GiftReceiptPreviewView: View {
         }
     }
 
-    private func buildShareText() -> String {
-        let ref = order.id.uuidString.prefix(8).uppercased()
-        let dateStr = formattedDate
-        let storeName = payload?.storeName ?? store?.name ?? "Maison Lumière"
-        let storeCity = store?.city ?? ""
-        let storeInfo = storeCity.isEmpty ? storeName : "\(storeName), \(storeCity)"
+    // MARK: - PDF Rendering / Printing / Sharing
 
-        var text = """
-        MAISON LUMIÈRE — GIFT RECEIPT
-        Reference: ORDER-\(ref)
-        Date: \(dateStr)
-        Store: \(storeInfo)
-
-        Items:
-        """
-
-        for item in selectedItems {
-            let name = appVM.dataStore.product(by: item.productId)?.name ?? "Unknown Product"
-            text += "\n• \(item.quantity)× \(name)"
-        }
-
-        if let note = payload?.customerNote, !note.isEmpty {
-            text += "\n\n\(note)"
-        }
-
-        if let payload {
-            text += "\n\nAssisted by: \(payload.associateName)"
-            if !payload.associateEmail.isEmpty {
-                text += "\n\(payload.associateEmail)"
+    private var giftReceiptPrintView: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 6) {
+                Text("Maison Lumière")
+                    .font(.title3.bold())
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                Text("Gift Receipt")
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
             }
-            if let phone = payload.associatePhone, !phone.isEmpty {
-                text += "\n\(phone)"
+            .padding(.top, 16)
+            
+            Divider()
+
+            // Transaction Details
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Reference No.")
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    Spacer()
+                    Text("ORDER-\(order.id.uuidString.prefix(8).uppercased())")
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .fontWeight(.medium)
+                }
+                HStack {
+                    Text("Purchase Date")
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    Spacer()
+                    Text(formattedDate)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .fontWeight(.medium)
+                }
+                HStack {
+                    Text("Store")
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                    Spacer()
+                    Text(storeDisplayString)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                        .fontWeight(.medium)
+                }
+            }
+
+            Divider()
+
+            // Items
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Items")
+                    .font(.headline)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+                ForEach(selectedItems) { item in
+                    let productName = appVM.dataStore.product(by: item.productId)?.name ?? "Unknown Product"
+                    HStack {
+                        Text("\(item.quantity)×")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                        Text(productName)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Spacer()
+                    }
+                }
+            }
+
+            // Personal Note
+            if let note = payload?.customerNote, !note.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Personal Note")
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    Text(note)
+                        .font(.body)
+                        .italic()
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            // Sales Associate Details
+            if let payload {
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Assisted by")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text(payload.associateName)
+                        .font(.headline)
+                        .foregroundStyle(RSMSTheme.textPrimary)
+                    if !payload.associateEmail.isEmpty {
+                        Text(payload.associateEmail)
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                    if let phone = payload.associatePhone, !phone.isEmpty {
+                        Text(phone)
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .padding(30)
+        .background(Color.white)
+    }
 
-        return text
+    @MainActor
+    private func generatePDF() -> URL? {
+        let printView = giftReceiptPrintView
+            .frame(width: 612, height: 792) // Letter size
+            .padding(40)
+            .background(Color.white)
+        
+        let renderer = ImageRenderer(content: printView)
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("GiftReceipt-\(order.id.uuidString.prefix(8)).pdf")
+        
+        renderer.render { size, context in
+            var box = CGRect(origin: .zero, size: CGSize(width: 612, height: 792))
+            guard let pdfContext = CGContext(tempURL as CFURL, mediaBox: &box, nil) else { return }
+            pdfContext.beginPDFPage(nil)
+            
+            let dx = (box.size.width - size.width) / 2
+            let dy = (box.size.height - size.height) / 2
+            pdfContext.translateBy(x: dx, y: dy)
+            
+            context(pdfContext)
+            pdfContext.endPDFPage()
+            pdfContext.closePDF()
+        }
+        return tempURL
+    }
+
+    private func shareReceipt() {
+        if let url = generatePDF() {
+            generatedPDFURL = url
+            showShareSheet = true
+        }
     }
 
     private func printReceipt() {
-        let formatter = UISimpleTextPrintFormatter(text: buildShareText())
-        let controller = UIPrintInteractionController.shared
-        let info = UIPrintInfo.printInfo()
-        info.outputType = .general
-        info.jobName = "Gift Receipt — \(order.id.uuidString.prefix(8).uppercased())"
-        controller.printInfo = info
-        controller.printFormatter = formatter
-        controller.present(animated: true)
+        if let url = generatePDF() {
+            let printController = UIPrintInteractionController.shared
+            let printInfo = UIPrintInfo(dictionary: nil)
+            printInfo.jobName = "Gift Receipt \(order.id.uuidString.prefix(8))"
+            printInfo.outputType = .general
+            printController.printInfo = printInfo
+            printController.printingItem = url
+            
+            printController.present(animated: true) { _, _, _ in }
+        }
     }
 }
+
+struct GiftReceiptShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
