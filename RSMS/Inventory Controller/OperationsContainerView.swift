@@ -12,7 +12,7 @@ struct OperationsContainerView: View {
 
     @State private var selectedSegment = 0
 
-    private let segments = ["Loaner Mgmt", "Service Center"]
+    private let segments = ["Loaner Product Management", "Service Center Tracking"]
 
     var body: some View {
         VStack(spacing: 0) {

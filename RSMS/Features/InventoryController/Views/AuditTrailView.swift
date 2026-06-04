@@ -76,7 +76,7 @@ struct AuditTrailView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                         }
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                        .frame(height: 44)
                         .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         
@@ -87,7 +87,7 @@ struct AuditTrailView: View {
                         }
                         .pickerStyle(.menu)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        .frame(height: 44)
                         .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .tint(RSMSTheme.textPrimary)

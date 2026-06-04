@@ -316,7 +316,12 @@ struct VendorReturnView: View {
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(filteredReturns) { ret in
-                        returnListItem(ret)
+                        NavigationLink {
+                            VendorReturnDetailView(vm: vm, movement: ret)
+                        } label: {
+                            returnListItem(ret)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
