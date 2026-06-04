@@ -875,7 +875,9 @@ struct ProductLookupView: View {
                     ProgressView().tint(RSMSTheme.gold)
                         .padding(.top, 80)
                 } else if DataScannerViewController.isSupported {
-                    DataScannerRepresentable(scannedCode: $rawScannedASN)
+                    DataScannerRepresentable { code in 
+                        rawScannedASN = code 
+                    }
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)

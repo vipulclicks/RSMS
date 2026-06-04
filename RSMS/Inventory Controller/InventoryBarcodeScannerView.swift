@@ -90,6 +90,11 @@ struct InventoryBarcodeScannerView: View {
         .onChange(of: rawScannedCode) { _, newCode in
             guard let code = newCode else { return }
             rawScannedCode = nil
+            
+            // PREVENT ENDLESS LOOPS: Only process if we are currently idle!
+            // If an alert or sheet is already showing, ignore background camera scans.
+            guard scannerVM.state == .idle else { return }
+            
             Task {
                 await scannerVM.process(
                     barcode: code,
@@ -161,7 +166,9 @@ struct InventoryBarcodeScannerView: View {
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             } else if DataScannerViewController.isSupported {
-                DataScannerRepresentable(scannedCode: $rawScannedCode)
+                DataScannerRepresentable { code in
+                    rawScannedCode = code
+                }
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
@@ -387,19 +394,11 @@ struct InventoryBarcodeScannerView: View {
 
 struct DataScannerRepresentable: UIViewControllerRepresentable {
 
-    @Binding var scannedCode: String?
+    var onScan: (String) -> Void
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
         let scanner = DataScannerViewController(
-            recognizedDataTypes: [
-                .barcode(symbologies: [
-                    .qr,
-                    .ean13, .ean8,
-                    .code128, .code39, .code93,
-                    .upce, .dataMatrix, .pdf417,
-                    .aztec, .itf14
-                ])
-            ],
+            recognizedDataTypes: [.barcode()], // Default: recognizes all common barcodes including QR
             qualityLevel: .balanced,
             recognizesMultipleItems: false,
             isPinchToZoomEnabled: true,
@@ -425,16 +424,19 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
 
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(scannedCode: $scannedCode)
+        Coordinator(onScan: onScan)
     }
 
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
 
-        @Binding var scannedCode: String?
-        private var hasScanned = false  // debounce: ignore repeats until reset
+        var onScan: (String) -> Void
+        
+        // Debounce state to prevent rapid-fire scans of the same code
+        private var lastScannedCode: String?
+        private var lastScanTime: Date = .distantPast
 
-        init(scannedCode: Binding<String?>) {
-            _scannedCode = scannedCode
+        init(onScan: @escaping (String) -> Void) {
+            self.onScan = onScan
         }
 
         func dataScanner(
@@ -452,7 +454,7 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
             allItems: [RecognizedItem]
         ) {
             // Also try on update in case didAdd missed the first frame
-            guard !hasScanned, let item = updatedItems.first else { return }
+            guard let item = updatedItems.first else { return }
             extract(item)
         }
 
@@ -464,21 +466,24 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
         }
 
         private func extract(_ item: RecognizedItem) {
-            guard !hasScanned else { return }
             if case .barcode(let barcode) = item,
                let payload = barcode.payloadStringValue,
                !payload.trimmingCharacters(in: .whitespaces).isEmpty {
-                hasScanned = true
+                
+                // Debounce identical scans within 2 seconds
+                let now = Date()
+                guard payload != lastScannedCode || now.timeIntervalSince(lastScanTime) > 2.0 else { return }
+                
+                lastScannedCode = payload
+                lastScanTime = now
+
                 // Haptic so user knows scan was detected
                 let feedback = UINotificationFeedbackGenerator()
                 feedback.notificationOccurred(.success)
+                
                 // MUST update SwiftUI binding on main thread
                 DispatchQueue.main.async {
-                    self.scannedCode = payload
-                    // Allow re-scanning after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        self.hasScanned = false
-                    }
+                    self.onScan(payload)
                 }
             }
         }

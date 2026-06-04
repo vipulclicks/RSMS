@@ -92,7 +92,9 @@ struct InventoryReceivingView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 230)
                 } else if DataScannerViewController.isSupported {
-                    DataScannerRepresentable(scannedCode: $scannedCode)
+                    DataScannerRepresentable { code in 
+                        scannedCode = code 
+                    }
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                         .overlay(
                             RoundedRectangle(cornerRadius: 18)

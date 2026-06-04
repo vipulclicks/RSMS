@@ -501,7 +501,9 @@ struct ASNMatchingView: View {
                     ProgressView().tint(RSMSTheme.gold)
                         .padding(.top, 80)
                 } else if DataScannerViewController.isSupported {
-                    DataScannerRepresentable(scannedCode: $rawScannedCode)
+                    DataScannerRepresentable { code in 
+                    rawScannedCode = code 
+                }
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
