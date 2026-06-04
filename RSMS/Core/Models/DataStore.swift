@@ -156,6 +156,23 @@ final class DataStore {
     func clientName(for id: UUID) -> String    { client(by: id)?.fullName ?? "Unknown Client" }
     
     // ══════════════════════════════════════════════════════════
+    // MARK: - Price Resolution (Single Source of Truth)
+    // ══════════════════════════════════════════════════════════
+    
+    /// Returns the authoritative price for a cart item.
+    /// Priority: catalog product price > stored unitPrice > 0
+    /// **All price displays and calculations MUST use this method.**
+    func resolvedPrice(for item: UniversalCartItem) -> Double {
+        product(by: item.productId)?.price ?? item.unitPrice ?? 0
+    }
+    
+    /// Returns the authoritative price for a product ID with an optional fallback.
+    /// Priority: catalog product price > fallback > 0
+    func resolvedPrice(for productId: UUID, fallback: Double? = nil) -> Double {
+        product(by: productId)?.price ?? fallback ?? 0
+    }
+    
+    // ══════════════════════════════════════════════════════════
     // MARK: - stores
     // ══════════════════════════════════════════════════════════
     
@@ -1447,7 +1464,7 @@ final class DataStore {
         let items = universalCartItems.filter { $0.cartId == cartId }
         if !items.isEmpty {
             let subtotal = items.reduce(0.0) { total, item in
-                let price = item.unitPrice ?? product(by: item.productId)?.price ?? 0.0
+                let price = resolvedPrice(for: item)
                 return total + (price * Double(item.quantity))
             }
             return subtotal * 1.20 // Subtotal + 20% Tax
@@ -1737,7 +1754,7 @@ final class DataStore {
         let cart = universalCarts.first { $0.id == session.cartId }
         
         let subtotal = cartItemsForSession.reduce(0.0) { total, item in
-            let price = item.unitPrice ?? product(by: item.productId)?.price ?? 0.0
+            let price = resolvedPrice(for: item)
             return total + (price * Double(item.quantity))
         }
         

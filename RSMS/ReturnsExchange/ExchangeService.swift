@@ -93,10 +93,13 @@ final class ExchangeService {
     /// Calculates the exchange difference: Replacement Value - Returned Value.
     func calculateExchangeDifference(
         originalItem: UniversalCartItem,
+        originalProduct: Product? = nil,
         replacementProduct: Product,
         quantity: Int
     ) -> (returnedValue: Decimal, replacementValue: Decimal, difference: Decimal) {
-        let unitPrice = originalItem.unitPrice?.toDecimal ?? 0
+        // Prefer catalog product price over stale cart item unitPrice
+        let catalogPrice = originalProduct?.price.toDecimal
+        let unitPrice = catalogPrice ?? originalItem.unitPrice?.toDecimal ?? 0
         let discount = originalItem.discountApplied?.toDecimal ?? 0
         let actualUnitPrice = max(0, unitPrice - discount)
         let returnedValue = actualUnitPrice * Decimal(quantity)
@@ -106,4 +109,5 @@ final class ExchangeService {
         
         return (returnedValue, replacementValue, difference)
     }
+
 }
