@@ -54,51 +54,73 @@ struct ReturnsDashboardView: View {
                 }
             }
             
-            // Recent Requests Section
-            Section("Recent Requests") {
-                let returns = appVM.dataStore.posReturnRequests
-                let exchanges = appVM.dataStore.posExchangeRequests
-                
-                if returns.isEmpty && exchanges.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "arrow.uturn.backward.circle")
-                            .font(.system(size: 40))
-                            .foregroundStyle(RSMSTheme.textTertiary)
-                        Text("No Return or Exchange Requests")
-                            .font(.headline)
-                            .foregroundStyle(RSMSTheme.textPrimary)
-                        Text("Search for an order above to start a return or exchange.")
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.textSecondary)
-                            .multilineTextAlignment(.center)
+            // Recent Returns Section
+            Section("Recent Returns") {
+                let returns = appVM.dataStore.posReturnRequests.filter { req in
+                    if let order = appVM.dataStore.orders.first(where: { $0.id == req.orderId }) {
+                        return appVM.dataStore.client(by: order.clientId) != nil
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 24)
-                    .listRowBackground(Color.clear)
+                    return false
+                }
+                if returns.isEmpty {
+                    Text("No Return Requests")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .padding(.vertical, 8)
+                        .listRowBackground(RSMSTheme.surfacePrimary)
                 } else {
-                    // Returns
-                    if !returns.isEmpty {
-                        ForEach(returns.sorted(by: { $0.createdAt > $1.createdAt })) { req in
-                            Button {
-                                activeReturnRoute = req
-                            } label: {
-                                ReturnRequestRow(request: req, dataStore: appVM.dataStore)
+                    ForEach(returns.sorted(by: { $0.createdAt > $1.createdAt })) { req in
+                        Button {
+                            activeReturnRoute = req
+                        } label: {
+                            ReturnRequestRow(request: req, dataStore: appVM.dataStore)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(RSMSTheme.surfacePrimary)
+                    }
+                    .onDelete { indexSet in
+                        let sortedReturns = returns.sorted(by: { $0.createdAt > $1.createdAt })
+                        for index in indexSet {
+                            let requestToDelete = sortedReturns[index]
+                            Task {
+                                try? await appVM.dataStore.deletePOSReturnRequest(id: requestToDelete.id)
                             }
-                            .buttonStyle(.plain)
-                            .listRowBackground(RSMSTheme.surfacePrimary)
                         }
                     }
-                    
-                    // Exchanges
-                    if !exchanges.isEmpty {
-                        ForEach(exchanges.sorted(by: { $0.createdAt > $1.createdAt })) { req in
-                            Button {
-                                activeExchangeRoute = req
-                            } label: {
-                                ExchangeRequestRow(request: req, dataStore: appVM.dataStore)
+                }
+            }
+            
+            // Recent Exchanges Section
+            Section("Recent Exchanges") {
+                let exchanges = appVM.dataStore.posExchangeRequests.filter { req in
+                    if let order = appVM.dataStore.orders.first(where: { $0.id == req.orderId }) {
+                        return appVM.dataStore.client(by: order.clientId) != nil
+                    }
+                    return false
+                }
+                if exchanges.isEmpty {
+                    Text("No Exchange Requests")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .padding(.vertical, 8)
+                        .listRowBackground(RSMSTheme.surfacePrimary)
+                } else {
+                    ForEach(exchanges.sorted(by: { $0.createdAt > $1.createdAt })) { req in
+                        Button {
+                            activeExchangeRoute = req
+                        } label: {
+                            ExchangeRequestRow(request: req, dataStore: appVM.dataStore)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(RSMSTheme.surfacePrimary)
+                    }
+                    .onDelete { indexSet in
+                        let sortedExchanges = exchanges.sorted(by: { $0.createdAt > $1.createdAt })
+                        for index in indexSet {
+                            let requestToDelete = sortedExchanges[index]
+                            Task {
+                                try? await appVM.dataStore.deletePOSExchangeRequest(id: requestToDelete.id)
                             }
-                            .buttonStyle(.plain)
-                            .listRowBackground(RSMSTheme.surfacePrimary)
                         }
                     }
                 }
@@ -129,6 +151,13 @@ struct ReturnsDashboardView: View {
             }
         }
         .task {
+            // Fetch everything needed for lookups and search
+            try? await appVM.dataStore.fetchProducts()
+            try? await appVM.dataStore.fetchClients()
+            try? await appVM.dataStore.fetchOrders()
+            for order in appVM.dataStore.orders {
+                try? await appVM.dataStore.fetchUniversalCartItems(cartId: order.cartId)
+            }
             await appVM.dataStore.fetchPOSReturnsExchanges()
         }
         .navigationDestination(item: $activeOrderRoute) { order in
@@ -181,18 +210,48 @@ struct ReturnRequestRow: View {
     let request: POSReturnRequest
     let dataStore: DataStore
     
+    private var clientAndOrderDetails: (clientName: String, orderIdString: String) {
+        if let order = dataStore.orders.first(where: { $0.id == request.orderId }) {
+            let clientName = dataStore.clientName(for: order.clientId)
+            let orderIdString = "Order: #\(order.id.uuidString.prefix(8).uppercased())"
+            return (clientName, orderIdString)
+        }
+        return ("Unknown Client", "Order: #Unknown")
+    }
+    
+    private var displayNote: String {
+        let trimmedReason = request.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedReason.isEmpty {
+            return trimmedReason
+        }
+        if let inspectionNotes = request.inspectionNotes, !inspectionNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return inspectionNotes
+        }
+        return "No notes"
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(statusColor(request.status).opacity(0.1))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "arrow.uturn.backward")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(statusColor(request.status))
+            if let product = dataStore.product(by: request.productId) {
+                ProductRowImageView(product: product)
+            } else {
+                FallbackProductImageView(systemImage: "arrow.uturn.backward", statusColor: statusColor(request.status))
             }
             
             VStack(alignment: .leading, spacing: 6) {
+                let details = clientAndOrderDetails
+                HStack(spacing: 8) {
+                    Text(details.clientName)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                    Text("•")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text(details.orderIdString)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+                
                 Text(dataStore.productName(for: request.productId))
                     .font(.headline)
                     .foregroundStyle(RSMSTheme.textPrimary)
@@ -201,7 +260,7 @@ struct ReturnRequestRow: View {
                 HStack(spacing: 8) {
                     Text("Qty: \(request.quantity)")
                     Text("•")
-                    Text(request.reason)
+                    Text(displayNote)
                         .lineLimit(1)
                 }
                 .font(.subheadline)
@@ -241,18 +300,48 @@ struct ExchangeRequestRow: View {
     let request: POSExchangeRequest
     let dataStore: DataStore
     
+    private var clientAndOrderDetails: (clientName: String, orderIdString: String) {
+        if let order = dataStore.orders.first(where: { $0.id == request.orderId }) {
+            let clientName = dataStore.clientName(for: order.clientId)
+            let orderIdString = "Order: #\(order.id.uuidString.prefix(8).uppercased())"
+            return (clientName, orderIdString)
+        }
+        return ("Unknown Client", "Order: #Unknown")
+    }
+    
+    private var displayNote: String {
+        let trimmedReason = request.reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedReason.isEmpty {
+            return trimmedReason
+        }
+        if let inspectionNotes = request.inspectionNotes, !inspectionNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return inspectionNotes
+        }
+        return "No notes"
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(statusColor(request.status).opacity(0.1))
-                    .frame(width: 44, height: 44)
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(statusColor(request.status))
+            if let product = dataStore.product(by: request.originalProductId) {
+                ProductRowImageView(product: product)
+            } else {
+                FallbackProductImageView(systemImage: "arrow.triangle.2.circlepath", statusColor: statusColor(request.status))
             }
             
             VStack(alignment: .leading, spacing: 6) {
+                let details = clientAndOrderDetails
+                HStack(spacing: 8) {
+                    Text(details.clientName)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(RSMSTheme.primary)
+                    Text("•")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                    Text(details.orderIdString)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(RSMSTheme.textSecondary)
+                }
+                
                 HStack(spacing: 6) {
                     Text(dataStore.productName(for: request.originalProductId))
                         .font(.headline)
@@ -270,7 +359,7 @@ struct ExchangeRequestRow: View {
                 HStack(spacing: 8) {
                     Text("Qty: \(request.quantity)")
                     Text("•")
-                    Text(request.reason)
+                    Text(displayNote)
                         .lineLimit(1)
                 }
                 .font(.subheadline)

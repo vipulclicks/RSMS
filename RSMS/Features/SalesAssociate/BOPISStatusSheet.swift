@@ -55,7 +55,7 @@ struct BOPISStatusSheet: View {
                             // Item rows
                             ForEach(cartItems) { item in
                                 let productName = appVM.dataStore.productName(for: item.productId)
-                                let price = item.unitPrice ?? appVM.dataStore.product(by: item.productId)?.price ?? 0.0
+                                let price = appVM.dataStore.product(by: item.productId)?.price ?? item.unitPrice ?? 0.0
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(productName)
@@ -273,7 +273,7 @@ struct BOPISStatusSheet: View {
 
     private var subtotal: Double {
         cartItems.reduce(0.0) { sum, item in
-            let price = item.unitPrice ?? appVM.dataStore.product(by: item.productId)?.price ?? 0.0
+            let price = appVM.dataStore.product(by: item.productId)?.price ?? item.unitPrice ?? 0.0
             return sum + (price * Double(item.quantity))
         }
     }

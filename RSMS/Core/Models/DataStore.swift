@@ -876,8 +876,10 @@ final class DataStore {
     // ══════════════════════════════════════════════════════════
     
     func fetchOrders(storeId: UUID? = nil) async throws {
-        // NOTE: If orders need fetching by store, they may need to join with transactions.
-        // Assuming we fetch by client or all for now.
+        let fetched: [Order] = try await api.fetch("orders")
+        await MainActor.run {
+            self.orders = fetched
+        }
     }
     
     @discardableResult

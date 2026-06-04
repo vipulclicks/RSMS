@@ -361,7 +361,7 @@ struct ClientProfileDetailView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                                 .lineLimit(1)
                             Spacer()
-                            Text("₹\(Int(item.unitPrice ?? product?.price ?? 0).formatted())")
+                            Text("₹\(Int(product?.price ?? item.unitPrice ?? 0).formatted())")
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
