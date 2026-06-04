@@ -55,7 +55,7 @@ enum InventoryDestination: String, Hashable, Identifiable {
         }    }
     
     static var tabs: [InventoryDestination] {
-        [.dashboard, .movements, .audits, .catalog]
+        [.dashboard, .movements, .audits, .catalog, .loanerManagement]
     }
 }
 
