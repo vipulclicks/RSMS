@@ -13,9 +13,9 @@ final class LookBuilderViewModel {
 
     // MARK: - Data
     // TODO: Replace mock data with Supabase fetch
-    private(set) var outfits: [LookBuilderOutfit] = LookBuilderOutfit.all
-    private(set) var products: [Product] = Product.all
-    private(set) var clients: [ClientProfile] = ClientProfile.allClients
+    private(set) var outfits: [LookBuilderOutfit] = []
+    private(set) var products: [Product] = []
+    private(set) var clients: [ClientProfile] = []
 
     // MARK: - Editor State
     var isShowingEditor = false
@@ -80,7 +80,7 @@ final class LookBuilderViewModel {
         // TODO: Replace with dataStore.createLookBuilderOutfit() / update
         let outfit = LookBuilderOutfit(
             id: editingOutfit?.id ?? UUID(),
-            associateId: UserProfile.previewAssociate.id,
+            associateId: UUID(),
             clientId: selectedClientId,
             name: outfitName.trimmingCharacters(in: .whitespaces),
             productIds: Array(selectedProductIds),

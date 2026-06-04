@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct RFIDStockManagementView: View {
-    private let stockItem = StockItem.preview
-    private let scanRecord = RFIDScanRecord.preview
-    private let variance = InventoryVariance.preview
-    private let shrinkage = ShrinkageAnalytics.preview
-    private let products = Product.all
+    private let stockItem = StockItem(id: UUID(), productId: UUID(), storeId: UUID(), quantity: 1, rfidTag: nil, location: nil, status: .available, lastScannedAt: nil, updatedAt: Date())
+    private let scanRecord = RFIDScanRecord(id: UUID(), storeId: UUID(), scannedBy: UUID(), scannedAt: Date(), itemsScanned: 0, exceptionsFound: 0, notes: nil)
+    private let variance = InventoryVariance(id: UUID(), storeId: UUID(), productId: UUID(), expectedQty: 0, actualQty: 0, variance: 0, reportedBy: UUID(), status: .open, cycleCountId: nil, resolution: nil, reportedAt: Date(), resolvedAt: nil)
+    private let shrinkage = ShrinkageAnalytics(id: UUID(), storeId: UUID(), periodStart: Date(), periodEnd: Date(), totalLossUnits: 0, totalLossValue: 0.0, currency: "INR", topCategory: nil, primaryCause: nil)
+    private let products: [Product] = []
 
     var body: some View {
         GeometryReader { geometry in

@@ -142,7 +142,6 @@ struct SalesAssociateHomeView: View {
 
                         VStack(spacing: 24) {
                             SalesGoalProgressCard()
-                            PendingActionsCard()
                             RecentTransactionsCard()
                         }
                         .padding(.horizontal, 16)
@@ -361,7 +360,6 @@ struct SalesAssociateHomeView: View {
                                     UpcomingAppointmentsSection(appointmentVM: appointmentVM)
                                     TopClientsSection()
                                     SalesGoalProgressCard()
-                                    PendingActionsCard()
                                     RecentTransactionsCard()
                                 }
                                 .padding(.horizontal, 20)
@@ -373,7 +371,6 @@ struct SalesAssociateHomeView: View {
                                 HStack(alignment: .top, spacing: 24) {
                                     VStack(alignment: .leading, spacing: 28) {
                                         UpcomingAppointmentsSection(appointmentVM: appointmentVM)
-                                        PendingActionsCard()
                                         RecentTransactionsCard()
                                     }
                                     .frame(width: leftWidth, alignment: .leading)
@@ -652,7 +649,6 @@ private struct TopClientsSection: View {
             HStack {
                 SectionHeader(
                     title: "Top Clients",
-                    subtitle: "By Spending"
                 )
                 Spacer()
                 
@@ -1064,121 +1060,6 @@ private struct SalesGoalProgressCard: View {
     }
 }
 
-private struct PendingActionsCard: View {
-    @Environment(AppViewModel.self) private var appViewModel
-
-    var body: some View {
-        let userId = appViewModel.currentUser?.id ?? UUID()
-        let pendingSourcing = appViewModel.dataStore.inventorySourcingRequests
-            .filter { $0.salesAssociateId == userId && $0.status == .requested }
-        let unreadCount = appViewModel.dataStore.appNotifications
-            .filter { $0.recipientId == userId && !$0.isRead }.count
-
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Pending")
-
-            VStack(spacing: 8) {
-                if pendingSourcing.isEmpty && unreadCount == 0 {
-                    allClearRow
-                } else {
-                    if unreadCount > 0 {
-                        pendingRow(
-                            icon: "bell.badge",
-                            iconColor: RSMSTheme.warning,
-                            title: "\(unreadCount) unread \(unreadCount == 1 ? "notification" : "notifications")",
-                            subtitle: "Tap the bell icon above to view",
-                            destination: nil   // bell is in the toolbar; no nav push needed
-                        )
-                    }
-                    if !pendingSourcing.isEmpty {
-                        pendingRow(
-                            icon: "shippingbox",
-                            iconColor: RSMSTheme.info,
-                            title: "\(pendingSourcing.count) sourcing \(pendingSourcing.count == 1 ? "request" : "requests") pending",
-                            subtitle: "Review and respond",
-                            destination: "SourcingRequests"
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private var allClearRow: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle")
-                .symbolRenderingMode(.hierarchical)
-                .font(.title3)
-                .foregroundStyle(RSMSTheme.success)
-                .accessibilityHidden(true)
-
-            Text("All caught up")
-                .font(.subheadline)
-                .foregroundStyle(RSMSTheme.textSecondary)
-
-            Spacer()
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(RSMSTheme.surfacePrimary)
-        )
-    }
-
-    @ViewBuilder
-    private func pendingRow(
-        icon: String,
-        iconColor: Color,
-        title: String,
-        subtitle: String,
-        destination: String?
-    ) -> some View {
-        let content = HStack(spacing: 14) {
-            Image(systemName: icon)
-                .symbolRenderingMode(.hierarchical)
-                .font(.title3)
-                .foregroundStyle(iconColor)
-                .frame(width: 32, alignment: .center)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(RSMSTheme.textPrimary)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-
-            Spacer()
-
-            if destination != nil {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(RSMSTheme.textSecondary)
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, minHeight: 44)  // HIG minimum touch target
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(RSMSTheme.surfacePrimary)
-        )
-
-        if let destination {
-            NavigationLink(value: destination) {
-                content
-            }
-            .buttonStyle(.plain)
-        } else {
-            content
-        }
-    }
-}
 
 private struct RecentTransactionsCard: View {
     @Environment(AppViewModel.self) private var appViewModel
@@ -1264,18 +1145,18 @@ private struct RecentTransactionsCard: View {
 
 // MARK: - Previews
 
-#Preview("iPhone — Sales Associate") {
-    let vm = AppViewModel()
-    vm.currentUser = .previewAssociate
-    return SalesAssociateHomeView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
-
-#Preview("iPad", traits: .fixedLayout(width: 1024, height: 768)) {
-    let vm = AppViewModel()
-    vm.currentUser = .previewAssociate
-    return SalesAssociateHomeView()
-        .environment(vm)
-        .environment(vm.dataStore)
-}
+// #Preview("iPhone — Sales Associate") {
+//     let vm = AppViewModel()
+//     vm.currentUser = .previewAssociate
+//     return SalesAssociateHomeView()
+//         .environment(vm)
+//         .environment(vm.dataStore)
+// }
+// 
+// #Preview("iPad", traits: .fixedLayout(width: 1024, height: 768)) {
+//     let vm = AppViewModel()
+//     vm.currentUser = .previewAssociate
+//     return SalesAssociateHomeView()
+//         .environment(vm)
+//         .environment(vm.dataStore)
+// }

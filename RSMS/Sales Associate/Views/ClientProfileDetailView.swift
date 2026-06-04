@@ -1106,9 +1106,9 @@ private struct CPDPreferenceTagRow: View {
 
 // MARK: - Preview
 
-#Preview {
-    let mockStore = DataStore()
-    return NavigationStack {
-        ClientProfileDetailView(client: .preview, dataStore: mockStore)
-    }
-}
+// #Preview {
+//     let mockStore = DataStore()
+//     return NavigationStack {
+//         ClientProfileDetailView(client: .preview, dataStore: mockStore)
+//     }
+// }

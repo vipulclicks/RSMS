@@ -135,8 +135,8 @@ final class BOPISPickupViewModel {
             }
         } catch {
             errorMessage = error.localizedDescription
-            // Fall back to mock data in development
-            allBOPISOrders = OmnichannelOrder.all.filter { $0.type == .bopis }
+            // Fall back to mock data in development removed
+            allBOPISOrders = []
         }
     }
 

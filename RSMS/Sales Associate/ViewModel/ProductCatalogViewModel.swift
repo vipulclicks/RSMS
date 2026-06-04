@@ -68,7 +68,7 @@ final class ProductCatalogViewModel {
     var localCartProductIds: Set<UUID> = []
     
     var client: ClientProfile {
-        return activeClient ?? .preview // Fallback just in case, though activeClient should be non-nil
+        return activeClient ?? ClientProfile(id: UUID(), fullName: "Unknown", email: nil, phone: nil, preferredStoreId: nil, vipTier: .standard, privacyConsentGiven: false, consentDate: nil, notes: nil, createdAt: Date(), updatedAt: Date(), shoeSize: nil, ringSize: nil, braceletSize: nil, necklaceLength: nil, wristSize: nil, beltSize: nil, favoriteCategories: nil, favoriteMetals: nil, favoriteGemstones: nil, shoeFitPreference: nil, preferredMetal: nil, preferredGemstone: nil, watchCasePreference: nil, strapMaterialPreference: nil, preferredBagSize: nil, preferredBagStyle: nil, preferredMaterial: nil, bucklePreference: nil, fragranceFamily: nil, fragranceStrength: nil, scentPreference: nil, preferredBrands: nil, favoriteColors: nil, stylePreference: nil, giftingPreference: nil, shoppingPreference: nil)
     }
 
     // ── Filter State ──────────────────────────────────────────

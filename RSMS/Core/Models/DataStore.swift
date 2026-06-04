@@ -178,20 +178,7 @@ final class DataStore {
     
     func fetchStores() async throws {
         let fetched: [Store] = try await api.fetch("stores")
-        if fetched.isEmpty {
-            var seeded: [Store] = []
-            for store in Store.all {
-                do {
-                    let created: Store = try await api.insert("stores", record: store)
-                    seeded.append(created)
-                } catch {
-                    print("[RSMS Debug] Error seeding store \(store.name): \(error.localizedDescription)")
-                }
-            }
-            stores = seeded
-        } else {
-            stores = fetched
-        }
+        stores = fetched
     }
     
     func fetchStore(id: UUID) async throws -> Store {

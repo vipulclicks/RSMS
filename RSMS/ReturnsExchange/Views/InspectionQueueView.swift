@@ -14,11 +14,7 @@ struct InspectionQueueView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            headerSection
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 8)
-                
+
             List {
                 let pendingReturns = appVM.dataStore.posReturnRequests.filter { $0.status == .inspectionPending }
                 let pendingExchanges = appVM.dataStore.posExchangeRequests.filter { $0.status == .inspectionPending }
@@ -131,14 +127,5 @@ struct InspectionQueueView: View {
         }
     } // End of body
     
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Returns & Exchanges")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(RSMSTheme.textPrimary)
-            Text("Review and process customer returns and exchanges")
-                .font(.subheadline)
-                .foregroundStyle(RSMSTheme.textTertiary)
-        }
-    }
+
 }

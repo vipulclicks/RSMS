@@ -629,11 +629,11 @@ struct SalesAssociateProfileView: View {
 
 // MARK: - Preview
 
-#Preview {
-    let vm = AppViewModel()
-    vm.currentUser = .previewAssociate
-    return NavigationStack {
-        SalesAssociateProfileView()
-            .environment(vm)
-    }
-}
+// #Preview {
+//     let vm = AppViewModel()
+//     vm.currentUser = .previewAssociate
+//     return NavigationStack {
+//         SalesAssociateProfileView()
+//             .environment(vm)
+//     }
+// }

@@ -105,7 +105,7 @@ struct AssistedSellingView: View {
 
 @Observable
 private final class AssistedSellingCatalogViewModel {
-    private(set) var products: [Product] = Product.all
+    private(set) var products: [Product] = []
     var searchQuery = ""
     var selectedCategory: String?
 

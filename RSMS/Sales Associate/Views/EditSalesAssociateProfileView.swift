@@ -336,12 +336,12 @@ struct EditSalesAssociateProfileView: View {
     }
 }
 
-#Preview {
-    let vm = AppViewModel()
-    vm.currentUser = .previewAssociate
-    return EditSalesAssociateProfileView(profile: .previewAssociate)
-        .environment(vm)
-}
+// #Preview {
+//     let vm = AppViewModel()
+//     vm.currentUser = .previewAssociate
+//     return EditSalesAssociateProfileView(profile: .previewAssociate)
+//         .environment(vm)
+// }
 
 extension UIImage {
     func resized(toMaxDimension maxDimension: CGFloat) -> UIImage {

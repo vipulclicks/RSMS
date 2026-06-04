@@ -406,9 +406,26 @@ struct ProductLookupView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(RSMSTheme.gold.opacity(0.1))
                     .frame(width: 44, height: 44)
-                Image(systemName: categoryIcon(product.category))
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(RSMSTheme.gold)
+                
+                if let urlString = product.imageURL, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().scaledToFill()
+                        } else if phase.error != nil {
+                            Image(systemName: categoryIcon(product.category))
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundStyle(RSMSTheme.gold)
+                        } else {
+                            ProgressView()
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                } else {
+                    Image(systemName: categoryIcon(product.category))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(RSMSTheme.gold)
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -702,9 +719,26 @@ struct ProductLookupView: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(RSMSTheme.gold.opacity(0.1))
                     .frame(width: 44, height: 44)
-                Image(systemName: asnCategoryIcon(lineItem.product.category))
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(RSMSTheme.gold)
+                
+                if let urlString = lineItem.product.imageURL, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().scaledToFill()
+                        } else if phase.error != nil {
+                            Image(systemName: asnCategoryIcon(lineItem.product.category))
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundStyle(RSMSTheme.gold)
+                        } else {
+                            ProgressView()
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                } else {
+                    Image(systemName: asnCategoryIcon(lineItem.product.category))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(RSMSTheme.gold)
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {
