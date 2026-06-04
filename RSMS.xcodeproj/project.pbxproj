@@ -266,7 +266,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxora;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSExceptionDomains</key><dict><key>razorpay.com</key><dict><key>NSIncludesSubdomains</key><true/><key>NSThrowsOnErrors</key><false/></dict></dict></dict>";
-				INFOPLIST_KEY_NSMainCameraUsageDescription = "Used to scan product barcodes and add items to inventory.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan product barcodes and QR codes for inventory management.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -302,7 +302,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxora;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSExceptionDomains</key><dict><key>razorpay.com</key><dict><key>NSIncludesSubdomains</key><true/><key>NSThrowsOnErrors</key><false/></dict></dict></dict>";
-				INFOPLIST_KEY_NSMainCameraUsageDescription = "Used to scan product barcodes and add items to inventory.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Used to scan product barcodes and QR codes for inventory management.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
