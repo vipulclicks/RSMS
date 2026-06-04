@@ -5,12 +5,17 @@
 
 import SwiftUI
 import VisionKit
+import AVFoundation
 
 struct InventoryReceivingView: View {
     @Environment(AppViewModel.self) private var appVM
     @State private var viewModel = InventoryReceivingViewModel()
     @State private var scannedCode: String?
     @State private var manualCode = ""
+
+    // Camera authorization
+    @State private var cameraAuthorized = false
+    @State private var cameraAuthDenied = false
 
     var body: some View {
         ScrollView {
@@ -30,6 +35,7 @@ struct InventoryReceivingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.preload(dataStore: appVM.dataStore, storeId: appVM.currentStoreId)
+            await requestCameraAccess()
         }
         .onChange(of: scannedCode) { _, newCode in
             guard let newCode else { return }
@@ -52,8 +58,43 @@ struct InventoryReceivingView: View {
             )
 
             Group {
-                if DataScannerViewController.isSupported {
-                    DataScannerRepresentable(scannedCode: $scannedCode)
+                if cameraAuthDenied {
+                    // Permission denied — show settings link
+                    VStack(spacing: 14) {
+                        Image(systemName: "camera.slash.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(RSMSTheme.gold.opacity(0.5))
+                        Text("Camera Access Required")
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Please allow camera access in Settings.")
+                            .font(.caption)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.background)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(RSMSTheme.gold)
+                        .clipShape(Capsule())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 230)
+                    .background(RSMSTheme.surfacePrimary)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                } else if !cameraAuthorized {
+                    ProgressView().tint(RSMSTheme.gold)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 230)
+                } else if DataScannerViewController.isSupported {
+                    DataScannerRepresentable { code in 
+                        scannedCode = code 
+                    }
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                         .overlay(
                             RoundedRectangle(cornerRadius: 18)
@@ -365,6 +406,26 @@ struct InventoryReceivingView: View {
                 dataStore: appVM.dataStore,
                 storeId: appVM.currentStoreId
             )
+        }
+    }
+
+    // MARK: - Camera Permission
+
+    @MainActor
+    private func requestCameraAccess() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraAuthorized = true
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            cameraAuthorized = granted
+            cameraAuthDenied = !granted
+        case .denied, .restricted:
+            cameraAuthorized = false
+            cameraAuthDenied = true
+        @unknown default:
+            cameraAuthorized = false
+            cameraAuthDenied = true
         }
     }
 }

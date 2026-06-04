@@ -9,6 +9,7 @@
 
 import SwiftUI
 import VisionKit
+import AVFoundation
 
 struct ASNMatchingView: View {
 
@@ -16,6 +17,8 @@ struct ASNMatchingView: View {
     @State private var vm = ASNMatchingViewModel()
     @State private var rawScannedCode: String? = nil
     @State private var showScanner = false
+    @State private var cameraAuthorized = false
+    @State private var cameraAuthDenied = false
 
     var body: some View {
         ZStack {
@@ -467,9 +470,40 @@ struct ASNMatchingView: View {
     private var asnScannerView: some View {
         ZStack(alignment: .bottom) {
             RSMSTheme.background.ignoresSafeArea()
-            VStack(spacing: 0) {
-                if DataScannerViewController.isSupported {
-                    DataScannerRepresentable(scannedCode: $rawScannedCode)
+            VStack(spacing: 16) {
+                if cameraAuthDenied {
+                    // Permission denied — show settings link
+                    VStack(spacing: 14) {
+                        Image(systemName: "camera.slash.fill")
+                            .font(.system(size: 44))
+                            .foregroundStyle(RSMSTheme.gold.opacity(0.5))
+                        Text("Camera Access Required")
+                            .font(.headline)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                        Text("Please allow camera access in Settings to scan ASN labels.")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                        Button("Open Settings") {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.background)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 10)
+                        .background(RSMSTheme.gold)
+                        .clipShape(Capsule())
+                    }
+                    .padding()
+                } else if !cameraAuthorized {
+                    ProgressView().tint(RSMSTheme.gold)
+                        .padding(.top, 80)
+                } else if DataScannerViewController.isSupported {
+                    DataScannerRepresentable { code in 
+                    rawScannedCode = code 
+                }
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
@@ -492,6 +526,29 @@ struct ASNMatchingView: View {
 
                 Spacer()
             }
+        }
+        .task {
+            await requestCameraAccess()
+        }
+    }
+
+    // MARK: - Camera Permission
+
+    @MainActor
+    private func requestCameraAccess() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            cameraAuthorized = true
+        case .notDetermined:
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            cameraAuthorized = granted
+            cameraAuthDenied = !granted
+        case .denied, .restricted:
+            cameraAuthorized = false
+            cameraAuthDenied = true
+        @unknown default:
+            cameraAuthorized = false
+            cameraAuthDenied = true
         }
     }
 
