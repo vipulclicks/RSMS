@@ -987,22 +987,34 @@ private struct SalesGoalProgressCard: View {
     var body: some View {
         let userId = appViewModel.currentUser?.id ?? UUID()
         let goal = appViewModel.dataStore.salesGoals
-            .first { $0.staffId == userId }
+            .filter({ $0.staffId == userId && $0.period == .monthly })
+            .sorted(by: { $0.createdAt > $1.createdAt })
+            .first
 
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Sales Goal")
 
             VStack(alignment: .leading, spacing: 14) {
                 if let goal {
-                    let progress = min(
-                        goal.achievedAmount / max(goal.targetAmount, 1),
-                        1.0
-                    )
+                    let cal = Calendar.current
+                    let now = Date()
+                    let currentMonth = cal.component(.month, from: now)
+                    let currentYear = cal.component(.year, from: now)
+                    
+                    let existingTransactions = appViewModel.dataStore.transactions.filter {
+                        $0.associateId == userId &&
+                        $0.status == .completed &&
+                        cal.component(.month, from: $0.createdAt) == currentMonth &&
+                        cal.component(.year, from: $0.createdAt) == currentYear
+                    }
+                    let computedAchievedAmount = existingTransactions.reduce(0.0) { $0 + $1.totalAmount }
+                
+                    let progress = computedAchievedAmount / max(goal.targetAmount, 1)
                     let percent = Int(progress * 100)
                     let isComplete = progress >= 1.0
 
                     HStack(alignment: .firstTextBaseline) {
-                        Text("₹\(Int(goal.achievedAmount).formatted())")
+                        Text("₹\(Int(computedAchievedAmount).formatted())")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundStyle(RSMSTheme.textPrimary)
@@ -1022,7 +1034,7 @@ private struct SalesGoalProgressCard: View {
 
                             Capsule()
                                 .fill(isComplete ? RSMSTheme.success : RSMSTheme.primary)
-                                .frame(width: max(0, geo.size.width * progress), height: 8)
+                                .frame(width: max(0, geo.size.width * min(progress, 1.0)), height: 8)
                                 .animation(.easeOut(duration: 0.6), value: progress)
                         }
                     }
