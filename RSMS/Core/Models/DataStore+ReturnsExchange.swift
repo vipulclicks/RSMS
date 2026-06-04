@@ -174,4 +174,17 @@ extension DataStore {
             print("[Reconcile] Created new stock item for product \(productId) with qty \(quantity)")
         }
     }
+    
+    @MainActor
+    public func deletePOSReturnRequest(id: UUID) async throws {
+        try await api.delete("return_requests", id: id)
+        self.posReturnRequests.removeAll { $0.id == id }
+    }
+    
+    @MainActor
+    public func deletePOSExchangeRequest(id: UUID) async throws {
+        try await api.delete("exchange_requests", id: id)
+        self.posExchangeRequests.removeAll { $0.id == id }
+    }
 }
+

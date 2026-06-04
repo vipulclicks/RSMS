@@ -346,7 +346,7 @@ private final class POSCheckoutScreenViewModel {
 
     var cartSubtotal: Double {
         cartItems.reduce(0) { total, item in
-            let price = item.unitPrice ?? productPrice(for: item.productId)
+            let price = dataStore?.resolvedPrice(for: item) ?? item.unitPrice ?? 0
             return total + (price * Double(item.quantity))
         }
     }
@@ -409,7 +409,8 @@ private struct POSCartItemRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text("₹\(Int(item.unitPrice ?? viewModel.productPrice(for: item.productId)).formatted())")
+                let displayPrice = viewModel.dataStore?.resolvedPrice(for: item) ?? item.unitPrice ?? 0
+                Text("₹\(Int(displayPrice).formatted())")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(RSMSTheme.primary)
                 if let discount = item.discountApplied, discount > 0 {

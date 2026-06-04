@@ -77,7 +77,7 @@ final class OnlineOrdersViewModel {
         let items = dataStore.universalCartItems.filter { $0.cartId == cartId }
         if !items.isEmpty {
             let subtotal = items.reduce(0.0) { total, item in
-                let price = item.unitPrice ?? dataStore.product(by: item.productId)?.price ?? 0.0
+                let price = dataStore.resolvedPrice(for: item)
                 return total + (price * Double(item.quantity))
             }
             return subtotal * 1.20 // Subtotal + 20% Tax
@@ -903,7 +903,7 @@ struct OnlineOrderDetailSheet: View {
     
     private var subtotalAmount: Double {
         cartItems.reduce(0.0) { total, item in
-            let price = item.unitPrice ?? appViewModel.dataStore.product(by: item.productId)?.price ?? 0.0
+            let price = appViewModel.dataStore.resolvedPrice(for: item)
             return total + (price * Double(item.quantity))
         }
     }
@@ -1217,7 +1217,7 @@ struct OnlineOrderDetailSheet: View {
                         
                         Spacer()
                         
-                        let price = item.unitPrice ?? product?.price ?? 0.0
+                        let price = appViewModel.dataStore.resolvedPrice(for: item)
                         Text("₹\(Int(price * Double(item.quantity)).formatted())")
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)

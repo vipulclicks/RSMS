@@ -94,6 +94,15 @@ struct ExchangeRequestDetailView: View {
         localRequest ?? request
     }
     
+    /// Catalog-price-based difference (replacement - returned), per unit × quantity
+    private var catalogDifference: Decimal {
+        let origPrice = dataStore.product(by: currentRequest.originalProductId)?.price.toDecimal
+            ?? currentRequest.returnedItemValue
+        let replPrice = dataStore.product(by: currentRequest.replacementProductId)?.price.toDecimal
+            ?? currentRequest.replacementItemValue
+        return (replPrice - origPrice) * Decimal(currentRequest.quantity)
+    }
+    
     var body: some View {
         List {
             Section("Status Information") {
@@ -116,21 +125,28 @@ struct ExchangeRequestDetailView: View {
             .listRowBackground(RSMSTheme.surfacePrimary)
             
             Section("Financial Reconcile") {
-                LabeledContent("Returned Value", value: currentRequest.returnedItemValue, format: .currency(code: "INR"))
-                LabeledContent("Replacement Value", value: currentRequest.replacementItemValue, format: .currency(code: "INR"))
+                // Prefer catalog price over stale stored value
+                let origProduct = dataStore.product(by: currentRequest.originalProductId)
+                let replProduct = dataStore.product(by: currentRequest.replacementProductId)
+                let returnedVal = origProduct?.price.toDecimal ?? currentRequest.returnedItemValue
+                let replacementVal = replProduct?.price.toDecimal ?? currentRequest.replacementItemValue
+                let diff = replacementVal - returnedVal
                 
-                let diff = currentRequest.differenceAmount
+                LabeledContent("Returned Value", value: returnedVal * Decimal(currentRequest.quantity), format: .currency(code: "INR"))
+                LabeledContent("Replacement Value", value: replacementVal * Decimal(currentRequest.quantity), format: .currency(code: "INR"))
+                
                 LabeledContent("Difference") {
-                    if diff == 0 {
+                    let totalDiff = diff * Decimal(currentRequest.quantity)
+                    if totalDiff == 0 {
                         Text("Even Exchange")
                             .fontWeight(.bold)
                             .foregroundStyle(RSMSTheme.success)
-                    } else if diff > 0 {
-                        Text("Customer Pays \(diff, format: .currency(code: "INR"))")
+                    } else if totalDiff > 0 {
+                        Text("Customer Pays \(totalDiff, format: .currency(code: "INR"))")
                             .fontWeight(.bold)
                             .foregroundStyle(RSMSTheme.danger)
                     } else {
-                        Text("Store Refunds \(abs(diff), format: .currency(code: "INR"))")
+                        Text("Store Refunds \(abs(totalDiff), format: .currency(code: "INR"))")
                             .fontWeight(.bold)
                             .foregroundStyle(RSMSTheme.success)
                     }
@@ -202,6 +218,7 @@ struct ExchangeRequestDetailView: View {
         .fullScreenCover(isPresented: $showPaymentSheet) {
             ExchangePaymentSheet(
                 request: currentRequest,
+                correctedAmount: NSDecimalNumber(decimal: catalogDifference).doubleValue,
                 dataStore: dataStore,
                 onPaymentSuccess: { razorpayPaymentId in
                     paymentSuccess = true
@@ -219,13 +236,13 @@ struct ExchangeRequestDetailView: View {
                 VStack(spacing: 0) {
                     Divider()
                         .background(RSMSTheme.divider)
-                    if currentRequest.differenceAmount > 0 {
+                    if catalogDifference > 0 {
                         Button {
                             showPaymentSheet = true
                         } label: {
                             HStack {
                                 Image(systemName: "indianrupeesign.circle.fill")
-                                Text("Collect Payment via Razorpay (\(currentRequest.differenceAmount, format: .currency(code: "INR")) due)")
+                                Text("Collect Payment via Razorpay (\(catalogDifference, format: .currency(code: "INR")) due)")
                             }
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -235,7 +252,7 @@ struct ExchangeRequestDetailView: View {
                         .tint(RSMSTheme.primary)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
-                    } else if currentRequest.differenceAmount < 0 {
+                    } else if catalogDifference < 0 {
                         Button {
                             Task { await processRefund() }
                         } label: {
@@ -245,7 +262,7 @@ struct ExchangeRequestDetailView: View {
                                 } else {
                                     Image(systemName: "arrow.uturn.backward.circle.fill")
                                 }
-                                Text("Process Refund to Customer (\(abs(currentRequest.differenceAmount), format: .currency(code: "INR")))")
+                                Text("Process Refund to Customer (\(abs(catalogDifference), format: .currency(code: "INR")))")
                             }
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -293,6 +310,68 @@ struct ExchangeRequestDetailView: View {
                 prevStatus: .paymentPending
             )
             
+            // Create cart, transaction, and order for the replacement item in purchase history
+            let originalOrder = dataStore.orders.first(where: { $0.id == currentRequest.orderId })
+            if let clientId = originalOrder?.clientId {
+                let exchangeCartId = UUID()
+                let newCart = UniversalCart(
+                    id: exchangeCartId,
+                    type: .pos,
+                    associateId: currentRequest.associateId,
+                    clientId: clientId,
+                    storeId: currentRequest.storeId,
+                    status: .completed,
+                    note: "Exchange Refund Cart",
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+                
+                let replacementPrice = dataStore.product(by: currentRequest.replacementProductId)?.price
+                    ?? NSDecimalNumber(decimal: currentRequest.replacementItemValue).doubleValue
+                let orderTotal = replacementPrice * Double(currentRequest.quantity)
+                
+                let cartItem = UniversalCartItem(
+                    id: UUID(),
+                    cartId: exchangeCartId,
+                    productId: currentRequest.replacementProductId,
+                    quantity: currentRequest.quantity,
+                    unitPrice: replacementPrice,
+                    discountApplied: 0.0,
+                    note: "Exchange Replacement (Refund)"
+                )
+                
+                let txn = Transaction(
+                    id: UUID(),
+                    cartId: exchangeCartId,
+                    storeId: currentRequest.storeId,
+                    associateId: currentRequest.associateId,
+                    clientId: clientId,
+                    totalAmount: -refundAmount,
+                    taxAmount: 0,
+                    currency: "INR",
+                    status: .completed,
+                    isTaxFree: false,
+                    createdAt: Date()
+                )
+                
+                let exchangeOrder = Order(
+                    id: UUID(),
+                    clientId: clientId,
+                    transactionId: txn.id,
+                    cartId: exchangeCartId,
+                    status: .confirmed,
+                    totalAmount: orderTotal,
+                    discountAmount: 0,
+                    finalAmount: orderTotal,
+                    createdAt: Date()
+                )
+                
+                _ = try await dataStore.createUniversalCart(newCart)
+                _ = try await dataStore.createUniversalCartItem(cartItem)
+                _ = try await dataStore.createTransaction(txn)
+                _ = try await dataStore.createOrder(exchangeOrder)
+            }
+            
             refundProcessed = true
             localRequest = updated
         } catch {
@@ -307,6 +386,7 @@ struct ExchangeRequestDetailView: View {
 
 struct ExchangePaymentSheet: View {
     let request: POSExchangeRequest
+    let correctedAmount: Double?
     let dataStore: DataStore
     let onPaymentSuccess: (String) -> Void
     
@@ -315,7 +395,7 @@ struct ExchangePaymentSheet: View {
     @State private var state: PaymentSheetState = .loading
     
     private var amountDue: Double {
-        NSDecimalNumber(decimal: request.differenceAmount).doubleValue
+        correctedAmount ?? NSDecimalNumber(decimal: request.differenceAmount).doubleValue
     }
     
     var body: some View {
@@ -471,6 +551,95 @@ struct ExchangePaymentSheet: View {
     
     private func handlePaymentCompletion(paymentId: String) {
         Task {
+            // 1. Create and record a new UniversalCart, UniversalCartItem, Transaction, Tender, and Commission records for the payment difference
+            let originalOrder = dataStore.orders.first(where: { $0.id == request.orderId })
+            let clientId = originalOrder?.clientId
+            
+            let exchangeCartId = UUID()
+            let newCart = UniversalCart(
+                id: exchangeCartId,
+                type: .pos,
+                associateId: request.associateId,
+                clientId: clientId,
+                storeId: request.storeId,
+                status: .completed,
+                note: "Exchange Cart",
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            
+            let cartItem = UniversalCartItem(
+                id: UUID(),
+                cartId: exchangeCartId,
+                productId: request.replacementProductId,
+                quantity: request.quantity,
+                unitPrice: NSDecimalNumber(decimal: request.replacementItemValue).doubleValue,
+                discountApplied: 0.0,
+                note: "Exchange Replacement"
+            )
+            
+            let txn = Transaction(
+                id: UUID(),
+                cartId: exchangeCartId,
+                storeId: request.storeId,
+                associateId: request.associateId,
+                clientId: clientId,
+                totalAmount: amountDue,
+                taxAmount: amountDue * 0.2 / 1.2,
+                currency: "INR",
+                status: .completed,
+                isTaxFree: false,
+                createdAt: Date()
+            )
+            
+            let tender = Tender(
+                id: UUID(),
+                transactionId: txn.id,
+                method: .card,
+                amount: amountDue,
+                reference: "online-payment-\(paymentId)"
+            )
+            
+            let commissionRate = 0.05
+            let commission = Commission(
+                id: UUID(),
+                staffId: request.associateId,
+                transactionId: txn.id,
+                amount: amountDue * commissionRate,
+                rate: commissionRate,
+                status: .pending,
+                createdAt: Date()
+            )
+            
+            do {
+                _ = try await dataStore.createUniversalCart(newCart)
+                _ = try await dataStore.createUniversalCartItem(cartItem)
+                _ = try await dataStore.createTransaction(txn)
+                _ = try await dataStore.createTender(tender)
+                _ = try await dataStore.createCommission(commission)
+                
+                // Create Order so the replacement item appears in client purchase history
+                if let cid = clientId {
+                    let replacementPrice = dataStore.product(by: request.replacementProductId)?.price
+                        ?? NSDecimalNumber(decimal: request.replacementItemValue).doubleValue
+                    let orderTotal = replacementPrice * Double(request.quantity)
+                    let exchangeOrder = Order(
+                        id: UUID(),
+                        clientId: cid,
+                        transactionId: txn.id,
+                        cartId: exchangeCartId,
+                        status: .confirmed,
+                        totalAmount: orderTotal,
+                        discountAmount: 0,
+                        finalAmount: orderTotal,
+                        createdAt: Date()
+                    )
+                    _ = try await dataStore.createOrder(exchangeOrder)
+                }
+            } catch {
+                print("[ExchangePayment] Failed to record transaction/tender: \(error)")
+            }
+
             // Update exchange status to completed in Supabase
             var updated = request
             updated.status = .completed
