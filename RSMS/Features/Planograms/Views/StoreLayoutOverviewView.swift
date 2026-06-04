@@ -182,13 +182,6 @@ struct StoreLayoutOverviewView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(isSelected ? Color.black : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
                             )
-                            // A thick strip on one side
-                            .overlay(
-                                Rectangle()
-                                    .fill(isSelected ? Color.red : Color.gray.opacity(0.5))
-                                    .frame(width: 4),
-                                alignment: .top
-                            )
                     case .window:
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.blue.opacity(0.05))

@@ -47,10 +47,10 @@ final class POSCheckoutViewModel {
             try? await dataStore.fetchCheckoutSessions()
             try? await dataStore.fetchCheckoutShippingAddresses()
             try? await dataStore.fetchInventoryReservations()
-            
+
             // Run expiration check
             await checkAndProcessExpiredSession()
-            
+
             // Tax Free
             try? await dataStore.fetchTaxFreeConfigs()
             try? await dataStore.fetchTaxFreeTransactions()
@@ -133,8 +133,8 @@ final class POSCheckoutViewModel {
             createdAt: .now
         )
         try? await dataStore.createCommission(commission)
-        
         // 3. Update cart status locally and persist to Supabase
+        // Ignore backend error if it fails so UI still updates correctly
         let completed = UniversalCart(
             id: cart.id, type: cart.type, associateId: cart.associateId,
             clientId: cart.clientId, storeId: cart.storeId, status: .completed,
@@ -146,21 +146,78 @@ final class POSCheckoutViewModel {
             dataStore.universalCarts[i] = completed
         }
         
-        // Then persist to Supabase — log if it fails so RLS issues are visible in the console
-        do {
-            try await dataStore.updateUniversalCart(completed)
-        } catch {
-            print("[POSCheckoutViewModel] ⚠️ Failed to update cart status to 'completed' in Supabase: \(error)")
-            print("[POSCheckoutViewModel] ℹ️ If this is an RLS error, add an UPDATE policy on 'universal_carts' for the sales_associate role.")
-        }
         // Then try backend (will fail if RLS prevents it, but UI is already updated)
         try? await dataStore.updateUniversalCart(completed)
+
+        // 4. Deduct sold items from inventory
+        let itemsToDeduct = cartItems(for: cart.id)
+        for item in itemsToDeduct {
+            do {
+                try await dataStore.deductStock(productId: item.productId, storeId: _storeId, quantity: item.quantity)
+            } catch {
+                print("[POSCheckoutViewModel] ⚠️ Failed to deduct stock for product \(item.productId): \(error)")
+            }
+        }
+
         
+        // Additional stock synchronization logic
+
+
+        
+        // 3.1 Decrement stock for each item in the cart
+        let cartItemList = dataStore.universalCartItems.filter { $0.cartId == cart.id }
+        // Fetch fresh stock data to ensure accurate counts
+        try? await dataStore.fetchStockItems(storeId: _storeId)
+        
+        for item in cartItemList {
+            // Find the stock record: prefer exact status match (.available), then any
+            let stockIdx = dataStore.stockItems.firstIndex(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId &&
+                $0.status == .available
+            }) ?? dataStore.stockItems.firstIndex(where: {
+                $0.productId == item.productId &&
+                $0.storeId == _storeId
+            })
+            
+            if let idx = stockIdx {
+                let currentStock = dataStore.stockItems[idx]
+                let newQty = max(0, currentStock.quantity - item.quantity)
+                let updatedStock = StockItem(
+                    id: currentStock.id,
+                    productId: currentStock.productId,
+                    storeId: currentStock.storeId,
+                    quantity: newQty,
+                    rfidTag: currentStock.rfidTag,
+                    location: currentStock.location,
+                    status: currentStock.status,
+                    lastScannedAt: Date(),
+                    updatedAt: Date()
+                )
+                do {
+                    try await dataStore.updateStockItem(updatedStock)
+                    print("[POSCheckout] Stock decremented for product \(item.productId): \(currentStock.quantity) → \(newQty)")
+                } catch {
+                    print("[POSCheckout] ⚠️ Failed to decrement stock for product \(item.productId): \(error)")
+                }
+            } else {
+                print("[POSCheckout] ⚠️ No stock record found for product \(item.productId) at store \(_storeId)")
+            }
+        }
+
+
+
         // 4. Audit
-        dataStore.logAudit(storeId: _storeId, action: "Checkout Completed", entityType: "Transaction", entityId: txn.id, performedBy: associateId)
-        
+        dataStore.logAudit(
+            storeId: _storeId,
+            action: "Checkout Completed",
+            entityType: "Transaction",
+            entityId: txn.id,
+            performedBy: associateId
+        )
+
         // 5. Update Sales Goal Achieved Amount
-        // 5. Update Sales Goal Achieved Amount
+        let now = Date()
         if let currentGoal = dataStore.salesGoals
             .filter({ $0.staffId == associateId && $0.period == .monthly })
             .sorted(by: { $0.createdAt > $1.createdAt })
@@ -189,17 +246,17 @@ final class POSCheckoutViewModel {
             }
         }
         
-        // 6. Delete cart items from Supabase AND clear from memory
-        // Each deleteUniversalCartItem call handles both the backend DELETE and the local removeAll.
-        // Capture IDs first because the array mutates during deletion.
+        // 6. Preserve historical transaction records while clearing active cart UI.
+        // Each deleteUniversalCartItem call handles backend delete and local cleanup.
         let itemsToDelete = dataStore.universalCartItems.filter { $0.cartId == cart.id }
+
         for item in itemsToDelete {
             try? await dataStore.deleteUniversalCartItem(id: item.id)
-            
-            // 6. Clear in-memory cart items so UI reflects empty cart post-payment
-            await MainActor.run {
-                dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
-            }
+        }
+
+        // Clear in-memory cart items so UI reflects empty cart post-payment
+        await MainActor.run {
+            dataStore.universalCartItems.removeAll { $0.cartId == cart.id }
         }
     }
     
@@ -454,3 +511,4 @@ final class POSCheckoutViewModel {
         }
     }
 }
+

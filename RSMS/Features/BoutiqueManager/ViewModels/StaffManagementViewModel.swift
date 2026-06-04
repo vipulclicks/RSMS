@@ -33,8 +33,12 @@ final class StaffManagementViewModel {
         
         do {
             try await dataStore.fetchUsers(storeId: storeId)
-            self.allStaff = dataStore.users.filter { $0.storeId == storeId }
-            
+            try await dataStore.fetchTransactions(storeId: storeId)
+            self.allStaff = dataStore.users.filter { $0.storeId == storeId }.sorted { userA, userB in
+                let aLast = dataStore.transactions.filter { $0.associateId == userA.id }.map { $0.createdAt }.max() ?? Date.distantPast
+                let bLast = dataStore.transactions.filter { $0.associateId == userB.id }.map { $0.createdAt }.max() ?? Date.distantPast
+                return aLast > bLast
+            }
             try await dataStore.fetchStaffShifts(storeId: storeId)
             self.shifts = dataStore.staffShifts.filter { Calendar.current.isDateInToday($0.shiftDate) }
             

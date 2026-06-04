@@ -15,9 +15,13 @@ class AppViewModel {
     var currentUser: UserProfile?
 
     /// Base URL for remote checkout links (ngrok, public server, etc.)
-    var customCheckoutBaseURL: String = UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "https://wttkl-152-57-76-254.run.pinggy-free.link" {
+    var customCheckoutBaseURL: String = (UserDefaults.standard.string(forKey: "custom_checkout_base_url") ?? "https://wttkl-152-57-76-254.run.pinggy-free.link").trimmingCharacters(in: .whitespacesAndNewlines) {
         didSet {
-            UserDefaults.standard.set(customCheckoutBaseURL, forKey: "custom_checkout_base_url")
+            let sanitized = customCheckoutBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+            if customCheckoutBaseURL != sanitized {
+                customCheckoutBaseURL = sanitized
+            }
+            UserDefaults.standard.set(sanitized, forKey: "custom_checkout_base_url")
         }
     }
 

@@ -60,16 +60,7 @@ struct ClientWishlistWorkspaceView: View {
         }
         .navigationTitle("Wishlist")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    // Share action
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(RSMSTheme.primary)
-                }
-            }
-        }
+
         .task {
             await viewModel.loadData()
         }

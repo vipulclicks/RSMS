@@ -86,7 +86,6 @@ final class OnlineOrdersViewModel {
         // Fallback to inventory reservations if cart was cleared
         if let session = dataStore.checkoutSessions.first(where: { $0.cartId == cartId }) {
             let reservations = dataStore.inventoryReservations.filter { $0.checkoutSessionId == session.id }
-            print("[OnlineOrdersView] ℹ️ Cart \(cartId) items empty. Calculating total from \(reservations.count) reservations.")
             let subtotal = reservations.reduce(0.0) { total, res in
                 let price = dataStore.product(by: res.productId)?.price ?? 0.0
                 return total + (price * Double(res.quantity))
@@ -225,7 +224,6 @@ final class OnlineOrdersViewModel {
         dataStore.logAudit(storeId: storeId, action: "BOPIS Handover Completed", entityType: "CheckoutSession", entityId: session.id, performedBy: associateId)
     }
     
-    @MainActor
     func completeShipping(session: CheckoutSession, address: String?, dataStore: DataStore, associateId: UUID, storeId: UUID) async {
         isProcessingPayment = true
         defer { isProcessingPayment = false }
@@ -281,14 +279,67 @@ final class OnlineOrdersViewModel {
         )
         try? await dataStore.createOrder(order)
         
+        // 4. Update the packing slip shippedAt date if it exists
+        let omnichannelOrderId = dataStore.omnichannelOrders.first(where: { $0.clientId == session.clientId })?.id
+        if let oId = omnichannelOrderId,
+           let existingSlip = dataStore.shipFromStoreSlips.first(where: { $0.orderId == oId }) {
+            let updatedSlip = ShipFromStoreSlip(
+                id: existingSlip.id,
+                orderId: existingSlip.orderId,
+                storeId: existingSlip.storeId,
+                trackingNumber: existingSlip.trackingNumber,
+                carrier: existingSlip.carrier,
+                packingSlipURL: existingSlip.packingSlipURL,
+                packedBy: existingSlip.packedBy,
+                shippedAt: Date(),
+                createdAt: existingSlip.createdAt
+            )
+            try? await dataStore.updateShipFromStoreSlip(updatedSlip)
+        }
+        
         dataStore.logAudit(storeId: storeId, action: "Home Delivery Shipped", entityType: "CheckoutSession", entityId: session.id, performedBy: associateId)
+    }
+    
+    /// Soft-cancel an expired/stale checkout session so it disappears from the
+    /// Awaiting Payment tab. The record stays in Supabase for the audit trail.
+    func dismissExpiredSession(_ session: CheckoutSession, dataStore: DataStore) async {
+        let cancelled = CheckoutSession(
+            id: session.id,
+            cartId: session.cartId,
+            token: session.token,
+            clientId: session.clientId,
+            associateId: session.associateId,
+            status: .cancelled,
+            fulfillmentMethod: session.fulfillmentMethod,
+            paymentMethod: session.paymentMethod,
+            expiresAt: session.expiresAt,
+            createdAt: session.createdAt,
+            updatedAt: Date()
+        )
+        try? await dataStore.updateCheckoutSession(cancelled)
     }
 }
 
 struct OnlineOrdersView: View {
     @Environment(AppViewModel.self) private var appViewModel
     @State private var viewModel = OnlineOrdersViewModel()
-    @State private var selectedSessionDetails: CheckoutSession? = nil
+    
+    // Single sheet coordinator — avoids iPad SwiftUI bug where only the first
+    // of multiple chained .sheet() modifiers fires reliably.
+    private enum ActiveSheet: Identifiable {
+        case payment(CheckoutSession)
+        case orderDetail(CheckoutSession)
+        case packingSlip(CheckoutSession, ShipFromStoreSlip)
+        
+        var id: String {
+            switch self {
+            case .payment(let s):          return "payment-\(s.id)"
+            case .orderDetail(let s):      return "detail-\(s.id)"
+            case .packingSlip(_, let slip): return "slip-\(slip.id)"
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -324,12 +375,15 @@ struct OnlineOrdersView: View {
                 await loadData()
             }
         }
-        .sheet(
-            isPresented: $viewModel.showPaymentSheet,
-            onDismiss: { viewModel.sessionToPay = nil }
-        ) {
-            if let session = viewModel.sessionToPay {
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .payment(let session):
                 receiveInStorePaymentSheet(session: session)
+                    .onDisappear { viewModel.sessionToPay = nil }
+            case .orderDetail(let session):
+                OnlineOrderDetailSheet(session: session)
+            case .packingSlip(let session, let slip):
+                PackingSlipView(session: session, slip: slip)
             }
         }
         .alert("Verify Pickup Code", isPresented: $viewModel.showVerificationAlert) {
@@ -357,9 +411,6 @@ struct OnlineOrdersView: View {
         } message: {
             Text(viewModel.verificationErrorMessage ?? "Please enter the 6-digit pickup code that was emailed to the client.")
         }
-        .sheet(item: $selectedSessionDetails) { session in
-            OnlineOrderDetailSheet(session: session)
-        }
         .task {
             // Load immediately on open
             await loadData()
@@ -382,6 +433,8 @@ struct OnlineOrdersView: View {
         try? await appViewModel.dataStore.fetchCheckoutSessions()
         try? await appViewModel.dataStore.fetchInventoryReservations()
         try? await appViewModel.dataStore.fetchCheckoutShippingAddresses()
+        try? await appViewModel.dataStore.fetchShipFromStoreSlips(storeId: appViewModel.currentStoreId)
+        try? await appViewModel.dataStore.fetchOmnichannelOrders()
         try? await appViewModel.dataStore.fetchUniversalCarts(associateId: appViewModel.currentUser?.id ?? UUID())
         try? await appViewModel.dataStore.fetchTransactions(storeId: appViewModel.currentStoreId)
     }
@@ -461,6 +514,17 @@ struct OnlineOrdersView: View {
     private func sessionCard(session: CheckoutSession) -> some View {
         let clientName = viewModel.clientName(for: session.clientId, in: appViewModel.dataStore)
         let total = viewModel.cartTotal(for: session.cartId, in: appViewModel.dataStore)
+        let isExpired = session.status == .expired || session.expiresAt < Date() || session.status == .cancelled
+        
+        let displayStatusText: String
+        let displayStatusColor: Color
+        if isExpired {
+            displayStatusText = session.status == .cancelled ? "Cancelled" : "Expired"
+            displayStatusColor = session.status == .cancelled ? RSMSTheme.danger : RSMSTheme.textTertiary
+        } else {
+            displayStatusText = session.status.rawValue.replacingOccurrences(of: "linkGenerated", with: "Link Generated").capitalized
+            displayStatusColor = checkoutSessionStatusColor(session.status)
+        }
         
         return VStack(alignment: .leading, spacing: 12) {
             // Tappable Header Area to open Details
@@ -471,8 +535,8 @@ struct OnlineOrdersView: View {
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Spacer()
                     StatusBadge(
-                        text: session.status.rawValue.replacingOccurrences(of: "linkGenerated", with: "Link Generated").capitalized,
-                        color: checkoutSessionStatusColor(session.status)
+                        text: displayStatusText,
+                        color: displayStatusColor
                     )
                 }
                 
@@ -499,16 +563,49 @@ struct OnlineOrdersView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                selectedSessionDetails = session
+                activeSheet = .orderDetail(session)
             }
             
             Divider().overlay(RSMSTheme.divider)
             
             // Action CTAs
-            if session.status == .pendingStorePayment {
+            if isExpired {
+                Button(role: .destructive) {
+                    Task {
+                        await viewModel.dismissExpiredSession(session, dataStore: appViewModel.dataStore)
+                    }
+                } label: {
+                    Label("Remove Expired Link", systemImage: "link.badge.minus")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.danger)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(RSMSTheme.surfaceSecondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.danger.opacity(0.3), lineWidth: 1))
+                }
+                .buttonStyle(ScaleButtonStyle())
+            } else if viewModel.selectedFilter == .awaitingPayment {
+                // Non-expired but stale awaiting-payment — allow manual cancel
+                Button(role: .destructive) {
+                    Task {
+                        await viewModel.dismissExpiredSession(session, dataStore: appViewModel.dataStore)
+                    }
+                } label: {
+                    Label("Cancel Link", systemImage: "link.badge.minus")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.danger.opacity(0.8))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(RSMSTheme.surfaceSecondary.opacity(0.6))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.danger.opacity(0.15), lineWidth: 1))
+                }
+                .buttonStyle(ScaleButtonStyle())
+            } else if session.status == .pendingStorePayment {
                 Button {
                     viewModel.sessionToPay = session
-                    viewModel.showPaymentSheet = true
+                    activeSheet = .payment(session)
                 } label: {
                     Label("Receive Payment In Store", systemImage: "indianrupeesign.circle.fill")
                         .font(.subheadline.weight(.semibold))
@@ -549,6 +646,117 @@ struct OnlineOrdersView: View {
                             .foregroundStyle(RSMSTheme.textTertiary)
                     }
                     
+                    let omnichannelOrderId = appViewModel.dataStore.omnichannelOrders.first(where: { $0.clientId == session.clientId })?.id
+                    let existingSlip = omnichannelOrderId.flatMap { oId in
+                        appViewModel.dataStore.shipFromStoreSlips.first(where: { $0.orderId == oId })
+                    }
+                    
+                    if let slip = existingSlip {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Packing Slip:")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                Spacer()
+                                Text("Generated")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(RSMSTheme.success)
+                            }
+                            
+                            HStack(spacing: 8) {
+                                Button {
+                                    activeSheet = .packingSlip(session, slip)
+                                } label: {
+                                    Label("View Packing Slip", systemImage: "doc.text.fill")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.surfaceSecondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                                    Button {
+                                    Task {
+                                        appViewModel.dataStore.logAudit(
+                                            storeId: appViewModel.currentStoreId ?? appViewModel.dataStore.stores.first?.id ?? UUID(),
+                                            action: "Packing Slip Regenerated",
+                                            entityType: "ShipFromStoreSlip",
+                                            entityId: slip.id,
+                                            performedBy: appViewModel.currentUser?.id ?? UUID()
+                                        )
+                                        await MainActor.run {
+                                            activeSheet = .packingSlip(session, slip)
+                                        }
+                                    }
+                                } label: {
+                                    Label("Regenerate", systemImage: "arrow.clockwise")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .padding(.vertical, 8)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.surfaceSecondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                            }
+                        }
+                        .padding(.bottom, 4)
+                    } else {
+                        Button {
+                            Task {
+                                let resolvedStoreId = appViewModel.currentStoreId
+                                    ?? appViewModel.dataStore.users.first(where: { $0.id == session.associateId })?.storeId
+                                    ?? appViewModel.dataStore.stores.first?.id
+                                    ?? UUID()
+                                
+                                do {
+                                    // Step 1: Ensure an omnichannel_orders row exists (satisfies FK)
+                                    let omnichannelOrder = try await appViewModel.dataStore
+                                        .findOrCreateOmnichannelOrder(for: session, storeId: resolvedStoreId)
+                                    
+                                    // Step 2: Create the slip using omnichannelOrder.id, NOT session.id
+                                    let newSlip = ShipFromStoreSlip(
+                                        id: UUID(),
+                                        orderId: omnichannelOrder.id,
+                                        storeId: resolvedStoreId,
+                                        trackingNumber: nil,
+                                        carrier: nil,
+                                        packingSlipURL: nil,
+                                        packedBy: appViewModel.currentUser?.id,
+                                        shippedAt: nil,
+                                        createdAt: Date()
+                                    )
+                                    let created = try await appViewModel.dataStore.createShipFromStoreSlip(newSlip)
+                                    appViewModel.dataStore.logAudit(
+                                        storeId: resolvedStoreId,
+                                        action: "Packing Slip Generated",
+                                        entityType: "ShipFromStoreSlip",
+                                        entityId: created.id,
+                                        performedBy: appViewModel.currentUser?.id ?? UUID()
+                                    )
+                                    await MainActor.run {
+                                        activeSheet = .packingSlip(session, created)
+                                    }
+                                } catch {
+                                    print("[OnlineOrdersView] Failed to create packing slip: \(error.localizedDescription)")
+                                }
+                            }
+                        } label: {
+                            Label("Generate Packing Slip", systemImage: "doc.badge.plus")
+                                .font(.caption.weight(.bold))
+                                .foregroundStyle(RSMSTheme.cream)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(RSMSTheme.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(.bottom, 4)
+                    }
+                    
                     Button {
                         Task {
                             await viewModel.completeShipping(
@@ -567,6 +775,28 @@ struct OnlineOrdersView: View {
                             .padding(.vertical, 10)
                             .background(RSMSTheme.primaryGradient)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+            } else if session.status == .completed && session.fulfillmentMethod == .shipping {
+                // Completed ship-from-store — show "View Shipping Slip" if one exists
+                let omnichannelOrderId = appViewModel.dataStore.omnichannelOrders.first(where: { $0.clientId == session.clientId })?.id
+                let completedSlip = omnichannelOrderId.flatMap { oId in
+                    appViewModel.dataStore.shipFromStoreSlips.first(where: { $0.orderId == oId })
+                }
+                
+                if let slip = completedSlip {
+                    Button {
+                        activeSheet = .packingSlip(session, slip)
+                    } label: {
+                        Label("View Shipping Slip", systemImage: "doc.text.fill")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(RSMSTheme.surfaceSecondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
                     }
                     .buttonStyle(ScaleButtonStyle())
                 }

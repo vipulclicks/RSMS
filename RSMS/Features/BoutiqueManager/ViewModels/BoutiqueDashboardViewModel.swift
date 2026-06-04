@@ -36,6 +36,13 @@ final class BoutiqueDashboardViewModel {
     private(set) var previousDaysSales: [DailyStoreSales] = []
     private(set) var salesIncrementPercentage: Double = 0.0
     
+    struct ChartSalesData: Identifiable {
+        let id = UUID()
+        let date: Date
+        let amount: Double
+    }
+    private(set) var chartSalesData: [ChartSalesData] = []
+    
     struct StaffSales: Identifiable {
         let id: UUID
         let staffName: String
@@ -112,16 +119,6 @@ final class BoutiqueDashboardViewModel {
             }
             self.previousDaysSales = dailyHistory
             
-            if dailyHistory.count >= 2 {
-                let yesterdaySales = dailyHistory[dailyHistory.count - 2].amount
-                if yesterdaySales > 0 {
-                    self.salesIncrementPercentage = ((self.todaySales - yesterdaySales) / yesterdaySales) * 100
-                } else if self.todaySales > 0 {
-                    self.salesIncrementPercentage = 100.0
-                } else {
-                    self.salesIncrementPercentage = 0.0
-                }
-            }
             
             // B) Sales Target — fetch all goals, cache them
             try await dataStore.fetchSalesGoals(storeId: storeId)
@@ -344,5 +341,61 @@ final class BoutiqueDashboardViewModel {
         }
         
         self.periodAssociateProgress = progressList.sorted { $0.achievedAmount > $1.achievedAmount }
+        
+        // Compute Historical Sales for the Chart
+        var newChartData: [ChartSalesData] = []
+        let cal = Calendar.current
+        let now = Date()
+        
+        switch selectedPeriod {
+        case .weekly:
+            // Last 7 weeks
+            for i in (0..<7).reversed() {
+                if let d = cal.date(byAdding: .weekOfYear, value: -i, to: now),
+                   let startOfWeek = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: d)) {
+                    let endOfWeek = cal.date(byAdding: .weekOfYear, value: 1, to: startOfWeek)!
+                    let total = allTransactions.filter { $0.createdAt >= startOfWeek && $0.createdAt < endOfWeek }.reduce(0.0) { $0 + $1.totalAmount }
+                    newChartData.append(ChartSalesData(date: startOfWeek, amount: total))
+                }
+            }
+        case .monthly:
+            // Jan to Dec of current year
+            let currentYear = cal.component(.year, from: now)
+            for month in 1...12 {
+                if let startOfMonth = cal.date(from: DateComponents(year: currentYear, month: month, day: 1)) {
+                    let endOfMonth = cal.date(byAdding: .month, value: 1, to: startOfMonth)!
+                    let total = allTransactions.filter { $0.createdAt >= startOfMonth && $0.createdAt < endOfMonth }.reduce(0.0) { $0 + $1.totalAmount }
+                    newChartData.append(ChartSalesData(date: startOfMonth, amount: total))
+                }
+            }
+        default:
+            break
+        }
+        self.chartSalesData = newChartData
+        
+        // Calculate Dynamic Increment Percentage
+        var currentSales: Double = 0
+        var previousSales: Double = 0
+        
+        if selectedPeriod == .monthly {
+            let currentMonth = cal.component(.month, from: now)
+            if currentMonth >= 1 && currentMonth <= 12 {
+                currentSales = newChartData[currentMonth - 1].amount
+                previousSales = currentMonth > 1 ? newChartData[currentMonth - 2].amount : 0.0
+            }
+        } else if selectedPeriod == .weekly {
+            if newChartData.count >= 2 {
+                currentSales = newChartData[newChartData.count - 1].amount
+                previousSales = newChartData[newChartData.count - 2].amount
+            }
+        }
+        
+        if previousSales > 0 {
+            self.salesIncrementPercentage = ((currentSales - previousSales) / previousSales) * 100
+        } else if currentSales > 0 {
+            self.salesIncrementPercentage = 100.0
+        } else {
+            self.salesIncrementPercentage = 0.0
+        }
     }
 }

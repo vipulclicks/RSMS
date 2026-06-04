@@ -72,9 +72,42 @@ final class NotifyBoutiqueManagerViewModel {
     
     // MARK: - Actions
     
-    func notifyManager(for itemID: UUID) {
+    func notifyManager(for itemID: UUID, dataStore: DataStore, user: UserProfile) {
         if let index = lowStockItems.firstIndex(where: { $0.id == itemID }) {
             lowStockItems[index].isManagerNotified = true
+            let item = lowStockItems[index]
+            
+            Task {
+                do {
+                    // Try to find the BM for this store
+                    if dataStore.users.isEmpty {
+                        try await dataStore.fetchUsers()
+                    }
+                    guard let storeId = user.storeId else { return }
+                    
+                    let bms = dataStore.users.filter { $0.role == .boutiqueManager && $0.storeId == storeId }
+                    guard let bm = bms.first else { return }
+                    
+                    try await dataStore.createNotification(
+                        recipientId: bm.id,
+                        title: "Low Stock Alert",
+                        message: "\(item.product.name) is running low (\(item.currentQty) left). Please review.",
+                        type: .sourcingRequest,
+                        relatedEntityId: item.product.id
+                    )
+                    
+                    dataStore.logAudit(
+                        storeId: storeId,
+                        action: "Manager Notified (Low Stock)",
+                        entityType: "Product",
+                        entityId: item.product.id,
+                        performedBy: user.id,
+                        details: "Notified BM about \(item.product.sku). Qty: \(item.currentQty)"
+                    )
+                } catch {
+                    print("Failed to notify manager: \(error)")
+                }
+            }
         }
     }
     

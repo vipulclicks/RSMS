@@ -405,7 +405,7 @@ struct AddShiftView: View {
                 
                 Spacer()
                 
-                Text(shiftToEdit == nil ? "New Shift" : "Edit Shift")
+                Text(shiftToEdit == nil ? "Add Shift" : "Edit Shift")
                     .font(.headline.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
@@ -437,7 +437,9 @@ struct AddShiftView: View {
                                     .foregroundStyle(RSMSTheme.textSecondary)
                                 
                                 Menu {
-                                    let roles = Array(Set(availableStaff.map { $0.role })).sorted { $0.displayName < $1.displayName }
+                                    let roles = Array(Set(availableStaff.map { $0.role }))
+                                        .filter { $0 != .boutiqueManager }
+                                        .sorted { $0.displayName < $1.displayName }
                                     ForEach(roles) { role in
                                         Button(role.displayName) {
                                             selectedFilterRole = role
@@ -467,7 +469,9 @@ struct AddShiftView: View {
                                     .foregroundStyle(RSMSTheme.textSecondary)
                                 
                                 Menu {
-                                    let filteredStaff = availableStaff.filter { selectedFilterRole == nil || $0.role == selectedFilterRole }
+                                    let filteredStaff = availableStaff.filter { 
+                                        $0.role != .boutiqueManager && (selectedFilterRole == nil || $0.role == selectedFilterRole) 
+                                    }
                                     ForEach(filteredStaff) { user in
                                         Button(user.fullName) { 
                                             staffId = user.id 

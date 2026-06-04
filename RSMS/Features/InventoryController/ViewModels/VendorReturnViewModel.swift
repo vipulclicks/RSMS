@@ -326,6 +326,15 @@ final class VendorReturnViewModel {
                     reason: cartItem.reason.rawValue
                 )
                 _ = try await dataStore.createMovementItem(item)
+                
+                // ✅ Permanently deduct the returned quantity from the store's inventory
+                if let sId = storeId {
+                    try? await dataStore.deductStock(
+                        productId: cartItem.product.id,
+                        storeId: sId,
+                        quantity: cartItem.quantity
+                    )
+                }
             }
 
             withAnimation(.spring()) {

@@ -9,8 +9,23 @@
 import SwiftUI
 
 struct OmnichannelView: View {
+    @Environment(AppViewModel.self) private var appVM
     @State private var viewModel = OmnichannelScreenViewModel()
-    @State private var showNewEndlessAisle = false
+    private enum ActiveSheet: Identifiable {
+        case newEndlessAisle
+        case packingSlip(CheckoutSession, ShipFromStoreSlip)
+        
+        var id: String {
+            switch self {
+            case .newEndlessAisle:
+                return "newEndlessAisle"
+            case .packingSlip(let session, let slip):
+                return "packingSlip-\(session.id)-\(slip.id)"
+            }
+        }
+    }
+    
+    @State private var activeSheet: ActiveSheet? = nil
 
     var body: some View {
         ZStack {
@@ -48,8 +63,21 @@ struct OmnichannelView: View {
         }
         .navigationTitle("Omnichannel")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $showNewEndlessAisle) {
-            OCNewEndlessAisleSheet()
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .newEndlessAisle:
+                OCNewEndlessAisleSheet()
+            case .packingSlip(let session, let slip):
+                PackingSlipView(session: session, slip: slip)
+            }
+        }
+        .task {
+            viewModel.dataStore = appVM.dataStore
+            try? await appVM.dataStore.fetchOmnichannelOrders()
+            try? await appVM.dataStore.fetchShipFromStoreSlips(storeId: appVM.currentStoreId)
+            try? await appVM.dataStore.fetchCheckoutSessions()
+            try? await appVM.dataStore.fetchInventoryReservations()
+            try? await appVM.dataStore.fetchCheckoutShippingAddresses()
         }
     }
     // MARK: - Endless Aisle Section
@@ -63,7 +91,7 @@ struct OmnichannelView: View {
                 )
                 Spacer()
                 Button {
-                    showNewEndlessAisle = true
+                    activeSheet = .newEndlessAisle
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.title3)
@@ -97,7 +125,32 @@ struct OmnichannelView: View {
                 OCEmptyState(icon: "shippingbox.and.arrow.backward", message: "No shipments")
             } else {
                 ForEach(slips) { slip in
-                    OCShipSlipCard(slip: slip, viewModel: viewModel)
+                    // slip.orderId references omnichannel_orders.id, not checkout_sessions.id
+                    let omnichannelOrder = appVM.dataStore.omnichannelOrders.first(where: { $0.id == slip.orderId })
+                    let session = omnichannelOrder.flatMap { oo in
+                        appVM.dataStore.checkoutSessions.first(where: { $0.token == oo.onlineOrderId })
+                        ?? appVM.dataStore.checkoutSessions.first(where: { $0.clientId == oo.clientId })
+                        ?? CheckoutSession(
+                            id: oo.id,
+                            cartId: UUID(),
+                            token: oo.onlineOrderId ?? "FALLBACK-TOKEN",
+                            clientId: oo.clientId,
+                            associateId: oo.associateId ?? UUID(),
+                            status: oo.status == .delivered || oo.status == .shipped ? .completed : .readyForShipping,
+                            fulfillmentMethod: .shipping,
+                            paymentMethod: .online,
+                            expiresAt: oo.createdAt,
+                            createdAt: oo.createdAt,
+                            updatedAt: oo.createdAt
+                        )
+                    }
+                    OCShipSlipCard(slip: slip, viewModel: viewModel) {
+                        if let s = session {
+                            activeSheet = .packingSlip(s, slip)
+                        } else {
+                            print("[OmnichannelView] Session lookup failed for slip: \(slip.id), client: \(omnichannelOrder?.clientId.uuidString ?? "nil")")
+                        }
+                    }
                 }
             }
         }
@@ -110,13 +163,23 @@ struct OmnichannelView: View {
 private final class OmnichannelScreenViewModel {
     var selectedTab = 0
     var bopisFilter = "All"
+    var dataStore: DataStore?
 
-    // TODO: Replace mock data with DataStore
-    private(set) var bopisOrders: [OmnichannelOrder] = OmnichannelOrder.all.filter { $0.type == .bopis }
-    private(set) var endlessAisleOrders: [OmnichannelOrder] = OmnichannelOrder.all.filter { $0.type == .endlessAisle }
-    private(set) var shipSlips: [ShipFromStoreSlip] = ShipFromStoreSlip.all
-    private(set) var clients: [ClientProfile] = ClientProfile.allClients
-    private(set) var products: [Product] = Product.all
+    var bopisOrders: [OmnichannelOrder] {
+        dataStore?.omnichannelOrders.filter { $0.type == .bopis } ?? []
+    }
+    var endlessAisleOrders: [OmnichannelOrder] {
+        dataStore?.omnichannelOrders.filter { $0.type == .endlessAisle } ?? []
+    }
+    var shipSlips: [ShipFromStoreSlip] {
+        dataStore?.shipFromStoreSlips ?? []
+    }
+    var clients: [ClientProfile] {
+        dataStore?.clients ?? []
+    }
+    var products: [Product] {
+        dataStore?.products ?? []
+    }
 
     var filteredBOPIS: [OmnichannelOrder] {
         guard bopisFilter != "All" else { return bopisOrders }
@@ -284,6 +347,7 @@ private struct OCEndlessAisleCard: View {
 private struct OCShipSlipCard: View {
     let slip: ShipFromStoreSlip
     let viewModel: OmnichannelScreenViewModel
+    var onViewSlip: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -320,24 +384,21 @@ private struct OCShipSlipCard: View {
                 }
             }
 
-            HStack {
-                Text("Created \(slip.createdAt, style: .relative) ago")
+            HStack(spacing: 12) {
+                Text(slip.createdAt.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption2)
                     .foregroundStyle(RSMSTheme.textTertiary)
 
                 Spacer()
 
-                if slip.shippedAt == nil {
-                    Button {
-                        // Add tracking
-                    } label: {
-                        Label("Add Tracking", systemImage: "plus.circle")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(RSMSTheme.primary)
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .accessibilityLabel("Add tracking number")
+                Button {
+                    onViewSlip?()
+                } label: {
+                    Label("View Packing Slip", systemImage: "doc.text.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.primary)
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
         }
         .rsmsCard()

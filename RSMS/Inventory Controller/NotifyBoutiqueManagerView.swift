@@ -402,8 +402,9 @@ struct NotifyBoutiqueManagerView: View {
     // MARK: - Actions
     
     private func handleNotifyAction(for item: LowStockAlertItem) {
+        guard let user = appVM.currentUser else { return }
         // Trigger logic to notify
-        viewModel.notifyManager(for: item.id)
+        viewModel.notifyManager(for: item.id, dataStore: appVM.dataStore, user: user)
         
         // Show modal
         selectedAlert = item

@@ -73,6 +73,18 @@ final class DataStore {
     var taxFreeTransactions: [TaxFreeTransaction] = []
     var taxFreeAudits: [TaxFreeAudit] = []
     
+    // ── Returns & Exchanges ─────────────────────────────
+    var posReturnRequests: [POSReturnRequest] = []
+    var posExchangeRequests: [POSExchangeRequest] = []
+    var posReturnAuditLogs: [POSReturnAuditLog] = []
+    
+    // Offline Sync Queues
+    var pendingReturnRequests: [POSReturnRequest] = []
+    var pendingExchangeRequests: [POSExchangeRequest] = []
+    var pendingReturnUpdates: [POSReturnRequest] = []
+    var pendingExchangeUpdates: [POSExchangeRequest] = []
+    var pendingAuditLogs: [POSReturnAuditLog] = []
+    
     private var isRecalculating = false
     
     func recalculateVIPTiers() {
@@ -479,7 +491,7 @@ final class DataStore {
     
     // ══════════════════════════════════════════════════════════
     // MARK: - event_invitations
-    // ══════════════════════════════════════════════════════════
+    // ══════════════════════════════════════════════════════════ 
     
     func fetchEventInvitations(eventId: UUID) async throws {
         eventInvitations = try await api.fetch("event_invitations", query: ["event_id": "eq.\(eventId)"])
@@ -1022,7 +1034,89 @@ final class DataStore {
         try await api.delete("stock_items", id: id)
         stockItems.removeAll { $0.id == id }
     }
-    
+
+    /// Reserves stock for an outbound transfer, preventing double selling.
+    func reserveStockForTransfer(productId: UUID, storeId: UUID, quantity: Int) async throws {
+        // Fetch fresh to ensure we have the latest quantities
+        let query = ["product_id": "eq.\(productId)", "store_id": "eq.\(storeId)"]
+        let currentStock: [StockItem] = try await api.fetch("stock_items", query: query)
+        
+        guard let existing = currentStock.first(where: { $0.status == .available }), existing.quantity >= quantity else {
+            throw NSError(domain: "DataStore", code: 400, userInfo: [
+                NSLocalizedDescriptionKey: "Insufficient available stock to reserve for transfer."
+            ])
+        }
+        
+        // Deduct the requested quantity from available stock
+        let updatedAvailable = StockItem(
+            id: existing.id,
+            productId: existing.productId,
+            storeId: existing.storeId,
+            quantity: existing.quantity - quantity, // Remove reserved quantity
+            rfidTag: existing.rfidTag,
+            location: existing.location,
+            status: .available,
+            lastScannedAt: existing.lastScannedAt,
+            updatedAt: .now
+        )
+        try await updateStockItem(updatedAvailable)
+        
+        // Check if an inTransit record already exists for this product at this store
+        if let existingInTransit = currentStock.first(where: { $0.status == .inTransit }) {
+            let updatedInTransit = StockItem(
+                id: existingInTransit.id,
+                productId: existingInTransit.productId,
+                storeId: existingInTransit.storeId,
+                quantity: existingInTransit.quantity + quantity,
+                rfidTag: existingInTransit.rfidTag,
+                location: existingInTransit.location,
+                status: .inTransit,
+                lastScannedAt: existingInTransit.lastScannedAt,
+                updatedAt: .now
+            )
+            try await updateStockItem(updatedInTransit)
+        } else {
+            // Create a new inTransit stock item for the reserved quantity
+            let inTransitItem = StockItem(
+                id: UUID(),
+                productId: existing.productId,
+                storeId: existing.storeId, // Stays at source store until received
+                quantity: quantity,
+                rfidTag: nil, // RFID transfers with the physical item
+                location: "Transfer staging",
+                status: .inTransit,
+                lastScannedAt: .now,
+                updatedAt: .now
+            )
+            try await createStockItem(inTransitItem)
+        }
+    }
+
+    /// Permanently deducts stock (e.g. for a vendor return or adjustment)
+    func deductStock(productId: UUID, storeId: UUID, quantity: Int) async throws {
+        let query = ["product_id": "eq.\(productId)", "store_id": "eq.\(storeId)"]
+        let currentStock: [StockItem] = try await api.fetch("stock_items", query: query)
+        
+        guard let existing = currentStock.first(where: { $0.status == .available }), existing.quantity >= quantity else {
+            throw NSError(domain: "DataStore", code: 400, userInfo: [
+                NSLocalizedDescriptionKey: "Insufficient available stock to deduct."
+            ])
+        }
+        
+        let updated = StockItem(
+            id: existing.id,
+            productId: existing.productId,
+            storeId: existing.storeId,
+            quantity: existing.quantity - quantity,
+            rfidTag: existing.rfidTag,
+            location: existing.location,
+            status: existing.status,
+            lastScannedAt: existing.lastScannedAt,
+            updatedAt: .now
+        )
+        try await updateStockItem(updated)
+    }
+
     // ══════════════════════════════════════════════════════════
     // MARK: - rfid_scan_records
     // ══════════════════════════════════════════════════════════
@@ -1220,6 +1314,90 @@ final class DataStore {
         let created: OmnichannelOrder = try await api.insert("omnichannel_orders", record: o)
         omnichannelOrders.append(created)
         return created
+    }
+    
+    /// Fetches or creates an `omnichannel_orders` row for a checkout session.
+    /// This must be called before inserting a `ship_from_store_slips` row
+    /// because the FK `ship_from_store_slips_order_id_fkey` references `omnichannel_orders.id`.
+    ///
+    /// Uses a slim payload struct to avoid sending columns (`quantity`, `unit_price`, etc.)
+    /// that exist in the Swift model but not in the actual Supabase table schema.
+    @discardableResult
+    func findOrCreateOmnichannelOrder(for session: CheckoutSession, storeId: UUID) async throws -> OmnichannelOrder {
+        // Slim struct matching only the columns that exist in the Supabase table.
+        // JSONDecoder ignores extra keys in the response, so this safely decodes.
+        struct GatewayPayload: Codable, Identifiable {
+            let id: UUID
+            let type: OmnichannelOrderType
+            let onlineOrderId: String?
+            let storeId: UUID
+            let clientId: UUID
+            let associateId: UUID?
+            let status: OmnichannelOrderStatus
+            let createdAt: Date
+
+            enum CodingKeys: String, CodingKey {
+                case id, type, status
+                case onlineOrderId = "online_order_id"
+                case storeId       = "store_id"
+                case clientId      = "client_id"
+                case associateId   = "associate_id"
+                case createdAt     = "created_at"
+            }
+        }
+
+        // Helper to convert slim payload → full model
+        func toFullModel(_ p: GatewayPayload) -> OmnichannelOrder {
+            OmnichannelOrder(
+                id: p.id, type: p.type, onlineOrderId: p.onlineOrderId,
+                storeId: p.storeId, clientId: p.clientId, associateId: p.associateId,
+                productId: nil, sourceStoreId: nil, sourceDCId: nil,
+                status: p.status, shippingAddress: nil, estimatedDelivery: nil,
+                preparedBy: nil, preparedAt: nil, pickedUpAt: nil, notes: nil,
+                createdAt: p.createdAt, quantity: 1, unitPrice: nil,
+                reservationDate: nil, customerPhone: nil
+            )
+        }
+
+        // 1. Check local cache
+        if let existing = omnichannelOrders.first(where: {
+            $0.clientId == session.clientId && $0.storeId == storeId
+        }) {
+            return existing
+        }
+
+        // 2. Query Supabase (decode with slim struct to avoid missing-column failures)
+        let fetched: [GatewayPayload] = (try? await api.fetch(
+            "omnichannel_orders",
+            query: [
+                "client_id": "eq.\(session.clientId.uuidString)",
+                "store_id":  "eq.\(storeId.uuidString)",
+                "select":    "id,type,online_order_id,store_id,client_id,associate_id,status,created_at"
+            ]
+        )) ?? []
+        if let hit = fetched.first {
+            let full = toFullModel(hit)
+            if !omnichannelOrders.contains(where: { $0.id == full.id }) {
+                omnichannelOrders.append(full)
+            }
+            return full
+        }
+
+        // 3. Insert using slim payload (only sends columns that exist in the table)
+        let payload = GatewayPayload(
+            id: UUID(),
+            type: .bopis,
+            onlineOrderId: session.token,
+            storeId: storeId,
+            clientId: session.clientId,
+            associateId: session.associateId,
+            status: .pending,
+            createdAt: Date()
+        )
+        let inserted: GatewayPayload = try await api.insert("omnichannel_orders", record: payload)
+        let full = toFullModel(inserted)
+        omnichannelOrders.append(full)
+        return full
     }
     
     func updateOmnichannelOrder(_ o: OmnichannelOrder) async throws {
@@ -1513,6 +1691,37 @@ final class DataStore {
             print("[DataStore] ⚠️ updateCheckoutSession in Supabase failed: \(error.localizedDescription). Updated locally in-memory.")
         }
     }
+    
+    func deleteCheckoutSession(id: UUID) async throws {
+        // Delete related ship-from-store slips
+        let slipsToDelete = shipFromStoreSlips.filter { $0.orderId == id }
+        for slip in slipsToDelete {
+            try? await api.delete("ship_from_store_slips", id: slip.id)
+        }
+        
+        // Delete related inventory reservations
+        let reservationsToDelete = inventoryReservations.filter { $0.checkoutSessionId == id }
+        for res in reservationsToDelete {
+            try? await api.delete("inventory_reservations", id: res.id)
+        }
+        
+        // Delete related shipping addresses
+        let addressesToDelete = checkoutShippingAddresses.filter { $0.checkoutSessionId == id }
+        for addr in addressesToDelete {
+            try? await api.delete("checkout_shipping_addresses", id: addr.id)
+        }
+        
+        // Delete the checkout session itself
+        try await api.delete("checkout_sessions", id: id)
+        
+        await MainActor.run {
+            checkoutSessions.removeAll { $0.id == id }
+            inventoryReservations.removeAll { $0.checkoutSessionId == id }
+            checkoutShippingAddresses.removeAll { $0.checkoutSessionId == id }
+            shipFromStoreSlips.removeAll { $0.orderId == id }
+        }
+    }
+
     
     func syncSessionWithLocalServer(_ session: CheckoutSession) {
 #if DEBUG
