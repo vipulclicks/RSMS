@@ -536,7 +536,7 @@ struct ProductCatalogCard: View {
                     case .success(let image):
                         image.resizable()
                             .scaledToFill()
-                            .frame(minHeight: 220)
+                            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 220, maxHeight: 220)
                             .clipped()
                     case .failure, .empty:
                         categoryIcon
