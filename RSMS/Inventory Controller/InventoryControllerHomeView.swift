@@ -16,6 +16,7 @@ enum InventoryDestination: String, Hashable, Identifiable {
     case audits      = "Audits & Counts"
     case operations  = "Operations"
     case catalog     = "Catalog"
+    case notify      = "Notify Manager"
     case profile     = "My Profile"
 
     var id: String { rawValue }
@@ -27,6 +28,7 @@ enum InventoryDestination: String, Hashable, Identifiable {
         case .audits:     return "checkmark.shield.fill"
         case .operations: return "wrench.and.screwdriver.fill"
         case .catalog:    return "book.fill"
+        case .notify:     return "bell.fill"
         case .profile:    return "person.crop.circle.fill"
         }
     }
@@ -73,7 +75,9 @@ struct InventoryControllerHomeView: View {
                 set: { if $0 == nil { selectedDestination = .dashboard } }
             )) { _ in
                 NavigationStack {
-                    InventoryControllerProfileView()
+                    InventoryControllerProfileView(onBack: {
+                        selectedDestination = .dashboard
+                    })
                 }
             }
         } else {
@@ -134,7 +138,7 @@ struct InventoryControllerHomeView: View {
     private func detailViewFor(_ destination: InventoryDestination) -> some View {
         switch destination {
         case .dashboard:
-            dashboardView
+            AnyView(dashboardView)
         case .movements:
             MovementsContainerView()
         case .audits:
@@ -143,34 +147,30 @@ struct InventoryControllerHomeView: View {
             OperationsContainerView()
         case .catalog:
             ProductLookupView()
+        case .notify:
+            NotifyBoutiqueManagerView()
         case .profile:
-            InventoryControllerProfileView()
+            InventoryControllerProfileView(onBack: {
+                selectedDestination = .dashboard
+            })
         }
     }
 
     // MARK: - Dashboard View
 
-    @State var showNotifyManager = false
-    @State var showProductLookup = false
-
     private var dashboardView: some View {
         DashboardView(
             dashVM: dashVM,
-            selectedDestination: $selectedDestination,
-            showNotifyManager: $showNotifyManager,
-            showProductLookup: $showProductLookup
+            selectedDestination: $selectedDestination
         )
         .background(RSMSTheme.background)
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showNotifyManager) {
-            NavigationStack {
-                NotifyBoutiqueManagerView()
-            }
-        }
-        .sheet(isPresented: $showProductLookup) {
-            NavigationStack {
-                ProductLookupView()
+        .navigationDestination(for: InventoryDestination.self) { dest in
+            if dest == .dashboard {
+                EmptyView()
+            } else {
+                detailViewFor(dest)
             }
         }
         .task {

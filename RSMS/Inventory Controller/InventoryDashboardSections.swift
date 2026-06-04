@@ -14,8 +14,6 @@ struct DashboardView: View {
 
     var dashVM: InventoryDashboardViewModel
     @Binding var selectedDestination: InventoryDestination?
-    @Binding var showNotifyManager: Bool
-    @Binding var showProductLookup: Bool
 
     var body: some View {
         ScrollView {
@@ -246,65 +244,73 @@ struct DashboardView: View {
         subtitle: String,
         icon: String,
         accentColor: Color,
-        badgeText: String?,
-        action: @escaping () -> Void
+        badgeText: String? = nil,
+        destination: InventoryDestination? = nil,
+        action: (() -> Void)? = nil
     ) -> some View {
 
-        Button {
+        let cardContent = VStack(alignment: .leading, spacing: 12) {
 
-            action()
+            HStack {
 
-        } label: {
+                Image(systemName: icon)
+                    .foregroundStyle(accentColor)
 
-            VStack(alignment: .leading, spacing: 12) {
+                Spacer()
 
-                HStack {
+                if let badgeText {
 
-                    Image(systemName: icon)
+                    Text(badgeText)
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(accentColor)
-
-                    Spacer()
-
-                    if let badgeText {
-
-                        Text(badgeText)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(accentColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                accentColor.opacity(0.12)
-                            )
-                            .clipShape(Capsule())
-                    }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            accentColor.opacity(0.12)
+                        )
+                        .clipShape(Capsule())
                 }
-
-                Text(subtitle)
-                    .font(.caption2.weight(.medium))
-                    .tracking(1.5)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-
-                Text(title)
-                    .font(.title3.bold())
-                    .foregroundStyle(RSMSTheme.textPrimary)
             }
-            .padding(16)
-            .frame(
-                maxWidth: .infinity,
-                alignment: .leading
-            )
-            .background(RSMSTheme.surfacePrimary)
-            .clipShape(
-                RoundedRectangle(cornerRadius: 16)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        accentColor.opacity(0.35),
-                        lineWidth: 1
-                    )
-            )
-            .contentShape(Rectangle())
+
+            Text(subtitle)
+                .font(.caption2.weight(.medium))
+                .tracking(1.5)
+                .foregroundStyle(RSMSTheme.textTertiary)
+
+            Text(title)
+                .font(.title3.bold())
+                .foregroundStyle(RSMSTheme.textPrimary)
+        }
+        .padding(16)
+        .frame(
+            maxWidth: .infinity,
+            alignment: .leading
+        )
+        .background(RSMSTheme.surfacePrimary)
+        .clipShape(
+            RoundedRectangle(cornerRadius: 16)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    accentColor.opacity(0.35),
+                    lineWidth: 1
+                )
+        )
+        .contentShape(Rectangle())
+
+        return Group {
+            if let destination {
+                NavigationLink(value: destination) {
+                    cardContent
+                }
+            } else if let action {
+                Button(action: action) {
+                    cardContent
+                }
+            } else {
+                cardContent
+            }
         }
         .buttonStyle(.plain)
     }
@@ -318,10 +324,9 @@ struct DashboardView: View {
             subtitle: "LOW STOCK",
             icon: "exclamationmark.triangle.fill",
             accentColor: RSMSTheme.gold,
-            badgeText: "+\(dashVM.snapshot?.newLowStockCount ?? 0) New"
-        ) {
-            showNotifyManager = true
-        }
+            badgeText: "+\(dashVM.snapshot?.newLowStockCount ?? 0) New",
+            destination: .notify
+        )
     }
 
     var productLookupCard: some View {
@@ -331,36 +336,33 @@ struct DashboardView: View {
             subtitle: "PRODUCT LOOKUP",
             icon: "magnifyingglass.circle.fill",
             accentColor: RSMSTheme.primary,
-            badgeText: "Scan"
-        ) {
-            showProductLookup = true
-        }
+            badgeText: "Scan",
+            destination: .catalog
+        )
     }
 
     var cycleCountCard: some View {
 
         actionCard(
-            title: "Cycle Counts",
-            subtitle: "VERIFY STOCK",
-            icon: "arrow.triangle.2.circlepath",
+            title: "Audits & Counts",
+            subtitle: "INVENTORY INTEGRITY",
+            icon: "doc.badge.gearshape.fill",
             accentColor: RSMSTheme.success,
-            badgeText: "\(dashVM.snapshot?.pendingTaskCount ?? 0) Tasks"
-        ) {
-            selectedDestination = .audits
-        }
+            badgeText: "\(dashVM.snapshot?.pendingTaskCount ?? 0) Tasks",
+            destination: .audits
+        )
     }
 
     var transferCard: some View {
 
         actionCard(
             title: "Transfers",
-            subtitle: "STORE TRANSFERS",
+            subtitle: "STORE TO STORE",
             icon: "arrow.left.arrow.right",
             accentColor: RSMSTheme.info,
-            badgeText: "Manage"
-        ) {
-            selectedDestination = .movements
-        }
+            badgeText: "Manage",
+            destination: .movements
+        )
     }
 
     var vendorReturnsCard: some View {
@@ -370,10 +372,9 @@ struct DashboardView: View {
             subtitle: "RMA / DEFECTIVE",
             icon: "shippingbox.and.arrow.forward.fill",
             accentColor: Color(hue: 0.8, saturation: 0.6, brightness: 0.6),
-            badgeText: "Manage"
-        ) {
-            selectedDestination = .movements
-        }
+            badgeText: "Manage",
+            destination: .movements
+        )
     }
 
     var serviceTrackingCard: some View {
@@ -383,10 +384,9 @@ struct DashboardView: View {
             subtitle: "REPAIRS & LOGISTICS",
             icon: "wrench.and.screwdriver.fill",
             accentColor: RSMSTheme.primary,
-            badgeText: "Track"
-        ) {
-            selectedDestination = .operations
-        }
+            badgeText: "Track",
+            destination: .operations
+        )
     }
 
     // MARK: - Activity Feed
