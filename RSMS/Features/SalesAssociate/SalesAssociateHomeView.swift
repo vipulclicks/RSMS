@@ -76,6 +76,7 @@ struct SalesAssociateHomeView: View {
                 }
             }
         }
+        .tint(RSMSTheme.primary)
     }
 
     // MARK: - Adaptivity Content Routing
