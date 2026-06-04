@@ -471,10 +471,6 @@ struct SalesAssociateHomeView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(RSMSTheme.textPrimary)
-
-                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month().year()))
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textSecondary)
             }
 
             Spacer(minLength: 16)
@@ -686,7 +682,8 @@ private struct TopClientsSection: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(minHeight: 120) // Adjust height to fit the dynamic cards without clipping
+                .frame(minHeight: 160) // Increased height to prevent avatar text from overlapping next section
+                .padding(.bottom, 8)
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 16)
