@@ -262,7 +262,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVN9VN4D7R;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxora;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSExceptionDomains</key><dict><key>razorpay.com</key><dict><key>NSIncludesSubdomains</key><true/><key>NSThrowsOnErrors</key><false/></dict></dict></dict>";
@@ -298,7 +298,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GVN9VN4D7R;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Luxora;
 				INFOPLIST_KEY_NSAppTransportSecurity = "<dict><key>NSExceptionDomains</key><dict><key>razorpay.com</key><dict><key>NSIncludesSubdomains</key><true/><key>NSThrowsOnErrors</key><false/></dict></dict></dict>";
