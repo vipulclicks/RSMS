@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ClientAvatarCard: View {
     let client: ClientProfile
+    var spending: Double? = nil
+    var avatarSize: CGFloat = 52
+    var cardWidth: CGFloat = 72
 
     var initials: String {
         client.fullName
@@ -21,26 +24,35 @@ struct ClientAvatarCard: View {
             ZStack {
                 Circle()
                     .fill(RSMSTheme.primary.opacity(0.10))
-                    .frame(width: 52, height: 52)
+                    .frame(width: avatarSize, height: avatarSize)
                 Text(initials)
-                    .font(.headline.weight(.semibold))
+                    .font(.system(size: avatarSize * 0.35, weight: .semibold))
                     
                     .foregroundStyle(RSMSTheme.primary)
 
                 if client.vipTier != .standard {
-                    VIPDotIndicator(tier: client.vipTier)
+                    VIPDotIndicator(tier: client.vipTier, size: avatarSize)
                 }
             }
 
-            Text(firstName)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(RSMSTheme.textSecondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
+            VStack(spacing: 2) {
+                Text(firstName)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                
+                if let spending = spending {
+                    Text(spending, format: .currency(code: "INR"))
+                        .font(.system(size: 10))
+                        .foregroundStyle(RSMSTheme.textTertiary)
+                        .lineLimit(1)
+                }
+            }
         }
-        .frame(width: 72)
+        .frame(width: cardWidth)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(client.fullName), \(client.vipTier.rawValue) client")
+        .accessibilityLabel(spending != nil ? "\(client.fullName), \(client.vipTier.rawValue) client, spent \(spending!, format: .currency(code: "INR"))" : "\(client.fullName), \(client.vipTier.rawValue) client")
     }
 }
 
@@ -48,13 +60,17 @@ struct ClientAvatarCard: View {
 
 struct VIPDotIndicator: View {
     let tier: VIPTier
+    var size: CGFloat = 52
 
     var body: some View {
+        let dotSize = size * 0.2
+        let offsetVal = size * 0.35
+        
         Circle()
             .fill(tierColor)
-            .frame(width: 10, height: 10)
+            .frame(width: dotSize, height: dotSize)
             .overlay(Circle().stroke(RSMSTheme.background, lineWidth: 1.5))
-            .offset(x: 18, y: 18)
+            .offset(x: offsetVal, y: offsetVal)
     }
 
     private var tierColor: Color {

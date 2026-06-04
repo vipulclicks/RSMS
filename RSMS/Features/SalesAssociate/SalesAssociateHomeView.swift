@@ -138,11 +138,14 @@ struct SalesAssociateHomeView: View {
 
                         UpcomingAppointmentsSection(appointmentVM: appointmentVM)
 
-                        QuickActionsSection(
-                            columnsCount: 2,
-                            onNewClient: { showNewClientSheet = true },
-                            onOmnichannel: { navigationPath.append("Omnichannel") }
-                        )
+                        TopClientsSection()
+
+                        VStack(spacing: 24) {
+                            SalesGoalProgressCard()
+                            PendingActionsCard()
+                            RecentTransactionsCard()
+                        }
+                        .padding(.horizontal, 16)
                     }
                     .padding(.bottom, 32)
                 }
@@ -299,6 +302,14 @@ struct SalesAssociateHomeView: View {
                     OmnichannelView()
                 case "Profile":
                     SalesAssociateProfileView()
+                case "LookBuilder":
+                    LookBuilderView()
+                case "AllTransactions":
+                    SalesAssociateAllTransactionsView(
+                        transactions: appViewModel.dataStore.transactions.filter { $0.associateId == (appViewModel.currentUser?.id ?? UUID()) }
+                    )
+                case "SourcingRequests":
+                    InventorySourcingRequestListView()
                 default:
                     Text("Coming Soon")
                 }
@@ -343,18 +354,40 @@ struct SalesAssociateHomeView: View {
 
                             KPIGridView(appointmentVM: appointmentVM, viewWidth: width)
 
-                            VStack(alignment: .leading, spacing: 32) {
-                                UpcomingAppointmentsSection(appointmentVM: appointmentVM)
-                                
-                                QuickActionsSection(
-                                    columnsCount: width >= 700 ? 4 : (width >= 500 ? 3 : 2),
-                                    onNewClient: { showNewClientSheet = true },
-                                    onOmnichannel: { navigationPath.append("Omnichannel") }
-                                )
+                            let isPortrait = width < 850
+
+                            if isPortrait {
+                                VStack(alignment: .leading, spacing: 24) {
+                                    UpcomingAppointmentsSection(appointmentVM: appointmentVM)
+                                    TopClientsSection()
+                                    SalesGoalProgressCard()
+                                    PendingActionsCard()
+                                    RecentTransactionsCard()
+                                }
+                                .padding(.horizontal, 20)
+                            } else {
+                                let availableWidth = max(0, width - 40 - 24)
+                                let leftWidth = max(0, availableWidth * 0.5)
+                                let rightWidth = max(0, availableWidth * 0.5)
+
+                                HStack(alignment: .top, spacing: 24) {
+                                    VStack(alignment: .leading, spacing: 28) {
+                                        UpcomingAppointmentsSection(appointmentVM: appointmentVM)
+                                        PendingActionsCard()
+                                        RecentTransactionsCard()
+                                    }
+                                    .frame(width: leftWidth, alignment: .leading)
+
+                                    VStack(alignment: .leading, spacing: 28) {
+                                        SalesGoalProgressCard()
+                                        TopClientsSection()
+                                    }
+                                    .frame(width: rightWidth, alignment: .leading)
+                                }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
                         }
-                        .padding(.vertical, 32)
+                        .padding(.vertical, 24)
                     }
                 }
             }
@@ -431,15 +464,25 @@ struct SalesAssociateHomeView: View {
     }
 
     private var greetingHeaderSection: some View {
-        let firstName = appViewModel.currentUser?.fullName.components(separatedBy: " ").first ?? "there"
-        
-        return VStack(alignment: .leading, spacing: 4) {
-            Text("\(greeting(for: .now)), \(firstName)")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(RSMSTheme.textPrimary)
+        let firstName = appViewModel.currentUser?.fullName
+            .components(separatedBy: " ").first ?? "there"
+
+        return HStack(alignment: .lastTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(greeting(for: .now) + ", " + firstName)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+
+                Text(Date.now.formatted(.dateTime.weekday(.wide).day().month().year()))
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+
+            Spacer(minLength: 16)
         }
-        .padding(.horizontal, horizontalSizeClass == .regular ? 20 : 16)
-        .padding(.top, 16)
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
     }
 
     private func greeting(for date: Date) -> String {
@@ -585,20 +628,31 @@ private struct EmptyAppointmentsCard: View {
     }
 }
 
-// MARK: - MyClientsSection
+// MARK: - TopClientsSection
 
-private struct MyClientsSection: View {
+private struct TopClientsSection: View {
     @Environment(AppViewModel.self) private var appViewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-        let clients = ClientProfile.allClients
+        let transactions = appViewModel.dataStore.transactions
+        let clients = appViewModel.dataStore.clients
+
+        let spendingDict: [UUID: Double] = transactions.reduce(into: [:]) { dict, tx in
+            if let clientId = tx.clientId {
+                dict[clientId, default: 0] += tx.totalAmount
+            }
+        }
+
+        let topClients = clients.sorted { 
+            (spendingDict[$0.id] ?? 0) > (spendingDict[$1.id] ?? 0)
+        }
 
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 SectionHeader(
-                    title: "My Clients",
-                    subtitle: "\(clients.count) total"
+                    title: "Top Clients",
+                    subtitle: "By Spending"
                 )
                 Spacer()
                 
@@ -609,67 +663,33 @@ private struct MyClientsSection: View {
                 }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(clients.prefix(8)) { client in
-                        NavigationLink(value: client) {
-                            ClientAvatarCard(client: client)
+            if topClients.isEmpty {
+                Text("No client data available")
+                    .font(.subheadline)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .padding(.vertical, 8)
+            } else {
+                GeometryReader { geo in
+                    let maxClients = min(5, topClients.count)
+                    let displayedClients = Array(topClients.prefix(maxClients))
+                    
+                    let spacing: CGFloat = 8
+                    let totalSpacing = spacing * CGFloat(maxClients - 1)
+                    
+                    let cardWidth = min(140, (geo.size.width - totalSpacing) / CGFloat(maxClients))
+                    let avatarSize = cardWidth * 0.82 
+
+                    HStack(spacing: spacing) {
+                        ForEach(displayedClients) { client in
+                            NavigationLink(value: client) {
+                                ClientAvatarCard(client: client, spending: spendingDict[client.id], avatarSize: avatarSize, cardWidth: cardWidth)
+                            }
+                            .buttonStyle(ScaleButtonStyle())
                         }
-                        .buttonStyle(ScaleButtonStyle())
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.vertical, 4)
-            }
-        }
-        .padding(.horizontal, horizontalSizeClass == .regular ? 24 : 20)
-    }
-}
-
-// MARK: - QuickActionsSection
-
-private struct QuickActionsSection: View {
-    @Environment(AppViewModel.self) private var appViewModel
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    let columnsCount: Int
-    let onNewClient: () -> Void
-    let onOmnichannel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Quick Actions")
-            
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columnsCount),
-                spacing: 12
-            ) {
-                QuickActionCard(
-                    icon: "person.badge.plus",
-                    label: "New Client",
-                    color: RSMSTheme.primary,
-                    onTap: onNewClient
-                )
-                
-//                QuickActionCard(
-//                    icon: "cart.badge.plus",
-//                    label: "New Sale",
-//                    color: RSMSTheme.info,
-//                    onTap: onNewSale
-//                )
-//
-//                QuickActionCard(
-//                    icon: "wand.and.stars",
-//                    label: "Look Builder",
-//                    color: RSMSTheme.warning,
-//                    onTap: onLookBuilder
-//                )
-                
-                QuickActionCard(
-                    icon: "shippingbox.and.arrow.backward",
-                    label: "Omnichannel",
-                    color: RSMSTheme.success,
-                    onTap: onOmnichannel
-                )
+                .frame(height: 120) // Adjust height to fit the dynamic cards without clipping
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 16)
@@ -961,6 +981,283 @@ private struct SAClientRow: View {
         case VIPTier.silver: return .gray
         case VIPTier.gold: return .orange
         default: return .clear
+        }
+    }
+}
+
+// MARK: - Dashboard Cards
+
+private struct SalesGoalProgressCard: View {
+    @Environment(AppViewModel.self) private var appViewModel
+
+    var body: some View {
+        let userId = appViewModel.currentUser?.id ?? UUID()
+        let goal = appViewModel.dataStore.salesGoals
+            .first { $0.staffId == userId }
+
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Sales Goal")
+
+            VStack(alignment: .leading, spacing: 14) {
+                if let goal {
+                    let progress = min(
+                        goal.achievedAmount / max(goal.targetAmount, 1),
+                        1.0
+                    )
+                    let percent = Int(progress * 100)
+                    let isComplete = progress >= 1.0
+
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("₹\(Int(goal.achievedAmount).formatted())")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(RSMSTheme.textPrimary)
+
+                        Spacer()
+
+                        Text("\(percent)%")
+                            .font(.headline)
+                            .foregroundStyle(isComplete ? RSMSTheme.success : RSMSTheme.primary)
+                    }
+
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(RSMSTheme.primary.opacity(0.10))
+                                .frame(height: 8)
+
+                            Capsule()
+                                .fill(isComplete ? RSMSTheme.success : RSMSTheme.primary)
+                                .frame(width: geo.size.width * progress, height: 8)
+                                .animation(.easeOut(duration: 0.6), value: progress)
+                        }
+                    }
+                    .frame(height: 8)
+                    .accessibilityElement()
+                    .accessibilityLabel("Goal progress")
+                    .accessibilityValue("\(percent) percent of \(goal.period.rawValue) target reached")
+
+                    Text("Target ₹\(Int(goal.targetAmount).formatted()) · \(goal.period.rawValue.capitalized)")
+                        .font(.caption)
+                        .foregroundStyle(RSMSTheme.textSecondary)
+
+                } else {
+                    HStack(spacing: 10) {
+                        Image(systemName: "target")
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                            .accessibilityHidden(true)
+
+                        Text("No active goal assigned")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                    }
+                }
+            }
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(RSMSTheme.surfacePrimary)
+            )
+        }
+    }
+}
+
+private struct PendingActionsCard: View {
+    @Environment(AppViewModel.self) private var appViewModel
+
+    var body: some View {
+        let userId = appViewModel.currentUser?.id ?? UUID()
+        let pendingSourcing = appViewModel.dataStore.inventorySourcingRequests
+            .filter { $0.salesAssociateId == userId && $0.status == .requested }
+        let unreadCount = appViewModel.dataStore.appNotifications
+            .filter { $0.recipientId == userId && !$0.isRead }.count
+
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Pending")
+
+            VStack(spacing: 8) {
+                if pendingSourcing.isEmpty && unreadCount == 0 {
+                    allClearRow
+                } else {
+                    if unreadCount > 0 {
+                        pendingRow(
+                            icon: "bell.badge",
+                            iconColor: RSMSTheme.warning,
+                            title: "\(unreadCount) unread \(unreadCount == 1 ? "notification" : "notifications")",
+                            subtitle: "Tap the bell icon above to view",
+                            destination: nil   // bell is in the toolbar; no nav push needed
+                        )
+                    }
+                    if !pendingSourcing.isEmpty {
+                        pendingRow(
+                            icon: "shippingbox",
+                            iconColor: RSMSTheme.info,
+                            title: "\(pendingSourcing.count) sourcing \(pendingSourcing.count == 1 ? "request" : "requests") pending",
+                            subtitle: "Review and respond",
+                            destination: "SourcingRequests"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private var allClearRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle")
+                .symbolRenderingMode(.hierarchical)
+                .font(.title3)
+                .foregroundStyle(RSMSTheme.success)
+                .accessibilityHidden(true)
+
+            Text("All caught up")
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textSecondary)
+
+            Spacer()
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(RSMSTheme.surfacePrimary)
+        )
+    }
+
+    @ViewBuilder
+    private func pendingRow(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String,
+        destination: String?
+    ) -> some View {
+        let content = HStack(spacing: 14) {
+            Image(systemName: icon)
+                .symbolRenderingMode(.hierarchical)
+                .font(.title3)
+                .foregroundStyle(iconColor)
+                .frame(width: 32, alignment: .center)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundStyle(RSMSTheme.textPrimary)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+
+            Spacer()
+
+            if destination != nil {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(RSMSTheme.textSecondary)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, minHeight: 44)  // HIG minimum touch target
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(RSMSTheme.surfacePrimary)
+        )
+
+        if let destination {
+            NavigationLink(value: destination) {
+                content
+            }
+            .buttonStyle(.plain)
+        } else {
+            content
+        }
+    }
+}
+
+private struct RecentTransactionsCard: View {
+    @Environment(AppViewModel.self) private var appViewModel
+
+    var body: some View {
+        let userId = appViewModel.currentUser?.id ?? UUID()
+        let recent = Array(
+            appViewModel.dataStore.transactions
+                .filter { $0.associateId == userId }
+                .sorted { $0.createdAt > $1.createdAt }
+                .prefix(3)
+        )
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(title: "Recent Sales")
+                Spacer()
+                NavigationLink(value: "AllTransactions") {
+                    Text("View All")
+                        .font(.subheadline)
+                        .foregroundStyle(RSMSTheme.primary)
+                }
+            }
+
+            VStack(spacing: 1) {
+                if recent.isEmpty {
+                    HStack(spacing: 12) {
+                        Image(systemName: "cart")
+                            .symbolRenderingMode(.hierarchical)
+                            .font(.title3)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+                            .accessibilityHidden(true)
+
+                        Text("No sales recorded yet")
+                            .font(.subheadline)
+                            .foregroundStyle(RSMSTheme.textSecondary)
+
+                        Spacer()
+                    }
+                    .padding(20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(RSMSTheme.surfacePrimary)
+                    )
+                } else {
+                    ForEach(Array(recent.enumerated()), id: \.element.id) { index, tx in
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Receipt #\(tx.id.uuidString.prefix(6).uppercased())")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(RSMSTheme.textPrimary)
+
+                                Text(tx.createdAt, style: .time)
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
+                            }
+
+                            Spacer()
+
+                            Text("₹\(Int(tx.totalAmount).formatted())")
+                                .font(.headline)
+                                .foregroundStyle(RSMSTheme.primary)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .background(RSMSTheme.surfacePrimary)
+                        // Top corners rounded on first row, bottom on last
+                        .clipShape(
+                            .rect(
+                                topLeadingRadius: index == 0 ? 20 : 4,
+                                bottomLeadingRadius: index == recent.count - 1 ? 20 : 4,
+                                bottomTrailingRadius: index == recent.count - 1 ? 20 : 4,
+                                topTrailingRadius: index == 0 ? 20 : 4
+                            )
+                        )
+                    }
+                }
+            }
         }
     }
 }
