@@ -879,92 +879,92 @@ struct ShowroomCartView: View {
                         }
                         
                         let url = "\(appVM.customCheckoutBaseURL)/c/\(session.token)"
-                        Text(url)
-                            .font(.caption)
-                            .foregroundStyle(RSMSTheme.primary)
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RSMSTheme.background)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                        
-                        HStack(spacing: 12) {
+                        HStack {
+                            Text(url)
+                                .font(.caption)
+                                .foregroundStyle(RSMSTheme.primary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer()
                             Button {
                                 UIPasteboard.general.string = url
                             } label: {
-                                Label("Copy Link", systemImage: "doc.on.doc.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(RSMSTheme.cream)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background(RSMSTheme.primary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption)
+                                    .foregroundStyle(RSMSTheme.textSecondary)
                             }
-                            .buttonStyle(ScaleButtonStyle())
-                            
-                            Button {
-                                shareLink(url: url)
-                            } label: {
-                                Label("Share", systemImage: "square.and.arrow.up.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background(RSMSTheme.surfaceSecondary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                            
-                            Button {
-                                emailLink(url: url, clientId: session.clientId)
-                            } label: {
-                                Label("Email", systemImage: "envelope.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(RSMSTheme.textPrimary)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background(RSMSTheme.surfaceSecondary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
-                            }
-                            .buttonStyle(ScaleButtonStyle())
                         }
+                        .padding(10)
+                        .background(RSMSTheme.background)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(RSMSTheme.border, lineWidth: 1))
                         
-                        HStack(spacing: 12) {
-                            Button {
-                                activeSession = session
-                                showStatusSheet = true
-                            } label: {
-                                Label("View Status", systemImage: "clock.arrow.circlepath")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(RSMSTheme.cream)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background(RSMSTheme.info)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                            
-                            Button {
-                                Task {
-                                    let checkoutVM = POSCheckoutViewModel(
-                                        dataStore: appVM.dataStore,
-                                        associateId: getAssociateId(),
-                                        storeId: appVM.currentStoreId ?? UUID()
-                                    )
-                                    await checkoutVM.cancelCheckoutSession(session)
+                        VStack(spacing: 12) {
+                            HStack(spacing: 12) {
+                                Button {
+                                    shareLink(url: url)
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.surfaceSecondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
                                 }
-                            } label: {
-                                Label("Cancel Link", systemImage: "xmark.circle.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(RSMSTheme.cream)
-                                    .padding(.vertical, 8)
-                                    .frame(maxWidth: .infinity)
-                                    .background(RSMSTheme.danger)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .buttonStyle(ScaleButtonStyle())
+                                
+                                Button {
+                                    emailLink(url: url, clientId: session.clientId)
+                                } label: {
+                                    Label("Email", systemImage: "envelope")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.surfaceSecondary)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
                             }
-                            .buttonStyle(ScaleButtonStyle())
+                            
+                            HStack(spacing: 12) {
+                                Button {
+                                    activeSession = session
+                                    showStatusSheet = true
+                                } label: {
+                                    Label("Status", systemImage: "clock.arrow.circlepath")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.cream)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.info)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                                
+                                Button {
+                                    Task {
+                                        let checkoutVM = POSCheckoutViewModel(
+                                            dataStore: appVM.dataStore,
+                                            associateId: getAssociateId(),
+                                            storeId: appVM.currentStoreId ?? UUID()
+                                        )
+                                        await checkoutVM.cancelCheckoutSession(session)
+                                    }
+                                } label: {
+                                    Label("Cancel", systemImage: "xmark.circle")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(RSMSTheme.cream)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(RSMSTheme.danger)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                            }
                         }
                     }
                     .padding()
