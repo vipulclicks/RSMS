@@ -11,51 +11,28 @@ import SwiftUI
 // MARK: - Navigation Destinations
 
 enum InventoryDestination: String, Hashable, Identifiable {
-    case dashboard      = "Dashboard"
-    case productLookup  = "Lookup & Stock In"
-    case transfer       = "Transfer Inventory"
-    case dcReplenishment = "DC Replenishments"
-    case vendorReturns  = "Vendor Returns"
-    case returnsExchangeInspection = "Returns & Exchanges"
-    case cycleCounts    = "Cycle Counts & Verify"
-    case auditReconcile = "Audit & Reconcile"
-    case auditTrail     = "Audit Trail"
-    case authCertificates = "Auth Certificates"
-    case complianceBoard = "Compliance Board"
-    case notify         = "Notify Manager"
-    case serviceTracking = "Service Center"
-    case loanerManagement = "Loaner Management"
-    case movements      = "Movements"
-    case audits         = "Audits & Counts"
-    case catalog        = "Catalog"
-    case profile        = "My Profile"
+    case dashboard   = "Dashboard"
+    case movements   = "Movements"
+    case audits      = "Audits & Counts"
+    case operations  = "Operations"
+    case catalog     = "Catalog"
+    case profile     = "My Profile"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .dashboard:                  return "chart.bar.fill"
-        case .productLookup:              return "magnifyingglass.circle.fill"
-        case .transfer:                   return "arrow.left.arrow.right"
-        case .dcReplenishment:            return "truck.box.fill"
-        case .vendorReturns:              return "arrow.uturn.backward.circle.fill"
-        case .returnsExchangeInspection:  return "arrow.uturn.backward.circle.fill"
-        case .cycleCounts:                return "arrow.triangle.2.circlepath"
-        case .auditReconcile:             return "doc.text.magnifyingglass"
-        case .auditTrail:                 return "list.bullet.rectangle.portrait.fill"
-        case .authCertificates:           return "seal.fill"
-        case .complianceBoard:            return "checklist.checked"
-        case .notify:                     return "paperplane.fill"
-        case .serviceTracking:            return "wrench.and.screwdriver.fill"
-        case .loanerManagement:           return "clock.arrow.circlepath"
-        case .movements:                  return "shippingbox.fill"
-        case .audits:                     return "checkmark.shield.fill"
-        case .catalog:                    return "book.fill"
-        case .profile:                    return "person.crop.circle.fill"
-        }    }
-    
+        case .dashboard:  return "chart.bar.fill"
+        case .movements:  return "shippingbox.fill"
+        case .audits:     return "checkmark.shield.fill"
+        case .operations: return "wrench.and.screwdriver.fill"
+        case .catalog:    return "book.fill"
+        case .profile:    return "person.crop.circle.fill"
+        }
+    }
+
     static var tabs: [InventoryDestination] {
-        [.dashboard, .movements, .audits, .catalog, .loanerManagement]
+        [.dashboard, .movements, .audits, .operations, .catalog]
     }
 }
 
@@ -111,17 +88,15 @@ struct InventoryControllerHomeView: View {
             .navigationSplitViewStyle(.prominentDetail)
         }
     }
-    
+
     // MARK: - Sidebar
 
     private var sidebar: some View {
         List(selection: $selectedDestination) {
-
             ForEach(InventoryDestination.tabs) { dest in
                 NavigationLink(value: dest) {
                     Label(dest.rawValue, systemImage: dest.icon)
                 }
-
             }
         }
         .listStyle(.sidebar)
@@ -160,63 +135,42 @@ struct InventoryControllerHomeView: View {
         switch destination {
         case .dashboard:
             dashboardView
-        case .productLookup:
-            ProductLookupView()
-        case .transfer:
-            InventoryTransferView()
-//        case .dcReplenishment:
-//            DCReplenishmentView()
-        case .vendorReturns:
-            VendorReturnView()
-        case .returnsExchangeInspection:
-            InspectionQueueView()
-        case .cycleCounts:
-            CycleCountView()
-        case .auditReconcile:
-            StockReconciliationView()
-        case .auditTrail:
-            AuditTrailView()
-        case .authCertificates:
-            AuthCertificateGeneratorView()
-        case .complianceBoard:
-            InventoryIssueBoardWrapperView()
-        case .notify:
-            NotifyBoutiqueManagerView()
-        case .serviceTracking:
-            ServiceCenterTrackingView()
-        case .loanerManagement:
-            LoanerProductManagementView()
         case .movements:
-            MovementsHubView()
+            MovementsContainerView()
         case .audits:
-            AuditsHubView()
+            AuditsContainerView()
+        case .operations:
+            OperationsContainerView()
         case .catalog:
             CatalogHubView()
         case .profile:
             InventoryControllerProfileView()
-        case .dcReplenishment:
-            DCReplenishmentView()
-
         }
     }
 
     // MARK: - Dashboard View
 
     @State var showNotifyManager = false
+    @State var showProductLookup = false
 
     private var dashboardView: some View {
         DashboardView(
             dashVM: dashVM,
             selectedDestination: $selectedDestination,
-            showNotifyManager: $showNotifyManager
+            showNotifyManager: $showNotifyManager,
+            showProductLookup: $showProductLookup
         )
         .background(RSMSTheme.background)
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.inline)
-
         .sheet(isPresented: $showNotifyManager) {
             NavigationStack {
                 NotifyBoutiqueManagerView()
+            }
+        }
+        .sheet(isPresented: $showProductLookup) {
+            NavigationStack {
+                ProductLookupView()
             }
         }
         .task {
@@ -296,53 +250,3 @@ struct SidebarAvatarButton: View {
     InventoryControllerHomeView()
         .environment(AppViewModel())
 }
-
-// MARK: - Inventory Issue Board Wrapper
-
-struct InventoryIssueBoardWrapperView: View {
-    @Environment(AppViewModel.self) var appVM
-    @State private var viewModel = ComplianceViewModel()
-    
-    var body: some View {
-        ZStack {
-            if viewModel.isLoading {
-                VStack {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                    Text("Loading compliance checks...")
-                        .foregroundColor(RSMSTheme.textSecondary)
-                        .padding(.top, 16)
-                }
-            } else if let error = viewModel.errorMessage {
-                VStack {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundColor(RSMSTheme.danger)
-                    Text("Failed to load")
-                        .font(.headline)
-                        .padding(.top, 8)
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundColor(RSMSTheme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                }
-            } else {
-                ComplianceIssueBoardView(viewModel: viewModel)
-                    .navigationDestination(for: ComplianceRoute.self) { route in
-                        if case .details(let check) = route {
-                            ComplianceCheckDetailsView(viewModel: viewModel, check: check)
-                        }
-                    }
-            }
-        }
-        .task(id: appVM.currentStoreId) {
-            if let storeId = appVM.currentStoreId {
-                // Ensure users are fetched so inspector names can be resolved
-                try? await appVM.dataStore.fetchUsers(storeId: storeId)
-                await viewModel.fetchChecks(for: storeId)
-            }
-        }
-    }
-}
-
