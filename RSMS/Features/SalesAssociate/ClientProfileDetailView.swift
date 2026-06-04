@@ -99,7 +99,7 @@ struct ClientProfileDetailView: View {
                 Button {
                     showEditClientSheet = true
                 } label: {
-                    Image(systemName: "pencil")
+                    Image(systemName: "pencil").accessibilityLabel("Edit")
                 }
                 .foregroundStyle(RSMSTheme.primary)
             }
@@ -205,7 +205,7 @@ struct ClientProfileDetailView: View {
                             
                             Rectangle()
                                 .fill(selectedTab == tab ? RSMSTheme.primary : Color.clear)
-                                .frame(height: 2)
+                                .frame(minHeight: 2)
                         }
                     }
                     .buttonStyle(.plain)
@@ -328,7 +328,7 @@ struct ClientProfileDetailView: View {
                 HStack(spacing: 4) {
                     if isOnline {
                         Text("ONLINE")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.caption2.weight(.bold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(RSMSTheme.primary.opacity(0.15))
@@ -363,7 +363,7 @@ struct ClientProfileDetailView: View {
                             
                             if let note = item.note, note.localizedCaseInsensitiveContains("Exchange") {
                                 Text("EXCHANGE")
-                                    .font(.system(size: 8, weight: .bold))
+                                    .font(.caption2.weight(.bold))
                                     .padding(.horizontal, 5)
                                     .padding(.vertical, 2)
                                     .background(Color.orange.opacity(0.15))
@@ -607,7 +607,7 @@ struct ClientProfileDetailView: View {
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Spacer()
                     Text(viewModel.lifetimeValueFormatted)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 Divider().overlay(RSMSTheme.divider)
@@ -635,7 +635,7 @@ struct ClientProfileDetailView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             Spacer()
                             Text(pref.value)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.footnote.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                         if pref.label != viewModel.sizePreferences.last?.label {
@@ -687,7 +687,7 @@ struct ClientProfileDetailView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             Spacer()
                             Text(pref.value)
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.footnote.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                         if pref.label != viewModel.detailedPreferences.last?.label {
@@ -804,7 +804,7 @@ struct ClientProfileDetailView: View {
                                 .font(.caption)
                                 .foregroundStyle(ann.reminderEnabled ? RSMSTheme.primary : RSMSTheme.textTertiary)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(ann.title)
+                                Text(ann.title).accessibilityAddTraits(.isHeader)
                                     .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Text(ann.date, format: .dateTime.day().month(.wide))
@@ -1010,7 +1010,7 @@ struct ClientProfileDetailView: View {
                                             
                                             if let note = item.note, !note.isEmpty, let rx = ClientReaction(rawValue: note) {
                                                 Text(rx.rawValue.uppercased())
-                                                    .font(.system(size: 8, weight: .bold))
+                                                    .font(.caption2.weight(.bold))
                                                     .padding(.horizontal, 6)
                                                     .padding(.vertical, 2)
                                                     .background(rx.color.opacity(0.85))

@@ -321,6 +321,7 @@ final class OnlineOrdersViewModel {
 }
 
 struct OnlineOrdersView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(AppViewModel.self) private var appViewModel
     @State private var viewModel = OnlineOrdersViewModel()
     
@@ -445,7 +446,7 @@ struct OnlineOrdersView: View {
             HStack(spacing: 8) {
                 ForEach(OnlineOrderStatusFilter.allCases) { filter in
                     Button {
-                        withAnimation {
+                        withAnimation(reduceMotion ? nil : .default) {
                             viewModel.selectedFilter = filter
                         }
                     } label: {
@@ -473,7 +474,7 @@ struct OnlineOrdersView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "link.badge.plus")
-                .font(.system(size: 40))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text("No checkout links found")
                 .font(.subheadline.weight(.semibold))
@@ -515,7 +516,7 @@ struct OnlineOrdersView: View {
                 }
                 
                 Text(clientName)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 HStack {
@@ -1038,7 +1039,7 @@ struct OnlineOrderDetailSheet: View {
             if let client {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(client.fullName)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     
                     HStack {
@@ -1088,7 +1089,7 @@ struct OnlineOrderDetailSheet: View {
                 if method == .pickup {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("In-Store Pickup (BOPIS)")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.body.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)
 
                         Text("Client will collect items at the boutique.")
@@ -1144,7 +1145,7 @@ struct OnlineOrderDetailSheet: View {
                     if let addr = shippingAddress {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(addr.name)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.body.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
 
                             HStack {

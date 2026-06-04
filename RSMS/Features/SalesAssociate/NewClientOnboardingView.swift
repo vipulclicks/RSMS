@@ -80,12 +80,12 @@ struct NewClientOnboardingView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Step \(viewModel.currentStep + 1) of \(viewModel.stepCount)")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
                     .tracking(1.5)
                 Spacer()
                 Text(NewClientOnboardingViewModel.stepTitles[viewModel.currentStep].uppercased())
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .tracking(1.5)
             }
@@ -95,7 +95,7 @@ struct NewClientOnboardingView: View {
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(RSMSTheme.border)
-                        .frame(height: 4)
+                        .frame(minHeight: 4)
                     
                     Capsule()
                         .fill(RSMSTheme.primary)
@@ -103,7 +103,7 @@ struct NewClientOnboardingView: View {
                         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: viewModel.currentStep)
                 }
             }
-            .frame(height: 4)
+            .frame(minHeight: 4)
         }
         .padding(.vertical, 8)
     }
@@ -220,7 +220,7 @@ struct NewClientOnboardingView: View {
                                     )
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(ann.title)
+                                    Text(ann.title).accessibilityAddTraits(.isHeader)
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.textPrimary)
                                     Text(ann.date.formatted(date: .abbreviated, time: .omitted))
@@ -444,7 +444,7 @@ struct NewClientOnboardingView: View {
                         .font(.caption)
                         .foregroundStyle(RSMSTheme.textSecondary)
                     TextEditor(text: $viewModel.notes)
-                        .frame(height: 80)
+                        .frame(minHeight: 80)
                         .scrollContentBackground(.hidden)
                         .padding(12)
                         .background(RSMSTheme.background)

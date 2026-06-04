@@ -377,7 +377,7 @@ struct TimelineStepRow: View {
                     
                     if isCompleted {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.caption.weight(.bold))
                             .foregroundStyle(nodeColor)
                     } else if isCurrent {
                         Circle()
@@ -400,7 +400,7 @@ struct TimelineStepRow: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(isCompleted || isCurrent ? RSMSTheme.textPrimary : RSMSTheme.textTertiary)
                 
                 Text(subtitle)

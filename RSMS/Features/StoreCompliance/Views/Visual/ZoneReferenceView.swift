@@ -17,10 +17,10 @@ struct ZoneReferenceView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 12) {
                             Image(systemName: zoneIcon)
-                                .font(.system(size: 32))
+                                .font(.largeTitle)
                                 .foregroundColor(RSMSTheme.primary)
                             Text(zone.name)
-                                .font(.system(size: 36, weight: .bold))
+                                .font(.largeTitle.weight(.bold))
                                 .foregroundColor(RSMSTheme.textPrimary)
                         }
                         
@@ -42,7 +42,7 @@ struct ZoneReferenceView: View {
                     if zone.items.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "cube.box")
-                                .font(.system(size: 48))
+                                .font(.largeTitle)
                                 .foregroundColor(RSMSTheme.textTertiary)
                             Text("No specific products mapped to this zone.")
                                 .font(.headline)
@@ -86,7 +86,7 @@ struct ZoneReferenceView: View {
                                     Spacer()
                                 }
                                 .padding()
-                                .frame(height: 112, alignment: .top)
+                                .frame(minHeight: 112, alignment: .top)
                                 .background(RSMSTheme.surfacePrimary)
                                 .cornerRadius(12)
                                 .shadow(color: Color.black.opacity(0.03), radius: 5, y: 2)

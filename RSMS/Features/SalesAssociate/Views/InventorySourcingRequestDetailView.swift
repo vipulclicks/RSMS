@@ -145,7 +145,7 @@ struct InventorySourcingRequestDetailView: View {
                                     .frame(width: 22, height: 22)
                                     .overlay(
                                         Image(systemName: "checkmark")
-                                            .font(.system(size: 11, weight: .bold))
+                                            .font(.caption2.weight(.bold))
                                             .foregroundStyle(Color.white)
                                     )
                             } else if isCurrent {
@@ -174,12 +174,12 @@ struct InventorySourcingRequestDetailView: View {
                         
                         // Text Details
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(step.title)
+                            Text(step.title).accessibilityAddTraits(.isHeader)
                                 .font(.system(size: 14, weight: isCurrent ? .semibold : .medium))
                                 .foregroundStyle(isCurrent ? currentRequest.status.color : (isCompleted ? RSMSTheme.textPrimary : RSMSTheme.textTertiary))
                             
                             Text(step.subtitle)
-                                .font(.system(size: 11))
+                                .font(.caption2)
                                 .foregroundStyle(isCurrent ? RSMSTheme.textSecondary : RSMSTheme.textTertiary)
                         }
                         .padding(.top, 2)

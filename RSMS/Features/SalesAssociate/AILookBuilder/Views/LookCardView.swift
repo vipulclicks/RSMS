@@ -88,13 +88,13 @@ struct LookCardView: View {
                 HStack(spacing: 12) {
                     ShareLink(item: sharePayload) {
                         Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 20))
+                            .font(.title3)
                             .foregroundColor(RSMSTheme.primary)
                     }
                     
                     Button(action: onSaveToggle) {
-                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
-                            .font(.system(size: 20))
+                        Image(systemName: isSaved ? "bookmark.fill" : "bookmark").accessibilityLabel("Save")
+                            .font(.title3)
                             .foregroundColor(isSaved ? RSMSTheme.primary : RSMSTheme.textSecondary)
                     }
                 }
@@ -137,7 +137,7 @@ struct LookProductItemView: View {
                             }
                         } else {
                             Image(systemName: "photo.on.rectangle")
-                                .font(.system(size: 24))
+                                .font(.title)
                                 .foregroundColor(RSMSTheme.textSecondary.opacity(0.5))
                         }
                     }
@@ -146,19 +146,19 @@ struct LookProductItemView: View {
             
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
-                    .frame(height: 36, alignment: .topLeading)
+                    .frame(minHeight: 36, alignment: .topLeading)
                 
                 Text(product.brand)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textTertiary)
                     .textCase(.uppercase)
                     .tracking(1.2)
                 
                 Text("₹\(Int(product.price).formatted())")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.footnote.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
             }
             .padding(.horizontal, 12)

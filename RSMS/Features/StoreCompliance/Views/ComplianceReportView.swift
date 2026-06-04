@@ -17,7 +17,7 @@ struct ComplianceReportView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.fill")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
                         .foregroundColor(RSMSTheme.primary)
                     Text("Compliance Report")
                         .font(.largeTitle.bold())

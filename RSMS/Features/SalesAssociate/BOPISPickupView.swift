@@ -354,7 +354,7 @@ struct BOPISPickupView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "shippingbox")
-                .font(.system(size: 44))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text("No BOPIS orders")
                 .font(.headline)
@@ -372,7 +372,7 @@ struct BOPISPickupView: View {
     private var noResultsState: some View {
         VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 44))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text("No matching BOPIS order found")
                 .font(.headline)
@@ -412,7 +412,7 @@ private struct BOPISOrderCard: View {
 
             // Client name
             Text(viewModel.clientName(for: order.clientId))
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline.weight(.semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
 
             // Product name
@@ -613,7 +613,7 @@ struct BOPISCompletePickupSheet: View {
                     // Success confirmation state
                     VStack(spacing: 20) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.success)
                         Text("Pickup Complete")
                             .font(.title2.weight(.bold))

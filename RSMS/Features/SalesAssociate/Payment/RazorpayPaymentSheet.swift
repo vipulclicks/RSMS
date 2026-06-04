@@ -62,7 +62,7 @@ struct RazorpayPaymentSheet: View {
                 case .success(let paymentId, let amount, let date):
                     VStack(spacing: 24) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.success)
                         
                         Text("Payment Successful")
@@ -97,7 +97,7 @@ struct RazorpayPaymentSheet: View {
                 case .failure(let reason):
                     VStack(spacing: 24) {
                         Image(systemName: "xmark.octagon.fill")
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.danger)
                         
                         Text("Payment Failed")

@@ -19,7 +19,7 @@ struct NeedsReviewQueueView: View {
             if reviewChecks.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 64))
+                        .font(.largeTitle)
                         .foregroundColor(RSMSTheme.success)
                     Text("All Caught Up!")
                         .font(.title2)
@@ -118,6 +118,7 @@ struct NeedsReviewRow: View {
                         .background(Color(white: 0.9))
                         .cornerRadius(8)
                 }
+                .accessibilityLabel("Add Comment")
                 .disabled(isUpdating)
             }
             .padding(.top, 8)

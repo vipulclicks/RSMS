@@ -192,7 +192,7 @@ struct IssueCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let zone = parsedZoneName {
                     Text(zone)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.body.weight(.bold))
                         .foregroundColor(RSMSTheme.textPrimary)
                 }
                 
@@ -243,7 +243,7 @@ struct IssueCard: View {
                         .foregroundColor(RSMSTheme.textSecondary)
                     
                     Text(initials)
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundColor(.white)
                         .padding(6)
                         .background(Circle().fill(RSMSTheme.primaryDark))

@@ -29,7 +29,7 @@ struct ReceiptView: View {
                     // Header
                     VStack(spacing: 8) {
                         Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 48))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.gold)
                         Text("Maison Lumière")
                             .font(.title2.weight(.bold))
@@ -131,7 +131,7 @@ struct ReceiptView: View {
                             Divider().overlay(RSMSTheme.divider)
                             
                             Text(layout.message)
-                                .font(.system(size: 10).weight(.bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textTertiary)
                                 .multilineTextAlignment(.center)
                                 .frame(maxWidth: .infinity)
@@ -140,7 +140,7 @@ struct ReceiptView: View {
                             // QR Code Customs Verification Placeholder
                             VStack(spacing: 8) {
                                 Image(systemName: "qrcode")
-                                    .font(.system(size: 64))
+                                    .font(.largeTitle)
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 
                                 Text("Scan at Customs Airport Kiosk")
@@ -148,7 +148,7 @@ struct ReceiptView: View {
                                     .foregroundStyle(RSMSTheme.textSecondary)
                                 
                                 Text(layout.qrCodeContent)
-                                    .font(.system(size: 8).monospaced())
+                                    .font(.caption2.monospaced())
                                     .foregroundStyle(RSMSTheme.textTertiary)
                             }
                             .frame(maxWidth: .infinity)
@@ -171,14 +171,14 @@ struct ReceiptView: View {
                         Button {
                             shareReceipt()
                         } label: {
-                            Image(systemName: "square.and.arrow.up")
+                            Image(systemName: "square.and.arrow.up").accessibilityLabel("Share")
                                 .foregroundStyle(RSMSTheme.primary)
                         }
                         
                         Button {
                             printReceipt()
                         } label: {
-                            Image(systemName: "printer")
+                            Image(systemName: "printer").accessibilityLabel("Print")
                                 .foregroundStyle(RSMSTheme.primary)
                         }
                     }
@@ -322,7 +322,7 @@ struct ReceiptView: View {
                     }
                     
                     Text(layout.message)
-                        .font(.system(size: 8).weight(.bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textTertiary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)

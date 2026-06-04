@@ -9,6 +9,7 @@ import SwiftUI
 import PDFKit
 
 struct PackingSlipView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let session: CheckoutSession
     let slip: ShipFromStoreSlip
     
@@ -56,9 +57,9 @@ struct PackingSlipView: View {
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             Spacer()
                             Button {
-                                withAnimation { showSuccessBanner = false }
+                                withAnimation(reduceMotion ? nil : .default) { showSuccessBanner = false }
                             } label: {
-                                Image(systemName: "xmark")
+                                Image(systemName: "xmark").accessibilityLabel("Close")
                                     .font(.caption)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                             }
@@ -98,11 +99,11 @@ struct PackingSlipView: View {
                 carrier = slip.carrier ?? ""
                 trackingNumber = slip.trackingNumber ?? ""
                 isShipped = slip.shippedAt != nil
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     showSuccessBanner = true
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         showSuccessBanner = false
                     }
                 }
@@ -123,24 +124,24 @@ struct PackingSlipView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("MAISON LUMIÈRE")
-                        .font(.system(size: 18, weight: .black))
+                        .font(.headline.weight(.black))
                         .tracking(3)
                         .foregroundStyle(.black)
                     Text("Luxury Boutique")
-                        .font(.system(size: 9))
+                        .font(.caption2)
                         .foregroundStyle(.gray)
                         .tracking(1)
                     if let store = store {
                         Spacer().frame(height: 6)
                         Text(store.name)
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.3))
                         Text(store.address)
-                            .font(.system(size: 9))
+                            .font(.caption2)
                             .foregroundStyle(.gray)
                         if let phone = store.phone {
                             Text("Tel: \(phone)")
-                                .font(.system(size: 9))
+                                .font(.caption2)
                                 .foregroundStyle(.gray)
                         }
                     }
@@ -148,7 +149,7 @@ struct PackingSlipView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("SHIPPING SLIP")
-                        .font(.system(size: 20, weight: .black))
+                        .font(.title3.weight(.black))
                         .foregroundStyle(Color(red: 0.45, green: 0.05, blue: 0.1))
                         .tracking(1)
                     Group {
@@ -169,15 +170,15 @@ struct PackingSlipView: View {
                     sectionHeader("SHIP FROM")
                     if let store = store {
                         Text(store.name)
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(.black)
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
                         Text(store.address)
-                            .font(.system(size: 10)).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                            .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
                         if let phone = store.phone {
-                            Text(phone).font(.system(size: 10)).foregroundStyle(.gray)
+                            Text(phone).font(.caption2).foregroundStyle(.gray)
                         }
                     } else {
                         Text("Store details unavailable")
-                            .font(.system(size: 10)).foregroundStyle(.gray)
+                            .font(.caption2).foregroundStyle(.gray)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -192,25 +193,25 @@ struct PackingSlipView: View {
                     sectionHeader("SHIP TO")
                     if let addr = shippingAddress {
                         Text(addr.name)
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(.black)
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
                         Text(addr.address)
-                            .font(.system(size: 10)).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                            .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
                         Text("\(addr.city), \(addr.state) — \(addr.pincode)")
-                            .font(.system(size: 10)).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+                            .font(.caption2).foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
                         Text("Ph: \(addr.phone)")
-                            .font(.system(size: 10)).foregroundStyle(.gray)
+                            .font(.caption2).foregroundStyle(.gray)
                     } else if let client = client {
                         Text(client.fullName)
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(.black)
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
                         if let phone = client.phone {
-                            Text(phone).font(.system(size: 10)).foregroundStyle(.gray)
+                            Text(phone).font(.caption2).foregroundStyle(.gray)
                         }
                         Text("⚠ No shipping address on file")
-                            .font(.system(size: 9)).foregroundStyle(.orange)
+                            .font(.caption2).foregroundStyle(.orange)
                             .padding(.top, 2)
                     } else {
                         Text("No recipient details available")
-                            .font(.system(size: 10)).foregroundStyle(.gray)
+                            .font(.caption2).foregroundStyle(.gray)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -249,13 +250,13 @@ struct PackingSlipView: View {
 
                 // Table Header
                 HStack {
-                    Text("DESCRIPTION").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                    Text("DESCRIPTION").font(.caption2.weight(.bold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("SKU").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                    Text("SKU").font(.caption2.weight(.bold)).foregroundStyle(.white)
                         .frame(width: 90, alignment: .leading)
-                    Text("QTY").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                    Text("QTY").font(.caption2.weight(.bold)).foregroundStyle(.white)
                         .frame(width: 40, alignment: .center)
-                    Text("WEIGHT").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
+                    Text("WEIGHT").font(.caption2.weight(.bold)).foregroundStyle(.white)
                         .frame(width: 60, alignment: .trailing)
                 }
                 .padding(.vertical, 5)
@@ -268,24 +269,24 @@ struct PackingSlipView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(product?.name ?? appVM.dataStore.productName(for: item.productId))
-                                .font(.system(size: 10, weight: .medium)).foregroundStyle(.black)
+                                .font(.caption2.weight(.medium)).foregroundStyle(.black)
                             if let category = product?.category {
                                 Text(category)
-                                    .font(.system(size: 8)).foregroundStyle(.gray)
+                                    .font(.caption2).foregroundStyle(.gray)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text(product?.sku ?? "—")
-                            .font(.system(size: 9, design: .monospaced)).foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.3))
+                            .font(.system(.caption2, design: .monospaced)).foregroundStyle(Color(red: 0.3, green: 0.3, blue: 0.3))
                             .frame(width: 90, alignment: .leading)
 
                         Text("\(item.quantity)")
-                            .font(.system(size: 11, weight: .bold)).foregroundStyle(.black)
+                            .font(.caption2.weight(.bold)).foregroundStyle(.black)
                             .frame(width: 40, alignment: .center)
 
                         Text("—")
-                            .font(.system(size: 9)).foregroundStyle(.gray)
+                            .font(.caption2).foregroundStyle(.gray)
                             .frame(width: 60, alignment: .trailing)
                     }
                     .padding(.vertical, 7)
@@ -298,11 +299,11 @@ struct PackingSlipView: View {
                 // Total row
                 HStack {
                     Text("TOTAL ITEMS")
-                        .font(.system(size: 9, weight: .bold)).foregroundStyle(.gray)
+                        .font(.caption2.weight(.bold)).foregroundStyle(.gray)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Spacer()
                     Text("\(confirmedItems.reduce(0) { $0 + $1.quantity }) units")
-                        .font(.system(size: 10, weight: .bold)).foregroundStyle(.black)
+                        .font(.caption2.weight(.bold)).foregroundStyle(.black)
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal, 6)
@@ -317,20 +318,20 @@ struct PackingSlipView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     sectionHeader("SPECIAL INSTRUCTIONS")
                     Text("Handle with care. Luxury items enclosed.\nDo not bend. Signature required on delivery.")
-                        .font(.system(size: 9)).foregroundStyle(.gray)
+                        .font(.caption2).foregroundStyle(.gray)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .trailing, spacing: 6) {
                     Text("AUTHORISED BY")
-                        .font(.system(size: 8, weight: .bold)).foregroundStyle(.gray)
+                        .font(.caption2.weight(.bold)).foregroundStyle(.gray)
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: 120, height: 1)
                         .padding(.top, 20)
                     Text("Signature")
-                        .font(.system(size: 8)).foregroundStyle(Color.gray.opacity(0.5))
+                        .font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
                 }
             }
             .padding(.vertical, 12)
@@ -339,7 +340,7 @@ struct PackingSlipView: View {
 
             // ── DISCLAIMER ──────────────────────────────────────────
             Text("This packing slip is for shipment verification only and does not include pricing. Maison Lumière is not responsible for delays caused by the carrier after handover. For queries, contact the store directly.")
-                .font(.system(size: 8))
+                .font(.caption2)
                 .italic()
                 .foregroundStyle(.gray)
                 .padding(.top, 8)
@@ -356,7 +357,7 @@ struct PackingSlipView: View {
                         }
                     }
                     Text(session.token)
-                        .font(.system(size: 7, design: .monospaced))
+                        .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(.black)
                 }
                 Spacer()
@@ -370,12 +371,12 @@ struct PackingSlipView: View {
     private var slipDivider: some View {
         Rectangle()
             .fill(Color(red: 0.8, green: 0.75, blue: 0.68))
-            .frame(height: 0.75)
+            .frame(minHeight: 0.75)
     }
 
     private func sectionHeader(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 8, weight: .bold))
+            .font(.caption2.weight(.bold))
             .foregroundStyle(Color(red: 0.45, green: 0.05, blue: 0.1))
             .tracking(1.5)
     }
@@ -383,10 +384,10 @@ struct PackingSlipView: View {
     private func labeledValue(_ label: String, _ value: String) -> some View {
         HStack(spacing: 4) {
             Text("\(label):")
-                .font(.system(size: 8, weight: .bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.gray)
             Text(value)
-                .font(.system(size: 8, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.black)
         }
     }
@@ -394,11 +395,11 @@ struct PackingSlipView: View {
     private func shipInfoCell(label: String, value: String) -> some View {
         VStack(spacing: 3) {
             Text(label)
-                .font(.system(size: 8, weight: .bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.gray)
                 .tracking(0.5)
             Text(value)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.black)
                 .multilineTextAlignment(.center)
         }
@@ -548,7 +549,7 @@ struct PackingSlipView: View {
                 )
                 await MainActor.run {
                     isSavingTracking = false
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         showSuccessBanner = true
                     }
                 }

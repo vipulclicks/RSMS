@@ -249,9 +249,12 @@ struct RFIDStockManagementView: View {
                 VStack(spacing: 12) {
                     HStack(spacing: 24) {
                         VStack(spacing: 6) {
-                            Text("₹\(String(format: "%,.0f", shrinkage.totalLossValue))")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundStyle(RSMSTheme.danger)
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.down.right.circle.fill").foregroundColor(RSMSTheme.danger)
+                                Text("₹\(String(format: "%,.0f", shrinkage.totalLossValue))")
+                                    .font(.title.weight(.bold))
+                                    .foregroundStyle(RSMSTheme.danger)
+                            }
                             Text("Total Loss Value")
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
@@ -260,9 +263,12 @@ struct RFIDStockManagementView: View {
                         Divider().frame(height: 50).overlay(RSMSTheme.divider)
 
                         VStack(spacing: 6) {
-                            Text("\(shrinkage.totalLossUnits)")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundStyle(RSMSTheme.warning)
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundColor(RSMSTheme.warning)
+                                Text("\(shrinkage.totalLossUnits)")
+                                    .font(.title.weight(.bold))
+                                    .foregroundStyle(RSMSTheme.warning)
+                            }
                             Text("Units Lost")
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)

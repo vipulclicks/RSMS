@@ -61,9 +61,9 @@ struct ProductCatalogView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.title3.weight(.bold))
                         Text(message)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.footnote.weight(.medium))
                             .foregroundColor(RSMSTheme.textPrimary)
                     }
                     .padding(.horizontal, 20)
@@ -208,18 +208,18 @@ struct ProductCatalogView: View {
                         .fill(RSMSTheme.primary.opacity(0.12))
                         .frame(width: 64, height: 64)
                     Text(client.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased())
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.title.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     
                     Text(client.fullName)
-                        .font(.system(size: 32, weight: .semibold))
+                        .font(.largeTitle.weight(.semibold))
                         .foregroundStyle(RSMSTheme.primary)
                     
                     Text("UPDATED \(Date().formatted(date: .abbreviated, time: .omitted).uppercased())")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textSecondary)
                         .tracking(1.0)
                 }
@@ -270,7 +270,7 @@ struct ProductCatalogView: View {
     private func curatedRecommendationsCarousel(_ vm: ProductCatalogViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recommended For This Client")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .padding(.horizontal, 24)
             
@@ -307,16 +307,16 @@ struct ProductCatalogView: View {
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(product.name)
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.caption.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                     .lineLimit(1)
                                 
                                 Text(product.brand)
-                                    .font(.system(size: 10))
+                                    .font(.caption2)
                                     .foregroundStyle(RSMSTheme.textTertiary)
                                 
                                 Text("₹\(Int(product.price).formatted())")
-                                    .font(.system(size: 11, weight: .bold))
+                                    .font(.caption2.weight(.bold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             .frame(width: 140, alignment: .leading)
@@ -344,7 +344,7 @@ struct ProductCatalogView: View {
                 .autocorrectionDisabled()
             if !vm.searchQuery.isEmpty {
                 Button { vm.searchQuery = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: "xmark.circle.fill").accessibilityLabel("Close")
                         .foregroundStyle(RSMSTheme.textTertiary)
                 }
             }
@@ -457,8 +457,8 @@ struct ProductCatalogCard: View {
                     Button {
                         onWishlistToggle()
                     } label: {
-                        Image(systemName: isWishlisted ? "heart.fill" : "heart")
-                            .font(.system(size: 15))
+                        Image(systemName: isWishlisted ? "heart.fill" : "heart").accessibilityLabel("Add to Wishlist")
+                            .font(.subheadline)
                             .foregroundStyle(isWishlisted ? Color.red : RSMSTheme.primary)
                             .padding(8)
                             .background(Circle().fill(Color.white.opacity(0.85)))
@@ -471,12 +471,12 @@ struct ProductCatalogCard: View {
             
             VStack(alignment: .leading, spacing: 10) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
                 Text(product.brand)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(RSMSTheme.textTertiary)
                     .textCase(.uppercase)
                     .tracking(1.2)
@@ -485,7 +485,7 @@ struct ProductCatalogCard: View {
                     HStack(spacing: 6) {
                         if let size = sizeLabel {
                             Text(size)
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textSecondary)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
@@ -494,7 +494,7 @@ struct ProductCatalogCard: View {
                         
                         if isPreferenceMatch {
                             Text("✦ STYLE MATCH")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundStyle(RSMSTheme.primary)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
@@ -505,7 +505,7 @@ struct ProductCatalogCard: View {
 
                 HStack {
                     Text(product.formattedPrice)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundStyle(RSMSTheme.primary)
                     Spacer()
                     StockBadge(quantity: stockQty)
@@ -528,7 +528,7 @@ struct ProductCatalogCard: View {
         ZStack {
             Rectangle()
                 .fill(RSMSTheme.surfaceSecondary)
-                .frame(height: 220)
+                .frame(minHeight: 220)
 
             if let urlString = product.imageURL, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
@@ -536,7 +536,7 @@ struct ProductCatalogCard: View {
                     case .success(let image):
                         image.resizable()
                             .scaledToFill()
-                            .frame(height: 220)
+                            .frame(minHeight: 220)
                             .clipped()
                     case .failure, .empty:
                         categoryIcon
@@ -553,7 +553,7 @@ struct ProductCatalogCard: View {
 
     private var categoryIcon: some View {
         Image(systemName: product.categoryIconName)
-            .font(.system(size: 30))
+            .font(.title)
             .foregroundStyle(RSMSTheme.primary.opacity(0.25))
     }
 }
@@ -565,7 +565,7 @@ struct StockBadge: View {
 
     var body: some View {
         Text(statusText.uppercased())
-            .font(.system(size: 9, weight: .bold))
+            .font(.caption2.weight(.bold))
             .tracking(1.0)
             .foregroundStyle(Color.white)
             .padding(.horizontal, 10)
@@ -672,7 +672,7 @@ struct CartSelectionPreviewSheet: View {
                                 Button {
                                     vm.removeFromCart(product.id)
                                 } label: {
-                                    Image(systemName: "xmark.circle.fill")
+                                    Image(systemName: "xmark.circle.fill").accessibilityLabel("Close")
                                         .foregroundStyle(RSMSTheme.textTertiary)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -763,24 +763,24 @@ struct CatalogProductDetailSheet: View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
                 .fill(RSMSTheme.primary.opacity(0.06))
-                .frame(height: 220)
+                .frame(minHeight: 220)
 
             if let urlString = product.imageURL, let url = URL(string: urlString) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let img):
                         img.resizable().scaledToFill()
-                            .frame(height: 220)
+                            .frame(minHeight: 220)
                             .clipShape(RoundedRectangle(cornerRadius: 20))
                     default:
                         Image(systemName: product.categoryIconName)
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.primary.opacity(0.2))
                     }
                 }
             } else {
                 Image(systemName: product.categoryIconName)
-                    .font(.system(size: 64))
+                    .font(.largeTitle)
                     .foregroundStyle(RSMSTheme.primary.opacity(0.2))
             }
         }
@@ -790,7 +790,7 @@ struct CatalogProductDetailSheet: View {
     private var clientellingContextBox: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Clientelling Insights")
-                .font(.system(size: 13, weight: .bold))
+                .font(.footnote.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 
             HStack(spacing: 12) {
@@ -826,7 +826,7 @@ struct CatalogProductDetailSheet: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(product.name)
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     Text(product.brand)
                         .font(.subheadline)
@@ -837,7 +837,7 @@ struct CatalogProductDetailSheet: View {
             }
 
             Text(product.formattedPrice)
-                .font(.system(size: 28, weight: .bold))
+                .font(.title.weight(.bold))
                 .foregroundStyle(RSMSTheme.primary)
 
             Divider().overlay(RSMSTheme.divider)
@@ -955,13 +955,13 @@ struct ClientSelectionSheet: View {
                                     .fill(RSMSTheme.primary.opacity(0.12))
                                     .frame(width: 40, height: 40)
                                 Text(client.fullName.split(separator: " ").prefix(2).compactMap { $0.first.map(String.init) }.joined().uppercased())
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(.footnote.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(client.fullName)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Text(client.vipTier.rawValue.uppercased())
                                     .font(.caption2.weight(.bold))

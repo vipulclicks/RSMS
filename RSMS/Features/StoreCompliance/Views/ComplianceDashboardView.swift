@@ -19,9 +19,9 @@ struct ComplianceDashboardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Store Compliance Heatmap")
-                            .font(.system(size: 28, weight: .bold, design: .default))
+                            .font(.system(.title, design: .default).weight(.bold))
                         Text("Monitor your store's merchandising compliance.")
-                            .font(.system(size: 16))
+                            .font(.body)
                             .foregroundColor(RSMSTheme.textSecondary)
                     }
                     Spacer()
@@ -125,7 +125,7 @@ struct ComplianceDashboardView: View {
             ZStack {
                 Circle().fill(color.opacity(0.15)).frame(width: 48, height: 48)
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.title3.weight(.semibold))
                     .foregroundColor(color)
             }
             
@@ -134,7 +134,7 @@ struct ComplianceDashboardView: View {
                     .font(.subheadline)
                     .foregroundColor(RSMSTheme.textSecondary)
                 Text(value)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundColor(RSMSTheme.textPrimary)
             }
             Spacer()

@@ -20,7 +20,7 @@ struct EvidenceUploadView: View {
         NavigationStack {
             VStack {
                 if let error = uploadError {
-                    Text("Error: \(error)")
+                    Label("Error: \(error)", systemImage: "exclamationmark.triangle.fill")
                         .foregroundColor(RSMSTheme.danger)
                         .padding()
                         .background(RSMSTheme.danger.opacity(0.1))
@@ -30,7 +30,7 @@ struct EvidenceUploadView: View {
                 if photoUrls.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 64))
+                            .font(.largeTitle)
                             .foregroundColor(RSMSTheme.textTertiary)
                         Text("No photos attached")
                             .font(.title3)
@@ -74,6 +74,7 @@ struct EvidenceUploadView: View {
                                             .foregroundColor(RSMSTheme.danger)
                                             .background(Circle().fill(Color.white))
                                     }
+                                    .accessibilityLabel("Remove photo")
                                     .padding(8)
                                 }
                             }

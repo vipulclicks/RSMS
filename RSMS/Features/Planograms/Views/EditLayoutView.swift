@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct EditLayoutView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: PlanogramViewModel
     let zone: MerchandisingZone
     struct ProductSelection: Identifiable {
@@ -43,10 +44,10 @@ struct EditLayoutView: View {
                 HStack(alignment: .bottom) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(zone.name)
-                            .font(.system(size: 32, weight: .bold))
+                            .font(.largeTitle.weight(.bold))
                             .foregroundColor(textPrimary)
                         Text("\(zone.items.count) items merchandised • Visual capacity: \(zone.fillPercentage)%")
-                            .font(.system(size: 16))
+                            .font(.body)
                             .foregroundColor(textSecondary)
                     }
                     
@@ -74,7 +75,7 @@ struct EditLayoutView: View {
                                 .clipShape(Capsule())
                         } else {
                             Text("Save Layout")
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.subheadline.weight(.bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
@@ -97,7 +98,7 @@ struct EditLayoutView: View {
                         Image(systemName: "arrow.2.squarepath")
                         Text("Choose 2nd item to swap")
                     }
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundColor(RSMSTheme.background)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
@@ -183,30 +184,30 @@ struct EditLayoutView: View {
                 .padding(.horizontal, 32)
                 .padding(.bottom, 24) // Lift items off the shelf line slightly
             }
-            .frame(height: 280)
+            .frame(minHeight: 280)
             
             // 3D Shelf Line - More Realistic
             ZStack(alignment: .top) {
                 // Main shelf board (Darker gray/metallic look)
                 Rectangle()
                     .fill(Color(white: 0.8))
-                    .frame(height: 12)
+                    .frame(minHeight: 12)
                 
                 // Top edge highlight
                 Rectangle()
                     .fill(Color(white: 0.95))
-                    .frame(height: 2)
+                    .frame(minHeight: 2)
                 
                 // Bottom edge shadow/bevel
                 Rectangle()
                     .fill(Color(white: 0.6))
-                    .frame(height: 2)
+                    .frame(minHeight: 2)
                     .offset(y: 10)
                 
                 // Sharp drop shadow directly below the shelf
                 Rectangle()
                     .fill(Color.black.opacity(0.1))
-                    .frame(height: 8)
+                    .frame(minHeight: 8)
                     .offset(y: 12)
                     .blur(radius: 2)
             }
@@ -227,14 +228,14 @@ struct EditLayoutView: View {
                                     if let image = phase.image {
                                         image.resizable().scaledToFill()
                                     } else if phase.error != nil {
-                                        Image(systemName: "photo").font(.system(size: 40)).foregroundColor(.gray)
+                                        Image(systemName: "photo").font(.largeTitle).foregroundColor(.gray)
                                     } else {
                                         ProgressView()
                                     }
                                 }
                             } else {
                                 Image(systemName: product.imageName.isEmpty ? "photo" : product.imageName)
-                                    .font(.system(size: 50))
+                                    .font(.largeTitle)
                                     .foregroundColor(.gray)
                             }
                         }
@@ -251,7 +252,7 @@ struct EditLayoutView: View {
                     
                     Menu {
                         Button(action: {
-                            withAnimation {
+                            withAnimation(reduceMotion ? nil : .default) {
                                 selectedItemForSwap = product
                             }
                         }) {
@@ -265,7 +266,7 @@ struct EditLayoutView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle.fill")
-                            .font(.system(size: 24))
+                            .font(.title)
                             .foregroundColor(Color.black.opacity(0.4))
                             .background(Color.white.opacity(0.8))
                             .clipShape(Circle())
@@ -273,30 +274,30 @@ struct EditLayoutView: View {
                 }
                 .padding(10)
             }
-            .frame(height: 150)
+            .frame(minHeight: 150)
             
             // Details Area
             VStack(spacing: 6) {
                 Text(product.name)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundColor(textPrimary)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
-                    .frame(height: 40, alignment: .top)
+                    .frame(minHeight: 40, alignment: .top)
                 
                 Text("SKU: \(product.sku)")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundColor(textSecondary)
                 
                 Text("SL\(shelf)00\(position)")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundColor(textSecondary)
                     .padding(.top, 2)
                 
                 // Stock Badge
                 Text(product.isLowStock ? "LOW STOCK: \(product.stockCount)" : "STOCK: \(product.stockCount)")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundColor(product.isLowStock ? .red : textSecondary)
                     .padding(.horizontal, 12).padding(.vertical, 6)
                     .background(product.isLowStock ? Color.red.opacity(0.1) : badgeBg)
@@ -319,7 +320,7 @@ struct EditLayoutView: View {
                 if first.id == product.id {
                     selectedItemForSwap = nil // Deselect
                 } else {
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .default) {
                         viewModel.swapProductsInZone(first.id, product.id, in: zone.id)
                     }
                     selectedItemForSwap = nil
@@ -337,18 +338,18 @@ struct EditLayoutView: View {
         }) {
             VStack(spacing: 12) {
                 Image(systemName: "plus.circle")
-                    .font(.system(size: 24))
+                    .font(.title)
                 Text("ADD ITEM")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .tracking(1)
                 
                 Text("SL\(shelf)00\(position)")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundColor(Color.gray.opacity(0.8))
             }
             .foregroundColor(Color.gray.opacity(0.6))
             .frame(maxWidth: .infinity)
-            .frame(height: 250)
+            .frame(minHeight: 250)
             .background(Color.white.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
@@ -370,7 +371,7 @@ struct PlanogramProductDetailSheet: View {
         NavigationStack {
             VStack(spacing: 24) {
                 Image(systemName: product.imageName)
-                    .font(.system(size: 80))
+                    .font(.largeTitle)
                     .foregroundColor(.gray)
                     .padding(40)
                     .background(Color(white: 0.95))

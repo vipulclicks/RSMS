@@ -24,7 +24,7 @@ struct MFASettingsView: View {
                 // Header
                 VStack(spacing: 12) {
                     Image(systemName: viewModel.hasVerifiedTOTPFactor ? "shield.fill" : "shield.slash.fill")
-                        .font(.system(size: isCompact ? 48 : 64))
+                        .font(.largeTitle)
                         .foregroundStyle(viewModel.hasVerifiedTOTPFactor ? AnyShapeStyle(RSMSTheme.success) : AnyShapeStyle(RSMSTheme.goldGradient))
                     
                     Text("Two-Factor Authentication")
@@ -111,7 +111,7 @@ struct MFASettingsView: View {
                         .font(.headline.weight(.semibold))
                     Spacer()
                 }
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.goldGradient)
                 .foregroundColor(.white)
                 .cornerRadius(12)
@@ -147,7 +147,7 @@ struct MFASettingsView: View {
                         .font(.headline.weight(.semibold))
                     Spacer()
                 }
-                .frame(height: 50)
+                .frame(minHeight: 50)
                 .background(RSMSTheme.danger.opacity(0.1))
                 .foregroundColor(RSMSTheme.danger)
                 .cornerRadius(12)
@@ -191,7 +191,7 @@ struct MFASettingsView: View {
                     Button {
                         UIPasteboard.general.string = data.totp.secret
                     } label: {
-                        Image(systemName: "doc.on.doc")
+                        Image(systemName: "doc.on.doc").accessibilityLabel("Action")
                             .foregroundStyle(RSMSTheme.gold)
                     }
                 }
@@ -219,7 +219,7 @@ struct MFASettingsView: View {
                     }
             }
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(RSMSTheme.surfaceSecondary)
             .cornerRadius(12)
             
@@ -230,7 +230,7 @@ struct MFASettingsView: View {
                     Text("Cancel")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(minHeight: 50)
                         .background(RSMSTheme.surfaceSecondary)
                         .foregroundColor(RSMSTheme.textPrimary)
                         .cornerRadius(12)
@@ -242,7 +242,7 @@ struct MFASettingsView: View {
                     Text("Verify")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(minHeight: 50)
                         .background(RSMSTheme.goldGradient)
                         .foregroundColor(.white)
                         .cornerRadius(12)

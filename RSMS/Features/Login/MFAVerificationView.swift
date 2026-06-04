@@ -40,7 +40,7 @@ struct MFAVerificationView: View {
                     
                     // Icon
                     Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: isCompact ? 48 : 64))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.goldGradient)
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : -20)
@@ -89,7 +89,7 @@ struct MFAVerificationView: View {
                                 }
                         }
                         .padding(.horizontal, 16)
-                        .frame(height: 50)
+                        .frame(minHeight: 50)
                         .background(RSMSTheme.surfaceSecondary)
                         .cornerRadius(12)
                         
@@ -108,7 +108,7 @@ struct MFAVerificationView: View {
                                 }
                                 Spacer()
                             }
-                            .frame(height: 50)
+                            .frame(minHeight: 50)
                             .background(RSMSTheme.goldGradient)
                             .foregroundColor(.white)
                             .cornerRadius(12)

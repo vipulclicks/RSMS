@@ -79,7 +79,7 @@ struct AILookBuilderView: View {
                 } else if let error = viewModel.errorMessage {
                     VStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 40))
+                            .font(.largeTitle)
                             .foregroundColor(RSMSTheme.danger)
                         Text(error)
                             .font(.body)
@@ -134,7 +134,7 @@ struct AILookBuilderView: View {
                         if viewModel.savedOutfits.isEmpty {
                             VStack(spacing: 8) {
                                 Image(systemName: "bookmark")
-                                    .font(.system(size: 40))
+                                    .font(.largeTitle)
                                     .foregroundColor(RSMSTheme.textSecondary)
                                 Text("No saved looks found for \(viewModel.client.fullName).")
                                     .font(.body)

@@ -68,8 +68,8 @@ struct SalesAssociateProfileView: View {
                 Button {
                     showingEditProfileSheet = true
                 } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 18, weight: .semibold))
+                    Image(systemName: "pencil").accessibilityLabel("Edit")
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
             }
@@ -136,7 +136,7 @@ struct SalesAssociateProfileView: View {
             
             VStack(spacing: 4) {
                 Text(user.fullName)
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.title2.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 let employeeId = "EMP-\(user.id.uuidString.prefix(8).uppercased())"
@@ -222,7 +222,7 @@ struct SalesAssociateProfileView: View {
     private func performanceSnapshotSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Performance Snapshot")
-                .font(.system(size: 15, weight: .bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             HStack(spacing: 16) {
@@ -238,7 +238,7 @@ struct SalesAssociateProfileView: View {
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         }
                         Text(viewModel.todaySales)
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.title2.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Text("Today's Sales")
                             .font(.caption)
@@ -266,7 +266,7 @@ struct SalesAssociateProfileView: View {
                                 .foregroundStyle(RSMSTheme.textTertiary)
                         }
                         Text("\(viewModel.appointmentsCount)")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(.title2.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Text("Appointments Handled")
                             .font(.caption)
@@ -289,7 +289,7 @@ struct SalesAssociateProfileView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Total Transactions")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 Spacer()
                 NavigationLink(destination: SalesAssociateAllTransactionsView(transactions: viewModel.allTransactionsList)) {
@@ -339,7 +339,7 @@ struct SalesAssociateProfileView: View {
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(RSMSTheme.primary)
                 Text(txn.status.rawValue.capitalized)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(txn.status == .completed ? RSMSTheme.success : RSMSTheme.warning)
             }
         }
@@ -364,7 +364,7 @@ struct SalesAssociateProfileView: View {
         
         return VStack(alignment: .leading, spacing: 12) {
             Text("Personal Information")
-                .font(.system(size: 15, weight: .bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             VStack(spacing: 0) {
@@ -505,7 +505,7 @@ struct SalesAssociateProfileView: View {
         
         return VStack(alignment: .leading, spacing: 12) {
             Text("Compensation & Targets")
-                .font(.system(size: 15, weight: .bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             VStack(spacing: 20) {
@@ -553,13 +553,13 @@ struct SalesAssociateProfileView: View {
                         ZStack(alignment: .leading) {
                             Capsule()
                                .fill(RSMSTheme.divider)
-                               .frame(height: 10)
+                               .frame(minHeight: 10)
                             Capsule()
                                .fill(RSMSTheme.primaryGradient)
                                .frame(width: geo.size.width * min(1.0, salesGoalsPercentage), height: 10)
                         }
                     }
-                    .frame(height: 10)
+                    .frame(minHeight: 10)
                     
                     HStack {
                         Text(progressTextLabel)
@@ -580,7 +580,7 @@ struct SalesAssociateProfileView: View {
     private func securitySettingsSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Security")
-                .font(.system(size: 15, weight: .bold))
+                .font(.subheadline.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             VStack(spacing: 0) {

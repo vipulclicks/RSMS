@@ -28,7 +28,7 @@ struct ComplianceCheckDetailsView: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Inspection Report")
-                            .font(.system(size: 40, weight: .heavy, design: .rounded))
+                            .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                             .foregroundColor(RSMSTheme.textPrimary)
                         
                         Text(check.checkedAt.formatted(date: .complete, time: .shortened))
@@ -41,9 +41,9 @@ struct ComplianceCheckDetailsView: View {
                     // Large Status Badge
                     HStack(spacing: 8) {
                         Image(systemName: check.status.iconName)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.title.weight(.bold))
                         Text(check.status.displayName)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .font(.system(.title3, design: .rounded).weight(.bold))
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
@@ -127,7 +127,7 @@ struct ComplianceCheckDetailsView: View {
                                     .tag(index)
                                 }
                             }
-                            .frame(height: 550)
+                            .frame(minHeight: 550)
                             .tabViewStyle(.page(indexDisplayMode: .always))
                             .background(Color.black.opacity(0.05))
                             .cornerRadius(24)
@@ -140,7 +140,7 @@ struct ComplianceCheckDetailsView: View {
                                         .frame(width: 120, height: 120)
                                         .shadow(color: .black.opacity(0.05), radius: 10, y: 5)
                                     Image(systemName: "camera.badge.ellipsis")
-                                        .font(.system(size: 48, weight: .light))
+                                        .font(.largeTitle.weight(.light))
                                         .foregroundColor(RSMSTheme.primaryDark.opacity(0.6))
                                 }
                                 Text("No Photographic Evidence")
@@ -153,7 +153,7 @@ struct ComplianceCheckDetailsView: View {
                                     .padding(.horizontal, 40)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 550)
+                            .frame(minHeight: 550)
                             .background(RSMSTheme.surfaceSecondary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 24)
@@ -182,6 +182,7 @@ struct ComplianceCheckDetailsView: View {
                     Image(systemName: "ellipsis.circle")
                         .foregroundColor(RSMSTheme.primary)
                 }
+                .accessibilityLabel("Options")
             }
         }
         .navigationDestination(isPresented: $showReport) {
@@ -252,9 +253,9 @@ struct ComplianceCheckDetailsView: View {
                         
                         Image(systemName: isCompliant ? "checkmark.circle.fill" : (isFail ? "xmark.circle.fill" : "exclamationmark.triangle.fill"))
                             .foregroundColor(isCompliant ? RSMSTheme.success : (isFail ? RSMSTheme.danger : RSMSTheme.warning))
-                            .font(.system(size: 22))
+                            .font(.title2)
                         Text(cp.text)
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.body.weight(.medium))
                             .foregroundColor(RSMSTheme.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
@@ -271,9 +272,9 @@ struct ComplianceCheckDetailsView: View {
                                 }
                             }) {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.caption.weight(.bold))
                                 Text("Resolve")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(.footnote.weight(.bold))
                             }
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -294,7 +295,7 @@ struct ComplianceCheckDetailsView: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.title3.weight(.semibold))
                     .foregroundColor(iconColor)
                 Text(title)
                     .font(.title3.bold())

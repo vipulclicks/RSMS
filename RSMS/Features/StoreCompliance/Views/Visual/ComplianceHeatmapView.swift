@@ -71,10 +71,10 @@ struct ComplianceHeatmapView: View {
                     
                     VStack(spacing: 8) {
                         Image(systemName: zoneIcon(for: zone.type))
-                            .font(.system(size: 24))
+                            .font(.title)
                             .foregroundColor(RSMSTheme.textPrimary)
                         Text(zone.name)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundColor(RSMSTheme.textPrimary)
                             .multilineTextAlignment(.center)
                         
@@ -82,7 +82,7 @@ struct ComplianceHeatmapView: View {
                             HStack(spacing: 4) {
                                 Circle().fill(RSMSTheme.success).frame(width: 8, height: 8)
                                 Text("Checked")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .font(.caption2.weight(.bold))
                                     .foregroundColor(RSMSTheme.success)
                             }
                             .padding(.horizontal, 8)
@@ -91,7 +91,7 @@ struct ComplianceHeatmapView: View {
                             .clipShape(Capsule())
                         } else {
                             Text("Unchecked")
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .foregroundColor(.gray)
                                 .fixedSize(horizontal: true, vertical: false)
                                 .padding(.horizontal, 8)

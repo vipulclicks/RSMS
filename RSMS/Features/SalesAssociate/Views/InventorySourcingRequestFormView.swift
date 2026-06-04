@@ -99,7 +99,7 @@ struct InventorySourcingRequestFormView: View {
                                     Button {
                                         if quantity > 1 { quantity -= 1 }
                                     } label: {
-                                        Image(systemName: "minus.circle.fill")
+                                        Image(systemName: "minus.circle.fill").accessibilityLabel("Remove")
                                             .font(.title2)
                                             .foregroundStyle(RSMSTheme.textSecondary)
                                     }
@@ -112,7 +112,7 @@ struct InventorySourcingRequestFormView: View {
                                     Button {
                                         quantity += 1
                                     } label: {
-                                        Image(systemName: "plus.circle.fill")
+                                        Image(systemName: "plus.circle.fill").accessibilityLabel("Add")
                                             .font(.title2)
                                             .foregroundStyle(RSMSTheme.textSecondary)
                                     }

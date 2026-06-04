@@ -253,7 +253,7 @@ struct SalesAssociateHomeView: View {
                                 let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
                                 ZStack(alignment: .topTrailing) {
                                     Image(systemName: "bell")
-                                        .font(.system(size: 18))
+                                        .font(.headline)
                                         .foregroundStyle(RSMSTheme.primary)
                                     if unreadCount > 0 {
                                         Circle()
@@ -427,8 +427,8 @@ struct SalesAssociateHomeView: View {
             HStack(spacing: 16) {
                 if let plusAction {
                     Button(action: plusAction) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .semibold))
+                        Image(systemName: "plus").accessibilityLabel("Add")
+                            .font(.headline.weight(.semibold))
                             .foregroundStyle(RSMSTheme.primary)
                     }
                 }
@@ -440,7 +440,7 @@ struct SalesAssociateHomeView: View {
                     
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "bell")
-                            .font(.system(size: 18))
+                            .font(.headline)
                             .foregroundStyle(RSMSTheme.primary)
                         
                         if unreadCount > 0 {
@@ -689,7 +689,7 @@ private struct TopClientsSection: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(height: 120) // Adjust height to fit the dynamic cards without clipping
+                .frame(minHeight: 120) // Adjust height to fit the dynamic cards without clipping
             }
         }
         .padding(.horizontal, horizontalSizeClass == .regular ? 0 : 16)
@@ -768,7 +768,7 @@ struct SAClientBrowserView: View {
                                     }
                                 } label: {
                                     Text(filter)
-                                        .font(.system(size: 15, weight: .medium))
+                                        .font(.subheadline.weight(.medium))
                                         .foregroundStyle(selectedFilter == filter ? .white : RSMSTheme.textSecondary)
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 10)
@@ -792,7 +792,7 @@ struct SAClientBrowserView: View {
                     if filteredGroupedClients.isEmpty {
                         VStack(spacing: 16) {
                             Image(systemName: "person.2.slash")
-                                .font(.system(size: 48))
+                                .font(.largeTitle)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             Text("No clients found")
                                 .font(.headline)
@@ -826,7 +826,7 @@ struct SAClientBrowserView: View {
                                 }
                             } header: {
                                 Text(group.letter)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.subheadline.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.textTertiary)
                             }
                         }
@@ -842,8 +842,8 @@ struct SAClientBrowserView: View {
                             Button {
                                 onAddClient()
                             } label: {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 18, weight: .semibold))
+                                Image(systemName: "plus").accessibilityLabel("Add")
+                                    .font(.headline.weight(.semibold))
                                     .foregroundStyle(RSMSTheme.primary)
                             }
                             
@@ -853,7 +853,7 @@ struct SAClientBrowserView: View {
                                 let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
                                 ZStack(alignment: .topTrailing) {
                                     Image(systemName: "bell")
-                                        .font(.system(size: 18))
+                                        .font(.headline)
                                         .foregroundStyle(RSMSTheme.primary)
                                     
                                     if unreadCount > 0 {
@@ -920,7 +920,7 @@ private struct SAClientRow: View {
                     .frame(width: 48, height: 48)
                 
                 Text(initials)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.headline.weight(.semibold))
                     .foregroundStyle(.white)
             }
             
@@ -928,12 +928,12 @@ private struct SAClientRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
                     Text(client.fullName)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .foregroundStyle(RSMSTheme.textPrimary)
                     
                     if client.vipTier != .standard {
                         Text(client.vipTier.rawValue.uppercased())
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.caption2.weight(.bold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 3)
                             .background(badgeBackground, in: Capsule())
@@ -942,7 +942,7 @@ private struct SAClientRow: View {
                 }
                 
                 Text(client.email ?? "No Email")
-                    .font(.system(size: 14))
+                    .font(.footnote)
                     .foregroundStyle(RSMSTheme.textSecondary)
                     .lineLimit(1)
             }
@@ -950,7 +950,7 @@ private struct SAClientRow: View {
             Spacer(minLength: 0)
             // Chevron
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
         .padding(.horizontal, 16)
@@ -1024,7 +1024,7 @@ private struct SalesGoalProgressCard: View {
                         ZStack(alignment: .leading) {
                             Capsule()
                                 .fill(RSMSTheme.primary.opacity(0.10))
-                                .frame(height: 8)
+                                .frame(minHeight: 8)
 
                             Capsule()
                                 .fill(isComplete ? RSMSTheme.success : RSMSTheme.primary)
@@ -1032,7 +1032,7 @@ private struct SalesGoalProgressCard: View {
                                 .animation(.easeOut(duration: 0.6), value: progress)
                         }
                     }
-                    .frame(height: 8)
+                    .frame(minHeight: 8)
                     .accessibilityElement()
                     .accessibilityLabel("Goal progress")
                     .accessibilityValue("\(percent) percent of \(goal.period.rawValue) target reached")

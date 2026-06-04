@@ -38,7 +38,7 @@ struct ProductPickerView: View {
                     .clipped()
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(product.name).font(.headline)
+                        Text(product.name).accessibilityAddTraits(.isHeader).font(.headline)
                         Text("SKU: \(product.sku)").font(.subheadline).foregroundColor(.secondary)
                     }
                     

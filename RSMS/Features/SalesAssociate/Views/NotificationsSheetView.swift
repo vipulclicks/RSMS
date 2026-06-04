@@ -16,7 +16,7 @@ struct NotificationsSheetView: View {
                 if myNotifications.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "bell.slash")
-                            .font(.system(size: 48))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.textTertiary)
                         Text("No Notifications")
                             .font(.headline)
@@ -151,7 +151,7 @@ struct NotificationRow: View {
                 .padding(.top, 6)
             
             VStack(alignment: .leading, spacing: 6) {
-                Text(notification.title)
+                Text(notification.title).accessibilityAddTraits(.isHeader)
                     .font(.subheadline.weight(notification.isRead ? .regular : .semibold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
