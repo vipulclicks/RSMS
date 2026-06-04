@@ -394,8 +394,7 @@ struct StockReconciliationView: View {
                     LuxuryTextField(title: "Corrected Quantity", text: $viewModel.correctedQty)
                         .keyboardType(.numberPad)
 
-                    let currentQty = Int(viewModel.correctedQty) ?? item.actualQty
-                    let availableReasons = currentQty < item.expectedQty 
+                    let availableReasons = item.actualQty < item.expectedQty 
                         ? AdjustmentReason.shortageReasons 
                         : AdjustmentReason.overageReasons
 

@@ -13,9 +13,15 @@ struct InspectionQueueView: View {
     init() {}
     
     var body: some View {
-        List {
-            let pendingReturns = appVM.dataStore.posReturnRequests.filter { $0.status == .inspectionPending }
-            let pendingExchanges = appVM.dataStore.posExchangeRequests.filter { $0.status == .inspectionPending }
+        VStack(alignment: .leading, spacing: 0) {
+            headerSection
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 8)
+                
+            List {
+                let pendingReturns = appVM.dataStore.posReturnRequests.filter { $0.status == .inspectionPending }
+                let pendingExchanges = appVM.dataStore.posExchangeRequests.filter { $0.status == .inspectionPending }
             
             Section("Pending Returns") {
                 if pendingReturns.isEmpty {
@@ -101,17 +107,30 @@ struct InspectionQueueView: View {
                         .listRowBackground(RSMSTheme.surfacePrimary)
                     }
                 }
-            }
-        }
-        .navigationTitle("Inspection Queue")
+            } // End of Pending Exchanges Section
+        } // End of List
+        .listStyle(.plain)
+        
+        } // End of VStack
+        .navigationTitle("Returns & Exchanges")
         .scrollContentBackground(.hidden)
         .background(RSMSTheme.background.ignoresSafeArea())
         .navigationDestination(item: $selectedRequest) { reqType in
             InspectionDetailView(request: reqType)
         }
-
         .task {
             await appVM.dataStore.fetchPOSReturnsExchanges()
+        }
+    } // End of body
+    
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Returns & Exchanges")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(RSMSTheme.textPrimary)
+            Text("Review and process customer returns and exchanges")
+                .font(.subheadline)
+                .foregroundStyle(RSMSTheme.textTertiary)
         }
     }
 }
