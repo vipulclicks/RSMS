@@ -63,7 +63,7 @@ struct ReceiptView: View {
                                 Text(appVM.dataStore.productName(for: item.productId))
                                     .foregroundStyle(RSMSTheme.textPrimary)
                                 Spacer()
-                                let price = appVM.dataStore.product(by: item.productId)?.price ?? item.unitPrice ?? 0
+                                let price = appVM.dataStore.resolvedPrice(for: item)
                                 Text("₹\(Int(price).formatted())")
                                     .foregroundStyle(RSMSTheme.textPrimary)
                             }
@@ -262,7 +262,7 @@ struct ReceiptView: View {
                         Text(appVM.dataStore.productName(for: item.productId))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         Spacer()
-                        let price = appVM.dataStore.product(by: item.productId)?.price ?? item.unitPrice ?? 0
+                        let price = appVM.dataStore.resolvedPrice(for: item)
                         Text("₹\(Int(price).formatted())")
                             .foregroundStyle(RSMSTheme.textPrimary)
                     }

@@ -92,11 +92,14 @@ struct InspectionDetailView: View {
             if case .exchangeRequest(let exReq) = request {
                 Section("Replacement Product (Being Given)") {
                     LabeledContent("Replacement Product", value: replacementProductName ?? "Unknown")
-                    LabeledContent("Original Value", value: exReq.returnedItemValue, format: .currency(code: "INR"))
-                    LabeledContent("Replacement Value", value: exReq.replacementItemValue, format: .currency(code: "INR"))
+                    // Use catalog prices (single source of truth)
+                    let origPrice = appVM.dataStore.resolvedPrice(for: exReq.originalProductId, fallback: NSDecimalNumber(decimal: exReq.returnedItemValue).doubleValue)
+                    let replPrice = appVM.dataStore.resolvedPrice(for: exReq.replacementProductId, fallback: NSDecimalNumber(decimal: exReq.replacementItemValue).doubleValue)
+                    LabeledContent("Original Value", value: origPrice * Double(exReq.quantity), format: .currency(code: "INR"))
+                    LabeledContent("Replacement Value", value: replPrice * Double(exReq.quantity), format: .currency(code: "INR"))
                     LabeledContent("Difference") {
-                        let diff = exReq.differenceAmount
-                        if diff == 0 {
+                        let diff = (replPrice - origPrice) * Double(exReq.quantity)
+                        if abs(diff) < 0.01 {
                             Text("Even Exchange")
                                 .foregroundStyle(RSMSTheme.success)
                                 .fontWeight(.semibold)
@@ -259,8 +262,11 @@ struct InspectionDetailView: View {
                         location: "Showroom Floor"
                     )
                     
-                    // Set correct exchange status based on difference
-                    if req.differenceAmount == 0 {
+                    // Use catalog prices (single source of truth) instead of stale stored differenceAmount
+                    let origCatalogPrice = appVM.dataStore.resolvedPrice(for: req.originalProductId)
+                    let replCatalogPrice = appVM.dataStore.resolvedPrice(for: req.replacementProductId)
+                    let catalogDiff = (replCatalogPrice - origCatalogPrice) * Double(quantity)
+                    if abs(catalogDiff) < 0.01 {
                         mutableReq.status = .completed
                     } else {
                         // Payment pending for both:

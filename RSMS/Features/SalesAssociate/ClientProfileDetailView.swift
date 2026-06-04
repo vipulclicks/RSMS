@@ -360,8 +360,19 @@ struct ClientProfileDetailView: View {
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textPrimary)
                                 .lineLimit(1)
+                            
+                            if let note = item.note, note.localizedCaseInsensitiveContains("Exchange") {
+                                Text("EXCHANGE")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange.opacity(0.15))
+                                    .foregroundStyle(Color.orange)
+                                    .cornerRadius(4)
+                            }
+                            
                             Spacer()
-                            Text("₹\(Int(product?.price ?? item.unitPrice ?? 0).formatted())")
+                            Text("₹\(Int(viewModel.dataStore.resolvedPrice(for: item)).formatted())")
                                 .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }

@@ -37,6 +37,10 @@ struct InspectionQueueView: View {
                                     Text("Order ID: \(req.orderId.uuidString.prefix(8).uppercased())")
                                         .font(.caption.monospaced())
                                         .foregroundStyle(RSMSTheme.textSecondary)
+                                    let associateName = appVM.dataStore.users.first(where: { $0.id == req.associateId })?.fullName ?? "Unknown"
+                                    Label(associateName, systemImage: "person.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(RSMSTheme.primary)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {
@@ -80,6 +84,10 @@ struct InspectionQueueView: View {
                                     Text("Order ID: \(req.orderId.uuidString.prefix(8).uppercased())")
                                         .font(.caption.monospaced())
                                         .foregroundStyle(RSMSTheme.textSecondary)
+                                    let associateName = appVM.dataStore.users.first(where: { $0.id == req.associateId })?.fullName ?? "Unknown"
+                                    Label(associateName, systemImage: "person.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(RSMSTheme.primary)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {

@@ -48,7 +48,7 @@ struct PaymentSummaryView: View {
     }
     
     private var cartSubtotal: Double {
-        cartItems.reduce(0) { $0 + ((appVM.dataStore.product(by: $1.productId)?.price ?? $1.unitPrice ?? 0) * Double($1.quantity)) }
+        cartItems.reduce(0) { $0 + (appVM.dataStore.resolvedPrice(for: $1) * Double($1.quantity)) }
     }
     
     private var discountApplied: Double {
@@ -183,7 +183,7 @@ struct PaymentSummaryView: View {
                                             .foregroundStyle(RSMSTheme.textSecondary)
                                     }
                                     Spacer()
-                                    Text("₹\(Int(product?.price ?? item.unitPrice ?? 0).formatted())")
+                                    Text("₹\(Int(appVM.dataStore.resolvedPrice(for: item)).formatted())")
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.textPrimary)
                                 }

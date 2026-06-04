@@ -162,6 +162,7 @@ struct ExchangeRequestView: View {
         
         let results = exchangeService.calculateExchangeDifference(
             originalItem: cartItem,
+            originalProduct: productToExchange,
             replacementProduct: replProduct,
             quantity: quantity
         )

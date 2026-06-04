@@ -81,6 +81,7 @@ final class POSExchangeViewModel {
         
         let results = exchangeService.calculateExchangeDifference(
             originalItem: cartItem,
+            originalProduct: origProduct,
             replacementProduct: replProduct,
             quantity: quantity
         )
