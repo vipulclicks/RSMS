@@ -142,7 +142,7 @@ struct InventoryControllerHomeView: View {
         case .operations:
             OperationsContainerView()
         case .catalog:
-            CatalogHubView()
+            ProductLookupView()
         case .profile:
             InventoryControllerProfileView()
         }
