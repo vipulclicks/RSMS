@@ -71,7 +71,6 @@ struct StoreDashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 16) {
-                        notificationBell
                         profileButton
                     }
                 }
@@ -320,7 +319,7 @@ struct StoreDashboardView: View {
                 SectionHeader(title: "Sales Progress")
                 Spacer()
                 Picker("Period", selection: Bindable(dashboardVM).selectedPeriod) {
-                    ForEach(GoalPeriod.allCases, id: \.self) { period in
+                    ForEach([GoalPeriod.weekly, GoalPeriod.monthly], id: \.self) { period in
                         Text(period.rawValue.capitalized).tag(period)
                     }
                 }
@@ -343,7 +342,7 @@ struct StoreDashboardView: View {
                 .frame(height: 330)
                 .onAppear {
                     UIPageControl.appearance().currentPageIndicatorTintColor = UIColor(RSMSTheme.primaryDark)
-                    UIPageControl.appearance().pageIndicatorTintColor = UIColor(RSMSTheme.surfaceTertiary)
+                    UIPageControl.appearance().pageIndicatorTintColor = UIColor(RSMSTheme.textTertiary)
                 }
             } else {
                 VStack(spacing: 12) {
@@ -408,6 +407,11 @@ struct StoreDashboardView: View {
             
             HStack(spacing: 32) {
                 ZStack {
+                    // Permanent background ring
+                    Circle()
+                        .stroke(RSMSTheme.border, lineWidth: 14)
+                        .frame(width: 126, height: 126)
+                    
                     Chart {
                         if dashboardVM.salesTarget > 0 {
                             SectorMark(
@@ -424,18 +428,8 @@ struct StoreDashboardView: View {
                                     innerRadius: .ratio(0.8),
                                     angularInset: 2.0
                                 )
-                                .cornerRadius(4)
-                                .foregroundStyle(RSMSTheme.surfaceTertiary)
+                                .foregroundStyle(Color.clear)
                             }
-                        } else {
-                            // Full ring when no target exists
-                            SectorMark(
-                                angle: .value("Achieved", 1.0),
-                                innerRadius: .ratio(0.8),
-                                angularInset: 2.0
-                            )
-                            .cornerRadius(4)
-                            .foregroundStyle(RSMSTheme.gold)
                         }
                     }
                     .frame(width: 140, height: 140)
@@ -513,56 +507,64 @@ struct StoreDashboardView: View {
             
             VStack(spacing: 0) {
                 Chart {
-                    ForEach(dashboardVM.previousDaysSales) { dayData in
+                    ForEach(dashboardVM.chartSalesData) { data in
                         LineMark(
-                            x: .value("Day", dayData.date, unit: .day),
-                            y: .value("Sales", dayData.amount)
+                            x: .value("Date", data.date),
+                            y: .value("Sales", data.amount)
                         )
                         .interpolationMethod(.catmullRom)
-                        .lineStyle(StrokeStyle(lineWidth: 3))
                         .foregroundStyle(RSMSTheme.primaryDark)
-                        
-                        AreaMark(
-                            x: .value("Day", dayData.date, unit: .day),
-                            y: .value("Sales", dayData.amount)
-                        )
-                        .interpolationMethod(.catmullRom)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [RSMSTheme.primaryDark.opacity(0.3), .clear],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
+                        .lineStyle(StrokeStyle(lineWidth: 3))
                         
                         PointMark(
-                            x: .value("Day", dayData.date, unit: .day),
-                            y: .value("Sales", dayData.amount)
+                            x: .value("Date", data.date),
+                            y: .value("Sales", data.amount)
                         )
                         .foregroundStyle(RSMSTheme.primaryDark)
-                        .symbolSize(selectedSalesDate == dayData.date ? 150 : 50)
+                        .symbolSize(selectedSalesDate == data.date ? 150 : 50)
                         .annotation(position: .top) {
-                            if selectedSalesDate != dayData.date && dayData.amount > 0 {
-                                Text(dashboardVM.formatCurrency(dayData.amount))
+                            if selectedSalesDate != data.date && data.amount > 0 {
+                                Text(dashboardVM.formatCurrency(data.amount))
                                     .font(.system(size: 9))
                                     .foregroundStyle(RSMSTheme.textSecondary)
                             }
                         }
                         
-                        if let selectedDate = selectedSalesDate, selectedDate == dayData.date {
+                        AreaMark(
+                            x: .value("Date", data.date),
+                            y: .value("Sales", data.amount)
+                        )
+                        .interpolationMethod(.catmullRom)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [RSMSTheme.primaryDark.opacity(0.3), Color.clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        
+                        if let selectedDate = selectedSalesDate, selectedDate == data.date {
                             RuleMark(
-                                x: .value("Selected", selectedDate, unit: .day)
+                                x: .value("Selected", selectedDate)
                             )
                             .foregroundStyle(Color.gray.opacity(0.3))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
                             .annotation(position: .top, spacing: 10, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                                 VStack {
-                                    Text(dashboardVM.formatCurrency(dayData.amount))
+                                    Text(dashboardVM.formatCurrency(data.amount))
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundStyle(RSMSTheme.primaryDark)
-                                    Text(dayData.date, format: .dateTime.day().month())
-                                        .font(.system(size: 10))
-                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                    if dashboardVM.selectedPeriod == .monthly {
+                                        Text(data.date, format: .dateTime.month())
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                    } else {
+                                        if let endDate = Calendar.current.date(byAdding: .day, value: 6, to: data.date) {
+                                            Text("\(data.date.formatted(.dateTime.day().month())) - \(endDate.formatted(.dateTime.day().month()))")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(RSMSTheme.textSecondary)
+                                        }
+                                    }
                                 }
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
@@ -576,14 +578,23 @@ struct StoreDashboardView: View {
                     }
                 }
                 .chartXAxis {
-                    AxisMarks(values: dashboardVM.previousDaysSales.map { $0.date }) { value in
+                    AxisMarks(values: dashboardVM.chartSalesData.map { $0.date }) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                             .foregroundStyle(RSMSTheme.border)
                         if let date = value.as(Date.self) {
                             AxisValueLabel(anchor: .top) {
-                                Text(date, format: .dateTime.day().month())
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(RSMSTheme.textSecondary)
+                                if dashboardVM.selectedPeriod == .monthly {
+                                    Text(date, format: .dateTime.month(.abbreviated))
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(RSMSTheme.textSecondary)
+                                } else {
+                                    if let endDate = Calendar.current.date(byAdding: .day, value: 6, to: date) {
+                                        Text("\(date.formatted(.dateTime.day().month(.abbreviated)))-\n\(endDate.formatted(.dateTime.day().month(.abbreviated)))")
+                                            .font(.system(size: 8))
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                }
                             }
                         }
                     }
@@ -598,22 +609,17 @@ struct StoreDashboardView: View {
                                         let location = value.location
                                         let x = location.x - geometry[proxy.plotAreaFrame].origin.x
                                         if let date: Date = proxy.value(atX: x) {
-                                            // Find closest date in previousDaysSales
-                                            let closest = dashboardVM.previousDaysSales.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
+                                            let closest = dashboardVM.chartSalesData.min(by: { abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date)) })
                                             if let closestDate = closest?.date {
                                                 selectedSalesDate = closestDate
                                             }
                                         }
                                     }
-                                    .onEnded { _ in
-                                        // Do nothing to keep it selected after a tap
-                                    }
+                                    .onEnded { _ in }
                             )
                             .simultaneousGesture(
                                 TapGesture(count: 2)
-                                    .onEnded {
-                                        selectedSalesDate = nil
-                                    }
+                                    .onEnded { selectedSalesDate = nil }
                             )
                     }
                 }
@@ -666,6 +672,11 @@ struct StoreDashboardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             
             ZStack {
+                // Permanent background ring
+                Circle()
+                    .stroke(RSMSTheme.border, lineWidth: 30)
+                    .frame(width: 170, height: 170)
+                
                 Chart {
                     if let target = progress.targetAmount, target > 0 {
                         SectorMark(
@@ -682,21 +693,11 @@ struct StoreDashboardView: View {
                                 innerRadius: .ratio(0.7),
                                 angularInset: 2.0
                             )
-                            .cornerRadius(4)
-                            .foregroundStyle(RSMSTheme.surfaceTertiary)
+                            .foregroundStyle(Color.clear)
                         }
-                    } else {
-                        // Full ring when no target exists
-                        SectorMark(
-                            angle: .value("Achieved", 1.0),
-                            innerRadius: .ratio(0.7),
-                            angularInset: 2.0
-                        )
-                        .cornerRadius(4)
-                        .foregroundStyle(RSMSTheme.primaryDark)
                     }
                 }
-                .frame(height: 200)
+                .frame(width: 200, height: 200)
                 
                 VStack(spacing: 4) {
                     if let target = progress.targetAmount, target > 0 {

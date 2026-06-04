@@ -9,6 +9,7 @@ struct InspectionWorkspaceView: View {
     @Bindable var viewModel: ComplianceViewModel
     @Environment(AppViewModel.self) private var appViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     let zone: MerchandisingZone
     
@@ -45,114 +46,76 @@ struct InspectionWorkspaceView: View {
     var body: some View {
         ZStack {
             GeometryReader { geo in
-                HStack(spacing: 0) {
-                    // Only the Inspection Workspace Form
-                    
-                    // Right Panel: Inspection Workspace
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 32) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 32) {
+                        // Header
+                        VStack(alignment: .leading, spacing: 8) {
                             Text("Log Compliance Check")
                                 .font(.largeTitle.bold())
-                            
-                            // Checkpoints
-                            VStack(alignment: .leading, spacing: 24) {
-                                ForEach($checkpoints) { $checkpoint in
-                                    checkpointRow(for: $checkpoint)
-                                }
+                                .foregroundStyle(RSMSTheme.textPrimary)
+                                
+                            HStack(spacing: 8) {
+                                Circle().fill(RSMSTheme.success).frame(width: 8, height: 8)
+                                let storeCode = appViewModel.dataStore.stores.first(where: { $0.id == appViewModel.currentStoreId })?.code ?? "Unknown"
+                                Text("Audit ongoing for \(zone.name) • Store \(storeCode)")
+                                    .font(.subheadline)
+                                    .foregroundColor(RSMSTheme.textSecondary)
                             }
-                            
-                            // Evidence Gallery
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack {
-                                    Text("Evidence Photos")
-                                        .font(.title2.bold())
-                                    Spacer()
-                                    Button(action: { showPhotoUpload = true }) {
-                                        Label("Add Photo", systemImage: "camera.fill")
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
-                                            .background(RSMSTheme.primary)
-                                            .clipShape(Capsule())
+                        }
+                        
+                        if horizontalSizeClass == .regular {
+                            HStack(alignment: .top, spacing: 32) {
+                                // Left Column
+                                VStack(alignment: .leading, spacing: 20) {
+                                    ForEach(Array($checkpoints.enumerated()), id: \.element.id) { index, $checkpoint in
+                                        checkpointRow(for: $checkpoint, index: index)
                                     }
                                 }
                                 
-                                if uploadedPhotoUrls.isEmpty {
-                                    VStack(spacing: 16) {
-                                        Image(systemName: "photo.on.rectangle.angled")
-                                            .font(.system(size: 48))
-                                            .foregroundColor(.gray.opacity(0.5))
-                                        Text("No evidence attached")
-                                            .foregroundColor(.gray)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 150)
-                                    .background(RSMSTheme.surfaceSecondary)
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.gray.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [5]))
-                                    )
-                                } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 16) {
-                                            ForEach(uploadedPhotoUrls, id: \.self) { urlString in
-                                                AsyncImage(url: URL(string: urlString)) { phase in
-                                                    if let image = phase.image {
-                                                        image.resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                    } else {
-                                                        Rectangle().fill(Color.gray.opacity(0.2))
-                                                    }
-                                                }
-                                                .frame(width: 120, height: 120)
-                                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            }
-                                        }
-                                    }
+                                // Right Column
+                                VStack(alignment: .leading, spacing: 20) {
+                                    evidencePhotosCard
+                                    inspectorNotesCard
                                 }
+                                .frame(width: 400)
                             }
-                            
-                            // Notes
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Inspector Notes")
-                                    .font(.title2.bold())
-                                TextEditor(text: $notes)
-                                    .frame(minHeight: 120)
-                                    .padding(8)
-                                    .background(RSMSTheme.surfaceSecondary)
-                                    .cornerRadius(12)
-                            }
-                            
-                            Spacer(minLength: 40)
-                            
-                            Button(action: saveCheck) {
-                                HStack {
-                                    if isSubmitting {
-                                        ProgressView().tint(.white)
-                                    }
-                                    Text("Submit Compliance Check")
-                                        .font(.title3.bold())
+                        } else {
+                            // Single Column
+                            VStack(alignment: .leading, spacing: 20) {
+                                ForEach(Array($checkpoints.enumerated()), id: \.element.id) { index, $checkpoint in
+                                    checkpointRow(for: $checkpoint, index: index)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(!isFormComplete || isSubmitting ? Color.gray : RSMSTheme.primaryDark)
-                                .foregroundColor(.white)
-                                .cornerRadius(16)
+                                evidencePhotosCard
+                                inspectorNotesCard
                             }
-                            .disabled(!isFormComplete || isSubmitting)
                         }
-                        .padding(40)
+                        
+                        Spacer(minLength: 40)
+                        
+                        Button(action: saveCheck) {
+                            HStack {
+                                if isSubmitting {
+                                    ProgressView().tint(.white)
+                                }
+                                Text("Submit Compliance Check")
+                                    .font(.title3.bold())
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(!isFormComplete || isSubmitting ? Color.gray : RSMSTheme.primaryDark)
+                            .foregroundColor(.white)
+                            .cornerRadius(16)
+                        }
+                        .disabled(!isFormComplete || isSubmitting)
                     }
-                    .frame(maxWidth: .infinity)
-                    .background(RSMSTheme.background)
-                    .background(RSMSTheme.background)
+                    .padding(horizontalSizeClass == .compact ? 20 : 40)
                 }
+                .frame(maxWidth: .infinity)
+                .background(RSMSTheme.background)
             }
             
             if isSubmitting || showingSuccessMessage {
                 Color.black.opacity(0.4)
-                    .ignoresSafeArea()
                 
                 VStack(spacing: 24) {
                     if showingSuccessMessage {
@@ -162,14 +125,20 @@ struct InspectionWorkspaceView: View {
                             .transition(.scale.combined(with: .opacity))
                         
                         VStack(spacing: 8) {
-                            Text("Report Submitted")
+                            Text("Success")
                                 .font(.title3.bold())
                                 .foregroundStyle(RSMSTheme.textPrimary)
-                            Text("The Inventory Controller has been notified.")
+                            Text("Notification is sent to the Supporting staff")
                                 .font(.subheadline)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                         }
+                        
+                        Button("Cancel", role: .cancel) {
+                            dismiss()
+                        }
+                        .font(.headline)
+                        .padding(.top, 8)
                     } else {
                         ProgressView()
                             .scaleEffect(1.5)
@@ -188,7 +157,7 @@ struct InspectionWorkspaceView: View {
             }
         }
         .navigationTitle("Check: \(zone.name)")
-            .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPhotoUpload, onDismiss: {
             editingCheckpointId = nil
         }) {
@@ -203,35 +172,47 @@ struct InspectionWorkspaceView: View {
     
     // MARK: - Components
     
-    private func checkpointRow(for checkpoint: Binding<InspectionCheckpoint>) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(checkpoint.wrappedValue.title)
-                .font(.headline)
-                .foregroundColor(RSMSTheme.textPrimary)
+    private func checkpointRow(for checkpoint: Binding<InspectionCheckpoint>, index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(checkpoint.wrappedValue.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(RSMSTheme.textPrimary)
+                Spacer()
+            }
             
-            HStack(spacing: 12) {
+            HStack(spacing: 4) {
                 ForEach([ComplianceStatus.compliant, .needsReview, .nonCompliant], id: \.self) { status in
                     let isSelected = checkpoint.wrappedValue.status == status
+                    let displayName: String = {
+                        switch status {
+                        case .compliant: return "Compliant"
+                        case .needsReview: return "Review"
+                        case .nonCompliant: return "Failed"
+                        }
+                    }()
+                    
                     Button(action: {
-                        withAnimation(.spring()) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             checkpoint.wrappedValue.status = status
                         }
                     }) {
-                        HStack {
+                        HStack(spacing: 6) {
                             Image(systemName: status.iconName)
-                            Text(status.displayName)
+                                .foregroundColor(status.color)
+                            Text(displayName)
+                                .font(.subheadline.weight(.medium))
                         }
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
-                        .background(isSelected ? status.color : RSMSTheme.surfacePrimary)
-                        .foregroundColor(isSelected ? .white : status.color)
-                        .cornerRadius(10)
+                        .background(isSelected ? RSMSTheme.background : Color.clear)
+                        .foregroundColor(isSelected ? RSMSTheme.textPrimary : RSMSTheme.textTertiary)
+                        .cornerRadius(8)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(isSelected ? .clear : status.color.opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isSelected ? status.color.opacity(0.3) : Color.clear, lineWidth: 1)
                         )
+                        .shadow(color: isSelected ? Color.black.opacity(0.05) : .clear, radius: 2, x: 0, y: 1)
                     }
                 }
             }
@@ -242,7 +223,7 @@ struct InspectionWorkspaceView: View {
                         .lineLimit(2...4)
                         .font(.subheadline)
                         .padding(12)
-                        .background(RSMSTheme.surfaceSecondary)
+                        .background(RSMSTheme.background)
                         .cornerRadius(8)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
@@ -263,7 +244,7 @@ struct InspectionWorkspaceView: View {
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(RSMSTheme.danger)
+                                .background(RSMSTheme.primaryDark)
                                 .clipShape(Capsule())
                         }
                     }
@@ -290,6 +271,132 @@ struct InspectionWorkspaceView: View {
                 .padding(.top, 4)
             }
         }
+        .padding(20)
+        .background(RSMSTheme.surfacePrimary)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(RSMSTheme.border, lineWidth: 1)
+        )
+    }
+
+    private var evidencePhotosCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("EVIDENCE PHOTOS")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .tracking(1.0)
+                Spacer()
+                Button(action: { showPhotoUpload = true }) {
+                    Label("Add Photo", systemImage: "camera.fill")
+                        .font(.caption.bold())
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(RSMSTheme.primaryDark)
+                        .clipShape(Capsule())
+                }
+            }
+            
+            if uploadedPhotoUrls.isEmpty {
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(RSMSTheme.surfaceSecondary)
+                            .frame(width: 60, height: 60)
+                        Image(systemName: "photo")
+                            .font(.system(size: 24))
+                            .foregroundColor(RSMSTheme.textTertiary)
+                    }
+                    Text("No evidence attached")
+                        .font(.subheadline.bold())
+                        .foregroundColor(RSMSTheme.textPrimary)
+                    Text("Drag and drop or tap to upload")
+                        .font(.caption)
+                        .foregroundColor(RSMSTheme.textTertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 180)
+                .background(RSMSTheme.surfacePrimary)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(RSMSTheme.border, style: StrokeStyle(lineWidth: 2, dash: [6]))
+                )
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(uploadedPhotoUrls, id: \.self) { urlString in
+                            AsyncImage(url: URL(string: urlString)) { phase in
+                                if let image = phase.image {
+                                    image.resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                } else {
+                                    Rectangle().fill(Color.gray.opacity(0.2))
+                                }
+                            }
+                            .frame(width: 120, height: 120)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                }
+            }
+            
+            if uploadedPhotoUrls.isEmpty {
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 8).fill(RSMSTheme.surfaceSecondary).frame(width: 60, height: 60)
+                        .overlay(Image(systemName: "camera").foregroundColor(RSMSTheme.textTertiary))
+                    RoundedRectangle(cornerRadius: 8).fill(RSMSTheme.surfaceSecondary).frame(width: 60, height: 60)
+                        .overlay(Image(systemName: "camera").foregroundColor(RSMSTheme.textTertiary))
+                }
+            }
+        }
+        .padding(24)
+        .background(RSMSTheme.surfacePrimary)
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+    }
+
+    private var inspectorNotesCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("INSPECTOR NOTES")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(RSMSTheme.textSecondary)
+                .tracking(1.0)
+            
+            ZStack(alignment: .bottomTrailing) {
+                TextEditor(text: $notes)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 150)
+                    .padding(12)
+                    .background(RSMSTheme.background)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(RSMSTheme.border, lineWidth: 1)
+                    )
+                
+                Text("\(notes.count) / 500")
+                    .font(.caption)
+                    .foregroundColor(RSMSTheme.textTertiary)
+                    .padding(12)
+            }
+            .overlay(alignment: .topLeading) {
+                if notes.isEmpty {
+                    Text("Add small notes here...")
+                        .font(.subheadline)
+                        .foregroundColor(RSMSTheme.textTertiary)
+                        .padding(16)
+                        .padding(.top, 4)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
+        .padding(24)
+        .background(RSMSTheme.surfacePrimary)
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
     }
     
     // MARK: - Helpers
@@ -435,12 +542,6 @@ struct InspectionWorkspaceView: View {
                     withAnimation(.spring()) {
                         showingSuccessMessage = true
                     }
-                }
-                
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // Show message for 2 seconds
-                
-                await MainActor.run {
-                    dismiss()
                 }
             } catch {
                 await MainActor.run {
