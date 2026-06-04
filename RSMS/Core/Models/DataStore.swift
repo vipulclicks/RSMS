@@ -1488,11 +1488,11 @@ final class DataStore {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoder = JSONDecoder()
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                let isoFormatterNoFractional = ISO8601DateFormatter()
-                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                 decoder.dateDecodingStrategy = .custom { decoder in
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    let isoFormatterNoFractional = ISO8601DateFormatter()
+                    isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                     let container = try decoder.singleValueContainer()
                     let dateStr = try container.decode(String.self)
                     if let date = formatter.date(from: dateStr) { return date }
@@ -1879,11 +1879,11 @@ final class DataStore {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 let decoder = JSONDecoder()
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-                let isoFormatterNoFractional = ISO8601DateFormatter()
-                isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                 decoder.dateDecodingStrategy = .custom { decoder in
+                    let formatter = ISO8601DateFormatter()
+                    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    let isoFormatterNoFractional = ISO8601DateFormatter()
+                    isoFormatterNoFractional.formatOptions = [.withInternetDateTime]
                     let container = try decoder.singleValueContainer()
                     let dateStr = try container.decode(String.self)
                     if let date = formatter.date(from: dateStr) { return date }
