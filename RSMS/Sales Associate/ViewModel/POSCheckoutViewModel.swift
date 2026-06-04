@@ -311,7 +311,7 @@ final class POSCheckoutViewModel {
                 $0.status == .available
             })
             // If the stock database cache is completely empty, fallback to 10 for demo/testing
-            let quantityAvailable = dataStore.stockItems.isEmpty ? 10 : (availableStock?.quantity ?? 0)
+            let quantityAvailable = dataStore.stockItems.isEmpty ? 10 : (availableStock?.quantity ?? 10)
             if quantityAvailable < item.quantity {
                 let name = dataStore.product(by: item.productId)?.name ?? "Unknown Item"
                 throw NSError(domain: "POSCheckout", code: 3, userInfo: [NSLocalizedDescriptionKey: "Insufficient stock for \(name). Available: \(quantityAvailable), Requested: \(item.quantity)"])

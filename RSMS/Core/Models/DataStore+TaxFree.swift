@@ -82,7 +82,7 @@ extension DataStore {
             let fetched: [TaxFreeTransaction] = try await api.fetch("tax_free_transactions")
             self.taxFreeTransactions = fetched
         } catch {
-            print("[DataStore] ⚠️ Failed to fetch tax_free_transactions: \(error)")
+            // print("[DataStore] ⚠️ Failed to fetch tax_free_transactions: \(error)")
         }
     }
     

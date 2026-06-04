@@ -1508,7 +1508,7 @@ final class DataStore {
                     }
                 }
             } catch {
-                print("[DataStore] ⚠️ Failed to fetch local sessions from Python server: \(error.localizedDescription)")
+                print("[DataStore] ⚠️ Failed to fetch local sessions from Checkout server: \(error.localizedDescription)")
             }
         }
 #endif
@@ -1899,7 +1899,7 @@ final class DataStore {
                     }
                 }
             } catch {
-                print("[DataStore] ⚠️ Failed to fetch local shipping addresses from Python server: \(error.localizedDescription)")
+                print("[DataStore] ⚠️ Failed to fetch local shipping addresses from Checkout server: \(error.localizedDescription)")
             }
         }
 #endif

@@ -103,7 +103,7 @@ struct SalesAssociateHomeView: View {
                     detailView(appointmentVM, section: section)
                 }
                 .tabItem {
-                    Label(section.rawValue, systemImage: section.icon)
+                    Label(section == .returnsExchange ? "Claims" : section.rawValue, systemImage: section.icon)
                 }
                 .tag(Optional(section))
             }
