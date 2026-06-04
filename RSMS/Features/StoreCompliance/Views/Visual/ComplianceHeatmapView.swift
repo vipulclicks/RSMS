@@ -40,18 +40,18 @@ struct ComplianceHeatmapView: View {
                     switch zone.type {
                     case .table:
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(white: 0.98))
+                            .fill(RSMSTheme.surfaceSecondary)
                             .shadow(color: Color.black.opacity(0.05), radius: 10, y: 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
                             )
                     case .wall:
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(white: 0.95))
+                            .fill(RSMSTheme.surfaceSecondary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
                             )
                     case .window:
                         RoundedRectangle(cornerRadius: 8)
@@ -62,10 +62,10 @@ struct ComplianceHeatmapView: View {
                             )
                     case .cashWrap:
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(white: 0.98))
+                            .fill(RSMSTheme.surfaceSecondary)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .stroke(RSMSTheme.border, lineWidth: 1)
                             )
                     }
                     
@@ -87,7 +87,7 @@ struct ComplianceHeatmapView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.9))
+                            .background(RSMSTheme.surfacePrimary.opacity(0.9))
                             .clipShape(Capsule())
                         } else {
                             Text("Unchecked")
@@ -96,7 +96,7 @@ struct ComplianceHeatmapView: View {
                                 .fixedSize(horizontal: true, vertical: false)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color.white.opacity(0.9))
+                                .background(RSMSTheme.surfacePrimary.opacity(0.9))
                                 .clipShape(Capsule())
                         }
                     }
@@ -111,7 +111,7 @@ struct ComplianceHeatmapView: View {
                 }
             }
         }
-        .background(Color.white)
+        .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .shadow(color: .black.opacity(0.05), radius: 20)
         .task {
