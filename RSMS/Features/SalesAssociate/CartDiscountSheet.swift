@@ -53,11 +53,13 @@ struct CartDiscountSheet: View {
                         .foregroundStyle(RSMSTheme.danger)
                     }
                 }
+                .listRowBackground(RSMSTheme.surfacePrimary)
                 
                 Section(header: Text("Context").font(.caption.bold()).foregroundStyle(RSMSTheme.textSecondary)) {
                     TextField("Reason for Discount (e.g. Client Birthday)", text: $reasonForDiscount)
                         .foregroundStyle(RSMSTheme.textPrimary)
                 }
+                .listRowBackground(RSMSTheme.surfacePrimary)
                 
                 Section(header: Text("Financial Summary").font(.caption.bold()).foregroundStyle(RSMSTheme.textSecondary)) {
                     summaryRow(label: "Original Subtotal", value: cartSubtotal, isHighlight: false)
@@ -68,6 +70,7 @@ struct CartDiscountSheet: View {
                     let finalTotal = max(0, cartSubtotal - savings)
                     summaryRow(label: "New Subtotal", value: finalTotal, isHighlight: true, isBold: true)
                 }
+                .listRowBackground(RSMSTheme.surfacePrimary)
                 
                 if isValid {
                     Section {
@@ -78,6 +81,7 @@ struct CartDiscountSheet: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(requiresApproval ? .orange : RSMSTheme.success)
                     }
+                    .listRowBackground(RSMSTheme.surfacePrimary)
                 }
             }
             .scrollContentBackground(.hidden)
