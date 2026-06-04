@@ -7,6 +7,7 @@ import SwiftUI
 
 struct TaxFreeConfigurationView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var isEnabled: Bool = true
     @State private var minPurchaseAmount: String = "10000"
@@ -157,14 +158,14 @@ struct TaxFreeConfigurationView: View {
             )
             try? await appVM.dataStore.createTaxFreeAudit(audit)
             
-            withAnimation {
+            withAnimation(reduceMotion ? nil : .default) {
                 showSuccessMessage = true
                 isSaving = false
             }
             
             // Hide message after 2.5 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     showSuccessMessage = false
                 }
             }
@@ -189,6 +190,9 @@ struct MultipleSelectionRow: View {
                         .fontWeight(.bold)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(title)
+            .accessibilityValue(isSelected ? "Selected" : "Unselected")
         }
     }
 }

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct AppointmentsInventoryView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var dashboardVM = BoutiqueDashboardViewModel()
     @State private var hasAppeared = false
 
@@ -22,7 +24,7 @@ struct AppointmentsInventoryView: View {
                         inventorySection
                             .opacity(hasAppeared ? 1 : 0)
                             .offset(y: hasAppeared ? 0 : 20)
-                            .animation(.easeOut(duration: 0.5).delay(0.1), value: hasAppeared)
+                            .animation(reduceMotion ? nil : .easeOut(duration: 0.5).delay(0.1), value: hasAppeared)
                     }
                     .padding(32)
                 }
@@ -33,7 +35,7 @@ struct AppointmentsInventoryView: View {
         .task {
             if let storeId = appVM.currentStoreId {
                 await dashboardVM.load(dataStore: appVM.dataStore, storeId: storeId)
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     hasAppeared = true
                 }
             }
@@ -64,7 +66,7 @@ struct AppointmentsInventoryView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Capsule().fill(RSMSTheme.danger.opacity(0.1)))
+                    .background(Capsule().fill(RSMSTheme.danger.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1))))
                 }
             }
 
@@ -92,10 +94,10 @@ struct AppointmentsInventoryView: View {
             HStack(spacing: 18) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18)
-                        .fill(RSMSTheme.primary.opacity(0.12))
+                        .fill(RSMSTheme.primary.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.12)))
                         .frame(width: 68, height: 68)
                     Image(systemName: "barcode.viewfinder")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.title.weight(.semibold))
                         .foregroundStyle(RSMSTheme.primary)
                 }
 
@@ -111,19 +113,22 @@ struct AppointmentsInventoryView: View {
                 Spacer()
 
                 Image(systemName: "arrow.right.circle.fill")
-                    .font(.system(size: 26))
+                    .font(.title2)
                     .foregroundStyle(RSMSTheme.primary)
             }
             .padding(22)
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(RSMSTheme.surfacePrimary)
-                    .shadow(color: Color.black.opacity(0.04), radius: 20, x: 0, y: 10)
+                    .shadow(color: Color.black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.04)), radius: 20, x: 0, y: 10)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
                     .stroke(RSMSTheme.border, lineWidth: 1)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Inventory Receiving & Put-Away")
+            .accessibilityHint("Scan inbound stock, assign storage locations, and post updated quantities.")
         }
         .buttonStyle(ScaleButtonStyle())
     }
@@ -134,14 +139,14 @@ struct AppointmentsInventoryView: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [RSMSTheme.success.opacity(0.1), RSMSTheme.success.opacity(0.05)],
+                            colors: [RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)), RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.05))],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .frame(width: 80, height: 80)
                 Image(systemName: "checkmark.shield.fill")
-                    .font(.system(size: 32))
+                    .font(.title)
                     .foregroundStyle(RSMSTheme.success)
             }
             Text("Inventory Healthy")
@@ -175,7 +180,7 @@ struct AppointmentsInventoryView: View {
                             .frame(width: 48, height: 48)
 
                         Image(systemName: alert.product.category.lowercased() == "watches" ? "applewatch" : "sparkles")
-                            .font(.system(size: 20))
+                            .font(.title3)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     }
 
@@ -230,12 +235,15 @@ struct AppointmentsInventoryView: View {
             .background(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(RSMSTheme.surfacePrimary)
-                    .shadow(color: Color.black.opacity(0.04), radius: 20, x: 0, y: 10)
+                    .shadow(color: Color.black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.04)), radius: 20, x: 0, y: 10)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
                     .stroke(RSMSTheme.border, lineWidth: 1)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Low stock alert for \(alert.product.name), SKU \(alert.product.sku).")
+            .accessibilityValue("Quantity: \(alert.stockItem.quantity)")
         }
         .buttonStyle(ScaleButtonStyle())
     }

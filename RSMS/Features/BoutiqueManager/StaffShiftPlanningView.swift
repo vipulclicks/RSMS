@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StaffShiftPlanningView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var navPath = [StaffRoute]()
     @State private var salesGoalVM = SalesGoalViewModel()
@@ -183,11 +184,14 @@ struct StaffShiftPlanningView: View {
                     .rotationEffect(.degrees(-90))
                 
                 Text("\(Int(progress * 100))%")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(RSMSTheme.gold)
             }
         }
         .rsmsCard(padding: 16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(staff.fullName), \(staff.role.displayName)")
+        .accessibilityValue(targetAmount > 0 ? "Target: \(targetAmount.formatted(.currency(code: "INR").precision(.fractionLength(0)))), Progress: \(Int(progress * 100))%" : "Progress: \(Int(progress * 100))%")
     }
 }
 
@@ -197,6 +201,7 @@ struct StaffGoalCard: View {
     var viewModel: SalesGoalViewModel
     var onNameTap: (() -> Void)? = nil
     
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedPeriod: GoalPeriod = .monthly
     
     var body: some View {
@@ -221,10 +226,10 @@ struct StaffGoalCard: View {
                 HStack(spacing: 4) {
                     ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
                         Button {
-                            withAnimation(.snappy) { selectedPeriod = period }
+                            withAnimation(reduceMotion ? nil : .snappy) { selectedPeriod = period }
                         } label: {
                             Text(period.rawValue.capitalized)
-                                .font(.system(size: 10, weight: .bold))
+                                .font(.caption2.weight(.bold))
                                 .lineLimit(1)
                                 .fixedSize(horizontal: true, vertical: false)
                                 .padding(.horizontal, 6) // Slightly tighter padding to fit all 4

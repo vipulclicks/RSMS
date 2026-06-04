@@ -30,6 +30,7 @@ enum BoutiqueSection: String, CaseIterable, Identifiable {
 struct BoutiqueManagerHomeView: View {
     @Environment(AppViewModel.self) private var viewModel
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var selectedSection: BoutiqueSection? = .dashboard
 
     var body: some View {
@@ -63,12 +64,12 @@ struct BoutiqueManagerHomeView: View {
                 let isSelected = selectedSection == section
                 HStack(spacing: 16) {
                     Image(systemName: section.icon)
-                        .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                        .font(.headline)
                         .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
                         .frame(width: 24)
                     
                     Text(section.rawValue)
-                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .font(isSelected ? .body.weight(.semibold) : .body)
                         .foregroundStyle(isSelected ? RSMSTheme.primary : Color.black.opacity(0.85))
                     
                     Spacer()
@@ -81,7 +82,7 @@ struct BoutiqueManagerHomeView: View {
         }
         .listStyle(.sidebar)
         .scrollContentBackground(.hidden)
-        .background(.ultraThinMaterial)
+        .background(reduceTransparency ? AnyShapeStyle(RSMSTheme.surfacePrimary) : AnyShapeStyle(.ultraThinMaterial))
         .navigationTitle("Boutique Manager")
     }
 
