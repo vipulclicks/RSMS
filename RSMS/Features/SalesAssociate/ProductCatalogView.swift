@@ -154,10 +154,6 @@ struct ProductCatalogView: View {
             VStack(spacing: 0) {
                 clientContextBanner(vm)
                 
-                if vm.activeClient != nil && !vm.recommendedProducts.isEmpty {
-                    curatedRecommendationsCarousel(vm)
-                }
-                
                 searchBar(vm)
                 categoryFilters(vm)
 

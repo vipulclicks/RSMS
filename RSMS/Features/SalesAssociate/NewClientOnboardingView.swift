@@ -77,44 +77,35 @@ struct NewClientOnboardingView: View {
     // MARK: - Step Indicator
 
     private var stepIndicator: some View {
-        HStack(spacing: 0) {
-            ForEach(0..<viewModel.stepCount, id: \.self) { index in
-                HStack(spacing: 0) {
-                    ZStack {
-                        Circle()
-                            .fill(index <= viewModel.currentStep
-                                  ? RSMSTheme.primary : RSMSTheme.surfacePrimary)
-                            .frame(width: 32, height: 32)
-                            .overlay(
-                                Circle().stroke(
-                                    index <= viewModel.currentStep
-                                    ? RSMSTheme.primary : RSMSTheme.border,
-                                    lineWidth: 1.5
-                                )
-                            )
-                        if index < viewModel.currentStep {
-                            Image(systemName: "checkmark")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(RSMSTheme.cream)
-                        } else {
-                            Text("\(index + 1)")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(
-                                    index == viewModel.currentStep
-                                    ? RSMSTheme.cream : RSMSTheme.textTertiary
-                                )
-                        }
-                    }
-
-                    if index < viewModel.stepCount - 1 {
-                        Rectangle()
-                            .fill(index < viewModel.currentStep
-                                  ? RSMSTheme.primary : RSMSTheme.border)
-                            .frame(height: 2)
-                    }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Step \(viewModel.currentStep + 1) of \(viewModel.stepCount)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(RSMSTheme.primary)
+                    .tracking(1.5)
+                Spacer()
+                Text(NewClientOnboardingViewModel.stepTitles[viewModel.currentStep].uppercased())
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(RSMSTheme.textSecondary)
+                    .tracking(1.5)
+            }
+            
+            // Progress Bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(RSMSTheme.border)
+                        .frame(height: 4)
+                    
+                    Capsule()
+                        .fill(RSMSTheme.primary)
+                        .frame(width: geo.size.width * CGFloat(viewModel.currentStep + 1) / CGFloat(viewModel.stepCount), height: 4)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: viewModel.currentStep)
                 }
             }
+            .frame(height: 4)
         }
+        .padding(.vertical, 8)
     }
 
     // MARK: - Step Content
@@ -125,8 +116,7 @@ struct NewClientOnboardingView: View {
         case 0: identityStep
         case 1: preferencesStep
         case 2: datesStep
-        case 3: wishlistStep
-        case 4: consentStep
+        case 3: consentStep
         default: EmptyView()
         }
     }
@@ -134,7 +124,7 @@ struct NewClientOnboardingView: View {
     // MARK: Step 1 — Identity
 
     private var identityStep: some View {
-        LuxuryFormCard(title: "Client Identity", icon: "person.fill") {
+        LuxuryFormCard(title: "Client Identity", icon: "") {
             LuxuryTextField(title: "Full Name *", text: $viewModel.fullName)
             LuxuryTextField(title: "Email", text: $viewModel.email)
             LuxuryTextField(title: "Phone", text: $viewModel.phone)
@@ -145,7 +135,7 @@ struct NewClientOnboardingView: View {
 
     private var preferencesStep: some View {
         VStack(spacing: 20) {
-            LuxuryFormCard(title: "Shoes & Belts", icon: "shoe.fill") {
+            LuxuryFormCard(title: "Shoes & Belts", icon: "") {
                 HStack(spacing: 16) {
                     LuxurySizeField(title: "Shoe Size", text: $viewModel.shoeSize, presets: LuxurySizePresets.shoes)
                     LuxuryPicker(title: "Shoe Fit", selection: $viewModel.shoeFit, options: ["Regular", "Wide", "Narrow"])
@@ -156,7 +146,7 @@ struct NewClientOnboardingView: View {
                 }
             }
 
-            LuxuryFormCard(title: "Jewellery & Watches", icon: "sparkles") {
+            LuxuryFormCard(title: "Jewellery & Watches", icon: "") {
                 HStack(spacing: 16) {
                     LuxurySizeField(title: "Ring Size", text: $viewModel.ringSize, presets: LuxurySizePresets.rings)
                     LuxurySizeField(title: "Bracelet Size", text: $viewModel.braceletSize, presets: LuxurySizePresets.bracelets)
@@ -172,7 +162,7 @@ struct NewClientOnboardingView: View {
                 LuxuryTextField(title: "Watch Case Preference", text: $viewModel.watchCasePref)
             }
 
-            LuxuryFormCard(title: "Handbags & Perfumes", icon: "handbag.fill") {
+            LuxuryFormCard(title: "Handbags & Perfumes", icon: "") {
                 HStack(spacing: 16) {
                     LuxuryPicker(title: "Bag Size", selection: $viewModel.bagSize, options: ["Mini", "Small", "Medium", "Large"])
                     LuxuryPicker(title: "Bag Style", selection: $viewModel.bagStyle, options: ["Tote", "Crossbody", "Clutch", "Shoulder", "Satchel"])
@@ -187,7 +177,7 @@ struct NewClientOnboardingView: View {
                 }
             }
 
-            LuxuryFormCard(title: "Style & Brands", icon: "heart.fill") {
+            LuxuryFormCard(title: "Style & Brands", icon: "") {
                 LuxuryTextField(title: "Favourite Categories (comma-separated)", text: $viewModel.favoriteCategories)
                 LuxuryTextField(title: "Favourite Metals (comma-separated)", text: $viewModel.favoriteMetals)
                 LuxuryTextField(title: "Favourite Gemstones (comma-separated)", text: $viewModel.favoriteGemstones)
@@ -196,8 +186,8 @@ struct NewClientOnboardingView: View {
                 HStack(spacing: 16) {
                     LuxuryPicker(title: "Style", selection: $viewModel.stylePreference,
                                  options: ["Classic", "Modern", "Sporty Luxury", "Bohemian", "Minimalist"])
-                    LuxuryPicker(title: "Shopping", selection: $viewModel.shoppingPreference,
-                                 options: ["In-store", "In-store appointment", "Remote Selling", "Online"])
+                    LuxuryPicker(title: "Preferred Mode", selection: $viewModel.shoppingPreference,
+                                 options: ["Instore visit", "video consultation"])
                 }
             }
         }
@@ -207,12 +197,9 @@ struct NewClientOnboardingView: View {
 
     private var datesStep: some View {
         VStack(spacing: 20) {
-            LuxuryFormCard(title: "Important Dates", icon: "calendar") {
+            LuxuryFormCard(title: "Important Dates", icon: "") {
                 if viewModel.anniversaries.isEmpty {
                     VStack(spacing: 12) {
-                        Image(systemName: "calendar.badge.plus")
-                            .font(.largeTitle)
-                            .foregroundStyle(RSMSTheme.textTertiary)
                         Text("No special dates added yet")
                             .font(.subheadline)
                             .foregroundStyle(RSMSTheme.textSecondary)
@@ -223,15 +210,13 @@ struct NewClientOnboardingView: View {
                     VStack(spacing: 12) {
                         ForEach(viewModel.anniversaries) { ann in
                             HStack {
-                                Image(systemName: ann.title.contains("Birthday") ? "cake.emoji" : "heart.fill")
-                                    .foregroundStyle(RSMSTheme.primary)
-                                    .font(.subheadline)
-                                    .padding(8)
-                                    .background(RSMSTheme.primary.opacity(0.1), in: Circle())
+                                Circle()
+                                    .fill(RSMSTheme.primary.opacity(0.12))
+                                    .frame(width: 28, height: 28)
                                     .overlay(
-                                        Image(systemName: "calendar")
-                                            .font(.caption2)
-                                            .foregroundStyle(RSMSTheme.primary)
+                                        Circle()
+                                            .fill(RSMSTheme.primary)
+                                            .frame(width: 8, height: 8)
                                     )
 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -254,8 +239,8 @@ struct NewClientOnboardingView: View {
                                         viewModel.anniversaries.remove(at: idx)
                                     }
                                 } label: {
-                                    Image(systemName: "trash")
-                                        .font(.subheadline)
+                                    Text("Remove")
+                                        .font(.subheadline.weight(.medium))
                                         .foregroundStyle(RSMSTheme.danger)
                                 }
                             }
@@ -272,7 +257,7 @@ struct NewClientOnboardingView: View {
                             isAddingAnniversary = true
                         }
                     } label: {
-                        Label("Add Special Date", systemImage: "plus")
+                        Text("Add Special Date")
                             .font(.subheadline.weight(.medium))
                             .foregroundStyle(RSMSTheme.primary)
                             .frame(maxWidth: .infinity)
@@ -285,7 +270,7 @@ struct NewClientOnboardingView: View {
             }
 
             if isAddingAnniversary {
-                LuxuryFormCard(title: "New Special Date", icon: "calendar.badge.plus") {
+                LuxuryFormCard(title: "New Special Date", icon: "") {
                     LuxuryPicker(title: "Occasion", selection: $newAnnTitle, options: ["Birthday", "Wedding Anniversary", "Graduation", "Engagement", "Other"])
                     DatePicker("Date", selection: $newAnnDate, displayedComponents: .date)
                         .datePickerStyle(.compact)
@@ -434,9 +419,7 @@ struct NewClientOnboardingView: View {
 
     private var consentStep: some View {
         VStack(spacing: 20) {
-
-
-            LuxuryFormCard(title: "Preferred Channels", icon: "paperplane.fill") {
+            LuxuryFormCard(title: "Preferred Channels", icon: "") {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Select how the client prefers to be contacted:")
                         .font(.caption)
@@ -444,18 +427,18 @@ struct NewClientOnboardingView: View {
 
                     Grid(horizontalSpacing: 16, verticalSpacing: 12) {
                         GridRow {
-                            channelToggle(title: "Email", icon: "envelope.fill", isOn: $viewModel.preferredEmail)
-                            channelToggle(title: "SMS", icon: "message.fill", isOn: $viewModel.preferredSMS)
+                            channelToggle(title: "Email", icon: "", isOn: $viewModel.preferredEmail)
+                            channelToggle(title: "SMS", icon: "", isOn: $viewModel.preferredSMS)
                         }
                         GridRow {
-                            channelToggle(title: "Phone Call", icon: "phone.fill", isOn: $viewModel.preferredPhone)
-                            channelToggle(title: "WhatsApp", icon: "phone.bubble.left.fill", isOn: $viewModel.preferredWhatsApp)
+                            channelToggle(title: "Phone Call", icon: "", isOn: $viewModel.preferredPhone)
+                            channelToggle(title: "WhatsApp", icon: "", isOn: $viewModel.preferredWhatsApp)
                         }
                     }
                 }
             }
 
-            LuxuryFormCard(title: "Summary & Notes", icon: "note.text") {
+            LuxuryFormCard(title: "Summary & Notes", icon: "") {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Associate Notes")
                         .font(.caption)
@@ -483,8 +466,6 @@ struct NewClientOnboardingView: View {
 
                     recapRow(label: "Name", value: viewModel.fullName)
                     recapRow(label: "Dates", value: "\(viewModel.anniversaries.count) added")
-                    recapRow(label: "Wishlist", value: "\(viewModel.selectedProductIds.count) items selected")
-
                 }
                 .font(.subheadline)
                 .padding(.top, 8)
@@ -499,16 +480,19 @@ struct NewClientOnboardingView: View {
             }
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.subheadline)
-                    .foregroundStyle(isOn.wrappedValue ? RSMSTheme.cream : RSMSTheme.primary)
+                if !icon.isEmpty {
+                    Image(systemName: icon)
+                        .font(.subheadline)
+                        .foregroundStyle(isOn.wrappedValue ? RSMSTheme.cream : RSMSTheme.primary)
+                }
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isOn.wrappedValue ? RSMSTheme.cream : RSMSTheme.textPrimary)
                 Spacer()
-                Image(systemName: isOn.wrappedValue ? "checkmark.circle.fill" : "circle")
-                    .font(.caption)
-                    .foregroundStyle(isOn.wrappedValue ? RSMSTheme.cream : RSMSTheme.border)
+                Circle()
+                    .strokeBorder(isOn.wrappedValue ? RSMSTheme.cream : RSMSTheme.border, lineWidth: 1.5)
+                    .background(Circle().fill(isOn.wrappedValue ? RSMSTheme.cream : Color.clear))
+                    .frame(width: 14, height: 14)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
@@ -538,7 +522,6 @@ struct NewClientOnboardingView: View {
                     viewModel.previousStep()
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
                         Text("Back")
                     }
                     .font(.subheadline.weight(.medium))
@@ -571,9 +554,6 @@ struct NewClientOnboardingView: View {
                             .tint(RSMSTheme.cream)
                     } else {
                         Text(viewModel.isLastStep ? "Save Client" : "Continue")
-                        if !viewModel.isLastStep {
-                            Image(systemName: "chevron.right")
-                        }
                     }
                 }
                 .font(.headline)
@@ -594,9 +574,14 @@ struct NewClientOnboardingView: View {
 
     private var successBanner: some View {
         HStack(spacing: 12) {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(RSMSTheme.primary)
-                .font(.title3)
+            Circle()
+                .fill(RSMSTheme.primary)
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Text("✓")
+                        .font(.caption.bold())
+                        .foregroundStyle(RSMSTheme.cream)
+                )
             Text("Client profile created successfully")
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(RSMSTheme.textPrimary)

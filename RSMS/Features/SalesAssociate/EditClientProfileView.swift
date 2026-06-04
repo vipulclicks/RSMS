@@ -83,7 +83,7 @@ struct EditClientProfileView: View {
         self._fragranceStrength = State(initialValue: client.fragranceStrength ?? "EDP")
         self._scentPref = State(initialValue: client.scentPreference ?? "Mild")
         self._stylePreference = State(initialValue: client.stylePreference ?? "Classic")
-        self._shoppingPreference = State(initialValue: client.shoppingPreference ?? "VIP Appointment")
+        self._shoppingPreference = State(initialValue: client.shoppingPreference ?? "Instore visit")
         
         self._notes = State(initialValue: client.notes ?? "")
         self._privacyConsentGiven = State(initialValue: client.privacyConsentGiven)
@@ -170,7 +170,7 @@ struct EditClientProfileView: View {
                             LuxuryTextField(title: "Favourite Colors", text: $favoriteColors)
                             HStack(spacing: 12) {
                                 LuxuryPicker(title: "Style", selection: $stylePreference, options: ["Classic", "Modern", "Sporty Luxury", "Bohemian", "Minimalist"])
-                                LuxuryPicker(title: "Shopping", selection: $shoppingPreference, options: ["VIP Appointment", "Online Assisted", "Walk-in"])
+                                LuxuryPicker(title: "Preferred Mode", selection: $shoppingPreference, options: ["Instore visit", "video consultation"])
                             }
                         }
                         
