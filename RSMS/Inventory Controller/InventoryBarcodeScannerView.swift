@@ -431,6 +431,7 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
 
         @Binding var scannedCode: String?
+        private var hasScanned = false  // debounce: ignore repeats until reset
 
         init(scannedCode: Binding<String?>) {
             _scannedCode = scannedCode
@@ -447,15 +448,38 @@ struct DataScannerRepresentable: UIViewControllerRepresentable {
 
         func dataScanner(
             _ dataScanner: DataScannerViewController,
+            didUpdate updatedItems: [RecognizedItem],
+            allItems: [RecognizedItem]
+        ) {
+            // Also try on update in case didAdd missed the first frame
+            guard !hasScanned, let item = updatedItems.first else { return }
+            extract(item)
+        }
+
+        func dataScanner(
+            _ dataScanner: DataScannerViewController,
             didTapOn item: RecognizedItem
         ) {
             extract(item)
         }
 
         private func extract(_ item: RecognizedItem) {
+            guard !hasScanned else { return }
             if case .barcode(let barcode) = item,
-               let payload = barcode.payloadStringValue {
-                scannedCode = payload
+               let payload = barcode.payloadStringValue,
+               !payload.trimmingCharacters(in: .whitespaces).isEmpty {
+                hasScanned = true
+                // Haptic so user knows scan was detected
+                let feedback = UINotificationFeedbackGenerator()
+                feedback.notificationOccurred(.success)
+                // MUST update SwiftUI binding on main thread
+                DispatchQueue.main.async {
+                    self.scannedCode = payload
+                    // Allow re-scanning after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        self.hasScanned = false
+                    }
+                }
             }
         }
     }
