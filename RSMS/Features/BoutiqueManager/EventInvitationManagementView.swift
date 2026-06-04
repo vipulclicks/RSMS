@@ -14,57 +14,59 @@ struct EventInvitationManagementView: View {
     @State private var showCreateEventSheet = false
 
     var body: some View {
-        ZStack {
-            RSMSTheme.background.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                RSMSTheme.background.ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    header
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        header
 
-                    if viewModel.isLoading {
-                        ProgressView("Loading events...")
-                            .frame(maxWidth: .infinity, minHeight: 220)
-                    } else if viewModel.events.isEmpty {
-                        emptyState
-                    } else {
-                        eventSelector
-                        rsvpSummary
-                        invitationList
-                        attendeeList
+                        if viewModel.isLoading {
+                            ProgressView("Loading events...")
+                                .frame(maxWidth: .infinity, minHeight: 220)
+                        } else if viewModel.events.isEmpty {
+                            emptyState
+                        } else {
+                            eventSelector
+                            rsvpSummary
+                            invitationList
+                            attendeeList
+                        }
+                    }
+                    .padding(24)
+                }
+            }
+            .navigationTitle("Client Events")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New Event", systemImage: "calendar.badge.plus") {
+                        showCreateEventSheet = true
                     }
                 }
-                .padding(24)
             }
-        }
-        .navigationTitle("Client Events")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("New Event", systemImage: "calendar.badge.plus") {
-                    showCreateEventSheet = true
-                }
+            .sheet(isPresented: $showInviteSheet) {
+                ClientInviteSheet(viewModel: viewModel, clients: appVM.dataStore.clients)
             }
-        }
-        .sheet(isPresented: $showInviteSheet) {
-            ClientInviteSheet(viewModel: viewModel, clients: appVM.dataStore.clients)
-        }
-        .sheet(isPresented: $showCreateEventSheet) {
-            EventCreationSheet(viewModel: viewModel)
-        }
-        .alert("Event Invitations", isPresented: Binding(
-            get: { viewModel.errorMessage != nil },
-            set: { if !$0 { viewModel.errorMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
-        } message: {
-            Text(viewModel.errorMessage ?? "")
-        }
-        .task {
-            guard let storeId = appVM.currentStoreId else { return }
-            await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
-        }
-        .refreshable {
-            guard let storeId = appVM.currentStoreId else { return }
-            await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
+            .sheet(isPresented: $showCreateEventSheet) {
+                EventCreationSheet(viewModel: viewModel)
+            }
+            .alert("Event Invitations", isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            } message: {
+                Text(viewModel.errorMessage ?? "")
+            }
+            .task {
+                guard let storeId = appVM.currentStoreId else { return }
+                await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
+            }
+            .refreshable {
+                guard let storeId = appVM.currentStoreId else { return }
+                await viewModel.load(dataStore: appVM.dataStore, storeId: storeId)
+            }
         }
     }
 
@@ -112,11 +114,21 @@ struct EventInvitationManagementView: View {
     }
 
     private var rsvpSummary: some View {
-        HStack(spacing: 12) {
-            RSVPMetricCard(title: "Accepted", value: viewModel.acceptedCount, color: RSMSTheme.success, icon: "checkmark.circle.fill")
-            RSVPMetricCard(title: "Pending", value: viewModel.pendingCount, color: RSMSTheme.warning, icon: "clock.fill")
-            RSVPMetricCard(title: "Declined", value: viewModel.declinedCount, color: RSMSTheme.danger, icon: "xmark.circle.fill")
+        ViewThatFits {
+            HStack(spacing: 12) {
+                rsvpMetricCards
+            }
+            VStack(spacing: 12) {
+                rsvpMetricCards
+            }
         }
+    }
+
+    @ViewBuilder
+    private var rsvpMetricCards: some View {
+        RSVPMetricCard(title: "Accepted", value: viewModel.acceptedCount, color: RSMSTheme.success, icon: "checkmark.circle.fill")
+        RSVPMetricCard(title: "Pending", value: viewModel.pendingCount, color: RSMSTheme.warning, icon: "clock.fill")
+        RSVPMetricCard(title: "Declined", value: viewModel.declinedCount, color: RSMSTheme.danger, icon: "xmark.circle.fill")
     }
 
     private var invitationList: some View {
@@ -234,7 +246,7 @@ private struct RSVPMetricCard: View {
     let icon: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(color)
@@ -249,10 +261,13 @@ private struct RSVPMetricCard: View {
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(16)
+        .padding(12)
+        .frame(minWidth: 130, maxWidth: .infinity, alignment: .leading)
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
@@ -341,6 +356,7 @@ private struct ClientInviteSheet: View {
                     TextField("Search clients", text: $viewModel.searchText)
                         .textInputAutocapitalization(.words)
                 }
+                .listRowBackground(RSMSTheme.surfacePrimary)
 
                 Section("Available Clients") {
                     ForEach(viewModel.uninvitedClients(from: clients)) { client in
@@ -362,9 +378,12 @@ private struct ClientInviteSheet: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .listRowBackground(RSMSTheme.surfacePrimary)
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("Invite Clients")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -425,7 +444,10 @@ private struct EventCreationSheet: View {
                     Stepper("Capacity: \(capacity)", value: $capacity, in: 1...500)
                     TextField("Location", text: $location)
                 }
+                .listRowBackground(RSMSTheme.surfacePrimary)
             }
+            .scrollContentBackground(.hidden)
+            .background(RSMSTheme.background.ignoresSafeArea())
             .navigationTitle("New Event")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
