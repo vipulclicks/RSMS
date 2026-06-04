@@ -1130,11 +1130,9 @@ struct ProductDetailSheet: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .foregroundStyle(RSMSTheme.gold)
+                        Image(systemName: "chevron.left")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.gold)
                     }
                 }
                 ToolbarItem(placement: .principal) {
