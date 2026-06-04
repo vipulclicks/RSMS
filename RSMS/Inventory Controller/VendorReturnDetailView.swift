@@ -247,7 +247,7 @@ struct VendorReturnDetailView: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.product.name).font(.subheadline.weight(.semibold)).foregroundStyle(RSMSTheme.textPrimary).lineLimit(1)
-                Text("Reason: \(item.reason)")
+                Text("Reason: \(item.reason.rawValue)")
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
                 Text(item.product.sku).font(.caption2.monospaced()).foregroundStyle(RSMSTheme.textTertiary)

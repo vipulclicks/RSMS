@@ -108,7 +108,7 @@ struct SalesAssociateHomeView: View {
                 .tag(Optional(section))
             }
         }
-        .onChange(of: selectedSection) { _ in
+        .onChange(of: selectedSection) {
             navigationPath = NavigationPath()
         }
     }

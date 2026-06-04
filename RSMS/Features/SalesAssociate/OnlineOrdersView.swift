@@ -1105,14 +1105,17 @@ struct OnlineOrderDetailSheet: View {
                                     Text("Pickup Scheduled")
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.success)
-                                    Text(pickup, style: .date)
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(RSMSTheme.textPrimary)
-                                    + Text(" · ")
-                                        .foregroundStyle(RSMSTheme.textSecondary)
-                                    + Text(pickup, style: .time)
-                                        .font(.subheadline)
-                                        .foregroundStyle(RSMSTheme.textPrimary)
+                                    HStack(spacing: 0) {
+                                        Text(pickup, style: .date)
+                                            .font(.subheadline.weight(.medium))
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                        Text(" · ")
+                                            .font(.subheadline)
+                                            .foregroundStyle(RSMSTheme.textSecondary)
+                                        Text(pickup, style: .time)
+                                            .font(.subheadline)
+                                            .foregroundStyle(RSMSTheme.textPrimary)
+                                    }
                                 }
                             }
                             .padding(10)
