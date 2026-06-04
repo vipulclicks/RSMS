@@ -18,7 +18,6 @@ struct AppointmentRemoteSellingView: View {
 
     // Search and Filters
     @State private var searchText = ""
-    @State private var isSearchExpanded = false
     @State private var selectedStatusFilter: AppointmentStatus? = nil
     @State private var showPastAppointments = false
 
@@ -172,94 +171,45 @@ struct AppointmentRemoteSellingView: View {
                     }
                     .padding(.bottom, 40)
                 }
-            }
-        }
-        .navigationTitle("Appointments")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if isSearchExpanded {
-                    HStack(spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(RSMSTheme.textSecondary)
-                                .font(.system(size: 14))
-                            
-                            TextField("Search...", text: $searchText)
-                                .font(.system(size: 15))
-                                .foregroundStyle(RSMSTheme.textPrimary)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                            
-                            if !searchText.isEmpty {
-                                Button {
-                                    searchText = ""
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundStyle(RSMSTheme.textTertiary)
-                                        .font(.system(size: 14))
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(RSMSTheme.surfacePrimary, in: RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(RSMSTheme.border, lineWidth: 1))
-                        .frame(width: 240)
-                        
-                        Button("Cancel") {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                searchText = ""
-                                isSearchExpanded = false
-                            }
-                        }
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(RSMSTheme.primary)
-                    }
-                } else {
-                    HStack(spacing: 16) {
-                        Button {
-                            withAnimation(.easeIn(duration: 0.2)) {
-                                isSearchExpanded = true
-                            }
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(RSMSTheme.primary)
-                        }
-                        
-                        Button {
-                            showClientSelection = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(RSMSTheme.primary)
-                        }
-                        
-                        Button {
-                            showNotifications = true
-                        } label: {
-                            let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 18))
+                .navigationTitle("Appointments")
+                .navigationBarTitleDisplayMode(.large)
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search...")
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        HStack(spacing: 16) {
+                            Button {
+                                showClientSelection = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 18, weight: .semibold))
                                     .foregroundStyle(RSMSTheme.primary)
-                                
-                                if unreadCount > 0 {
-                                    Circle()
-                                        .fill(RSMSTheme.danger)
-                                        .frame(width: 8, height: 8)
-                                        .offset(x: 2, y: -2)
+                            }
+                            
+                            Button {
+                                showNotifications = true
+                            } label: {
+                                let unreadCount = appViewModel.dataStore.appNotifications.filter { $0.recipientId == appViewModel.currentUser?.id && !$0.isRead }.count
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: "bell")
+                                        .font(.system(size: 18))
+                                        .foregroundStyle(RSMSTheme.primary)
+                                    
+                                    if unreadCount > 0 {
+                                        Circle()
+                                            .fill(RSMSTheme.danger)
+                                            .frame(width: 8, height: 8)
+                                            .offset(x: 2, y: -2)
+                                    }
                                 }
                             }
-                        }
-                        
-                        Button {
-                            navigationPath.append("Profile")
-                        } label: {
-                            let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
-                                .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
-                            ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 30)
+                            
+                            Button {
+                                navigationPath.append("Profile")
+                            } label: {
+                                let initials = appViewModel.currentUser?.fullName.split(separator: " ").prefix(2)
+                                    .compactMap { $0.first.map(String.init) }.joined().uppercased() ?? ""
+                                ProfileAvatarView(avatarURL: appViewModel.currentUser?.avatarURL, initials: initials, size: 30)
+                            }
                         }
                     }
                 }
