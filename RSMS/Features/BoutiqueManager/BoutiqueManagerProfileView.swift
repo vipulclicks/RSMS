@@ -71,13 +71,13 @@ struct BoutiqueManagerProfileView: View {
                     .frame(width: 80, height: 80)
 
                 Text(initials)
-                    .font(.system(size: 28, weight: .semibold, design: .serif))
+                    .font(.system(.title, design: .serif).weight(.semibold))
                     .foregroundStyle(.white)
             }
 
             VStack(spacing: 4) {
                 Text(user.fullName)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
+                    .font(.system(.title2, design: .serif).weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
 
                 let employeeId = "EMP-\(user.id.uuidString.prefix(8).uppercased())"
@@ -125,7 +125,7 @@ struct BoutiqueManagerProfileView: View {
     private func personalInformationSection(user: UserProfile) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Personal Information")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(.body, design: .serif).weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
 
             VStack(spacing: 0) {
@@ -181,7 +181,7 @@ struct BoutiqueManagerProfileView: View {
     private func securitySettingsSection() -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Security")
-                .font(.system(size: 15, weight: .bold, design: .serif))
+                .font(.system(.body, design: .serif).weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
             
             NavigationLink(destination: MFASettingsView()) {

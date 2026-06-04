@@ -62,7 +62,7 @@ struct InventoryReceivingView: View {
                 } else {
                     VStack(spacing: 12) {
                         Image(systemName: "barcode.viewfinder")
-                            .font(.system(size: 40))
+                            .font(.largeTitle)
                             .foregroundStyle(RSMSTheme.gold.opacity(0.5))
                         Text("Camera scanner is unavailable on this device.")
                             .font(.subheadline.weight(.medium))
@@ -220,7 +220,7 @@ struct InventoryReceivingView: View {
                 }
                 Spacer()
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 28))
+                    .font(.title)
                     .foregroundStyle(RSMSTheme.success)
             }
 

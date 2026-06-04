@@ -11,6 +11,7 @@ struct SectionHeader: View {
             Text(title)
                 .font(.title2.weight(.bold))
                 .foregroundStyle(RSMSTheme.primaryDark)
+                .accessibilityAddTraits(.isHeader)
             if let subtitle {
                 Text(subtitle)
                     .font(.subheadline)

@@ -95,7 +95,7 @@ struct AssignGoalFormView: View {
                                     .foregroundStyle(RSMSTheme.gold)
                                 TextField("0", value: $viewModel.draftAmount, format: .number.precision(.fractionLength(0)))
                                     .keyboardType(.numberPad)
-                                    .font(.system(size: 48, weight: .medium))
+                                    .font(.system(.largeTitle, design: .default).weight(.medium))
                                     .foregroundStyle(RSMSTheme.gold)
                                     .multilineTextAlignment(.center)
                                     .fixedSize(horizontal: true, vertical: false)

@@ -14,7 +14,7 @@ enum RSMSTheme {
     private static let beige = Color("beige")
     private static let darkRed = Color("darkRed")
     private static let lightBrown = Color("lightBrown")
-    private static let magenta = Color("magenta")
+    private static let magenta = Color("rsms_magenta")
 
     // Backgrounds — Luxury Ivory & Beige
     static let background       = beige
@@ -60,4 +60,13 @@ enum RSMSTheme {
         colors: [magenta, magenta.opacity(0.85), primaryDark],
         startPoint: .leading, endPoint: .trailing
     )
+
+    // MARK: - Accessibility Helpers
+    static func bgOpacity(for contrast: ColorSchemeContrast, base: Double) -> Double {
+        return contrast == .increased ? min(base + 0.2, 1.0) : base
+    }
+    
+    static func borderOpacity(for contrast: ColorSchemeContrast, base: Double) -> Double {
+        return contrast == .increased ? min(base + 0.3, 1.0) : base
+    }
 }

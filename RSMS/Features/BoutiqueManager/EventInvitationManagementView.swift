@@ -12,6 +12,8 @@ struct EventInvitationManagementView: View {
     @State private var viewModel = EventInvitationViewModel()
     @State private var showInviteSheet = false
     @State private var showCreateEventSheet = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -34,17 +36,12 @@ struct EventInvitationManagementView: View {
                             attendeeList
                         }
                     }
-                    .padding(24)
+                    .padding(.horizontal, horizontalSizeClass == .compact ? 16 : 32)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationTitle("Client Events")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New Event", systemImage: "calendar.badge.plus") {
-                        showCreateEventSheet = true
-                    }
-                }
-            }
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showInviteSheet) {
                 ClientInviteSheet(viewModel: viewModel, clients: appVM.dataStore.clients)
             }
@@ -83,12 +80,38 @@ struct EventInvitationManagementView: View {
 
             Spacer()
 
-            Button("Invite Clients", systemImage: "paperplane.fill") {
-                showInviteSheet = true
+            HStack(spacing: 12) {
+                Button {
+                    showCreateEventSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.plus")
+                        Text("New Event")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.primaryDark)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(RSMSTheme.primaryDark.opacity(0.1))
+                    .clipShape(Capsule())
+                }
+
+                Button {
+                    showInviteSheet = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "paperplane.fill")
+                        Text("Invite Clients")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.cream)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(viewModel.selectedEvent == nil ? RSMSTheme.textTertiary : RSMSTheme.primaryDark)
+                    .clipShape(Capsule())
+                }
+                .disabled(viewModel.selectedEvent == nil)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(RSMSTheme.primaryDark)
-            .disabled(viewModel.selectedEvent == nil)
         }
     }
 
@@ -236,6 +259,10 @@ private struct EventSelectionCard: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(isSelected ? Color.clear : RSMSTheme.border, lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(event.type.rawValue) Event, \(event.title).")
+        .accessibilityValue(event.date.formatted(date: .abbreviated, time: .shortened))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -270,6 +297,8 @@ private struct RSVPMetricCard: View {
         .frame(minWidth: 130, maxWidth: .infinity, alignment: .leading)
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(value) \(title)")
     }
 }
 
@@ -400,6 +429,7 @@ private struct ClientInviteSheet: View {
                     .disabled(selectedClientIds.isEmpty || viewModel.isSending)
                 }
             }
+            .tint(RSMSTheme.primary)
         }
     }
 
@@ -475,6 +505,7 @@ private struct EventCreationSheet: View {
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+            .tint(RSMSTheme.primary)
         }
     }
 }

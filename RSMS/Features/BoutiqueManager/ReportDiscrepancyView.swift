@@ -12,6 +12,7 @@ struct ReportDiscrepancyView: View {
     @Bindable var viewModel: DiscrepancyReportViewModel
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showProductPicker = false
     @State private var showSuccessBanner = false
@@ -57,11 +58,11 @@ struct ReportDiscrepancyView: View {
             }
             .onChange(of: viewModel.didSubmitSuccessfully) { _, success in
                 if success {
-                    withAnimation(.spring(response: 0.4)) {
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.4)) {
                         showSuccessBanner = true
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                        withAnimation(.spring(response: 0.4)) {
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.4)) {
                             showSuccessBanner = false
                             viewModel.didSubmitSuccessfully = false
                         }
@@ -89,7 +90,7 @@ struct ReportDiscrepancyView: View {
                         // Search field
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 14))
+                                .font(.subheadline)
                                 .foregroundStyle(RSMSTheme.textTertiary)
                             TextField("Search by name, SKU, or category…", text: $viewModel.searchText)
                                 .font(.subheadline)
@@ -111,7 +112,7 @@ struct ReportDiscrepancyView: View {
                                     showProductPicker = false
                                 } label: {
                                     Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 16))
+                                        .font(.headline)
                                         .foregroundStyle(RSMSTheme.textTertiary)
                                 }
                             }
@@ -200,13 +201,13 @@ struct ReportDiscrepancyView: View {
                             ], spacing: 10) {
                                 ForEach(DiscrepancyReportViewModel.IssueType.allCases) { type in
                                     Button {
-                                        withAnimation(.spring(response: 0.25)) {
+                                        withAnimation(reduceMotion ? nil : .spring(response: 0.25)) {
                                             viewModel.issueType = type
                                         }
                                     } label: {
                                         HStack(spacing: 8) {
                                             Image(systemName: type.icon)
-                                                .font(.system(size: 13))
+                                                .font(.subheadline)
                                             Text(type.rawValue)
                                                 .font(.caption.weight(.semibold))
                                         }
@@ -249,7 +250,7 @@ struct ReportDiscrepancyView: View {
                 }
             }
             .padding(20)
-            .animation(.easeInOut(duration: 0.25), value: viewModel.selectedProduct != nil)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: viewModel.selectedProduct != nil)
         }
     }
 
@@ -263,7 +264,7 @@ struct ReportDiscrepancyView: View {
                 VStack(spacing: 16) {
                     Spacer().frame(height: 60)
                     Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 44))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary.opacity(0.5))
                     Text("No Reports Yet")
                         .font(.headline.weight(.semibold))
@@ -334,7 +335,7 @@ struct ReportDiscrepancyView: View {
                     .fill(RSMSTheme.gold.opacity(0.15))
                     .frame(width: 28, height: 28)
                 Text("\(step)")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.subheadline.weight(.bold))
                     .foregroundStyle(RSMSTheme.gold)
             }
             Text(title)
@@ -342,7 +343,7 @@ struct ReportDiscrepancyView: View {
                 .foregroundStyle(RSMSTheme.textPrimary)
             Spacer()
             Image(systemName: icon)
-                .font(.system(size: 13))
+                .font(.subheadline)
                 .foregroundStyle(RSMSTheme.textTertiary)
         }
     }
@@ -378,7 +379,7 @@ struct ReportDiscrepancyView: View {
                     .fill(RSMSTheme.gold.opacity(0.1))
                     .frame(width: 40, height: 40)
                 Image(systemName: "shippingbox.fill")
-                    .font(.system(size: 14))
+                    .font(.subheadline)
                     .foregroundStyle(RSMSTheme.gold)
             }
 
@@ -407,6 +408,9 @@ struct ReportDiscrepancyView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(product.name), SKU \(product.sku).")
+        .accessibilityValue("Category: \(product.category)")
     }
 
     // MARK: Selected Product Card
@@ -417,7 +421,7 @@ struct ReportDiscrepancyView: View {
                     .fill(RSMSTheme.success.opacity(0.1))
                     .frame(width: 42, height: 42)
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.title3)
                     .foregroundStyle(RSMSTheme.success)
             }
 
@@ -438,9 +442,10 @@ struct ReportDiscrepancyView: View {
                 showProductPicker = false
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
+                    .font(.title3)
                     .foregroundStyle(RSMSTheme.textTertiary)
             }
+            .accessibilityLabel("Remove Selected Product")
         }
         .padding(12)
         .background(RSMSTheme.success.opacity(0.06))
@@ -460,7 +465,7 @@ struct ReportDiscrepancyView: View {
 
         return HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(.title3)
                 .foregroundStyle(color)
             Text(label)
                 .font(.subheadline.weight(.bold))
@@ -519,7 +524,7 @@ struct ReportDiscrepancyView: View {
     private var successBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 18))
+                .font(.title3)
                 .foregroundStyle(.white)
             Text("Report submitted successfully!")
                 .font(.subheadline.weight(.semibold))
@@ -540,7 +545,7 @@ struct ReportDiscrepancyView: View {
     private func historyStat(value: String, label: String, color: Color) -> some View {
         VStack(spacing: 6) {
             Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.title2.weight(.bold))
                 .foregroundStyle(color)
             Text(label)
                 .font(.caption)
@@ -564,7 +569,7 @@ struct ReportDiscrepancyView: View {
                     .fill(statusColor(report.status).opacity(0.1))
                     .frame(width: 44, height: 44)
                 Image(systemName: statusIcon(report.status))
-                    .font(.system(size: 16))
+                    .font(.headline)
                     .foregroundStyle(statusColor(report.status))
             }
 
@@ -603,6 +608,9 @@ struct ReportDiscrepancyView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(RSMSTheme.border, lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(viewModel.productName(for: report.productId)), SKU \(viewModel.productSKU(for: report.productId)).")
+        .accessibilityValue("Variance: \(report.variance > 0 ? "+" : "")\(report.variance). Status: \(report.status.rawValue). \(viewModel.formattedDate(report.reportedAt))")
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -629,7 +637,7 @@ struct ReportDiscrepancyView: View {
 
     private func statusBadge(_ status: VarianceStatus) -> some View {
         Text(status.rawValue.replacingOccurrences(of: "_", with: " ").capitalized)
-            .font(.system(size: 10, weight: .semibold))
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(statusColor(status))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)

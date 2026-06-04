@@ -72,7 +72,7 @@ struct StaffProfileDetailView: View {
                     .frame(width: 80, height: 80)
                 
                 Text(String(viewModel.staff.fullName.prefix(1)))
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(RSMSTheme.gold)
             }
             
@@ -208,7 +208,7 @@ struct StaffProfileDetailView: View {
                             .annotation(position: .top) {
                                 if dayData.amount > 0 && isSelected {
                                     Text(dayData.amount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
-                                        .font(.system(size: 10, weight: .bold))
+                                        .font(.caption2.weight(.bold))
                                         .foregroundStyle(RSMSTheme.textSecondary)
                                 }
                             }

@@ -23,6 +23,8 @@ struct StoreDashboardView: View {
     @State private var selectedSalesDate: Date? = nil
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     private var kpiColumns: [GridItem] {
         if horizontalSizeClass == .compact {
@@ -176,7 +178,7 @@ struct StoreDashboardView: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: "bell")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(RSMSTheme.textPrimary)
                 
                 if !dashboardVM.lowStockAlerts.isEmpty || pendingApprovalsCount > 0 {
@@ -184,7 +186,7 @@ struct StoreDashboardView: View {
                     let displayText = count > 99 ? "99+" : "\(count)"
                     
                     Text(displayText)
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(RSMSTheme.cream)
                         .padding(.horizontal, count >= 10 ? 4 : 0)
                         .frame(
@@ -194,11 +196,12 @@ struct StoreDashboardView: View {
                         .background(RSMSTheme.danger)
                         .clipShape(Capsule())
                         .offset(x: 2, y: -6)
-                        .transition(.scale)
+                        .transition(reduceMotion ? .opacity : .scale)
                 }
             }
-            .animation(.spring(response: 0.3), value: dashboardVM.lowStockAlerts.count + pendingApprovalsCount)
+            .animation(reduceMotion ? .none : .spring(response: 0.3), value: dashboardVM.lowStockAlerts.count + pendingApprovalsCount)
         }
+        .accessibilityLabel("Notifications")
     }
     
     private var pendingApprovalsCount: Int {
@@ -217,16 +220,17 @@ struct StoreDashboardView: View {
                 
                 if let user = appVM.currentUser {
                     Text(getInitials(from: user.fullName))
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(RSMSTheme.cream)
                 } else {
                     Image(systemName: "person.fill")
-                        .font(.system(size: 14))
+                        .font(.subheadline)
                         .foregroundStyle(RSMSTheme.cream)
                 }
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Profile")
     }
     
     private func getInitials(from name: String) -> String {
@@ -347,7 +351,7 @@ struct StoreDashboardView: View {
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "chart.pie")
-                        .font(.system(size: 36))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.textTertiary)
                     Text("No \(dashboardVM.selectedPeriod.rawValue) sales yet")
                         .font(.subheadline.weight(.medium))
@@ -374,7 +378,7 @@ struct StoreDashboardView: View {
                         .font(.headline)
                         .foregroundStyle(RSMSTheme.textSecondary)
                     Text(dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount))
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.title.weight(.bold))
                         .foregroundStyle(RSMSTheme.primaryDark)
                 }
                 Spacer()
@@ -387,7 +391,7 @@ struct StoreDashboardView: View {
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(RSMSTheme.success.opacity(0.15))
+                    .background(RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.15)))
                     .foregroundStyle(RSMSTheme.success)
                     .clipShape(Capsule())
                 } else if dashboardVM.salesIncrementPercentage < 0 {
@@ -398,7 +402,7 @@ struct StoreDashboardView: View {
                     .font(.caption.weight(.bold))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(RSMSTheme.danger.opacity(0.15))
+                    .background(RSMSTheme.danger.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.15)))
                     .foregroundStyle(RSMSTheme.danger)
                     .clipShape(Capsule())
                 }
@@ -437,17 +441,17 @@ struct StoreDashboardView: View {
                     VStack(spacing: 4) {
                         if dashboardVM.salesTarget > 0 {
                             Text("\(Int(dashboardVM.salesProgress * 100))%")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             Text("of target")
-                                .font(.system(size: 11))
+                                .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         } else {
                             Text("0%")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .font(.title.weight(.bold))
                                 .foregroundStyle(RSMSTheme.textPrimary)
                             Text("No Target")
-                                .font(.system(size: 11))
+                                .font(.caption)
                                 .foregroundStyle(RSMSTheme.textSecondary)
                         }
                     }
@@ -474,7 +478,7 @@ struct StoreDashboardView: View {
         VStack(alignment: .center, spacing: 16) {
             HStack(alignment: .top) {
                 Text(dashboardVM.formatCurrency(dashboardVM.periodAchievedAmount))
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(RSMSTheme.primaryDark)
                 
                 Spacer()
@@ -484,10 +488,10 @@ struct StoreDashboardView: View {
                         Image(systemName: "arrow.up.right")
                         Text(String(format: "%.1f%%", dashboardVM.salesIncrementPercentage))
                     }
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(RSMSTheme.success.opacity(0.15))
+                    .background(RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.15)))
                     .foregroundStyle(RSMSTheme.success)
                     .clipShape(Capsule())
                 } else if dashboardVM.salesIncrementPercentage < 0 {
@@ -495,10 +499,10 @@ struct StoreDashboardView: View {
                         Image(systemName: "arrow.down.right")
                         Text(String(format: "%.1f%%", abs(dashboardVM.salesIncrementPercentage)))
                     }
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(RSMSTheme.danger.opacity(0.15))
+                    .background(RSMSTheme.danger.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.15)))
                     .foregroundStyle(RSMSTheme.danger)
                     .clipShape(Capsule())
                 }
@@ -525,7 +529,7 @@ struct StoreDashboardView: View {
                         .annotation(position: .top) {
                             if selectedSalesDate != data.date && data.amount > 0 {
                                 Text(dashboardVM.formatCurrency(data.amount))
-                                    .font(.system(size: 9))
+                                    .font(.caption2)
                                     .foregroundStyle(RSMSTheme.textSecondary)
                             }
                         }
@@ -552,16 +556,16 @@ struct StoreDashboardView: View {
                             .annotation(position: .top, spacing: 10, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                                 VStack {
                                     Text(dashboardVM.formatCurrency(data.amount))
-                                        .font(.system(size: 14, weight: .bold))
+                                        .font(.subheadline.weight(.bold))
                                         .foregroundStyle(RSMSTheme.primaryDark)
                                     if dashboardVM.selectedPeriod == .monthly {
                                         Text(data.date, format: .dateTime.month())
-                                            .font(.system(size: 10))
+                                            .font(.caption2)
                                             .foregroundStyle(RSMSTheme.textSecondary)
                                     } else {
                                         if let endDate = Calendar.current.date(byAdding: .day, value: 6, to: data.date) {
                                             Text("\(data.date.formatted(.dateTime.day().month())) - \(endDate.formatted(.dateTime.day().month()))")
-                                                .font(.system(size: 10))
+                                                .font(.caption2)
                                                 .foregroundStyle(RSMSTheme.textSecondary)
                                         }
                                     }
@@ -571,7 +575,7 @@ struct StoreDashboardView: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(RSMSTheme.surfacePrimary)
-                                        .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 2)
+                                        .shadow(color: .black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.15)), radius: 5, x: 0, y: 2)
                                 )
                             }
                         }
@@ -585,12 +589,12 @@ struct StoreDashboardView: View {
                             AxisValueLabel(anchor: .top) {
                                 if dashboardVM.selectedPeriod == .monthly {
                                     Text(date, format: .dateTime.month(.abbreviated))
-                                        .font(.system(size: 10))
+                                        .font(.caption2)
                                         .foregroundStyle(RSMSTheme.textSecondary)
                                 } else {
                                     if let endDate = Calendar.current.date(byAdding: .day, value: 6, to: date) {
                                         Text("\(date.formatted(.dateTime.day().month(.abbreviated)))-\n\(endDate.formatted(.dateTime.day().month(.abbreviated)))")
-                                            .font(.system(size: 8))
+                                            .font(.caption2)
                                             .foregroundStyle(RSMSTheme.textSecondary)
                                             .multilineTextAlignment(.center)
                                     }
@@ -662,7 +666,7 @@ struct StoreDashboardView: View {
                         .fill(RSMSTheme.primaryGradient)
                         .frame(width: 44, height: 44)
                     Text(String(progress.associateName.prefix(1)))
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(RSMSTheme.cream)
                 }
                 Text(progress.associateName)
@@ -702,14 +706,14 @@ struct StoreDashboardView: View {
                 VStack(spacing: 4) {
                     if let target = progress.targetAmount, target > 0 {
                         Text("\(Int(progress.progressPercentage * 100))%")
-                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .font(.largeTitle.weight(.bold))
                             .foregroundStyle(RSMSTheme.primaryDark)
                         Text("Achieved")
                             .font(.caption)
                             .foregroundStyle(RSMSTheme.textSecondary)
                     } else {
                         Text("0%")
-                            .font(.system(size: 38, weight: .bold, design: .rounded))
+                            .font(.largeTitle.weight(.bold))
                             .foregroundStyle(RSMSTheme.primaryDark)
                         Text("No Target")
                             .font(.caption)
@@ -778,7 +782,7 @@ struct StoreDashboardView: View {
                     NavigationLink(destination: StaffView()) {
                         VStack(spacing: 12) {
                             Image(systemName: "arrow.right.circle.fill")
-                                .font(.system(size: 28))
+                                .font(.title)
                                 .foregroundStyle(RSMSTheme.primaryDark)
                             Text("See All")
                                 .font(.subheadline.weight(.semibold))
@@ -822,21 +826,21 @@ struct StoreDashboardView: View {
                         .rotationEffect(.degrees(-90))
                         
                     Text(String(name.prefix(1)))
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.primaryDark)
                 }
                 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(name)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.headline)
                         .foregroundStyle(RSMSTheme.textPrimary)
                         .lineLimit(1)
                     
                     HStack(spacing: 6) {
                         Image(systemName: "clock")
-                            .font(.system(size: 12))
+                            .font(.caption)
                         Text("\(shift.startTime) – \(shift.endTime)")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.subheadline.weight(.medium))
                     }
                     .foregroundStyle(RSMSTheme.textSecondary)
                 }
@@ -848,7 +852,7 @@ struct StoreDashboardView: View {
             // Role badge + Status
             HStack {
                 Text(shift.role.replacingOccurrences(of: "_", with: " ").capitalized)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .tracking(0.8)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -859,7 +863,7 @@ struct StoreDashboardView: View {
                 Spacer()
                 
                 Text(status)
-                    .font(.system(size: 10, weight: .black))
+                    .font(.caption2.weight(.black))
                     .tracking(1.2)
                     .foregroundStyle(statusColor(for: status))
             }
@@ -985,6 +989,7 @@ struct TodayAppointmentsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorSchemeContrast) private var contrast
     
     var body: some View {
         ScrollView {

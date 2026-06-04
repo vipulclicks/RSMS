@@ -10,6 +10,8 @@ struct KPICard: View {
     var trendColor: Color = RSMSTheme.success
     var iconColor: Color = RSMSTheme.primary
 
+    @ScaledMetric(relativeTo: .title2) private var cardHeight: CGFloat = 128
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center) {
@@ -29,7 +31,7 @@ struct KPICard: View {
             Spacer(minLength: 0)
             
             Text(value)
-                .font(.system(size: 26, weight: .bold))
+                .font(.title2.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
@@ -42,7 +44,7 @@ struct KPICard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 128)
+        .frame(minHeight: cardHeight)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(RSMSTheme.surfacePrimary)
@@ -52,6 +54,7 @@ struct KPICard: View {
                 )
         )
         .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -4,6 +4,8 @@ struct CycleCountSectionView: View {
     @Bindable var cycleCountVM: CycleCountViewModel
     @Environment(AppViewModel.self) private var appVM
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var showCheckedItems = false
     @State private var showDiscrepancySheet = false
@@ -124,7 +126,7 @@ struct CycleCountSectionView: View {
             Spacer(minLength: 0)
             
             Text(value)
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.title2.weight(.bold))
                 .foregroundStyle(RSMSTheme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
@@ -144,9 +146,12 @@ struct CycleCountSectionView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(color.opacity(0.2), lineWidth: 1)
+                .stroke(color.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.2)), lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.05), radius: 16, x: 0, y: 6)
+        .shadow(color: .black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.05)), radius: 16, x: 0, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value)
     }
 
     // MARK: Cycle Count Pending List
@@ -183,12 +188,12 @@ struct CycleCountSectionView: View {
             .background(
                 RoundedRectangle(cornerRadius: 20)
                     .fill(RSMSTheme.surfacePrimary)
-                    .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.03)), radius: 12, x: 0, y: 6)
             )
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(RSMSTheme.warning.opacity(0.2), lineWidth: 1)
+                    .stroke(RSMSTheme.warning.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.2)), lineWidth: 1)
             )
         }
     }
@@ -197,10 +202,10 @@ struct CycleCountSectionView: View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(RSMSTheme.warning.opacity(0.1))
+                    .fill(RSMSTheme.warning.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)))
                     .frame(width: 44, height: 44)
                 Image(systemName: "clock.badge.exclamationmark.fill")
-                    .font(.system(size: 17))
+                    .font(.body)
                     .foregroundStyle(RSMSTheme.warning)
             }
 
@@ -238,6 +243,9 @@ struct CycleCountSectionView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pending check for \(item.product.name), SKU \(item.product.sku). Expected quantity: \(item.expectedQty).")
+        .accessibilityValue(item.lastChecked != nil ? "Last checked \(item.lastChecked!.formatted(date: .abbreviated, time: .omitted))" : "Never verified")
     }
 
     // MARK: Cycle Count All Clear
@@ -260,12 +268,14 @@ struct CycleCountSectionView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(RSMSTheme.surfacePrimary)
-                .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
+                .shadow(color: Color.black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.03)), radius: 12, x: 0, y: 6)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(RSMSTheme.success.opacity(0.25), lineWidth: 1)
+                .stroke(RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.25)), lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Status: All products verified. No cycle counts overdue.")
     }
 
     // MARK: Cycle Count Checked Section
@@ -293,10 +303,10 @@ struct CycleCountSectionView: View {
                         HStack(spacing: 14) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(RSMSTheme.success.opacity(0.1))
+                                    .fill(RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)))
                                     .frame(width: 44, height: 44)
                                 Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 17))
+                                    .font(.body)
                                     .foregroundStyle(RSMSTheme.success)
                             }
 
@@ -334,7 +344,7 @@ struct CycleCountSectionView: View {
 
                 if !showCheckedItems && cycleCountVM.checkedItems.count > 2 {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                             showCheckedItems = true
                         }
                     } label: {
@@ -347,7 +357,7 @@ struct CycleCountSectionView: View {
                     .buttonStyle(.plain)
                 } else if showCheckedItems && cycleCountVM.checkedItems.count > 2 {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                             showCheckedItems = false
                         }
                     } label: {
@@ -363,12 +373,12 @@ struct CycleCountSectionView: View {
             .background(
                 RoundedRectangle(cornerRadius: 20)
                     .fill(RSMSTheme.surfacePrimary)
-                    .shadow(color: Color.black.opacity(0.03), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.black.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.03)), radius: 12, x: 0, y: 6)
             )
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .stroke(RSMSTheme.success.opacity(0.2), lineWidth: 1)
+                    .stroke(RSMSTheme.success.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.2)), lineWidth: 1)
             )
         }
     }
@@ -382,10 +392,10 @@ struct CycleCountSectionView: View {
                     VStack(spacing: 6) {
                         ZStack {
                             Circle()
-                                .fill(RSMSTheme.gold.opacity(0.12))
+                                .fill(RSMSTheme.gold.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.12)))
                                 .frame(width: 64, height: 64)
                             Image(systemName: "barcode.viewfinder")
-                                .font(.system(size: 28))
+                                .font(.title)
                                 .foregroundStyle(RSMSTheme.gold)
                         }
                         Text(item.product.name)
@@ -472,7 +482,7 @@ struct CycleCountSectionView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background((diff > 0 ? RSMSTheme.success : RSMSTheme.danger).opacity(0.08))
+                        .background((diff > 0 ? RSMSTheme.success : RSMSTheme.danger).opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.08)))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
@@ -543,10 +553,10 @@ struct CycleCountSectionView: View {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(RSMSTheme.gold.opacity(0.1))
+                                            .fill(RSMSTheme.gold.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)))
                                             .frame(width: 40, height: 40)
                                         Image(systemName: "shippingbox.fill")
-                                            .font(.system(size: 15))
+                                            .font(.body)
                                             .foregroundStyle(RSMSTheme.gold)
                                     }
                                     
@@ -576,6 +586,9 @@ struct CycleCountSectionView: View {
                                         .foregroundStyle(RSMSTheme.textTertiary)
                                         .padding(.leading, 4)
                                 }
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("\(item.product.name), SKU \(item.product.sku)")
+                                .accessibilityValue("\(item.expectedQty) units expected")
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(RSMSTheme.surfacePrimary)
@@ -634,10 +647,10 @@ struct CycleCountSectionView: View {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(RSMSTheme.warning.opacity(0.1))
+                                            .fill(RSMSTheme.warning.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)))
                                             .frame(width: 40, height: 40)
                                         Image(systemName: "clock.badge.exclamationmark.fill")
-                                            .font(.system(size: 15))
+                                            .font(.body)
                                             .foregroundStyle(RSMSTheme.warning)
                                     }
                                     
@@ -673,6 +686,9 @@ struct CycleCountSectionView: View {
                                         .font(.caption.weight(.semibold))
                                         .foregroundStyle(RSMSTheme.textTertiary)
                                 }
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("Pending check for \(item.product.name), SKU \(item.product.sku). Expected quantity: \(item.expectedQty).")
+                                .accessibilityValue(item.lastChecked != nil ? "Last checked \(item.lastChecked!.formatted(date: .abbreviated, time: .omitted))" : "Never verified")
                             }
                             .listRowBackground(RSMSTheme.surfacePrimary)
                         }
@@ -721,18 +737,22 @@ struct CycleCountSectionView: View {
                                     selectedProductToView = product
                                 }
                             } label: {
+                                let product = appVM.dataStore.products.first(where: { $0.id == variance.productId })
+                                let diff = variance.actualQty - variance.expectedQty
+                                let isExcess = diff > 0
+                                
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(RSMSTheme.danger.opacity(0.1))
+                                            .fill(RSMSTheme.danger.opacity(RSMSTheme.bgOpacity(for: contrast, base: 0.1)))
                                             .frame(width: 40, height: 40)
                                         Image(systemName: "exclamationmark.triangle.fill")
-                                            .font(.system(size: 15))
+                                            .font(.body)
                                             .foregroundStyle(RSMSTheme.danger)
                                     }
                                     
                                     VStack(alignment: .leading, spacing: 3) {
-                                        if let product = appVM.dataStore.products.first(where: { $0.id == variance.productId }) {
+                                        if let product = product {
                                             Text(product.name)
                                                 .font(.subheadline.weight(.semibold))
                                                 .foregroundStyle(RSMSTheme.textPrimary)
@@ -756,8 +776,6 @@ struct CycleCountSectionView: View {
                                     Spacer()
                                     
                                     VStack(alignment: .trailing, spacing: 3) {
-                                        let diff = variance.actualQty - variance.expectedQty
-                                        let isExcess = diff > 0
                                         Text("\(isExcess ? "+" : "")\(diff)")
                                             .font(.headline.weight(.bold))
                                             .foregroundStyle(isExcess ? RSMSTheme.warning : RSMSTheme.danger)
@@ -772,6 +790,9 @@ struct CycleCountSectionView: View {
                                         .foregroundStyle(RSMSTheme.textTertiary)
                                         .padding(.leading, 4)
                                 }
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel("\(product?.name ?? "Unknown Product"). Reported \(variance.reportedAt.formatted(date: .abbreviated, time: .shortened)).")
+                                .accessibilityValue("\(isExcess ? "Excess" : "Shortage") of \(abs(diff)) units")
                             }
                             .buttonStyle(.plain)
                             .listRowBackground(RSMSTheme.surfacePrimary)

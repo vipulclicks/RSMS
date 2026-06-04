@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CommissionManagementView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var viewModel = CommissionManagementViewModel()
     @State private var selectedStaffForCommission: RankedAssociate? = nil
@@ -68,7 +69,7 @@ struct CommissionManagementView: View {
             HStack(spacing: 8) {
                 ForEach([GoalPeriod.weekly, .monthly], id: \.self) { period in
                     Button {
-                        withAnimation(.snappy) {
+                        withAnimation(reduceMotion ? nil : .snappy) {
                             viewModel.selectedPeriod = period
                             viewModel.recompute(dataStore: appVM.dataStore)
                         }
@@ -210,7 +211,7 @@ struct CommissionManagementView: View {
                 
                 if associate.rank <= 3 {
                     Image(systemName: rankIcon(associate.rank))
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(rankColor(associate.rank))
                 } else {
                     Text("#\(associate.rank)")

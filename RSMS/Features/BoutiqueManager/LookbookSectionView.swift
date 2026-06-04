@@ -41,7 +41,7 @@ struct LookbookSectionView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 10) {
                         Image(systemName: "book.pages.fill")
-                            .font(.system(size: 18))
+                            .font(.title3)
                             .foregroundStyle(RSMSTheme.primary)
                         Text("Digital Lookbooks")
                             .font(.title3.weight(.semibold))
@@ -60,7 +60,7 @@ struct LookbookSectionView: View {
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "square.and.arrow.up.fill")
-                            .font(.system(size: 13))
+                            .font(.subheadline)
                         Text("Upload PDF")
                             .font(.caption.weight(.semibold))
                     }
@@ -75,7 +75,7 @@ struct LookbookSectionView: View {
             // MARK: - Search
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14))
+                    .font(.subheadline)
                     .foregroundStyle(RSMSTheme.textTertiary)
 
                 TextField("Search lookbooks...", text: Bindable(lookbookVM).searchText)
@@ -88,7 +88,7 @@ struct LookbookSectionView: View {
                         lookbookVM.searchText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.subheadline)
                             .foregroundStyle(RSMSTheme.textTertiary)
                     }
                 }
@@ -122,7 +122,7 @@ struct LookbookSectionView: View {
             } else if let error = lookbookVM.errorMessage {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 32))
+                        .font(.title)
                         .foregroundStyle(RSMSTheme.warning)
                     Text("Something went wrong")
                         .font(.subheadline.weight(.medium))
@@ -202,7 +202,7 @@ struct LookbookSectionView: View {
                 RSMSTheme.surfaceTertiary
                 VStack(spacing: 12) {
                     Image(systemName: "doc.richtext.fill")
-                        .font(.system(size: 44))
+                        .font(.largeTitle)
                         .foregroundStyle(RSMSTheme.primary.opacity(0.8))
                 }
                 
@@ -220,14 +220,14 @@ struct LookbookSectionView: View {
             // Info
             VStack(alignment: .leading, spacing: 8) {
                 Text(lookbook.title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.body.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
                     .lineLimit(2)
 
                 // Date
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 10))
+                        .font(.caption2)
                     Text(lookbookVM.formattedDate(lookbook.createdAt))
                         .font(.caption2)
                 }
@@ -249,7 +249,7 @@ struct LookbookSectionView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 40))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text("No Lookbooks Found")
                 .font(.subheadline.weight(.semibold))

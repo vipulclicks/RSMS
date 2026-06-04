@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ApprovalDashboardView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     @State private var selectedTab: Int = 0 // 0: Pending, 1: Processed (Approved/Rejected)
     
@@ -70,7 +71,7 @@ struct ApprovalDashboardView: View {
     
     private func tabButton(title: String, icon: String, tab: Int) -> some View {
         Button {
-            withAnimation { selectedTab = tab }
+            withAnimation(reduceMotion ? nil : .default) { selectedTab = tab }
         } label: {
             HStack {
                 Image(systemName: icon)
@@ -88,7 +89,7 @@ struct ApprovalDashboardView: View {
     private func emptyState(title: String, subtitle: String, icon: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 40))
+                .font(.largeTitle)
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text(title)
                 .font(.headline)
@@ -158,6 +159,9 @@ struct ApprovalRequestCard: View {
         .background(RSMSTheme.surfacePrimary)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Discount Request for \(appVM.dataStore.clientName(for: request.clientId)). Requested by \(appVM.dataStore.userName(for: request.associateId)).")
+        .accessibilityValue("Status: \(request.status.rawValue). Discount: \(request.discountType == .percentage ? "\(Int(request.discountValue))%" : "₹\(Int(request.discountValue))")")
     }
     
     private var statusColor: Color {

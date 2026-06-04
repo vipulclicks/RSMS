@@ -11,6 +11,7 @@ import SwiftUI
 
 struct ShiftMonitorView: View {
     @Environment(AppViewModel.self) private var appVM
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var vm = ShiftManagementViewModel()
     @State private var showAddSheet = false
     @State private var shiftToEdit: StaffShift? = nil
@@ -106,15 +107,15 @@ struct ShiftMonitorView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.headline)
                     .foregroundStyle(highlight)
                 Spacer()
                 Text("\(count)")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.title.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
             }
             Text(label.uppercased())
-                .font(.system(size: 11, weight: .bold))
+                .font(.caption.weight(.bold))
                 .tracking(1.2)
                 .foregroundStyle(RSMSTheme.textSecondary)
                 .lineLimit(1)
@@ -126,6 +127,8 @@ struct ShiftMonitorView: View {
                 .fill(RSMSTheme.surfacePrimary)
                 .shadow(color: RSMSTheme.border, radius: 15, x: 0, y: 5)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(count) \(label) shifts")
     }
 
     // MARK: - Filter Section
@@ -146,13 +149,13 @@ struct ShiftMonitorView: View {
     private func statusTab(title: String, status: ShiftStatus?) -> some View {
         let isSelected = (selectedStatus == status)
         return Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7)) {
                 selectedStatus = status
             }
         } label: {
             VStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 16, weight: isSelected ? .bold : .medium))
+                    .font(isSelected ? .headline : .subheadline.weight(.medium))
                     .foregroundStyle(isSelected ? RSMSTheme.textPrimary : RSMSTheme.textTertiary)
                 
                 if isSelected {
@@ -200,7 +203,7 @@ struct ShiftMonitorView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "calendar.badge.minus")
-                .font(.system(size: 48, weight: .light))
+                .font(.largeTitle.weight(.light))
                 .foregroundStyle(RSMSTheme.textTertiary)
             Text("No Shifts Found")
                 .font(.title3.weight(.semibold))
@@ -267,7 +270,7 @@ struct ShiftCardView: View {
                         .rotationEffect(.degrees(-90))
                         
                     Text(String(name.prefix(1)))
-                        .font(.system(size: 24, weight: .bold))
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(RSMSTheme.primaryDark)
                 }
 
@@ -275,13 +278,13 @@ struct ShiftCardView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text(name)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.title3.weight(.bold))
                             .foregroundStyle(RSMSTheme.textPrimary)
                         
                         Spacer()
                         
                         Text(shift.role.replacingOccurrences(of: "_", with: " ").capitalized)
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.caption.weight(.bold))
                             .tracking(1)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
@@ -295,13 +298,13 @@ struct ShiftCardView: View {
                             Image(systemName: "clock")
                             Text("\(shift.startTime) – \(shift.endTime)")
                         }
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(RSMSTheme.textSecondary)
                         
                         Spacer()
                         
                         Text(status.rawValue.uppercased())
-                            .font(.system(size: 11, weight: .black))
+                            .font(.caption.weight(.black))
                             .tracking(1.5)
                             .foregroundStyle(statusColor(for: status))
                     }
@@ -335,7 +338,7 @@ struct ShiftCardView: View {
                     }
                 } label: {
                     Text("Remove")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(RSMSTheme.danger)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
