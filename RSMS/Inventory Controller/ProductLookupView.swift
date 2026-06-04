@@ -81,16 +81,7 @@ struct ProductLookupView: View {
         .navigationTitle("Lookup & Stock In")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if selectedTab == .productLookup {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showScanner.toggle()
-                    } label: {
-                        Image(systemName: "barcode.viewfinder")
-                            .foregroundStyle(RSMSTheme.gold)
-                    }
-                }
-            } else {
+            if selectedTab == .asnMatching {
                 // ASN back button when in review state
                 if asnVM.state == .matched {
                     ToolbarItem(placement: .topBarLeading) {
@@ -206,6 +197,22 @@ struct ProductLookupView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 headerSection
+                
+                Button {
+                    showScanner = true
+                } label: {
+                    HStack {
+                        Image(systemName: "barcode.viewfinder")
+                        Text("Scan to Find")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RSMSTheme.background)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(RSMSTheme.gold)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
                 kpiSection
                 searchBar
                 productList
@@ -1043,6 +1050,22 @@ struct ProductDetailSheet: View {
                         .background(RSMSTheme.surfacePrimary)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(RSMSTheme.border, lineWidth: 1))
+
+                        // Authenticity Certificate Action
+                        NavigationLink {
+                            AuthCertificateGeneratorView(preselectedProduct: product)
+                        } label: {
+                            HStack {
+                                Text("Generate Authenticity Certificate")
+                                    .font(.headline)
+                            }
+                            .foregroundStyle(RSMSTheme.background)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(RSMSTheme.gold)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.top, 8)
 
                         Spacer(minLength: 40)
                     }

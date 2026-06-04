@@ -18,7 +18,7 @@ struct LoanerProductManagementView: View {
                     .padding()
                 }
             }
-            .navigationTitle("Loaner Management")
+            .navigationTitle("Loaner Product Management")
             .navigationBarTitleDisplayMode(.inline)
             .task {
                 if let storeId = appViewModel.currentStoreId {
@@ -41,15 +41,9 @@ struct LoanerProductManagementView: View {
     // MARK: - Header
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
                 Text("Loaner Product Management")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(RSMSTheme.textPrimary)
-                
-                Text(Date().formatted(date: .abbreviated, time: .shortened))
-                    .font(.subheadline)
-                    .foregroundStyle(RSMSTheme.textTertiary)
-            }
             
             Spacer()
             
@@ -61,7 +55,7 @@ struct LoanerProductManagementView: View {
                     Text("Assign Loaner")
                 }
                 .font(.subheadline.bold())
-                .foregroundStyle(.white)
+                .foregroundStyle(RSMSTheme.cream)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(RSMSTheme.primary)

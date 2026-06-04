@@ -46,11 +46,6 @@ struct ServiceCenterTrackingView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(Date().formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(RSMSTheme.textTertiary)
-                    .textCase(.uppercase)
-                
                 Text("Service Center Tracking")
                     .font(.title2.bold())
                     .foregroundStyle(RSMSTheme.textPrimary)
@@ -61,16 +56,16 @@ struct ServiceCenterTrackingView: View {
             Button {
                 viewModel.isShowingNewRequestModal = true
             } label: {
-                HStack {
-                    Image(systemName: "plus")
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
                     Text("New Service Request")
-                        .font(.subheadline.bold())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .font(.subheadline.bold())
                 .foregroundStyle(RSMSTheme.cream)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 .background(RSMSTheme.primary)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipShape(Capsule())
                 .shadow(color: RSMSTheme.primary.opacity(0.3), radius: 8, x: 0, y: 4)
             }
         }

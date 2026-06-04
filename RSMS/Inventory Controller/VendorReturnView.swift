@@ -51,27 +51,7 @@ struct VendorReturnView: View {
         }
         .navigationTitle("Vendor Returns")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    vm.resetForm()
-                    selectedPhotoItem = nil
-                    selectedDamageImage = nil
-                    vm.showCreateSheet = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "shippingbox.and.arrow.backward.fill")
-                        Text("New Return")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.background)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(RSMSTheme.gold)
-                    .clipShape(Capsule())
-                }
-            }
-        }
+
         .sheet(isPresented: $vm.showCreateSheet) {
             createReturnSheet
         }
@@ -336,7 +316,12 @@ struct VendorReturnView: View {
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(filteredReturns) { ret in
-                        returnListItem(ret)
+                        NavigationLink {
+                            VendorReturnDetailView(vm: vm, movement: ret)
+                        } label: {
+                            returnListItem(ret)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -588,7 +573,7 @@ struct VendorReturnView: View {
                                                     Text(reason.rawValue).tag(reason)
                                                 }
                                             }
-                                            .pickerStyle(.segmented)
+                                            .pickerStyle(.menu)
                                         }
                                         
                                         Button {

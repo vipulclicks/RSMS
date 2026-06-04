@@ -33,6 +33,22 @@ struct CycleCountView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
                         headerSection
+                        
+                        Button {
+                            showScanner = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "barcode.viewfinder")
+                                Text("Scan to Verify")
+                            }
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(RSMSTheme.background)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(RSMSTheme.gold)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        
                         kpiSection
                         pendingSection
                         checkedSection
@@ -44,24 +60,7 @@ struct CycleCountView: View {
         }
         .navigationTitle("Cycle Counts")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showScanner = true
-                } label: {
-                    HStack {
-                        Image(systemName: "barcode.viewfinder")
-                        Text("Scan to Verify")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RSMSTheme.gold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(RSMSTheme.gold.opacity(0.15))
-                    .clipShape(Capsule())
-                }
-            }
-        }
+
         .fullScreenCover(isPresented: $showScanner) {
             NavigationStack {
                 InventoryBarcodeScannerView(initialMode: .verification)

@@ -16,6 +16,10 @@ struct AuthCertificateGeneratorView: View {
     @State private var generatedCertificate: AuthCertificate?
     @State private var isGenerating = false
     @State private var showSuccess = false
+
+    init(preselectedProduct: Product? = nil) {
+        _selectedProduct = State(initialValue: preselectedProduct)
+    }
     
     @MainActor
     private var renderedImage: Image? {
@@ -188,7 +192,6 @@ struct AuthCertificateGeneratorView: View {
                     if isGenerating {
                         ProgressView().tint(RSMSTheme.cream)
                     } else {
-                        Image(systemName: "checkmark.seal.fill")
                         Text("Generate Certificate")
                     }
                 }
@@ -240,7 +243,6 @@ struct AuthCertificateGeneratorView: View {
                             preview: SharePreview("Authenticity Certificate", image: image)
                         ) {
                             HStack {
-                                Image(systemName: "square.and.arrow.up")
                                 Text("Share / Print")
                             }
                             .font(.headline)

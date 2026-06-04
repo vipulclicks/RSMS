@@ -17,7 +17,6 @@ struct InventoryTransferView: View {
     @State private var vm = InventoryTransferViewModel()
     @State private var appeared = false
     @State private var showAvailability = true
-    @State private var selectedTab = 0 // 0 = Transfers, 1 = Sourcing Requests
 
     private let kpiColumns = [
         GridItem(.flexible()),
@@ -29,18 +28,9 @@ struct InventoryTransferView: View {
             RSMSTheme.background.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Picker("Fulfillment Tab", selection: $selectedTab) {
-                    Text("Transfers Feed").tag(0)
-                    Text("Sourcing Requests").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
-
-                if selectedTab == 0 {
-                    if vm.isLoading && vm.movements.isEmpty {
-                        loadingView
-                    } else {
+                if vm.isLoading && vm.movements.isEmpty {
+                    loadingView
+                } else {
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 24) {
                                 headerSection
@@ -52,10 +42,7 @@ struct InventoryTransferView: View {
                             }
                             .padding(24)
                             .padding(.bottom, 24)
-                        }
                     }
-                } else {
-                    InventorySourcingRequestListView()
                 }
             }
 
@@ -66,27 +53,7 @@ struct InventoryTransferView: View {
         }
         .navigationTitle("Transfer Inventory")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if selectedTab == 0 {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        vm.resetForm()
-                        vm.showCreateSheet = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("New Transfer")
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(RSMSTheme.gold)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(RSMSTheme.gold.opacity(0.15))
-                        .clipShape(Capsule())
-                    }
-                }
-            }
-        }
+
         .sheet(isPresented: $vm.showCreateSheet) {
             createTransferSheet
         }
@@ -280,8 +247,6 @@ struct InventoryTransferView: View {
             vm.showCreateSheet = true
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title3)
                 Text("Create New Transfer")
                     .font(.headline.weight(.bold))
                 Spacer()

@@ -12,8 +12,9 @@ import SwiftUI
 // MARK: - Profile View
 
 struct InventoryControllerProfileView: View {
-
     @Environment(AppViewModel.self) private var viewModel
+    var onBack: (() -> Void)? = nil
+
     @State private var showLogoutConfirmation = false
     @State private var showEditProfile        = false
     @State private var showChangePassword     = false
@@ -60,6 +61,17 @@ struct InventoryControllerProfileView: View {
         .background(RSMSTheme.background)
         .navigationTitle("My Profile")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let onBack = onBack {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: onBack) {
+                        Image(systemName: "chevron.backward")
+                            .font(.body.weight(.semibold))
+                        .foregroundStyle(RSMSTheme.gold)
+                    }
+                }
+            }
+        }
         // ── Fetch live data from Supabase ──────────────────────────
         .task {
             await refresh()
