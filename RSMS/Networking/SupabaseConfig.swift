@@ -8,13 +8,6 @@
 
 import Foundation
 
-/// Connection parameters for the Supabase backend.
-///
-/// Usage:
-///   1. Go to your Supabase dashboard → Settings → API
-///   2. Copy the "Project URL" and "anon public" key
-///   3. Paste them below
-///
 enum SupabaseConfig {
     /// Your Supabase project URL (e.g., "https://abcdefghijklm.supabase.co")
     static let projectURL = "https://lidoouszbcutddwrxbgy.supabase.co"
