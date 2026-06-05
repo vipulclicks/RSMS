@@ -25,7 +25,7 @@ extension DataStore {
                         minPurchaseAmount: 10000,
                         refundPercentage: 100,
                         serviceFee: 0,
-                        eligibleCountries: ["United States", "United Kingdom", "Canada", "Singapore", "Japan", "France", "Germany"]
+                        eligibleCountries: ["United States", "United Kingdom", "Canada", "Singapore", "Japan", "France", "Germany", "Australia", "Germany"]
                     )
                 }
             }
