@@ -6,23 +6,22 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if let user = viewModel.currentUser {
+            if viewModel.mfaRequired {
+                MFAVerificationView()
+                    .transition(.opacity)
+            } else if let user = viewModel.currentUser {
                 // User is authenticated - Show Home View AFTER splash
                 if !showGlobalSplash {
                     Group {
-                        if viewModel.mfaRequired {
-                            MFAVerificationView()
-                        } else {
-                            switch user.role {
-                            case .boutiqueManager:
-                                BoutiqueManagerHomeView()
-                            case .salesAssociate:
-                                SalesAssociateHomeView()
-                            case .inventoryController:
-                                InventoryControllerHomeView()
-                            case .client:
-                                ClientPortalView()
-                            }
+                        switch user.role {
+                        case .boutiqueManager:
+                            BoutiqueManagerHomeView()
+                        case .salesAssociate:
+                            SalesAssociateHomeView()
+                        case .inventoryController:
+                            InventoryControllerHomeView()
+                        case .client:
+                            ClientPortalView()
                         }
                     }
                     .transition(.opacity)
