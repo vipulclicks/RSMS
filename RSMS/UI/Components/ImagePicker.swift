@@ -2,7 +2,6 @@
 //  ImagePicker.swift
 //  RSMS
 //
-//  Created by Antigravity on 2026-06-01.
 //
 
 import SwiftUI
