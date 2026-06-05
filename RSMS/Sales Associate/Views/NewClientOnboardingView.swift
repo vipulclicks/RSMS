@@ -95,7 +95,7 @@ struct NewClientOnboardingView: View {
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(RSMSTheme.border)
-                        .frame(minHeight: 4)
+                        .frame(height: 4)
                     
                     Capsule()
                         .fill(RSMSTheme.primary)
@@ -103,7 +103,7 @@ struct NewClientOnboardingView: View {
                         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: viewModel.currentStep)
                 }
             }
-            .frame(minHeight: 4)
+            .frame(height: 4)
         }
         .padding(.vertical, 8)
     }
