@@ -137,7 +137,7 @@ struct StaffShiftPlanningView: View {
     private func staffProgressCard(_ staff: UserProfile) -> some View {
         let goal = salesGoalVM.activeGoals.first { $0.staffId == staff.id }
         let targetAmount = goal?.targetAmount ?? 0.0
-        let achievedAmount = goal?.achievedAmount ?? 0.0
+        let achievedAmount = goal != nil ? salesGoalVM.computedAchievedAmount(for: goal!) : 0.0
         let progress = targetAmount > 0 ? min(1.0, achievedAmount / targetAmount) : 0.0
         
         return HStack(spacing: 16) {
@@ -206,6 +206,7 @@ struct StaffGoalCard: View {
     
     var body: some View {
         let currentGoal = viewModel.activeGoals.first { $0.staffId == staff.id && $0.period == selectedPeriod }
+        let achieved = currentGoal != nil ? viewModel.computedAchievedAmount(for: currentGoal!) : 0.0
         
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -250,7 +251,7 @@ struct StaffGoalCard: View {
                         
                         if let goal = currentGoal, goal.targetAmount > 0 {
                             RoundedRectangle(cornerRadius: 6).fill(RSMSTheme.goldGradient)
-                                .frame(width: geo.size.width * min((goal.achievedAmount / goal.targetAmount), 1.0))
+                                .frame(width: geo.size.width * min((achieved / goal.targetAmount), 1.0))
                         }
                     }
                 }
@@ -258,7 +259,7 @@ struct StaffGoalCard: View {
                 
                 HStack {
                     if let goal = currentGoal {
-                        Text(goal.achievedAmount.formatted(.currency(code: "INR").precision(.fractionLength(0))))
+                        Text(achieved.formatted(.currency(code: "INR").precision(.fractionLength(0))))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(RSMSTheme.gold)
                         Spacer()
@@ -278,7 +279,7 @@ struct StaffGoalCard: View {
             }
             
             if let goal = currentGoal, goal.targetAmount > 0 {
-                Text("\(Int((goal.achievedAmount / goal.targetAmount) * 100))% achieved")
+                Text("\(Int((achieved / goal.targetAmount) * 100))% achieved")
                     .font(.caption)
                     .foregroundStyle(RSMSTheme.textSecondary)
             } else {

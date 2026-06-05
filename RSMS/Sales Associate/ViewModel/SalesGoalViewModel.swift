@@ -19,6 +19,45 @@ class SalesGoalViewModel {
         return ds.salesGoals.filter { $0.storeId == id }
     }
     
+    // Dynamic computation of achieved amount based on actual transactions
+    func computedAchievedAmount(for goal: SalesGoal) -> Double {
+        guard let ds = dataStore else { return goal.achievedAmount }
+        let cal = Calendar.current
+        let now = Date()
+        
+        if goal.period == .monthly {
+            let month = cal.component(.month, from: now)
+            let year = cal.component(.year, from: now)
+            let transactions = ds.transactions.filter {
+                $0.associateId == goal.staffId &&
+                $0.status == .completed &&
+                cal.component(.month, from: $0.createdAt) == month &&
+                cal.component(.year, from: $0.createdAt) == year
+            }
+            return transactions.reduce(0.0) { $0 + $1.totalAmount }
+        } else if goal.period == .weekly {
+            let weekOfYear = cal.component(.weekOfYear, from: now)
+            let yearForWeekOfYear = cal.component(.yearForWeekOfYear, from: now)
+            let transactions = ds.transactions.filter {
+                $0.associateId == goal.staffId &&
+                $0.status == .completed &&
+                cal.component(.weekOfYear, from: $0.createdAt) == weekOfYear &&
+                cal.component(.yearForWeekOfYear, from: $0.createdAt) == yearForWeekOfYear
+            }
+            return transactions.reduce(0.0) { $0 + $1.totalAmount }
+        } else {
+            let start = cal.startOfDay(for: goal.startDate)
+            let end = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: goal.endDate)) ?? goal.endDate
+            let transactions = ds.transactions.filter {
+                $0.associateId == goal.staffId &&
+                $0.status == .completed &&
+                $0.createdAt >= start &&
+                $0.createdAt < end
+            }
+            return transactions.reduce(0.0) { $0 + $1.totalAmount }
+        }
+    }
+    
     // MARK: - Draft Form State
     var draftSelectedStaff: UserProfile?
     var draftAmount: Double = 0.0
